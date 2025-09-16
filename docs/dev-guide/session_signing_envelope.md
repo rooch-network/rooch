@@ -20,8 +20,12 @@ This document specifies a backward-compatible extension to Rooch session authent
 - **0x01 BitcoinMessageV0**: The signature is verified over the standard Bitcoin message digest:
   - `digest = SHA256(SHA256("Bitcoin Signed Message:\n" + VarInt(len(message)) + message))`
   - `message` is an ASCII string carried in the authenticator payload and must equal a canonical template built from the current `tx_hash` (see Template Binding)
+- **0x02 WebAuthnV0**: The signature is verified over the WebAuthn message digest:
+  - `digest = authenticator_data || SHA256(client_data_json)`
+  - `message` contains a BCS-encoded `WebauthnAuthPayload` structure
+  - The `challenge` field in `client_data_json` must equal the base64-encoded `tx_hash`
 - **Reserved for future extensions**:
-  - 0x02 Bip322Simple
+  - 0x03 Bip322Simple
   - 0x10.. Vendor-specific envelopes
 
 Unknown envelope values MUST be rejected.
@@ -72,10 +76,15 @@ Applies to `frameworks/rooch-framework/sources/auth_validator/session_validator.
 2. If the payload is v2, parse `envelope`; if missing, set `envelope = 0x00 RawTxHash`
 3. Extract `(signature, public_key)` and optional `(message)` according to `scheme` and `envelope`
 4. Compute `digest` based on `envelope`:
-   - RawTxHash (0x00): `digest = tx_hash`
-   - BitcoinMessageV0 (0x01):
-     - Ensure `message` is present and equals the canonical template derived from `tx_hash` (and optional `ChainId`)
-     - Compute `digest = sha256(sha256("Bitcoin Signed Message:\n" + VarInt(len(message)) + message))`
+  - RawTxHash (0x00): `digest = tx_hash`
+  - BitcoinMessageV0 (0x01):
+    - Ensure `message` is present and equals the canonical template derived from `tx_hash` (and optional `ChainId`)
+    - Compute `digest = sha256(sha256("Bitcoin Signed Message:\n" + VarInt(len(message)) + message))`
+  - WebAuthnV0 (0x02):
+    - Ensure `message` is present and contains a valid BCS-encoded `WebauthnAuthPayload`
+    - Deserialize the payload to extract `authenticator_data` and `client_data_json`
+    - Verify that the `challenge` in `client_data_json` equals the base64-encoded `tx_hash`
+    - Compute `digest = authenticator_data || SHA256(client_data_json)`
 5. Verify signature using the `scheme`-appropriate verifier:
    - Ed25519: `ed25519::verify(signature, public_key, digest)`
    - Secp256k1: `ecdsa_k1::verify(signature, public_key, digest, ecdsa_k1::sha256())`

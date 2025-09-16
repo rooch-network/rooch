@@ -44,6 +44,7 @@ module rooch_framework::session_key {
     // Signing envelope constants for message formatting
     const SIGNING_ENVELOPE_RAW_TX_HASH: u8 = 0;
     const SIGNING_ENVELOPE_BITCOIN_MESSAGE_V0: u8 = 1;
+    const SIGNING_ENVELOPE_WEBAUTHN_V0: u8 = 2;
     
     public fun signature_scheme_ed25519(): u8 {
         SIGNATURE_SCHEME_ED25519
@@ -63,6 +64,10 @@ module rooch_framework::session_key {
 
     public fun signing_envelope_bitcoin_message_v0(): u8 {
         SIGNING_ENVELOPE_BITCOIN_MESSAGE_V0
+    }
+
+    public fun signing_envelope_webauthn_v0(): u8 {
+        SIGNING_ENVELOPE_WEBAUTHN_V0
     }
 
     /// The session's scope

@@ -6,7 +6,12 @@ module rooch_framework::session_validator {
 
     use std::vector;
     use std::option;
+    use std::string;
     use moveos_std::tx_context;
+    use moveos_std::hash;
+    use moveos_std::json;
+    use moveos_std::bcs;
+    use moveos_std::base64;
     use rooch_framework::ed25519;
     use rooch_framework::ecdsa_k1;
     use rooch_framework::ecdsa_r1;
@@ -20,6 +25,23 @@ module rooch_framework::session_validator {
 
 
     struct SessionValidator has store, drop {}
+
+    #[data_struct]
+    /// WebAuthn payload structure for envelope parsing
+    struct WebauthnAuthPayload has copy, store, drop {
+        scheme: u8,
+        signature: vector<u8>,        // 64 B (r||s)
+        public_key: vector<u8>,       // 33 B compressed P-256
+        authenticator_data: vector<u8>,
+        client_data_json: vector<u8>,
+    }
+
+    #[data_struct]
+    struct ClientData has copy, store, drop {
+        challenge: string::String,
+        origin: string::String,
+        type: string::String,
+    }
 
     public fun auth_validator_id(): u64 {
         SESSION_VALIDATOR_ID
@@ -41,6 +63,9 @@ module rooch_framework::session_validator {
         
         // Parse optional message for envelopes that require it
         let message_option = if (envelope == session_key::signing_envelope_bitcoin_message_v0()) {
+            parse_message(authenticator_payload, next_offset)
+        } else if (envelope == session_key::signing_envelope_webauthn_v0()) {
+            // For WebAuthn envelope in v2 format, the message contains the encoded WebAuthn data
             parse_message(authenticator_payload, next_offset)
         } else {
             option::none<vector<u8>>()
@@ -74,6 +99,7 @@ module rooch_framework::session_validator {
             (envelope, 2)
         }
     }
+
 
     /// Parse signature and public key from payload
     fun parse_signature_and_key(payload: &vector<u8>, scheme: u8, offset: u64): (vector<u8>, vector<u8>, u64) {
@@ -227,10 +253,43 @@ module rooch_framework::session_validator {
             
             // Compute Bitcoin message digest
             session_key::bitcoin_message_digest(message)
+        } else if (envelope == session_key::signing_envelope_webauthn_v0()) {
+            // WebAuthn: reconstruct message as authenticator_data || SHA256(client_data_json)
+            assert!(option::is_some(message_option), auth_validator::error_validate_invalid_authenticator());
+            let webauthn_payload_bytes = option::borrow(message_option);
+            
+            // Deserialize the WebAuthn payload using BCS
+            compute_webauthn_digest_from_bcs(webauthn_payload_bytes, tx_hash)
         } else {
             // Unknown envelope
             abort auth_validator::error_validate_invalid_authenticator()
         }
+    }
+
+    /// Compute WebAuthn digest from BCS-encoded WebAuthn payload
+    fun compute_webauthn_digest_from_bcs(webauthn_payload_bytes: &vector<u8>, tx_hash: &vector<u8>): vector<u8> {
+        // Deserialize the WebAuthn payload using BCS
+        let webauthn_payload = bcs::from_bytes<WebauthnAuthPayload>(*webauthn_payload_bytes);
+        let WebauthnAuthPayload {
+            scheme: _,
+            signature: _,
+            public_key: _,
+            authenticator_data,
+            client_data_json,
+        } = webauthn_payload;
+        
+        // Verify that the challenge in client_data_json matches tx_hash
+        let client_data = json::from_json<ClientData>(client_data_json);
+        let challenge = client_data.challenge;
+        let tx_hash_in_client_data = base64::decode(string::bytes(&challenge));
+        assert!(tx_hash_in_client_data == *tx_hash, auth_validator::error_validate_invalid_authenticator());
+        
+        // Reconstruct WebAuthn message: authenticator_data || SHA256(client_data_json)
+        let cd_hash = hash::sha2_256(client_data_json);
+        let msg = authenticator_data;
+        vector::append(&mut msg, cd_hash);
+        
+        msg
     }
 
     public(friend) fun validate(authenticator_payload: vector<u8>) :vector<u8> {

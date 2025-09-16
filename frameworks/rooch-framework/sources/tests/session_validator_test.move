@@ -205,6 +205,17 @@ module rooch_framework::session_validator_test {
         assert!(session_key::signature_scheme_ecdsar1() == 2, 8002);
     }
 
+    #[test]
+    fun test_webauthn_envelope_constant() {
+        // Test that WebAuthn envelope constant is correctly defined
+        let webauthn_envelope = session_key::signing_envelope_webauthn_v0();
+        assert!(webauthn_envelope == 2, 9000);
+        
+        // Test that it's different from other envelopes
+        assert!(webauthn_envelope != session_key::signing_envelope_raw_tx_hash(), 9001);
+        assert!(webauthn_envelope != session_key::signing_envelope_bitcoin_message_v0(), 9002);
+    }
+
     // Note: Full end-to-end validation tests would require proper cryptographic signatures
     // and session key setup, which is complex for unit tests. The above tests focus on
     // the parsing and utility functions that can be tested in isolation.

@@ -15,6 +15,7 @@
 -  [Function `signature_scheme_ecdsar1`](#0x3_session_key_signature_scheme_ecdsar1)
 -  [Function `signing_envelope_raw_tx_hash`](#0x3_session_key_signing_envelope_raw_tx_hash)
 -  [Function `signing_envelope_bitcoin_message_v0`](#0x3_session_key_signing_envelope_bitcoin_message_v0)
+-  [Function `signing_envelope_webauthn_v0`](#0x3_session_key_signing_envelope_webauthn_v0)
 -  [Function `new_session_scope`](#0x3_session_key_new_session_scope)
 -  [Function `is_expired`](#0x3_session_key_is_expired)
 -  [Function `is_expired_session_key`](#0x3_session_key_is_expired_session_key)
@@ -202,6 +203,15 @@ The lengths of the parts of the session's scope do not match.
 
 
 
+<a name="0x3_session_key_SIGNING_ENVELOPE_WEBAUTHN_V0"></a>
+
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNING_ENVELOPE_WEBAUTHN_V0">SIGNING_ENVELOPE_WEBAUTHN_V0</a>: u8 = 2;
+</code></pre>
+
+
+
 <a name="0x3_session_key_max_inactive_interval"></a>
 
 ## Function `max_inactive_interval`
@@ -264,6 +274,17 @@ The lengths of the parts of the session's scope do not match.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signing_envelope_bitcoin_message_v0">signing_envelope_bitcoin_message_v0</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_session_key_signing_envelope_webauthn_v0"></a>
+
+## Function `signing_envelope_webauthn_v0`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signing_envelope_webauthn_v0">signing_envelope_webauthn_v0</a>(): u8
 </code></pre>
 
 
