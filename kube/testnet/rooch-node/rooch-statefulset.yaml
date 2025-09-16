@@ -95,12 +95,13 @@ spec:
         - "67108864"
         - --rocksdb-block-cache-size
         - "2147483648"
-        - --btc-rpc-url
-        - http://bitcoin-testnet4-rpc.testnet.svc.cluster.local:48332
-        - --btc-rpc-username
-        - $(BTC_RPC_USERNAME)
-        - --btc-rpc-password
-        - $(BTC_RPC_PASSWORD)
+        # temp disable bitcoin testnet sync
+        # - --btc-rpc-url
+        # - http://bitcoin-testnet4-rpc.testnet.svc.cluster.local:48332
+        # - --btc-rpc-username
+        # - $(BTC_RPC_USERNAME)
+        # - --btc-rpc-password
+        # - $(BTC_RPC_PASSWORD)
         ports:
         - name: rpc
           containerPort: 6767
