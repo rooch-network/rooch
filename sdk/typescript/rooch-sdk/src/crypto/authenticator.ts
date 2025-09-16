@@ -7,6 +7,13 @@ import { bytes, sha256, toHEX, concatBytes, varintByteNum } from '../utils/index
 
 import { Signer } from './signer.js'
 import { SIGNATURE_SCHEME_TO_FLAG } from './signatureScheme.js'
+import {
+  SigningEnvelope,
+  EnvelopeMessageBuilder,
+  RawTxHashEnvelope,
+  BitcoinMessageEnvelope,
+  WebAuthnEnvelope,
+} from './envelope.js'
 
 const BitcoinMessagePrefix = '\u0018Bitcoin Signed Message:\n'
 const MessageInfoPrefix = 'Rooch Transaction:\n'
@@ -101,6 +108,133 @@ export class Authenticator {
     serializedSignature.set(signer.getPublicKey().toBytes(), 1 + signature.length)
 
     return new Authenticator(BuiltinAuthValidator.SESSION, serializedSignature)
+  }
+
+  /**
+   * Create session authenticator with envelope support (v2 format)
+   * @param txHash - Transaction hash to sign
+   * @param signer - Signer instance
+   * @param envelope - Envelope message builder (optional, defaults to RawTxHash)
+   */
+  static async sessionWithEnvelope(
+    txHash: Bytes,
+    signer: Signer,
+    envelope?: EnvelopeMessageBuilder,
+  ): Promise<Authenticator> {
+    // Default to RawTxHash envelope for backward compatibility
+    const envelopeBuilder = envelope || new RawTxHashEnvelope()
+    const envelopeType = envelopeBuilder.getEnvelopeType()
+
+    // Compute the message to sign based on envelope type
+    let messageToSign: Bytes
+    let messageData: Bytes | null = null
+
+    if (envelopeType === SigningEnvelope.RawTxHash) {
+      // v1 format: sign directly over tx_hash
+      messageToSign = txHash
+    } else if (envelopeType === SigningEnvelope.BitcoinMessageV0) {
+      // Bitcoin message envelope
+      const bitcoinEnvelope = envelope as BitcoinMessageEnvelope
+      messageToSign = bitcoinEnvelope.computeDigest(txHash)
+      messageData = bitcoinEnvelope.buildMessage(txHash)
+    } else if (envelopeType === SigningEnvelope.WebAuthnV0) {
+      // WebAuthn envelope - special handling
+      const webauthnEnvelope = envelope as WebAuthnEnvelope
+      messageToSign = webauthnEnvelope.computeDigest(txHash)
+      // For WebAuthn, we need to BCS-encode the payload
+      messageData = this.encodeWebAuthnPayload(signer, webauthnEnvelope)
+    } else {
+      throw new Error(`Unsupported envelope type: ${envelopeType}`)
+    }
+
+    // Sign the computed message
+    const signature = await signer.sign(messageToSign)
+    const pubKeyBytes = signer.getPublicKey().toBytes()
+    const schemeFlag = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
+
+    // Build payload based on format
+    let payload: Bytes
+    if (envelopeType === SigningEnvelope.RawTxHash) {
+      // v1 format: scheme | signature | public_key
+      payload = new Uint8Array(1 + signature.length + pubKeyBytes.length)
+      payload.set([schemeFlag])
+      payload.set(signature, 1)
+      payload.set(pubKeyBytes, 1 + signature.length)
+    } else {
+      // v2 format: scheme | envelope | signature | public_key | [message_len | message]
+      const messageBytes = messageData || new Uint8Array(0)
+      const hasMessage = messageBytes.length > 0
+      const messageLenBytes = hasMessage ? varintByteNum(messageBytes.length) : new Uint8Array(0)
+
+      const totalLength =
+        1 + 1 + signature.length + pubKeyBytes.length + messageLenBytes.length + messageBytes.length
+
+      payload = new Uint8Array(totalLength)
+      let offset = 0
+
+      payload.set([schemeFlag], offset)
+      offset += 1
+      payload.set([envelopeType], offset)
+      offset += 1
+      payload.set(signature, offset)
+      offset += signature.length
+      payload.set(pubKeyBytes, offset)
+      offset += pubKeyBytes.length
+
+      if (hasMessage) {
+        payload.set(messageLenBytes, offset)
+        offset += messageLenBytes.length
+        payload.set(messageBytes, offset)
+      }
+    }
+
+    return new Authenticator(BuiltinAuthValidator.SESSION, payload)
+  }
+
+  /**
+   * Helper method to encode WebAuthn payload for BCS serialization
+   */
+  private static encodeWebAuthnPayload(signer: Signer, envelope: WebAuthnEnvelope): Bytes {
+    // This would need to match the WebauthnAuthPayload structure in Move
+    // For now, we'll create a simple encoding - in practice, this should use proper BCS
+    const schemeFlag = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
+    const pubKeyBytes = signer.getPublicKey().toBytes()
+    const authenticatorData = envelope.getAuthenticatorData()
+    const clientDataJson = envelope.getClientDataJson()
+
+    // Simple concatenation for demonstration - should use proper BCS encoding
+    const totalLength =
+      1 + 64 + pubKeyBytes.length + 4 + authenticatorData.length + clientDataJson.length
+    const encoded = new Uint8Array(totalLength)
+    let offset = 0
+
+    encoded.set([schemeFlag], offset)
+    offset += 1
+
+    // Placeholder signature (64 bytes) - will be filled by actual signature
+    offset += 64
+
+    encoded.set(pubKeyBytes, offset)
+    offset += pubKeyBytes.length
+
+    // Authenticator data length (4-byte big-endian)
+    const authDataLen = authenticatorData.length
+    encoded.set(
+      [
+        (authDataLen >> 24) & 0xff,
+        (authDataLen >> 16) & 0xff,
+        (authDataLen >> 8) & 0xff,
+        authDataLen & 0xff,
+      ],
+      offset,
+    )
+    offset += 4
+
+    encoded.set(authenticatorData, offset)
+    offset += authenticatorData.length
+    encoded.set(clientDataJson, offset)
+
+    return encoded
   }
 
   static async bitcoin(

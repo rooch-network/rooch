@@ -16,3 +16,10 @@ export {
 export { Signer } from './signer.js'
 
 export { Authenticator, BuiltinAuthValidator, BitcoinSignMessage } from './authenticator.js'
+export {
+  SigningEnvelope,
+  RawTxHashEnvelope,
+  BitcoinMessageEnvelope,
+  WebAuthnEnvelope,
+} from './envelope.js'
+export type { EnvelopeMessageBuilder } from './envelope.js'
