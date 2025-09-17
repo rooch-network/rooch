@@ -30,24 +30,23 @@ module rooch_framework::did_validator {
     const ENVELOPE_BITCOIN_MESSAGE_V0: u8 = 0x01;
     const ENVELOPE_WEBAUTHN_V0: u8 = 0x02;
 
-    /// Error codes for DID validator (following auth_validator pattern)
-    /// Base error code from auth_validator::error_validate_invalid_authenticator() = 1010
-    /// DID validator specific errors: 1010 + offset
+    /// Error codes for DID validator (using 101xxx range to avoid conflicts)
+    /// DID validator specific errors: 101001-101999
     
     /// Invalid BCS deserialization of DID auth payload
-    const ErrorInvalidDIDAuthPayload: u64 = 1011;
+    const ErrorInvalidDIDAuthPayload: u64 = 101001;
     /// Invalid envelope type in DID auth payload
-    const ErrorInvalidEnvelopeType: u64 = 1012;
+    const ErrorInvalidEnvelopeType: u64 = 101002;
     /// DID document not found for sender address
-    const ErrorDIDDocumentNotFound: u64 = 1013;
+    const ErrorDIDDocumentNotFound: u64 = 101003;
     /// Verification method not authorized for authentication
-    const ErrorVerificationMethodNotAuthorized: u64 = 1014;
+    const ErrorVerificationMethodNotAuthorized: u64 = 101004;
     /// Verification method not found in DID document
-    const ErrorVerificationMethodNotFound: u64 = 1015;
+    const ErrorVerificationMethodNotFound: u64 = 101005;
     /// Invalid message for envelope type
-    const ErrorInvalidEnvelopeMessage: u64 = 1016;
+    const ErrorInvalidEnvelopeMessage: u64 = 101006;
     /// Signature verification failed
-    const ErrorSignatureVerificationFailed: u64 = 1017;
+    const ErrorSignatureVerificationFailed: u64 = 101007;
 
     struct DIDValidator has store, drop {}
 

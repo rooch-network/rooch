@@ -10,7 +10,7 @@ module rooch_framework::did_validator_test {
     
     // Error code constants for cleaner tests
     const BCS_ERROR_INVALID_BYTES: u64 = 2;
-    const DID_ERROR_INVALID_ENVELOPE_TYPE: u64 = 1012;
+    const DID_ERROR_INVALID_ENVELOPE_TYPE: u64 = 101002;
 
     #[test]
     fun test_did_auth_validator_id() {

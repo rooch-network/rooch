@@ -170,18 +170,18 @@ The DID validator uses specific error codes for better debugging and troubleshoo
 
 | Error Code | Constant | Description |
 |------------|----------|-------------|
-| 1011 | `ErrorInvalidDIDAuthPayload` | BCS deserialization failed - invalid payload format |
-| 1012 | `ErrorInvalidEnvelopeType` | Invalid or unsupported envelope type |
-| 1013 | `ErrorDIDDocumentNotFound` | DID document not found for sender address |
-| 1014 | `ErrorVerificationMethodNotAuthorized` | Verification method not in authentication relationship |
-| 1015 | `ErrorVerificationMethodNotFound` | Verification method not found in DID document |
-| 1016 | `ErrorInvalidEnvelopeMessage` | Invalid message for envelope type (e.g., wrong Bitcoin message format) |
-| 1017 | `ErrorSignatureVerificationFailed` | Cryptographic signature verification failed |
+| 101001 | `ErrorInvalidDIDAuthPayload` | BCS deserialization failed - invalid payload format |
+| 101002 | `ErrorInvalidEnvelopeType` | Invalid or unsupported envelope type |
+| 101003 | `ErrorDIDDocumentNotFound` | DID document not found for sender address |
+| 101004 | `ErrorVerificationMethodNotAuthorized` | Verification method not in authentication relationship |
+| 101005 | `ErrorVerificationMethodNotFound` | Verification method not found in DID document |
+| 101006 | `ErrorInvalidEnvelopeMessage` | Invalid message for envelope type (e.g., wrong Bitcoin message format) |
+| 101007 | `ErrorSignatureVerificationFailed` | Cryptographic signature verification failed |
 
 **Error Code Strategy**:
-- Base error code: `auth_validator::error_validate_invalid_authenticator()` = 1010
-- DID-specific errors: 1010 + offset (1011-1017)
-- This maintains consistency with the auth validator framework while providing specific debugging information
+- DID validator uses 101xxx range (101001-101999) to avoid conflicts with other validators
+- Auth validator uses 1xxx range (1001-1013)
+- This clear separation makes debugging much easier and prevents error code conflicts
 
 ## Security Considerations
 
