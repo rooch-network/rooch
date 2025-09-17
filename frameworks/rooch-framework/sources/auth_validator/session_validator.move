@@ -12,6 +12,7 @@ module rooch_framework::session_validator {
     use moveos_std::json;
     use moveos_std::bcs;
     use moveos_std::base64;
+    use moveos_std::consensus_codec;
     use rooch_framework::ed25519;
     use rooch_framework::ecdsa_k1;
     use rooch_framework::ecdsa_r1;
@@ -27,11 +28,8 @@ module rooch_framework::session_validator {
     struct SessionValidator has store, drop {}
 
     #[data_struct]
-    /// WebAuthn payload structure for envelope parsing
-    struct WebauthnAuthPayload has copy, store, drop {
-        scheme: u8,
-        signature: vector<u8>,        // 64 B (r||s)
-        public_key: vector<u8>,       // 33 B compressed P-256
+    /// WebAuthn envelope data (only WebAuthn-specific fields)
+    struct WebauthnEnvelopeData has copy, store, drop {
         authenticator_data: vector<u8>,
         client_data_json: vector<u8>,
     }
@@ -172,19 +170,17 @@ module rooch_framework::session_validator {
             return option::none<vector<u8>>()
         };
         
-        // Read message length (VarInt, single-byte path only)
-        let msg_len = (*vector::borrow(payload, offset) as u64);
-        let msg_start = offset + 1;
-        let msg_end = msg_start + msg_len;
-        
-        assert!(msg_end <= payload_len, auth_validator::error_validate_invalid_authenticator());
-        
-        let message = vector::empty<u8>();
-        let i = msg_start;
-        while (i < msg_end) {
-            vector::push_back(&mut message, *vector::borrow(payload, i));
+        // Extract remaining bytes from offset
+        let remaining_data = vector::empty<u8>();
+        let i = offset;
+        while (i < payload_len) {
+            vector::push_back(&mut remaining_data, *vector::borrow(payload, i));
             i = i + 1;
         };
+        
+        // Use consensus_codec to decode VarInt length + message
+        let decoder = consensus_codec::decoder(remaining_data);
+        let message = consensus_codec::peel_var_slice(&mut decoder);
         
         option::some(message)
     }
@@ -266,17 +262,14 @@ module rooch_framework::session_validator {
         }
     }
 
-    /// Compute WebAuthn digest from BCS-encoded WebAuthn payload
-    fun compute_webauthn_digest_from_bcs(webauthn_payload_bytes: &vector<u8>, tx_hash: &vector<u8>): vector<u8> {
-        // Deserialize the WebAuthn payload using BCS
-        let webauthn_payload = bcs::from_bytes<WebauthnAuthPayload>(*webauthn_payload_bytes);
-        let WebauthnAuthPayload {
-            scheme: _,
-            signature: _,
-            public_key: _,
+    /// Compute WebAuthn digest from BCS-encoded WebAuthn envelope data
+    fun compute_webauthn_digest_from_bcs(webauthn_envelope_bytes: &vector<u8>, tx_hash: &vector<u8>): vector<u8> {
+        // Deserialize the WebAuthn envelope data using BCS
+        let webauthn_envelope = bcs::from_bytes<WebauthnEnvelopeData>(*webauthn_envelope_bytes);
+        let WebauthnEnvelopeData {
             authenticator_data,
             client_data_json,
-        } = webauthn_payload;
+        } = webauthn_envelope;
         
         // Verify that the challenge in client_data_json matches tx_hash
         let client_data = json::from_json<ClientData>(client_data_json);
