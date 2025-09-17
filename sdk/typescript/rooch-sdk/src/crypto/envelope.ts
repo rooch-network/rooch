@@ -3,6 +3,7 @@
 
 import { Bytes } from '../types/index.js'
 import { bytes, sha256, toHEX, concatBytes, varintByteNum } from '../utils/index.js'
+import { bcs } from '../bcs/index.js'
 
 /**
  * Session signing envelope types
@@ -75,6 +76,28 @@ export class BitcoinMessageEnvelope implements EnvelopeMessageBuilder {
     return SigningEnvelope.BitcoinMessageV0
   }
 }
+
+export class WebauthnEnvelopeData {
+  authenticator_data: Uint8Array
+  client_data_json: Uint8Array
+
+  constructor(authenticator_data: Uint8Array, client_data_json: Uint8Array) {
+    this.authenticator_data = authenticator_data
+    this.client_data_json = client_data_json
+  }
+
+  encode(): Bytes {
+    return WebauthnEnvelopeDataSchema.serialize({
+      authenticator_data: this.authenticator_data,
+      client_data_json: this.client_data_json,
+    }).toBytes()
+  }
+}
+
+export const WebauthnEnvelopeDataSchema = bcs.struct('WebauthnEnvelopeData', {
+  authenticator_data: bcs.vector(bcs.u8()),
+  client_data_json: bcs.vector(bcs.u8()),
+})
 
 /**
  * WebAuthn envelope

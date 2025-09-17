@@ -21,5 +21,6 @@ export {
   RawTxHashEnvelope,
   BitcoinMessageEnvelope,
   WebAuthnEnvelope,
+  WebauthnEnvelopeData,
 } from './envelope.js'
 export type { EnvelopeMessageBuilder } from './envelope.js'

@@ -71,23 +71,26 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
 }
 
 export function varintByteNum(input: number): Bytes {
-  if (input < 253) {
+  if (input <= 0xfc) {
+    // Changed from < 253 to <= 0xFC (252)
     let buf = Buffer.alloc(1)
     buf.writeUInt8(input)
     return buf
-  } else if (input < 0x10000) {
+  } else if (input <= 0xffff) {
+    // Changed from < 0x10000 to <= 0xFFFF
     let buf = Buffer.alloc(1 + 2)
-    buf.writeUInt8(253)
+    buf.writeUInt8(0xfd) // Changed from 253 to 0xFD for clarity
     buf.writeUInt16LE(input, 1)
     return buf
-  } else if (input < 0x100000000) {
+  } else if (input <= 0xffffffff) {
+    // Changed from < 0x100000000 to <= 0xFFFFFFFF
     let buf = Buffer.alloc(1 + 4)
-    buf.writeUInt8(254)
+    buf.writeUInt8(0xfe) // Changed from 254 to 0xFE for clarity
     buf.writeUInt32LE(input, 1)
     return buf
   } else {
     let buf = Buffer.alloc(1 + 8)
-    buf.writeUInt8(255)
+    buf.writeUInt8(0xff) // Changed from 255 to 0xFF for clarity
     buf.writeInt32LE(input & -1, 1)
     buf.writeUInt32LE(Math.floor(input / 0x100000000), 5)
     return buf

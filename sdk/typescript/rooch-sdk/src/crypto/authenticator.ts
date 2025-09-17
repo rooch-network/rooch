@@ -13,6 +13,7 @@ import {
   RawTxHashEnvelope,
   BitcoinMessageEnvelope,
   WebAuthnEnvelope,
+  WebauthnEnvelopeData,
 } from './envelope.js'
 
 const BitcoinMessagePrefix = '\u0018Bitcoin Signed Message:\n'
@@ -192,49 +193,17 @@ export class Authenticator {
   }
 
   /**
-   * Helper method to encode WebAuthn payload for BCS serialization
+   * Helper method to encode WebAuthn envelope data for BCS serialization
    */
   private static encodeWebAuthnPayload(signer: Signer, envelope: WebAuthnEnvelope): Bytes {
-    // This would need to match the WebauthnAuthPayload structure in Move
-    // For now, we'll create a simple encoding - in practice, this should use proper BCS
-    const schemeFlag = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
-    const pubKeyBytes = signer.getPublicKey().toBytes()
     const authenticatorData = envelope.getAuthenticatorData()
     const clientDataJson = envelope.getClientDataJson()
 
-    // Simple concatenation for demonstration - should use proper BCS encoding
-    const totalLength =
-      1 + 64 + pubKeyBytes.length + 4 + authenticatorData.length + clientDataJson.length
-    const encoded = new Uint8Array(totalLength)
-    let offset = 0
+    // Use the WebauthnEnvelopeData class for proper BCS encoding
+    // Note: signature and public_key are now handled in the outer payload layer
+    const webauthnEnvelopeData = new WebauthnEnvelopeData(authenticatorData, clientDataJson)
 
-    encoded.set([schemeFlag], offset)
-    offset += 1
-
-    // Placeholder signature (64 bytes) - will be filled by actual signature
-    offset += 64
-
-    encoded.set(pubKeyBytes, offset)
-    offset += pubKeyBytes.length
-
-    // Authenticator data length (4-byte big-endian)
-    const authDataLen = authenticatorData.length
-    encoded.set(
-      [
-        (authDataLen >> 24) & 0xff,
-        (authDataLen >> 16) & 0xff,
-        (authDataLen >> 8) & 0xff,
-        authDataLen & 0xff,
-      ],
-      offset,
-    )
-    offset += 4
-
-    encoded.set(authenticatorData, offset)
-    offset += authenticatorData.length
-    encoded.set(clientDataJson, offset)
-
-    return encoded
+    return webauthnEnvelopeData.encode()
   }
 
   static async bitcoin(
