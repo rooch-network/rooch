@@ -20,7 +20,11 @@ export function decodeToRoochAddressStr(input: address): string {
     }
     if (isValidRoochAddress(input)) {
       if (input.startsWith('rooch')) {
-        return new RoochAddress(input).toHexAddress()
+        try {
+          return new RoochAddress(input).toHexAddress()
+        } catch (_) {
+          throw new Error(`Invalid Rooch address: ${input}`)
+        }
       }
       return input
     }
@@ -63,13 +67,21 @@ export function convertToRoochAddressBytes(input: address): Bytes {
     }
 
     if (input.startsWith(ROOCH_BECH32_PREFIX)) {
-      const decode = bech32m.decodeToBytes(input)
-      if (decode.prefix === ROOCH_BECH32_PREFIX && decode.bytes.length === ROOCH_ADDRESS_LENGTH) {
-        return decode.bytes
+      try {
+        const decode = bech32m.decodeToBytes(input)
+        if (decode.prefix === ROOCH_BECH32_PREFIX && decode.bytes.length === ROOCH_ADDRESS_LENGTH) {
+          return decode.bytes
+        }
+      } catch (_) {
+        throw new Error(`Invalid Rooch address: ${input}`)
       }
     }
 
-    return new BitcoinAddress(input).genRoochAddress().toBytes()
+    try {
+      return new BitcoinAddress(input).genRoochAddress().toBytes()
+    } catch (_) {
+      throw new Error(`Invalid address: ${input}`)
+    }
   }
 
   return isBytes(input) ? input : convertToRoochAddressBytes(input.toStr())
@@ -84,7 +96,7 @@ export function isValidBitcoinAddress(input: string): boolean {
   return false
 }
 
-export function isValidRoochAddress(input: address): input is string {
+export function isValidRoochAddress(input: address): boolean {
   if (typeof input === 'string') {
     const normalizeAddress = normalizeRoochAddress(input)
     if (isHex(normalizeAddress) && getHexByteLength(normalizeAddress) === ROOCH_ADDRESS_LENGTH) {
@@ -92,15 +104,18 @@ export function isValidRoochAddress(input: address): input is string {
     }
 
     if (input.startsWith(ROOCH_BECH32_PREFIX)) {
-      const decode = bech32m.decodeToBytes(input)
-
-      return decode.prefix === ROOCH_BECH32_PREFIX && decode.bytes.length === ROOCH_ADDRESS_LENGTH
+      try {
+        const decode = bech32m.decodeToBytes(input)
+        return decode.prefix === ROOCH_BECH32_PREFIX && decode.bytes.length === ROOCH_ADDRESS_LENGTH
+      } catch (_) {
+        return false
+      }
     }
 
     return false
   }
 
-  return isBytes(input) ? input.length === ROOCH_ADDRESS_LENGTH : isValidAddress(input.toStr())
+  return isBytes(input) ? input.length === ROOCH_ADDRESS_LENGTH : isValidRoochAddress(input.toStr())
 }
 
 export function isValidAddress(input: address): input is string {
@@ -112,7 +127,13 @@ export function isValidAddress(input: address): input is string {
     return isValidBitcoinAddress(input)
   }
 
-  return isBytes(input) ? input.length === ROOCH_ADDRESS_LENGTH : isValidAddress(input.toStr())
+  if (isBytes(input)) {
+    return input.length === ROOCH_ADDRESS_LENGTH
+  }
+
+  // For Address objects, validate their string representation directly
+  const addressStr = input.toStr()
+  return isValidRoochAddress(addressStr) || isValidBitcoinAddress(addressStr)
 }
 
 /**
