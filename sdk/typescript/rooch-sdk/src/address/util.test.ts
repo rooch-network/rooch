@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest'
 import { Ed25519Keypair, Secp256k1Keypair } from '../keypairs/index.js'
 import { isValidAddress } from './util.js'
-import { bcs } from '../bcs'
+import { bcs } from '../bcs/index.js'
 
 describe('Address util', () => {
   it('Valid Rooch Address', () => {
