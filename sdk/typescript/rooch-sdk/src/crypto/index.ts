@@ -22,5 +22,7 @@ export {
   BitcoinMessageEnvelope,
   WebAuthnEnvelope,
   WebauthnEnvelopeData,
+  WebAuthnUtils,
+  WebAuthnEnvelopeBuilder,
 } from './envelope.js'
-export type { EnvelopeMessageBuilder } from './envelope.js'
+export type { EnvelopeMessageBuilder, WebAuthnAssertionData } from './envelope.js'

@@ -14,6 +14,7 @@ import {
   BitcoinMessageEnvelope,
   WebAuthnEnvelope,
   WebauthnEnvelopeData,
+  WebAuthnEnvelopeBuilder,
 } from './envelope.js'
 
 const BitcoinMessagePrefix = '\u0018Bitcoin Signed Message:\n'
@@ -126,32 +127,39 @@ export class Authenticator {
     const envelopeBuilder = envelope || new RawTxHashEnvelope()
     const envelopeType = envelopeBuilder.getEnvelopeType()
 
-    // Compute the message to sign based on envelope type
-    let messageToSign: Bytes
+    // Handle signing based on envelope type
+    let signature: Bytes
     let messageData: Bytes | null = null
+    const pubKeyBytes = signer.getPublicKey().toBytes()
+    const schemeFlag = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
 
     if (envelopeType === SigningEnvelope.RawTxHash) {
       // v1 format: sign directly over tx_hash
-      messageToSign = txHash
+      signature = await signer.sign(txHash)
     } else if (envelopeType === SigningEnvelope.BitcoinMessageV0) {
       // Bitcoin message envelope
       const bitcoinEnvelope = envelope as BitcoinMessageEnvelope
-      messageToSign = bitcoinEnvelope.computeDigest(txHash)
+      const messageToSign = bitcoinEnvelope.computeDigest(txHash)
+      signature = await signer.sign(messageToSign)
       messageData = bitcoinEnvelope.buildMessage(txHash)
     } else if (envelopeType === SigningEnvelope.WebAuthnV0) {
       // WebAuthn envelope - special handling
-      const webauthnEnvelope = envelope as WebAuthnEnvelope
-      messageToSign = webauthnEnvelope.computeDigest(txHash)
-      // For WebAuthn, we need to BCS-encode the payload
-      messageData = this.encodeWebAuthnPayload(signer, webauthnEnvelope)
+      // Check if it's the new WebAuthnEnvelopeBuilder or legacy WebAuthnEnvelope
+      if (envelope instanceof WebAuthnEnvelopeBuilder) {
+        // New WebAuthnEnvelopeBuilder: signature is already available
+        const webauthnEnvelopeBuilder = envelope as WebAuthnEnvelopeBuilder
+        signature = webauthnEnvelopeBuilder.getSignature()
+        messageData = webauthnEnvelopeBuilder.buildMessage(txHash)
+      } else {
+        // Legacy WebAuthnEnvelope: use old flow
+        const webauthnEnvelope = envelope as WebAuthnEnvelope
+        const messageToSign = webauthnEnvelope.computeDigest(txHash)
+        signature = await signer.sign(messageToSign)
+        messageData = this.encodeWebAuthnPayload(signer, webauthnEnvelope)
+      }
     } else {
       throw new Error(`Unsupported envelope type: ${envelopeType}`)
     }
-
-    // Sign the computed message
-    const signature = await signer.sign(messageToSign)
-    const pubKeyBytes = signer.getPublicKey().toBytes()
-    const schemeFlag = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
 
     // Build payload based on format
     let payload: Bytes
@@ -195,7 +203,7 @@ export class Authenticator {
   /**
    * Helper method to encode WebAuthn envelope data for BCS serialization
    */
-  private static encodeWebAuthnPayload(signer: Signer, envelope: WebAuthnEnvelope): Bytes {
+  private static encodeWebAuthnPayload(_signer: Signer, envelope: WebAuthnEnvelope): Bytes {
     const authenticatorData = envelope.getAuthenticatorData()
     const clientDataJson = envelope.getClientDataJson()
 

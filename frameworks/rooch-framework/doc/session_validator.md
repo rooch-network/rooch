@@ -7,7 +7,7 @@ This module implements the session auth validator.
 
 
 -  [Struct `SessionValidator`](#0x3_session_validator_SessionValidator)
--  [Struct `WebauthnAuthPayload`](#0x3_session_validator_WebauthnAuthPayload)
+-  [Struct `WebauthnEnvelopeData`](#0x3_session_validator_WebauthnEnvelopeData)
 -  [Struct `ClientData`](#0x3_session_validator_ClientData)
 -  [Constants](#@Constants_0)
 -  [Function `auth_validator_id`](#0x3_session_validator_auth_validator_id)
@@ -19,6 +19,7 @@ This module implements the session auth validator.
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::base64</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::consensus_codec</a>;
 <b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
@@ -42,15 +43,15 @@ This module implements the session auth validator.
 
 
 
-<a name="0x3_session_validator_WebauthnAuthPayload"></a>
+<a name="0x3_session_validator_WebauthnEnvelopeData"></a>
 
-## Struct `WebauthnAuthPayload`
+## Struct `WebauthnEnvelopeData`
 
-WebAuthn payload structure for envelope parsing
+WebAuthn envelope data (only WebAuthn-specific fields)
 
 
 <pre><code>#[data_struct]
-<b>struct</b> <a href="session_validator.md#0x3_session_validator_WebauthnAuthPayload">WebauthnAuthPayload</a> <b>has</b> <b>copy</b>, drop, store
+<b>struct</b> <a href="session_validator.md#0x3_session_validator_WebauthnEnvelopeData">WebauthnEnvelopeData</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
