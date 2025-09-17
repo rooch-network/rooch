@@ -154,6 +154,14 @@ export const BitcoinAuthPayload = bcs.struct('AuthPayload', {
   fromAddress: Vector('utf8'),
 })
 
+export const DIDAuthPayload = bcs.struct('DIDAuthPayload', {
+  scheme: bcs.u8(),
+  envelope: bcs.u8(),
+  vmFragment: bcs.string(),
+  signature: Vector(),
+  message: bcs.option(Vector()),
+})
+
 export const ModuleId = bcs.struct('ModuleId', {
   address: Address,
   name: bcs.string(),

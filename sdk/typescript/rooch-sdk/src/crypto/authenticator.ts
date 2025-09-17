@@ -79,6 +79,8 @@ export enum BuiltinAuthValidator {
   SESSION = 0x00,
   BITCOIN = 0x01,
   BITCOIN_MULTISIGN = 0x02,
+  WEBAUTHN = 0x03,
+  DID = 0x04,
 }
 
 export class Authenticator {
@@ -235,5 +237,72 @@ export class Authenticator {
     }).toBytes()
 
     return new Authenticator(BuiltinAuthValidator.BITCOIN, payload)
+  }
+
+  static async did(
+    txHash: Bytes,
+    signer: Signer,
+    vmFragment: string,
+    envelope: SigningEnvelope = SigningEnvelope.RawTxHash,
+  ): Promise<Authenticator> {
+    const payload = await DIDAuthenticator.sign(txHash, signer, vmFragment, envelope)
+    return new Authenticator(BuiltinAuthValidator.DID, payload)
+  }
+
+  static async didBitcoinMessage(
+    txHash: Bytes,
+    signer: Signer,
+    vmFragment: string,
+  ): Promise<Authenticator> {
+    return Authenticator.did(txHash, signer, vmFragment, SigningEnvelope.BitcoinMessageV0)
+  }
+}
+
+export interface DIDAuthPayload {
+  scheme: number
+  envelope: number
+  vmFragment: string
+  signature: Bytes
+  message?: Bytes
+}
+
+export class DIDAuthenticator {
+  static async sign(
+    txHash: Bytes,
+    signer: Signer,
+    vmFragment: string,
+    envelope: SigningEnvelope = SigningEnvelope.RawTxHash,
+  ): Promise<Bytes> {
+    let digest: Bytes
+    let message: Bytes | undefined
+
+    // Compute digest based on envelope type
+    switch (envelope) {
+      case SigningEnvelope.RawTxHash:
+        digest = txHash
+        break
+      case SigningEnvelope.BitcoinMessageV0:
+        const bitcoinMessage = new BitcoinSignMessage(txHash, MessageInfoPrefix + toHEX(txHash))
+        digest = bitcoinMessage.hash()
+        message = bytes('utf8', bitcoinMessage.raw())
+        break
+      case SigningEnvelope.WebAuthnV0:
+        throw new Error('WebAuthn envelope not yet implemented for DID authenticator')
+      default:
+        throw new Error(`Unsupported envelope type: ${envelope}`)
+    }
+
+    const signature = await signer.sign(digest)
+    const scheme = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
+
+    const payload: DIDAuthPayload = {
+      scheme,
+      envelope,
+      vmFragment,
+      signature,
+      message,
+    }
+
+    return bcs.DIDAuthPayload.serialize(payload).toBytes()
   }
 }

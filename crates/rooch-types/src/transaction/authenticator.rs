@@ -20,13 +20,14 @@ use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
 use crate::{
-    crypto::{RoochKeyPair, Signature, SignatureScheme},
+    crypto::{RoochKeyPair, RoochSignature, Signature, SignatureScheme},
     framework::{
         auth_payload::{AuthPayload, MultisignAuthPayload, SignData},
         auth_validator::BuiltinAuthValidator,
     },
     rooch_network::{BuiltinChainID, RoochNetwork},
 };
+use moveos_types::h256::sha2_256_of;
 
 use super::RoochTransactionData;
 
@@ -175,6 +176,113 @@ impl BitcoinMultisignAuthenticator {
     }
 }
 
+/// Signing envelope types
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SigningEnvelope {
+    RawTxHash = 0x00,
+    BitcoinMessageV0 = 0x01,
+    WebAuthnV0 = 0x02,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub struct DIDAuthPayload {
+    pub scheme: u8,
+    pub envelope: u8,
+    pub vm_fragment: String,
+    pub signature: Vec<u8>,
+    pub message: Option<Vec<u8>>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct DIDAuthenticator {
+    pub payload: DIDAuthPayload,
+}
+
+impl DIDAuthenticator {
+    pub fn new(payload: DIDAuthPayload) -> Self {
+        Self { payload }
+    }
+
+    pub fn sign(
+        kp: &RoochKeyPair,
+        tx_data: &RoochTransactionData,
+        vm_fragment: &str,
+        envelope: SigningEnvelope,
+    ) -> Result<Self> {
+        let tx_hash = tx_data.tx_hash();
+
+        // Compute digest based on envelope type
+        let (digest, message) = match envelope {
+            SigningEnvelope::RawTxHash => (tx_hash.as_bytes().to_vec(), None),
+            SigningEnvelope::BitcoinMessageV0 => {
+                let message = format!("Rooch Transaction:\n{}", hex::encode(tx_hash));
+                let message_bytes = message.as_bytes();
+                let digest = bitcoin_message_digest(message_bytes);
+                (digest, Some(message_bytes.to_vec()))
+            }
+            SigningEnvelope::WebAuthnV0 => {
+                // WebAuthn implementation would go here
+                return Err(anyhow::anyhow!("WebAuthn not yet implemented"));
+            }
+        };
+
+        let signature = kp.sign(&digest);
+
+        let payload = DIDAuthPayload {
+            scheme: signature.scheme().flag(),
+            envelope: envelope as u8,
+            vm_fragment: vm_fragment.to_string(),
+            signature: signature.as_ref().to_vec(),
+            message,
+        };
+
+        Ok(Self { payload })
+    }
+}
+
+impl BuiltinAuthenticator for DIDAuthenticator {
+    fn auth_validator_id(&self) -> u64 {
+        BuiltinAuthValidator::DID.flag().into()
+    }
+
+    fn payload(&self) -> Vec<u8> {
+        bcs::to_bytes(&self.payload).expect("Serialize DIDAuthenticator should success")
+    }
+}
+
+/// Helper function to compute Bitcoin message digest
+fn bitcoin_message_digest(message: &[u8]) -> Vec<u8> {
+    let prefix = b"Bitcoin Signed Message:\n";
+    let varint = varint_encode(message.len());
+
+    let mut full_message = Vec::new();
+    full_message.extend_from_slice(prefix);
+    full_message.extend_from_slice(&varint);
+    full_message.extend_from_slice(message);
+
+    let first_hash = sha2_256_of(&full_message);
+    sha2_256_of(first_hash.as_bytes()).0.to_vec()
+}
+
+/// Simple varint encoding for message length
+fn varint_encode(len: usize) -> Vec<u8> {
+    if len < 0xfd {
+        vec![len as u8]
+    } else if len <= 0xffff {
+        let mut bytes = vec![0xfd];
+        bytes.extend_from_slice(&(len as u16).to_le_bytes());
+        bytes
+    } else if len <= 0xffffffff {
+        let mut bytes = vec![0xfe];
+        bytes.extend_from_slice(&(len as u32).to_le_bytes());
+        bytes
+    } else {
+        let mut bytes = vec![0xff];
+        bytes.extend_from_slice(&(len as u64).to_le_bytes());
+        bytes
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Authenticator {
     pub auth_validator_id: u64,
@@ -216,6 +324,28 @@ impl Authenticator {
     /// Create a bitcoin multisign authenticator for RoochTransaction
     pub fn bitcoin_multisign(authenticators: Vec<BitcoinAuthenticator>) -> Result<Self> {
         BitcoinMultisignAuthenticator::build_multisig_authenticator(authenticators).map(Into::into)
+    }
+
+    /// Create a DID authenticator
+    pub fn did(
+        kp: &RoochKeyPair,
+        tx_data: &RoochTransactionData,
+        vm_fragment: &str,
+    ) -> Result<Self> {
+        let did_auth =
+            DIDAuthenticator::sign(kp, tx_data, vm_fragment, SigningEnvelope::RawTxHash)?;
+        Ok(did_auth.into())
+    }
+
+    /// Create a DID authenticator with Bitcoin message envelope
+    pub fn did_bitcoin_message(
+        kp: &RoochKeyPair,
+        tx_data: &RoochTransactionData,
+        vm_fragment: &str,
+    ) -> Result<Self> {
+        let did_auth =
+            DIDAuthenticator::sign(kp, tx_data, vm_fragment, SigningEnvelope::BitcoinMessageV0)?;
+        Ok(did_auth.into())
     }
 
     /// Create a custom authenticator

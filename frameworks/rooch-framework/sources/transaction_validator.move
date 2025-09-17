@@ -28,6 +28,7 @@ module rooch_framework::transaction_validator {
     use rooch_framework::coin;
     use rooch_framework::bitcoin_address;
     use rooch_framework::webauthn_validator;
+    use rooch_framework::did_validator;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -103,6 +104,11 @@ module rooch_framework::transaction_validator {
             let session_key = webauthn_validator::validate(authenticator_payload);
             let bitcoin_address = address_mapping::resolve_bitcoin(sender);
             (bitcoin_address, option::some(session_key), option::none())
+        }else if (auth_validator_id == did_validator::auth_validator_id()){
+            let _did = did_validator::validate(authenticator_payload);
+            // DID accounts may not have associated Bitcoin addresses
+            let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+            (bitcoin_address, option::none(), option::none())
         }else{
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
