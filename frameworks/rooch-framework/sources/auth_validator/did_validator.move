@@ -10,7 +10,6 @@ module rooch_framework::did_validator {
     use std::option::{Self, Option};
     use std::string::{Self, String};
     use moveos_std::tx_context;
-    use rooch_framework::auth_validator;
     use rooch_framework::did::{Self, DID};
     use rooch_framework::session_key;
     use moveos_std::hash;
@@ -30,6 +29,25 @@ module rooch_framework::did_validator {
     const ENVELOPE_RAW_TX_HASH: u8 = 0x00;
     const ENVELOPE_BITCOIN_MESSAGE_V0: u8 = 0x01;
     const ENVELOPE_WEBAUTHN_V0: u8 = 0x02;
+
+    /// Error codes for DID validator (following auth_validator pattern)
+    /// Base error code from auth_validator::error_validate_invalid_authenticator() = 1010
+    /// DID validator specific errors: 1010 + offset
+    
+    /// Invalid BCS deserialization of DID auth payload
+    const ErrorInvalidDIDAuthPayload: u64 = 1011;
+    /// Invalid envelope type in DID auth payload
+    const ErrorInvalidEnvelopeType: u64 = 1012;
+    /// DID document not found for sender address
+    const ErrorDIDDocumentNotFound: u64 = 1013;
+    /// Verification method not authorized for authentication
+    const ErrorVerificationMethodNotAuthorized: u64 = 1014;
+    /// Verification method not found in DID document
+    const ErrorVerificationMethodNotFound: u64 = 1015;
+    /// Invalid message for envelope type
+    const ErrorInvalidEnvelopeMessage: u64 = 1016;
+    /// Signature verification failed
+    const ErrorSignatureVerificationFailed: u64 = 1017;
 
     struct DIDValidator has store, drop {}
 
@@ -70,7 +88,7 @@ module rooch_framework::did_validator {
             auth_payload.envelope == ENVELOPE_RAW_TX_HASH || 
             auth_payload.envelope == ENVELOPE_BITCOIN_MESSAGE_V0 || 
             auth_payload.envelope == ENVELOPE_WEBAUTHN_V0,
-            auth_validator::error_validate_invalid_authenticator()
+            ErrorInvalidEnvelopeType
         );
         
         auth_payload
@@ -84,25 +102,25 @@ module rooch_framework::did_validator {
             *tx_hash
         } else if (envelope == ENVELOPE_BITCOIN_MESSAGE_V0) {
             // BitcoinMessageV0: verify message matches canonical template, then compute Bitcoin digest
-            assert!(option::is_some(message_option), auth_validator::error_validate_invalid_authenticator());
+            assert!(option::is_some(message_option), ErrorInvalidEnvelopeMessage);
             let message = option::borrow(message_option);
             
             // Verify message matches canonical template
             let expected_template = session_key::build_canonical_template(tx_hash);
-            assert!(*message == expected_template, auth_validator::error_validate_invalid_authenticator());
+            assert!(*message == expected_template, ErrorInvalidEnvelopeMessage);
             
             // Compute Bitcoin message digest
             session_key::bitcoin_message_digest(message)
         } else if (envelope == ENVELOPE_WEBAUTHN_V0) {
             // WebAuthn: reconstruct message as authenticator_data || SHA256(client_data_json)
-            assert!(option::is_some(message_option), auth_validator::error_validate_invalid_authenticator());
+            assert!(option::is_some(message_option), ErrorInvalidEnvelopeMessage);
             let webauthn_payload_bytes = option::borrow(message_option);
             
             // Compute WebAuthn digest (same logic as session_validator)
             compute_webauthn_digest_from_bcs(webauthn_payload_bytes, tx_hash)
         } else {
             // Unknown envelope
-            abort auth_validator::error_validate_invalid_authenticator()
+            abort ErrorInvalidEnvelopeType
         }
     }
 
@@ -118,7 +136,7 @@ module rooch_framework::did_validator {
         let client_data = json::from_json<ClientData>(client_data_json);
         let challenge = client_data.challenge;
         let tx_hash_in_client_data = base64::decode(string::bytes(&challenge));
-        assert!(tx_hash_in_client_data == *tx_hash, auth_validator::error_validate_invalid_authenticator());
+        assert!(tx_hash_in_client_data == *tx_hash, ErrorInvalidEnvelopeMessage);
         
         // Reconstruct WebAuthn message: authenticator_data || SHA256(client_data_json)
         let cd_hash = hash::sha2_256(client_data_json);
@@ -136,9 +154,8 @@ module rooch_framework::did_validator {
         // 2. Derive DID from sender address
         let sender = tx_context::sender();
         let sender_did = did::new_rooch_did_by_address(sender);
-        let _did_identifier = did::get_did_identifier_string(&sender_did);
         
-        // 3. Get DID Document
+        // 3. Get DID Document (this will abort if DID document doesn't exist)
         let did_doc = did::get_did_document_by_address(sender);
         
         // 4. Verify the verification method is authorized for authentication
@@ -147,7 +164,7 @@ module rooch_framework::did_validator {
                 did::doc_authentication_methods(did_doc), 
                 &auth_payload.vm_fragment
             ),
-            auth_validator::error_validate_invalid_authenticator()
+            ErrorVerificationMethodNotAuthorized
         );
         
         // 5. Get verification method details
@@ -157,7 +174,7 @@ module rooch_framework::did_validator {
         );
         assert!(
             option::is_some(&vm_opt),
-            auth_validator::error_validate_invalid_authenticator()
+            ErrorVerificationMethodNotFound
         );
         let vm = option::extract(&mut vm_opt);
         
@@ -177,7 +194,7 @@ module rooch_framework::did_validator {
             did::verification_method_type(&vm)
         );
         
-        assert!(valid, auth_validator::error_validate_invalid_authenticator());
+        assert!(valid, ErrorSignatureVerificationFailed);
         
         // Return the DID for transaction context
         sender_did

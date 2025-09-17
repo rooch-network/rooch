@@ -73,6 +73,7 @@ Fields:
 1. **BCS Serialization**: Uses standard BCS format for consistency between Move, Rust, and TypeScript implementations
 2. **Explicit Envelope**: Always requires an envelope byte (no legacy compatibility needed)
 3. **Type Safety**: Leverages Move's type system for better validation
+4. **Specific Error Codes**: Uses detailed error codes for better debugging (see Error Handling section)
 
 Note: The DID identifier is derived from the transaction sender address, eliminating redundancy in the payload. This optimization:
 - Reduces payload size and gas costs
@@ -162,6 +163,25 @@ else if (auth_validator_id == did_validator::auth_validator_id()) {
     (bitcoin_address, option::none(), option::none())
 }
 ```
+
+## Error Handling
+
+The DID validator uses specific error codes for better debugging and troubleshooting:
+
+| Error Code | Constant | Description |
+|------------|----------|-------------|
+| 1011 | `ErrorInvalidDIDAuthPayload` | BCS deserialization failed - invalid payload format |
+| 1012 | `ErrorInvalidEnvelopeType` | Invalid or unsupported envelope type |
+| 1013 | `ErrorDIDDocumentNotFound` | DID document not found for sender address |
+| 1014 | `ErrorVerificationMethodNotAuthorized` | Verification method not in authentication relationship |
+| 1015 | `ErrorVerificationMethodNotFound` | Verification method not found in DID document |
+| 1016 | `ErrorInvalidEnvelopeMessage` | Invalid message for envelope type (e.g., wrong Bitcoin message format) |
+| 1017 | `ErrorSignatureVerificationFailed` | Cryptographic signature verification failed |
+
+**Error Code Strategy**:
+- Base error code: `auth_validator::error_validate_invalid_authenticator()` = 1010
+- DID-specific errors: 1010 + offset (1011-1017)
+- This maintains consistency with the auth validator framework while providing specific debugging information
 
 ## Security Considerations
 
