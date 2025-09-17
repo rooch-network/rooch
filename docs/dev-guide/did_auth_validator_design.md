@@ -50,10 +50,16 @@ const DID_VALIDATOR_ID: u64 = 4;
 
 ### 1. Authenticator Payload Format
 
-The DID authenticator payload uses a simplified envelope-aware format (no legacy compatibility needed):
+The DID authenticator payload uses **BCS (Binary Canonical Serialization)** for consistent serialization across all platforms:
 
-```
-| scheme (1) | envelope (1) | vm_fragment_len | vm_fragment | signature | [message_len | message] |
+```move
+struct DIDAuthPayload has copy, store, drop {
+    scheme: u8,
+    envelope: u8,
+    vm_fragment: String,
+    signature: vector<u8>,
+    message: Option<vector<u8>>,
+}
 ```
 
 Fields:
@@ -63,7 +69,10 @@ Fields:
 - `signature`: The signature bytes
 - `message`: Optional message for certain envelope types (BitcoinMessageV0, WebAuthnV0)
 
-**Design Decision**: Unlike session validator, DID validator always requires an explicit envelope byte. This simplifies the implementation and ensures consistent behavior without legacy compatibility concerns.
+**Design Decisions**:
+1. **BCS Serialization**: Uses standard BCS format for consistency between Move, Rust, and TypeScript implementations
+2. **Explicit Envelope**: Always requires an envelope byte (no legacy compatibility needed)
+3. **Type Safety**: Leverages Move's type system for better validation
 
 Note: The DID identifier is derived from the transaction sender address, eliminating redundancy in the payload. This optimization:
 - Reduces payload size and gas costs

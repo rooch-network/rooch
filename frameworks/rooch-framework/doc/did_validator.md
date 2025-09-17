@@ -27,8 +27,6 @@ without requiring intermediate session key creation.
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
-<b>use</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1">0x3::ecdsa_r1</a>;
-<b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 </code></pre>
 
