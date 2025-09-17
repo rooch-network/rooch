@@ -145,8 +145,9 @@ module rooch_framework::did_validator {
         msg
     }
 
+
     /// Main validation function
-    public(friend) fun validate(authenticator_payload: vector<u8>): DID {
+    public(friend) fun validate(authenticator_payload: vector<u8>): (DID, String) {
         // 1. Parse authenticator payload
         let auth_payload = parse_did_auth_payload(&authenticator_payload);
         
@@ -195,7 +196,7 @@ module rooch_framework::did_validator {
         
         assert!(valid, ErrorSignatureVerificationFailed);
         
-        // Return the DID for transaction context
-        sender_did
+        // Return the DID and vm_fragment for transaction context
+        (sender_did, auth_payload.vm_fragment)
     }
 }

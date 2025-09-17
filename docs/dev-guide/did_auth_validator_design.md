@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document proposes a new authentication validator specifically designed for DID (Decentralized Identifier) scenarios in Rooch. The DID auth validator enables direct authentication using DID Document verification methods without requiring intermediate session key creation.
+This document describes the DID auth validator implementation for Rooch, which enables direct authentication using DID Document verification methods without requiring intermediate session key creation. The implementation includes a comprehensive compatibility system that allows seamless coexistence with existing session key authentication.
 
 ## Motivation
 
@@ -74,6 +74,7 @@ Fields:
 2. **Explicit Envelope**: Always requires an envelope byte (no legacy compatibility needed)
 3. **Type Safety**: Leverages Move's type system for better validation
 4. **Specific Error Codes**: Uses detailed error codes for better debugging (see Error Handling section)
+5. **Compatibility Strategy**: Uses session_key field encoding to maintain backward compatibility without structural changes
 
 Note: The DID identifier is derived from the transaction sender address, eliminating redundancy in the payload. This optimization:
 - Reduces payload size and gas costs
@@ -157,12 +158,137 @@ Add DID validator handling in `transaction_validator::validate`:
 
 ```move
 else if (auth_validator_id == did_validator::auth_validator_id()) {
-    let did = did_validator::validate(authenticator_payload);
+    let (_did, vm_fragment) = did_validator::validate(authenticator_payload);
+    
+    // Encode vm_fragment in session_key field for backward compatibility
+    let encoded_vm_info = encode_did_vm_info(vm_fragment);
+    
     // DID accounts may not have associated Bitcoin addresses
-    let bitcoin_address = resolve_bitcoin_address_for_did(&did);
-    (bitcoin_address, option::none(), option::none())
+    let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+    (bitcoin_address, option::some(encoded_vm_info), option::none())
+}
+
+/// Encode DID VM fragment for storage in session_key field
+/// Format: "DID_VM:" + vm_fragment
+fun encode_did_vm_info(vm_fragment: String): vector<u8> {
+    let prefix = b"DID_VM:";
+    let result = vector::empty<u8>();
+    vector::append(&mut result, prefix);
+    vector::append(&mut result, *string::bytes(&vm_fragment));
+    result
 }
 ```
+
+### 5. Compatibility with Existing DID Module
+
+To maintain compatibility with existing `did.move` logic that depends on session keys, we encode the DID verification method fragment in the `session_key` field of `TxValidateResult`. This approach avoids modifying the `TxValidateResult` structure while providing full backward compatibility.
+
+The `did.move` module is updated to detect and handle both authentication methods:
+
+```move
+/// Get verification method fragment from transaction context
+/// Supports both DID validator and session key authentication
+fun get_vm_fragment_from_context(did_document_data: &DIDDocument): Option<String> {
+    // Get session key from context (might be encoded DID info or actual session key)
+    let session_key_opt = auth_validator::get_session_key_from_ctx_option();
+    if (option::is_some(&session_key_opt)) {
+        let session_key = option::extract(&mut session_key_opt);
+        
+        // Check if this is encoded DID validator info
+        if (is_did_validator_data(&session_key)) {
+            let vm_fragment = extract_vm_fragment_from_did_data(&session_key);
+            return option::some(vm_fragment)
+        } else {
+            // Fall back to session key logic for backward compatibility
+            find_verification_method_by_session_key(did_document_data, &session_key)
+        }
+    } else {
+        option::none()
+    }
+}
+
+/// Check if session key data is actually encoded DID validator info
+fun is_did_validator_data(session_key: &vector<u8>): bool {
+    let prefix = b"DID_VM:";
+    if (vector::length(session_key) < vector::length(&prefix)) {
+        return false
+    };
+    
+    let i = 0;
+    while (i < vector::length(&prefix)) {
+        if (*vector::borrow(session_key, i) != *vector::borrow(&prefix, i)) {
+            return false
+        };
+        i = i + 1;
+    };
+    true
+}
+
+/// Extract VM fragment from encoded DID validator data
+fun extract_vm_fragment_from_did_data(session_key: &vector<u8>): String {
+    let prefix = b"DID_VM:";
+    let prefix_len = vector::length(&prefix);
+    let vm_fragment_bytes = vector::empty<u8>();
+    
+    let i = prefix_len;
+    while (i < vector::length(session_key)) {
+        vector::push_back(&mut vm_fragment_bytes, *vector::borrow(session_key, i));
+        i = i + 1;
+    };
+    
+    string::utf8(vm_fragment_bytes)
+}
+```
+
+**Encoding Strategy**:
+- **DID Validator**: Stores `"DID_VM:" + vm_fragment` in the `session_key` field
+- **Session Key**: Stores actual authentication key bytes in the `session_key` field
+- **Detection**: Uses `"DID_VM:"` prefix to distinguish between the two formats
+
+This approach provides:
+- **Full Backward Compatibility**: No changes to `TxValidateResult` structure
+- **Clear Identification**: Prefix-based detection prevents confusion
+- **Seamless Migration**: Applications can gradually adopt DID validator
+- **Easy Cleanup**: Future removal of session key dependency is straightforward
+
+### 6. Authentication Method Comparison
+
+| Authentication Method | session_key Field Content | Processing Logic |
+|----------------------|---------------------------|------------------|
+| **Session Key** | Raw authentication key bytes | `find_verification_method_by_session_key()` |
+| **DID Validator** | `"DID_VM:" + vm_fragment` | Direct extraction of vm_fragment |
+
+## Compatibility Solution Summary
+
+### Problem Statement
+
+The original DID system relied on session keys stored in `TxValidateResult.session_key` for authorization checks in `did.move`. When introducing the DID validator that bypasses session key creation, existing business logic would break because:
+
+1. `did.move` functions expect `session_key` to be present in transaction context
+2. DID validator doesn't create session keys, only validates DID verification methods directly
+3. Modifying `TxValidateResult` structure would break compatibility with existing contracts
+
+### Solution: Session Key Field Encoding
+
+**Approach**: Encode DID verification method information in the existing `session_key` field using a distinguishable format.
+
+**Implementation**:
+1. **Encoding**: DID validator stores `"DID_VM:" + vm_fragment` in `session_key` field
+2. **Detection**: `did.move` checks for `"DID_VM:"` prefix to identify DID validator transactions
+3. **Routing**: Automatically routes to appropriate logic based on detected format
+
+**Benefits**:
+- ✅ **Zero Breaking Changes**: No modifications to existing structures or interfaces
+- ✅ **Full Backward Compatibility**: Session key authentication continues unchanged
+- ✅ **Transparent Migration**: Applications can adopt DID validator gradually
+- ✅ **Clear Separation**: Prefix-based detection prevents confusion
+- ✅ **Future-Proof**: Easy to clean up when migration is complete
+
+**Trade-offs**:
+- Slight complexity in `did.move` detection logic
+- Temporary encoding overhead (removed after full migration)
+
+This solution successfully bridges the gap between old session key authentication and new DID validator authentication, enabling a smooth transition without breaking existing functionality.
 
 ## Error Handling
 
@@ -450,16 +576,41 @@ fun test_did_auth_unauthorized_method() {
 
 ### Backward Compatibility
 
-- Existing session-based authentication continues to work
-- DID validator is opt-in for new transactions
-- No changes required for existing DID Documents
+- **Full Compatibility**: Existing session-based authentication continues to work unchanged
+- **No Breaking Changes**: No modifications to `TxValidateResult` or other core structures
+- **Transparent Detection**: System automatically detects authentication method type
+- **Existing DID Documents**: No changes required for existing DID Documents
 
 ### Migration Path
 
-1. Deploy DID validator module
-2. Register validator in genesis or via upgrade
-3. Update SDKs to support DID authentication
-4. Gradual adoption by applications
+1. **Phase 1 - Deployment**
+   - Deploy DID validator module
+   - Register validator in genesis or via upgrade
+   - Update SDKs to support DID authentication
+
+2. **Phase 2 - Coexistence**
+   - Both session key and DID validator authentication work simultaneously
+   - Applications can choose which method to use per transaction
+   - Gradual testing and adoption by applications
+
+3. **Phase 3 - Migration**
+   - Applications gradually migrate from session keys to DID validator
+   - Monitor usage patterns and performance
+   - Provide migration tools and documentation
+
+4. **Phase 4 - Cleanup (Future)**
+   - When session key usage drops to acceptable levels
+   - Remove session key compatibility code from `did.move`
+   - Simplify authentication logic
+
+### Compatibility Implementation Details
+
+The compatibility system works by:
+
+1. **Encoding Detection**: DID validator data is prefixed with `"DID_VM:"` in the `session_key` field
+2. **Automatic Routing**: `did.move` automatically detects the format and routes to appropriate logic
+3. **Zero Overhead**: No performance impact on existing session key authentication
+4. **Clean Separation**: Clear distinction between old and new authentication methods
 
 ## Future Extensions
 

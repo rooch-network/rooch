@@ -23,7 +23,7 @@ module rooch_framework::did_validator_test {
         genesis::init_for_test();
         
         let payload = vector::empty<u8>();
-        did_validator::validate(payload);
+        let (_did, _vm_fragment) = did_validator::validate(payload);
     }
 
     #[test]
@@ -35,7 +35,7 @@ module rooch_framework::did_validator_test {
         vector::push_back(&mut payload, session_key::signature_scheme_ed25519());
         // Missing other required fields - will fail BCS deserialization
         
-        did_validator::validate(payload);
+        let (_did, _vm_fragment) = did_validator::validate(payload);
     }
 
     #[test]
@@ -64,7 +64,7 @@ module rooch_framework::did_validator_test {
         vector::push_back(&mut mut_payload, 0); // option tag for None
         
         let payload = mut_payload;
-        did_validator::validate(payload);
+        let (_did, _vm_fragment) = did_validator::validate(payload);
     }
 
     #[test]
@@ -97,6 +97,6 @@ module rooch_framework::did_validator_test {
         
         // This should pass BCS parsing and envelope validation
         // but fail when trying to get DID document (since we don't have a real DID setup)
-        did_validator::validate(payload);
+        let (_did, _vm_fragment) = did_validator::validate(payload);
     }
 }

@@ -25,7 +25,6 @@ without requiring intermediate session key creation.
 <b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
-<b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 </code></pre>
@@ -85,6 +84,16 @@ WebAuthn envelope data (only WebAuthn-specific fields)
 ## Constants
 
 
+<a name="0x3_did_validator_ErrorVerificationMethodNotFound"></a>
+
+Verification method not found in DID document
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ErrorVerificationMethodNotFound">ErrorVerificationMethodNotFound</a>: u64 = 101005;
+</code></pre>
+
+
+
 <a name="0x3_did_validator_DID_VALIDATOR_ID"></a>
 
 DID auth validator ID
@@ -123,6 +132,68 @@ Envelope types (same as session validator)
 
 
 
+<a name="0x3_did_validator_ErrorDIDDocumentNotFound"></a>
+
+DID document not found for sender address
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ErrorDIDDocumentNotFound">ErrorDIDDocumentNotFound</a>: u64 = 101003;
+</code></pre>
+
+
+
+<a name="0x3_did_validator_ErrorInvalidDIDAuthPayload"></a>
+
+Error codes for DID validator (using 101xxx range to avoid conflicts)
+DID validator specific errors: 101001-101999
+Invalid BCS deserialization of DID auth payload
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ErrorInvalidDIDAuthPayload">ErrorInvalidDIDAuthPayload</a>: u64 = 101001;
+</code></pre>
+
+
+
+<a name="0x3_did_validator_ErrorInvalidEnvelopeMessage"></a>
+
+Invalid message for envelope type
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ErrorInvalidEnvelopeMessage">ErrorInvalidEnvelopeMessage</a>: u64 = 101006;
+</code></pre>
+
+
+
+<a name="0x3_did_validator_ErrorInvalidEnvelopeType"></a>
+
+Invalid envelope type in DID auth payload
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ErrorInvalidEnvelopeType">ErrorInvalidEnvelopeType</a>: u64 = 101002;
+</code></pre>
+
+
+
+<a name="0x3_did_validator_ErrorSignatureVerificationFailed"></a>
+
+Signature verification failed
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ErrorSignatureVerificationFailed">ErrorSignatureVerificationFailed</a>: u64 = 101007;
+</code></pre>
+
+
+
+<a name="0x3_did_validator_ErrorVerificationMethodNotAuthorized"></a>
+
+Verification method not authorized for authentication
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ErrorVerificationMethodNotAuthorized">ErrorVerificationMethodNotAuthorized</a>: u64 = 101004;
+</code></pre>
+
+
+
 <a name="0x3_did_validator_auth_validator_id"></a>
 
 ## Function `auth_validator_id`
@@ -141,5 +212,5 @@ Envelope types (same as session validator)
 Main validation function
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="did_validator.md#0x3_did_validator_validate">validate</a>(authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="did.md#0x3_did_DID">did::DID</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="did_validator.md#0x3_did_validator_validate">validate</a>(authenticator_payload: <a href="">vector</a>&lt;u8&gt;): (<a href="did.md#0x3_did_DID">did::DID</a>, <a href="_String">string::String</a>)
 </code></pre>

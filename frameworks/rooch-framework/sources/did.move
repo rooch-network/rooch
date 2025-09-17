@@ -1556,6 +1556,59 @@ module rooch_framework::did {
 
     // =================== Internal helper functions ===================
 
+    /// Get verification method fragment from transaction context
+    /// Supports both DID validator and session key authentication
+    fun get_vm_fragment_from_context(did_document_data: &DIDDocument): Option<String> {
+        // Get session key from context (might be encoded DID info or actual session key)
+        let session_key_opt = auth_validator::get_session_key_from_ctx_option();
+        if (option::is_some(&session_key_opt)) {
+            let session_key = option::extract(&mut session_key_opt);
+            
+            // Check if this is encoded DID validator info
+            if (is_did_validator_data(&session_key)) {
+                let vm_fragment = extract_vm_fragment_from_did_data(&session_key);
+                return option::some(vm_fragment)
+            } else {
+                // Fall back to session key logic for backward compatibility
+                find_verification_method_by_session_key(did_document_data, &session_key)
+            }
+        } else {
+            option::none()
+        }
+    }
+
+    /// Check if session key data is actually encoded DID validator info
+    fun is_did_validator_data(session_key: &vector<u8>): bool {
+        let prefix = b"DID_VM:";
+        if (vector::length(session_key) < vector::length(&prefix)) {
+            return false
+        };
+        
+        let i = 0;
+        while (i < vector::length(&prefix)) {
+            if (*vector::borrow(session_key, i) != *vector::borrow(&prefix, i)) {
+                return false
+            };
+            i = i + 1;
+        };
+        true
+    }
+
+    /// Extract VM fragment from encoded DID validator data
+    fun extract_vm_fragment_from_did_data(session_key: &vector<u8>): String {
+        let prefix = b"DID_VM:";
+        let prefix_len = vector::length(&prefix);
+        let vm_fragment_bytes = vector::empty<u8>();
+        
+        let i = prefix_len;
+        while (i < vector::length(session_key)) {
+            vector::push_back(&mut vm_fragment_bytes, *vector::borrow(session_key, i));
+            i = i + 1;
+        };
+        
+        string::utf8(vm_fragment_bytes)
+    }
+
     /// Helper function to get a mutable reference to DIDDocument with capability delegation authorization
     /// This combines common patterns: resolve ObjectID, check existence, borrow mutable, and verify permissions
     fun get_authorized_did_document_mut_for_delegation(did_signer: &signer): &mut DIDDocument {
@@ -1594,19 +1647,13 @@ module rooch_framework::did {
         // 1. Verify signer is the DID's associated account
         assert!(sender == did_account_address, ErrorSignerNotDIDAccount);
         
-        // 2. Get current transaction's session key (authentication_key)
-        let session_key_opt = auth_validator::get_session_key_from_ctx_option();
-        assert!(option::is_some(&session_key_opt), ErrorNoSessionKeyInContext);
-        
-        let session_key = option::extract(&mut session_key_opt);
-        
-        // 3. Find the verification method corresponding to this session key
-        let vm_fragment_opt = find_verification_method_by_session_key(did_document_data, &session_key);
+        // 2. Get verification method fragment from context (supports both DID validator and session key)
+        let vm_fragment_opt = get_vm_fragment_from_context(did_document_data);
         assert!(option::is_some(&vm_fragment_opt), ErrorSessionKeyNotFound);
         
         let vm_fragment = option::extract(&mut vm_fragment_opt);
         
-        // 4. Check if this verification method has capabilityDelegation permission
+        // 3. Check if this verification method has capabilityDelegation permission
         assert!(
             vector::contains(&did_document_data.capability_delegation, &vm_fragment),
             ErrorInsufficientPermission
@@ -1624,19 +1671,13 @@ module rooch_framework::did {
         // 1. Verify signer is the DID's associated account
         assert!(sender == did_account_address, ErrorSignerNotDIDAccount);
         
-        // 2. Get current transaction's session key (authentication_key)
-        let session_key_opt = auth_validator::get_session_key_from_ctx_option();
-        assert!(option::is_some(&session_key_opt), ErrorNoSessionKeyInContext);
-        
-        let session_key = option::extract(&mut session_key_opt);
-        
-        // 3. Find the verification method corresponding to this session key
-        let vm_fragment_opt = find_verification_method_by_session_key(did_document_data, &session_key);
+        // 2. Get verification method fragment from context (supports both DID validator and session key)
+        let vm_fragment_opt = get_vm_fragment_from_context(did_document_data);
         assert!(option::is_some(&vm_fragment_opt), ErrorSessionKeyNotFound);
         
         let vm_fragment = option::extract(&mut vm_fragment_opt);
         
-        // 4. Check if this verification method has capabilityInvocation permission
+        // 3. Check if this verification method has capabilityInvocation permission
         assert!(
             vector::contains(&did_document_data.capability_invocation, &vm_fragment),
             ErrorInsufficientPermission
