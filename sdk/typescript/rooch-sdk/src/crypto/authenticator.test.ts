@@ -80,9 +80,9 @@ describe('Authenticator with Envelope', () => {
         rawSignature: new Uint8Array(64),
         authenticatorData: new Uint8Array([0xa1, 0xa2, 0xa3, 0xa4]),
         clientDataJSON: new Uint8Array(
-          Buffer.from(
+          new TextEncoder().encode(
             JSON.stringify({
-              challenge: Buffer.from(mockTxHash).toString('base64'),
+              challenge: btoa(String.fromCharCode(...mockTxHash)),
               origin: 'https://example.com',
               type: 'webauthn.get',
             }),
