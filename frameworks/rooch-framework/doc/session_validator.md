@@ -7,21 +7,12 @@ This module implements the session auth validator.
 
 
 -  [Struct `SessionValidator`](#0x3_session_validator_SessionValidator)
--  [Struct `WebauthnEnvelopeData`](#0x3_session_validator_WebauthnEnvelopeData)
--  [Struct `ClientData`](#0x3_session_validator_ClientData)
 -  [Constants](#@Constants_0)
 -  [Function `auth_validator_id`](#0x3_session_validator_auth_validator_id)
 -  [Function `validate`](#0x3_session_validator_validate)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::base64</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::consensus_codec</a>;
-<b>use</b> <a href="">0x2::hash</a>;
-<b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1">0x3::ecdsa_k1</a>;
@@ -39,31 +30,6 @@ This module implements the session auth validator.
 
 
 <pre><code><b>struct</b> <a href="session_validator.md#0x3_session_validator_SessionValidator">SessionValidator</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<a name="0x3_session_validator_WebauthnEnvelopeData"></a>
-
-## Struct `WebauthnEnvelopeData`
-
-WebAuthn envelope data (only WebAuthn-specific fields)
-
-
-<pre><code>#[data_struct]
-<b>struct</b> <a href="session_validator.md#0x3_session_validator_WebauthnEnvelopeData">WebauthnEnvelopeData</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0x3_session_validator_ClientData"></a>
-
-## Struct `ClientData`
-
-
-
-<pre><code>#[data_struct]
-<b>struct</b> <a href="session_validator.md#0x3_session_validator_ClientData">ClientData</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
