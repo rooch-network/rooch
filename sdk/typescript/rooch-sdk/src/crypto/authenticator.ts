@@ -9,16 +9,45 @@ import { Signer } from './signer.js'
 import { SIGNATURE_SCHEME_TO_FLAG } from './signatureScheme.js'
 import {
   SigningEnvelope,
-  EnvelopeMessageBuilder,
-  RawTxHashEnvelope,
-  BitcoinMessageEnvelope,
-  WebAuthnEnvelope,
   WebauthnEnvelopeData,
-  WebAuthnEnvelopeBuilder,
+  WebAuthnUtils,
+  type WebAuthnAssertionData,
 } from './envelope.js'
+import { BitcoinAddress } from '../address/index.js'
 
 const BitcoinMessagePrefix = '\u0018Bitcoin Signed Message:\n'
 const MessageInfoPrefix = 'Rooch Transaction:\n'
+
+// Extended Signer interfaces for different wallet types
+
+/**
+ * Bitcoin wallet signer that automatically adds Bitcoin message prefix
+ */
+export interface BitcoinWalletSigner extends Signer {
+  readonly autoPrefix: true
+  getBitcoinAddress(): BitcoinAddress
+}
+
+/**
+ * WebAuthn signer that provides assertion-based signing
+ */
+export interface WebAuthnSigner extends Signer {
+  signAssertion(challenge: Bytes): Promise<WebAuthnAssertionData>
+}
+
+/**
+ * Type guard to check if a signer is a Bitcoin wallet signer
+ */
+export function isBitcoinWalletSigner(signer: Signer): signer is BitcoinWalletSigner {
+  return 'autoPrefix' in signer && (signer as any).autoPrefix === true
+}
+
+/**
+ * Type guard to check if a signer is a WebAuthn signer
+ */
+export function isWebAuthnSigner(signer: Signer): signer is WebAuthnSigner {
+  return 'signAssertion' in signer && typeof (signer as any).signAssertion === 'function'
+}
 
 export class BitcoinSignMessage {
   readonly messagePrefix: string
@@ -114,108 +143,6 @@ export class Authenticator {
     return new Authenticator(BuiltinAuthValidator.SESSION, serializedSignature)
   }
 
-  /**
-   * Create session authenticator with envelope support (v2 format)
-   * @param txHash - Transaction hash to sign
-   * @param signer - Signer instance
-   * @param envelope - Envelope message builder (optional, defaults to RawTxHash)
-   */
-  static async sessionWithEnvelope(
-    txHash: Bytes,
-    signer: Signer,
-    envelope?: EnvelopeMessageBuilder,
-  ): Promise<Authenticator> {
-    // Default to RawTxHash envelope for backward compatibility
-    const envelopeBuilder = envelope || new RawTxHashEnvelope()
-    const envelopeType = envelopeBuilder.getEnvelopeType()
-
-    // Handle signing based on envelope type
-    let signature: Bytes
-    let messageData: Bytes | null = null
-    const pubKeyBytes = signer.getPublicKey().toBytes()
-    const schemeFlag = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
-
-    if (envelopeType === SigningEnvelope.RawTxHash) {
-      // v1 format: sign directly over tx_hash
-      signature = await signer.sign(txHash)
-    } else if (envelopeType === SigningEnvelope.BitcoinMessageV0) {
-      // Bitcoin message envelope
-      const bitcoinEnvelope = envelope as BitcoinMessageEnvelope
-      const messageToSign = bitcoinEnvelope.computeDigest(txHash)
-      signature = await signer.sign(messageToSign)
-      messageData = bitcoinEnvelope.buildMessage(txHash)
-    } else if (envelopeType === SigningEnvelope.WebAuthnV0) {
-      // WebAuthn envelope - special handling
-      // Check if it's the new WebAuthnEnvelopeBuilder or legacy WebAuthnEnvelope
-      if (envelope instanceof WebAuthnEnvelopeBuilder) {
-        // New WebAuthnEnvelopeBuilder: signature is already available
-        const webauthnEnvelopeBuilder = envelope as WebAuthnEnvelopeBuilder
-        signature = webauthnEnvelopeBuilder.getSignature()
-        messageData = webauthnEnvelopeBuilder.buildMessage(txHash)
-      } else {
-        // Legacy WebAuthnEnvelope: use old flow
-        const webauthnEnvelope = envelope as WebAuthnEnvelope
-        const messageToSign = webauthnEnvelope.computeDigest(txHash)
-        signature = await signer.sign(messageToSign)
-        messageData = this.encodeWebAuthnPayload(signer, webauthnEnvelope)
-      }
-    } else {
-      throw new Error(`Unsupported envelope type: ${envelopeType}`)
-    }
-
-    // Build payload based on format
-    let payload: Bytes
-    if (envelopeType === SigningEnvelope.RawTxHash) {
-      // v1 format: scheme | signature | public_key
-      payload = new Uint8Array(1 + signature.length + pubKeyBytes.length)
-      payload.set([schemeFlag])
-      payload.set(signature, 1)
-      payload.set(pubKeyBytes, 1 + signature.length)
-    } else {
-      // v2 format: scheme | envelope | signature | public_key | [message_len | message]
-      const messageBytes = messageData || new Uint8Array(0)
-      const hasMessage = messageBytes.length > 0
-      const messageLenBytes = hasMessage ? varintByteNum(messageBytes.length) : new Uint8Array(0)
-
-      const totalLength =
-        1 + 1 + signature.length + pubKeyBytes.length + messageLenBytes.length + messageBytes.length
-
-      payload = new Uint8Array(totalLength)
-      let offset = 0
-
-      payload.set([schemeFlag], offset)
-      offset += 1
-      payload.set([envelopeType], offset)
-      offset += 1
-      payload.set(signature, offset)
-      offset += signature.length
-      payload.set(pubKeyBytes, offset)
-      offset += pubKeyBytes.length
-
-      if (hasMessage) {
-        payload.set(messageLenBytes, offset)
-        offset += messageLenBytes.length
-        payload.set(messageBytes, offset)
-      }
-    }
-
-    return new Authenticator(BuiltinAuthValidator.SESSION, payload)
-  }
-
-  /**
-   * Helper method to encode WebAuthn envelope data for BCS serialization
-   */
-  private static encodeWebAuthnPayload(_signer: Signer, envelope: WebAuthnEnvelope): Bytes {
-    const authenticatorData = envelope.getAuthenticatorData()
-    const clientDataJson = envelope.getClientDataJson()
-
-    // Use the WebauthnEnvelopeData class for proper BCS encoding
-    // Note: signature and public_key are now handled in the outer payload layer
-    const webauthnEnvelopeData = new WebauthnEnvelopeData(authenticatorData, clientDataJson)
-
-    return webauthnEnvelopeData.encode()
-  }
-
   static async bitcoin(
     input: BitcoinSignMessage,
     signer: Signer,
@@ -243,8 +170,19 @@ export class Authenticator {
     txHash: Bytes,
     signer: Signer,
     vmFragment: string,
-    envelope: SigningEnvelope = SigningEnvelope.RawTxHash,
+    envelope?: SigningEnvelope,
   ): Promise<Authenticator> {
+    // Auto-select envelope based on signer type if not specified
+    if (envelope === undefined) {
+      if (isWebAuthnSigner(signer)) {
+        envelope = SigningEnvelope.WebAuthnV0
+      } else if (isBitcoinWalletSigner(signer)) {
+        envelope = SigningEnvelope.BitcoinMessageV0
+      } else {
+        envelope = SigningEnvelope.RawTxHash
+      }
+    }
+
     const payload = await DIDAuthenticator.sign(txHash, signer, vmFragment, envelope)
     return new Authenticator(BuiltinAuthValidator.DID, payload)
   }
@@ -254,7 +192,16 @@ export class Authenticator {
     signer: Signer,
     vmFragment: string,
   ): Promise<Authenticator> {
-    return Authenticator.did(txHash, signer, vmFragment, SigningEnvelope.BitcoinMessageV0)
+    return this.did(txHash, signer, vmFragment, SigningEnvelope.BitcoinMessageV0)
+  }
+
+  static async didWebAuthn(
+    txHash: Bytes,
+    vmFragment: string,
+    assertionData: WebAuthnAssertionData,
+  ): Promise<Authenticator> {
+    const payload = await DIDAuthenticator.signWebAuthn(txHash, vmFragment, assertionData)
+    return new Authenticator(BuiltinAuthValidator.DID, payload)
   }
 }
 
@@ -262,8 +209,8 @@ export interface DIDAuthPayload {
   scheme: number
   envelope: number
   vmFragment: string
-  signature: Bytes
-  message?: Bytes
+  signature: string | Uint8Array
+  message: string | Uint8Array | null | undefined
 }
 
 export class DIDAuthenticator {
@@ -273,31 +220,97 @@ export class DIDAuthenticator {
     vmFragment: string,
     envelope: SigningEnvelope = SigningEnvelope.RawTxHash,
   ): Promise<Bytes> {
-    let digest: Bytes
-    let message: Bytes | undefined
+    let signature: Bytes
+    let message: Bytes | null = null
+    let scheme: number
 
-    // Compute digest based on envelope type
+    // Handle different envelope types with signer-specific logic
     switch (envelope) {
       case SigningEnvelope.RawTxHash:
-        digest = txHash
+        signature = await signer.sign(txHash)
+        scheme = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
         break
+
       case SigningEnvelope.BitcoinMessageV0:
-        const bitcoinMessage = new BitcoinSignMessage(txHash, MessageInfoPrefix + toHEX(txHash))
-        digest = bitcoinMessage.hash()
-        message = bytes('utf8', bitcoinMessage.raw())
+        if (isBitcoinWalletSigner(signer)) {
+          // Bitcoin wallet will automatically add prefix, just pass the message content
+          const template = MessageInfoPrefix + toHEX(txHash)
+          signature = await signer.sign(bytes('utf8', template))
+          message = bytes('utf8', template)
+        } else {
+          // Regular signer needs manual Bitcoin message construction
+          const bitcoinMessage = new BitcoinSignMessage(txHash, MessageInfoPrefix + toHEX(txHash))
+          signature = await signer.sign(bitcoinMessage.hash())
+          message = bytes('utf8', bitcoinMessage.raw())
+        }
+        scheme = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
         break
+
       case SigningEnvelope.WebAuthnV0:
-        throw new Error('WebAuthn envelope not yet implemented for DID authenticator')
+        if (!isWebAuthnSigner(signer)) {
+          throw new Error('WebAuthn envelope requires a WebAuthnSigner')
+        }
+
+        // Use WebAuthn-specific signing method
+        const assertionData = await signer.signAssertion(txHash)
+
+        // Validate challenge
+        if (!WebAuthnUtils.validateChallenge(assertionData.clientDataJSON, txHash)) {
+          throw new Error('WebAuthn challenge does not match transaction hash')
+        }
+
+        // Build envelope data
+        const webauthnEnvelopeData = new WebauthnEnvelopeData(
+          assertionData.authenticatorData,
+          assertionData.clientDataJSON,
+        )
+
+        signature = assertionData.rawSignature
+        message = webauthnEnvelopeData.encode()
+        scheme = SIGNATURE_SCHEME_TO_FLAG.EcdsaR1
+        break
+
       default:
         throw new Error(`Unsupported envelope type: ${envelope}`)
     }
 
-    const signature = await signer.sign(digest)
-    const scheme = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
-
     const payload: DIDAuthPayload = {
       scheme,
       envelope,
+      vmFragment,
+      signature,
+      message,
+    }
+
+    return bcs.DIDAuthPayload.serialize(payload).toBytes()
+  }
+
+  static async signWebAuthn(
+    txHash: Bytes,
+    vmFragment: string,
+    assertionData: WebAuthnAssertionData,
+  ): Promise<Bytes> {
+    // Validate that the challenge matches the transaction hash
+    if (!WebAuthnUtils.validateChallenge(assertionData.clientDataJSON, txHash)) {
+      throw new Error('WebAuthn challenge does not match transaction hash')
+    }
+
+    // Create the WebAuthn envelope data
+    const webauthnEnvelopeData = new WebauthnEnvelopeData(
+      assertionData.authenticatorData,
+      assertionData.clientDataJSON,
+    )
+    const message = webauthnEnvelopeData.encode()
+
+    // Use the raw signature from the assertion data
+    const signature = assertionData.rawSignature
+
+    // Determine scheme based on signature length (WebAuthn typically uses secp256r1)
+    const scheme = SIGNATURE_SCHEME_TO_FLAG.EcdsaR1
+
+    const payload: DIDAuthPayload = {
+      scheme,
+      envelope: SigningEnvelope.WebAuthnV0,
       vmFragment,
       signature,
       message,

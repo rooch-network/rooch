@@ -15,14 +15,20 @@ export {
 } from './keypair.js'
 export { Signer } from './signer.js'
 
-export { Authenticator, BuiltinAuthValidator, BitcoinSignMessage } from './authenticator.js'
+export {
+  Authenticator,
+  BuiltinAuthValidator,
+  BitcoinSignMessage,
+  DIDAuthenticator,
+  type DIDAuthPayload,
+  type BitcoinWalletSigner,
+  type WebAuthnSigner,
+  isBitcoinWalletSigner,
+  isWebAuthnSigner,
+} from './authenticator.js'
 export {
   SigningEnvelope,
-  RawTxHashEnvelope,
-  BitcoinMessageEnvelope,
-  WebAuthnEnvelope,
   WebauthnEnvelopeData,
   WebAuthnUtils,
-  WebAuthnEnvelopeBuilder,
+  type WebAuthnAssertionData,
 } from './envelope.js'
-export type { EnvelopeMessageBuilder, WebAuthnAssertionData } from './envelope.js'

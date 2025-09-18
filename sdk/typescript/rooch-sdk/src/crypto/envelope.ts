@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Bytes } from '../types/index.js'
-import { bytes, sha256, toHEX, concatBytes, varintByteNum, fromB64 } from '../utils/index.js'
+import { sha256, concatBytes, fromB64 } from '../utils/index.js'
 import { bcs } from '../bcs/index.js'
 
 /**
@@ -12,69 +12,6 @@ export enum SigningEnvelope {
   RawTxHash = 0x00,
   BitcoinMessageV0 = 0x01,
   WebAuthnV0 = 0x02,
-}
-
-/**
- * Base interface for envelope message builders
- */
-export interface EnvelopeMessageBuilder {
-  buildMessage(txHash: Bytes): Bytes
-  getEnvelopeType(): SigningEnvelope
-}
-
-/**
- * Raw transaction hash envelope (default)
- * No message transformation, signs directly over tx_hash
- */
-export class RawTxHashEnvelope implements EnvelopeMessageBuilder {
-  buildMessage(txHash: Bytes): Bytes {
-    return txHash
-  }
-
-  getEnvelopeType(): SigningEnvelope {
-    return SigningEnvelope.RawTxHash
-  }
-}
-
-/**
- * Bitcoin message envelope
- * Signs over Bitcoin message format: "Bitcoin Signed Message:\n" + message
- */
-export class BitcoinMessageEnvelope implements EnvelopeMessageBuilder {
-  private readonly messagePrefix = '\u0018Bitcoin Signed Message:\n'
-  private readonly roochPrefix = 'Rooch Transaction:\n'
-
-  buildMessage(txHash: Bytes): Bytes {
-    // Build canonical template: "Rooch Transaction:\n" + hex(tx_hash)
-    const template = this.roochPrefix + toHEX(txHash)
-    return bytes('utf8', template)
-  }
-
-  /**
-   * Build the full Bitcoin message for signing
-   */
-  buildBitcoinMessage(txHash: Bytes): Bytes {
-    const message = this.buildMessage(txHash)
-    const messageLength = message.length
-
-    // Bitcoin message format: prefix + varint(len) + message
-    const prefixBytes = bytes('utf8', this.messagePrefix)
-    const lengthBytes = varintByteNum(messageLength)
-
-    return concatBytes(prefixBytes, lengthBytes, message)
-  }
-
-  /**
-   * Compute Bitcoin message digest (double SHA256)
-   */
-  computeDigest(txHash: Bytes): Bytes {
-    const bitcoinMessage = this.buildBitcoinMessage(txHash)
-    return sha256(sha256(bitcoinMessage))
-  }
-
-  getEnvelopeType(): SigningEnvelope {
-    return SigningEnvelope.BitcoinMessageV0
-  }
 }
 
 export class WebauthnEnvelopeData {
@@ -98,46 +35,6 @@ export const WebauthnEnvelopeDataSchema = bcs.struct('WebauthnEnvelopeData', {
   authenticator_data: bcs.vector(bcs.u8()),
   client_data_json: bcs.vector(bcs.u8()),
 })
-
-/**
- * WebAuthn envelope
- * Signs over WebAuthn message format: authenticator_data || SHA256(client_data_json)
- */
-export class WebAuthnEnvelope implements EnvelopeMessageBuilder {
-  private readonly authenticatorData: Bytes
-  private readonly clientDataJson: Bytes
-
-  constructor(authenticatorData: Bytes, clientDataJson: Bytes) {
-    this.authenticatorData = authenticatorData
-    this.clientDataJson = clientDataJson
-  }
-
-  buildMessage(_txHash: Bytes): Bytes {
-    // For WebAuthn, we return the BCS-encoded WebauthnAuthPayload
-    // This will be handled specially in the authenticator
-    throw new Error('WebAuthn envelope requires special handling in authenticator')
-  }
-
-  /**
-   * Compute WebAuthn digest: authenticator_data || SHA256(client_data_json)
-   */
-  computeDigest(_txHash: Bytes): Bytes {
-    const clientDataHash = sha256(this.clientDataJson)
-    return concatBytes(this.authenticatorData, clientDataHash)
-  }
-
-  getEnvelopeType(): SigningEnvelope {
-    return SigningEnvelope.WebAuthnV0
-  }
-
-  getAuthenticatorData(): Bytes {
-    return this.authenticatorData
-  }
-
-  getClientDataJson(): Bytes {
-    return this.clientDataJson
-  }
-}
 
 /**
  * WebAuthn assertion data parsed from AuthenticatorAssertionResponse
@@ -254,51 +151,5 @@ export class WebAuthnUtils {
     raw.set(rPad, 0)
     raw.set(sPad, 32)
     return raw
-  }
-}
-
-/**
- * WebAuthn envelope builder - constructs envelope from parsed assertion data
- */
-export class WebAuthnEnvelopeBuilder implements EnvelopeMessageBuilder {
-  constructor(private assertionData: WebAuthnAssertionData) {}
-
-  getEnvelopeType(): SigningEnvelope {
-    return SigningEnvelope.WebAuthnV0
-  }
-
-  buildMessage(txHash: Bytes): Bytes {
-    // Validate that the challenge matches the transaction hash
-    if (!WebAuthnUtils.validateChallenge(this.assertionData.clientDataJSON, txHash)) {
-      throw new Error('WebAuthn challenge does not match transaction hash')
-    }
-
-    // Return BCS-encoded envelope data
-    return new WebauthnEnvelopeData(
-      this.assertionData.authenticatorData,
-      this.assertionData.clientDataJSON,
-    ).encode()
-  }
-
-  computeDigest(_txHash: Bytes): Bytes {
-    // This is used for verification - compute the message that was actually signed
-    return WebAuthnUtils.computeVerificationMessage(
-      this.assertionData.authenticatorData,
-      this.assertionData.clientDataJSON,
-    )
-  }
-
-  /**
-   * Get the signature from the assertion data
-   */
-  getSignature(): Bytes {
-    return this.assertionData.rawSignature
-  }
-
-  /**
-   * Get the original assertion data
-   */
-  getAssertionData(): WebAuthnAssertionData {
-    return this.assertionData
   }
 }
