@@ -206,7 +206,6 @@ export class Authenticator {
 }
 
 export interface DIDAuthPayload {
-  scheme: number
   envelope: number
   vmFragment: string
   signature: string | Uint8Array
@@ -222,13 +221,11 @@ export class DIDAuthenticator {
   ): Promise<Bytes> {
     let signature: Bytes
     let message: Bytes | null = null
-    let scheme: number
 
     // Handle different envelope types with signer-specific logic
     switch (envelope) {
       case SigningEnvelope.RawTxHash:
         signature = await signer.sign(txHash)
-        scheme = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
         break
 
       case SigningEnvelope.BitcoinMessageV0:
@@ -243,7 +240,6 @@ export class DIDAuthenticator {
           signature = await signer.sign(bitcoinMessage.hash())
           message = bytes('utf8', bitcoinMessage.raw())
         }
-        scheme = SIGNATURE_SCHEME_TO_FLAG[signer.getKeyScheme()]
         break
 
       case SigningEnvelope.WebAuthnV0:
@@ -267,7 +263,6 @@ export class DIDAuthenticator {
 
         signature = assertionData.rawSignature
         message = webauthnEnvelopeData.encode()
-        scheme = SIGNATURE_SCHEME_TO_FLAG.EcdsaR1
         break
 
       default:
@@ -275,7 +270,6 @@ export class DIDAuthenticator {
     }
 
     const payload: DIDAuthPayload = {
-      scheme,
       envelope,
       vmFragment,
       signature,
@@ -305,11 +299,7 @@ export class DIDAuthenticator {
     // Use the raw signature from the assertion data
     const signature = assertionData.rawSignature
 
-    // Determine scheme based on signature length (WebAuthn typically uses secp256r1)
-    const scheme = SIGNATURE_SCHEME_TO_FLAG.EcdsaR1
-
     const payload: DIDAuthPayload = {
-      scheme,
       envelope: SigningEnvelope.WebAuthnV0,
       vmFragment,
       signature,

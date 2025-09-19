@@ -52,7 +52,6 @@ module rooch_framework::did_validator {
 
     #[data_struct]
     struct DIDAuthPayload has copy, store, drop {
-        scheme: u8,
         envelope: u8,
         vm_fragment: String,
         signature: vector<u8>,
