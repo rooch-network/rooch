@@ -684,7 +684,7 @@ mod tests {
         crate::transaction::RoochTransactionData::new_for_test(
             RoochAddress::from(AccountAddress::from_hex_literal("0x42").unwrap()),
             0,
-            action.into(),
+            action,
         )
     }
 }
