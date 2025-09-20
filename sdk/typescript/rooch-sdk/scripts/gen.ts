@@ -17,6 +17,20 @@ import type {
 } from './open-rpc'
 
 const packageRoot = path.resolve(import.meta.url.slice(5), '../..')
+
+// Clean up the generated directory before generating new files
+const generatedDir = path.resolve(packageRoot, './src/generated')
+try {
+  await fs.rm(generatedDir, { recursive: true, force: true })
+  console.log('Cleaned up existing generated directory')
+} catch (error) {
+  // Directory might not exist, which is fine
+  console.log(
+    'Generated directory did not exist or could not be removed:',
+    error instanceof Error ? error.message : String(error),
+  )
+}
+
 const openRpcSpec: OpenRpcSpec = JSON.parse(
   await fs.readFile(
     path.resolve(packageRoot, '../../../crates/rooch-open-rpc-spec/schemas/openrpc.json'),

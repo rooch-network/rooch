@@ -7,6 +7,7 @@ module rooch_framework::builtin_validators{
     use rooch_framework::session_validator;
     use rooch_framework::bitcoin_validator;
     use rooch_framework::webauthn_validator;
+    use rooch_framework::did_validator;
 
     friend rooch_framework::genesis;
 
@@ -17,6 +18,7 @@ module rooch_framework::builtin_validators{
     /// Bitcoin multisign validator is defined in bitcoin_move framework.
     const BITCOIN_MULTISIGN_VALIDATOR_ID: u64 = 2;
     const WEBAUTHN_VALIDATOR_ID: u64 = 3;
+    const DID_VALIDATOR_ID: u64 = 4;
 
 
     public(friend) fun genesis_init(_genesis_account: &signer) {
@@ -31,6 +33,10 @@ module rooch_framework::builtin_validators{
         // WEBAUTHN_AUTH_VALIDATOR_ID: u64 = 3;
         let id = auth_validator_registry::register_internal_with_id<webauthn_validator::WebauthnValidator>(WEBAUTHN_VALIDATOR_ID);
         assert!(id == webauthn_validator::auth_validator_id(), ErrorGenesisInit);
+
+        // DID_AUTH_VALIDATOR_ID: u64 = 4;
+        let id = auth_validator_registry::register_internal_with_id<did_validator::DIDValidator>(DID_VALIDATOR_ID);
+        assert!(id == did_validator::auth_validator_id(), ErrorGenesisInit);
     }
 
 
@@ -40,10 +46,17 @@ module rooch_framework::builtin_validators{
         assert!(id == webauthn_validator::auth_validator_id(), ErrorGenesisInit);
     }
 
+    /// This function is for init DID validator when framework is upgraded.
+    public entry fun init_did_validator() {
+        let id = auth_validator_registry::register_internal_with_id<did_validator::DIDValidator>(DID_VALIDATOR_ID);
+        assert!(id == did_validator::auth_validator_id(), ErrorGenesisInit);
+    }
+
     public fun is_builtin_auth_validator(auth_validator_id: u64): bool {
         auth_validator_id == SESSION_VALIDATOR_ID || 
         auth_validator_id == BITCOIN_VALIDATOR_ID || 
         auth_validator_id == BITCOIN_MULTISIGN_VALIDATOR_ID ||
-        auth_validator_id == WEBAUTHN_VALIDATOR_ID
+        auth_validator_id == WEBAUTHN_VALIDATOR_ID ||
+        auth_validator_id == DID_VALIDATOR_ID
     }
 }

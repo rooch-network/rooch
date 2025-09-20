@@ -8,11 +8,13 @@
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_builtin_validators_genesis_init)
 -  [Function `init_webauthn_validator`](#0x3_builtin_validators_init_webauthn_validator)
+-  [Function `init_did_validator`](#0x3_builtin_validators_init_did_validator)
 -  [Function `is_builtin_auth_validator`](#0x3_builtin_validators_is_builtin_auth_validator)
 
 
 <pre><code><b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
 <b>use</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator">0x3::bitcoin_validator</a>;
+<b>use</b> <a href="did_validator.md#0x3_did_validator">0x3::did_validator</a>;
 <b>use</b> <a href="session_validator.md#0x3_session_validator">0x3::session_validator</a>;
 <b>use</b> <a href="webauthn_validator.md#0x3_webauthn_validator">0x3::webauthn_validator</a>;
 </code></pre>
@@ -38,6 +40,15 @@
 
 
 <pre><code><b>const</b> <a href="builtin_validators.md#0x3_builtin_validators_SESSION_VALIDATOR_ID">SESSION_VALIDATOR_ID</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x3_builtin_validators_DID_VALIDATOR_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="builtin_validators.md#0x3_builtin_validators_DID_VALIDATOR_ID">DID_VALIDATOR_ID</a>: u64 = 4;
 </code></pre>
 
 
@@ -89,6 +100,18 @@ This function is for init webauthn validator when framework is upgraded.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_init_webauthn_validator">init_webauthn_validator</a>()
+</code></pre>
+
+
+
+<a name="0x3_builtin_validators_init_did_validator"></a>
+
+## Function `init_did_validator`
+
+This function is for init DID validator when framework is upgraded.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_init_did_validator">init_did_validator</a>()
 </code></pre>
 
 
