@@ -236,9 +236,11 @@ export class DIDAuthenticator {
           message = bytes('utf8', template)
         } else {
           // Regular signer needs manual Bitcoin message construction
-          const bitcoinMessage = new BitcoinSignMessage(txHash, MessageInfoPrefix + toHEX(txHash))
+          const template = MessageInfoPrefix + toHEX(txHash)
+          const bitcoinMessage = new BitcoinSignMessage(txHash, template)
           signature = await signer.sign(bitcoinMessage.hash())
-          message = bytes('utf8', bitcoinMessage.raw())
+          // Move expects the raw message content (without Bitcoin prefix)
+          message = bytes('utf8', template)
         }
         break
 

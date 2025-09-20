@@ -11,11 +11,12 @@ module rooch_framework::did_validator {
     use std::string::{Self, String};
     use moveos_std::tx_context;
     use rooch_framework::did::{Self, DID};
-    use rooch_framework::session_key;
     use moveos_std::hash;
     use moveos_std::json;
     use moveos_std::bcs;
     use moveos_std::base64;
+    use moveos_std::hex;
+    use moveos_std::consensus_codec;
 
     friend rooch_framework::transaction_validator;
     
@@ -76,6 +77,59 @@ module rooch_framework::did_validator {
         DID_VALIDATOR_ID
     }
 
+
+    /// Build canonical template for BitcoinMessageV0 envelope
+    /// Uses the same format as auth_payload.move: "Rooch Transaction:\n" + hex(tx_hash)
+    fun build_canonical_template(tx_hash: &vector<u8>): vector<u8> {
+        let prefix = b"Rooch Transaction:\n";
+        let hex_hash = hex::encode(*tx_hash);
+        
+        let template = vector::empty<u8>();
+        vector::append(&mut template, prefix);
+        vector::append(&mut template, hex_hash);
+        
+        template
+    }
+
+    /// Encode Bitcoin message using the same format as bitcoin_validator
+    /// Format: \u0018 + "Bitcoin Signed Message:\n" + varint(message_len) + message + tx_hex
+    fun encode_bitcoin_message(message: &vector<u8>, tx_hash: &vector<u8>): vector<u8> {
+        let encoder = consensus_codec::encoder();
+        
+        // Add the legacy prefix with length (\u0018 = 24)
+        consensus_codec::emit_u8(&mut encoder, 24u8);
+        
+        // Add Bitcoin prefix (manually since emit_slice is private)
+        let bitcoin_prefix = b"Bitcoin Signed Message:\n";
+        let i = 0;
+        while (i < vector::length(&bitcoin_prefix)) {
+            consensus_codec::emit_u8(&mut encoder, *vector::borrow(&bitcoin_prefix, i));
+            i = i + 1;
+        };
+        
+        // Add message length as Bitcoin CompactSize varint
+        let message_len = vector::length(message);
+        consensus_codec::emit_var_int(&mut encoder, message_len);
+        
+        // Add message content
+        let i = 0;
+        while (i < vector::length(message)) {
+            consensus_codec::emit_u8(&mut encoder, *vector::borrow(message, i));
+            i = i + 1;
+        };
+        
+        // Add tx_hex
+        let tx_hex = hex::encode(*tx_hash);
+        let i = 0;
+        while (i < vector::length(&tx_hex)) {
+            consensus_codec::emit_u8(&mut encoder, *vector::borrow(&tx_hex, i));
+            i = i + 1;
+        };
+        
+        consensus_codec::unpack_encoder(encoder)
+    }
+
+
     /// Parse DID authenticator payload using BCS deserialization
     fun parse_did_auth_payload(authenticator_payload: &vector<u8>): DIDAuthPayload {
         // Use BCS to deserialize the payload
@@ -99,16 +153,20 @@ module rooch_framework::did_validator {
             // RawTxHash: digest = tx_hash
             *tx_hash
         } else if (envelope == ENVELOPE_BITCOIN_MESSAGE_V0) {
-            // BitcoinMessageV0: verify message matches canonical template, then compute Bitcoin digest
+            // BitcoinMessageV0: use the same logic as bitcoin_validator
             assert!(option::is_some(message_option), ErrorInvalidEnvelopeMessage);
             let message = option::borrow(message_option);
             
             // Verify message matches canonical template
-            let expected_template = session_key::build_canonical_template(tx_hash);
+            let expected_template = build_canonical_template(tx_hash);
             assert!(*message == expected_template, ErrorInvalidEnvelopeMessage);
             
-            // Compute Bitcoin message digest
-            session_key::bitcoin_message_digest(message)
+            // Encode Bitcoin message using the extracted method
+            let full_message = encode_bitcoin_message(message, tx_hash);
+            
+            // Apply single SHA256 like bitcoin_validator (to match wallet's second hash)
+            // ecdsa_k1::verify will apply another SHA256 internally (to match wallet's first hash)
+            hash::sha2_256(full_message)
         } else if (envelope == ENVELOPE_WEBAUTHN_V0) {
             // WebAuthn: reconstruct message as authenticator_data || SHA256(client_data_json)
             assert!(option::is_some(message_option), ErrorInvalidEnvelopeMessage);
@@ -197,5 +255,48 @@ module rooch_framework::did_validator {
         
         // Return the DID and vm_fragment for transaction context
         (sender_did, auth_payload.vm_fragment)
+    }
+
+
+    #[test]
+    fun test_build_canonical_template() {
+        // Test with a 32-byte hash (all zeros for simplicity)
+        let tx_hash = vector::empty<u8>();
+        let i = 0;
+        while (i < 32) {
+            vector::push_back(&mut tx_hash, 0x00);
+            i = i + 1;
+        };
+        
+        let template = build_canonical_template(&tx_hash);
+        let expected = b"Rooch Transaction:\n0000000000000000000000000000000000000000000000000000000000000000";
+        
+        assert!(template == expected, 3100);
+    }
+
+    #[test]
+    fun test_encode_bitcoin_message() {
+        // Test Bitcoin message encoding
+        let tx_hash = x"8ba04a9fbfa161a8996db7577894f281e8e61fe4f78e6296e7821ca4c7437986";
+        let message = b"Rooch Transaction:\n8ba04a9fbfa161a8996db7577894f281e8e61fe4f78e6296e7821ca4c7437986";
+        
+        let encoded = encode_bitcoin_message(&message, &tx_hash);
+        
+        // Verify the structure: should start with 0x18 (24) + "Bitcoin Signed Message:\n"
+        assert!(*vector::borrow(&encoded, 0) == 24u8, 4000);
+        
+        // Verify Bitcoin prefix follows
+        let bitcoin_prefix = b"Bitcoin Signed Message:\n";
+        let i = 0;
+        while (i < vector::length(&bitcoin_prefix)) {
+            assert!(
+                *vector::borrow(&encoded, i + 1) == *vector::borrow(&bitcoin_prefix, i),
+                4001 + i
+            );
+            i = i + 1;
+        };
+        
+        // The encoded message should be longer than just the prefix
+        assert!(vector::length(&encoded) > 25 + vector::length(&message), 4100);
     }
 }
