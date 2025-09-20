@@ -58,18 +58,6 @@ module rooch_framework::session_key {
         SIGNATURE_SCHEME_ECDSAR1
     }
 
-    public fun signing_envelope_raw_tx_hash(): u8 {
-        SIGNING_ENVELOPE_RAW_TX_HASH
-    }
-
-    public fun signing_envelope_bitcoin_message_v0(): u8 {
-        SIGNING_ENVELOPE_BITCOIN_MESSAGE_V0
-    }
-
-    public fun signing_envelope_webauthn_v0(): u8 {
-        SIGNING_ENVELOPE_WEBAUTHN_V0
-    }
-
     /// The session's scope
     struct SessionScope has store,copy,drop {
         /// The scope module address, the address can not support `*`
@@ -450,80 +438,6 @@ module rooch_framework::session_key {
         auth_key
     }
 
-    /// Convert a byte to its lowercase hex representation (2 ASCII characters)
-    fun byte_to_hex_lowercase(byte: u8): (u8, u8) {
-        let high_nibble = (byte >> 4) & 0x0f;
-        let low_nibble = byte & 0x0f;
-        
-        let high_char = if (high_nibble < 10) {
-            48 + high_nibble // '0' + nibble
-        } else {
-            97 + high_nibble - 10 // 'a' + (nibble - 10)
-        };
-        
-        let low_char = if (low_nibble < 10) {
-            48 + low_nibble // '0' + nibble
-        } else {
-            97 + low_nibble - 10 // 'a' + (nibble - 10)
-        };
-        
-        (high_char, low_char)
-    }
-
-    /// Convert a 32-byte hash to lowercase hex string (64 ASCII characters)
-    public fun hex_lowercase(hash: &vector<u8>): vector<u8> {
-        let result = vector::empty<u8>();
-        let i = 0;
-        let len = vector::length(hash);
-        
-        while (i < len) {
-            let byte = *vector::borrow(hash, i);
-            let (high, low) = byte_to_hex_lowercase(byte);
-            vector::push_back(&mut result, high);
-            vector::push_back(&mut result, low);
-            i = i + 1;
-        };
-        
-        result
-    }
-
-    /// Encode a VarInt for message length (single-byte path only, for len < 253)
-    fun encode_varint_single_byte(len: u64): u8 {
-        // For simplicity, only support single-byte VarInt (len < 253)
-        // This covers our use case since canonical template is short
-        assert!(len < 253, ErrorSessionKeyIsInvalid);
-        (len as u8)
-    }
-
-    /// Compute Bitcoin message digest: SHA256(SHA256("Bitcoin Signed Message:\n" + VarInt(len) + message))
-    public fun bitcoin_message_digest(message: &vector<u8>): vector<u8> {
-        let prefix = b"Bitcoin Signed Message:\n";
-        let message_len = vector::length(message);
-        let varint_byte = encode_varint_single_byte(message_len);
-        
-        // Construct the full message: prefix + varint + message
-        let full_message = vector::empty<u8>();
-        vector::append(&mut full_message, prefix);
-        vector::push_back(&mut full_message, varint_byte);
-        vector::append(&mut full_message, *message);
-        
-        // Double SHA256
-        let first_hash = hash::sha2_256(full_message);
-        hash::sha2_256(first_hash)
-    }
-
-    /// Build canonical template for BitcoinMessageV0 envelope
-    /// Uses the same format as auth_payload.move: "Rooch Transaction:\n" + hex(tx_hash)
-    public fun build_canonical_template(tx_hash: &vector<u8>): vector<u8> {
-        let prefix = b"Rooch Transaction:\n";
-        let hex_hash = hex_lowercase(tx_hash);
-        
-        let template = vector::empty<u8>();
-        vector::append(&mut template, prefix);
-        vector::append(&mut template, hex_hash);
-        
-        template
-    }
 
     #[test]
     fun test_parse_scope_string() {
@@ -554,56 +468,6 @@ module rooch_framework::session_key {
         assert!(scope3.module_address == @0x42, 2006);
         assert!(scope3.module_name == std::string::utf8(b"counter"), 2007);
         assert!(scope3.function_name == std::string::utf8(b"increment"), 2008);
-    }
-
-    #[test]
-    fun test_hex_lowercase() {
-        // Test with a known hash
-        let hash = vector::empty<u8>();
-        vector::push_back(&mut hash, 0x01);
-        vector::push_back(&mut hash, 0x23);
-        vector::push_back(&mut hash, 0x45);
-        vector::push_back(&mut hash, 0x67);
-        vector::push_back(&mut hash, 0x89);
-        vector::push_back(&mut hash, 0xab);
-        vector::push_back(&mut hash, 0xcd);
-        vector::push_back(&mut hash, 0xef);
-        
-        let hex_result = hex_lowercase(&hash);
-        let expected = b"0123456789abcdef";
-        
-        assert!(vector::length(&hex_result) == 16, 3000);
-        assert!(hex_result == expected, 3001);
-    }
-
-    #[test]
-    fun test_build_canonical_template() {
-        // Test with a 32-byte hash (all zeros for simplicity)
-        let tx_hash = vector::empty<u8>();
-        let i = 0;
-        while (i < 32) {
-            vector::push_back(&mut tx_hash, 0x00);
-            i = i + 1;
-        };
-        
-        let template = build_canonical_template(&tx_hash);
-        let expected = b"Rooch Transaction:\n0000000000000000000000000000000000000000000000000000000000000000";
-        
-        assert!(template == expected, 3100);
-    }
-
-    #[test]
-    fun test_bitcoin_message_digest() {
-        // Test with a simple message
-        let message = b"hello";
-        let digest = bitcoin_message_digest(&message);
-        
-        // The digest should be 32 bytes (SHA256 output)
-        assert!(vector::length(&digest) == 32, 3200);
-        
-        // Test that it's deterministic
-        let digest2 = bitcoin_message_digest(&message);
-        assert!(digest == digest2, 3201);
     }
 
 }

@@ -22,11 +22,12 @@ without requiring intermediate session key creation.
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::base64</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::consensus_codec</a>;
 <b>use</b> <a href="">0x2::hash</a>;
+<b>use</b> <a href="">0x2::hex</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
-<b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 </code></pre>
 
 

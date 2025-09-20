@@ -13,9 +13,6 @@
 -  [Function `signature_scheme_ed25519`](#0x3_session_key_signature_scheme_ed25519)
 -  [Function `signature_scheme_secp256k1`](#0x3_session_key_signature_scheme_secp256k1)
 -  [Function `signature_scheme_ecdsar1`](#0x3_session_key_signature_scheme_ecdsar1)
--  [Function `signing_envelope_raw_tx_hash`](#0x3_session_key_signing_envelope_raw_tx_hash)
--  [Function `signing_envelope_bitcoin_message_v0`](#0x3_session_key_signing_envelope_bitcoin_message_v0)
--  [Function `signing_envelope_webauthn_v0`](#0x3_session_key_signing_envelope_webauthn_v0)
 -  [Function `new_session_scope`](#0x3_session_key_new_session_scope)
 -  [Function `is_expired`](#0x3_session_key_is_expired)
 -  [Function `is_expired_session_key`](#0x3_session_key_is_expired_session_key)
@@ -37,9 +34,6 @@
 -  [Function `ed25519_public_key_to_authentication_key`](#0x3_session_key_ed25519_public_key_to_authentication_key)
 -  [Function `secp256k1_public_key_to_authentication_key`](#0x3_session_key_secp256k1_public_key_to_authentication_key)
 -  [Function `secp256r1_public_key_to_authentication_key`](#0x3_session_key_secp256r1_public_key_to_authentication_key)
--  [Function `hex_lowercase`](#0x3_session_key_hex_lowercase)
--  [Function `bitcoin_message_digest`](#0x3_session_key_bitcoin_message_digest)
--  [Function `build_canonical_template`](#0x3_session_key_build_canonical_template)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -252,39 +246,6 @@ The lengths of the parts of the session's scope do not match.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signature_scheme_ecdsar1">signature_scheme_ecdsar1</a>(): u8
-</code></pre>
-
-
-
-<a name="0x3_session_key_signing_envelope_raw_tx_hash"></a>
-
-## Function `signing_envelope_raw_tx_hash`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signing_envelope_raw_tx_hash">signing_envelope_raw_tx_hash</a>(): u8
-</code></pre>
-
-
-
-<a name="0x3_session_key_signing_envelope_bitcoin_message_v0"></a>
-
-## Function `signing_envelope_bitcoin_message_v0`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signing_envelope_bitcoin_message_v0">signing_envelope_bitcoin_message_v0</a>(): u8
-</code></pre>
-
-
-
-<a name="0x3_session_key_signing_envelope_webauthn_v0"></a>
-
-## Function `signing_envelope_webauthn_v0`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signing_envelope_webauthn_v0">signing_envelope_webauthn_v0</a>(): u8
 </code></pre>
 
 
@@ -531,41 +492,4 @@ This follows the same pattern as Ed25519 but with a different scheme identifier.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_secp256r1_public_key_to_authentication_key">secp256r1_public_key_to_authentication_key</a>(public_key: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x3_session_key_hex_lowercase"></a>
-
-## Function `hex_lowercase`
-
-Convert a 32-byte hash to lowercase hex string (64 ASCII characters)
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_hex_lowercase">hex_lowercase</a>(<a href="">hash</a>: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x3_session_key_bitcoin_message_digest"></a>
-
-## Function `bitcoin_message_digest`
-
-Compute Bitcoin message digest: SHA256(SHA256("Bitcoin Signed Message:\n" + VarInt(len) + message))
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_bitcoin_message_digest">bitcoin_message_digest</a>(message: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x3_session_key_build_canonical_template"></a>
-
-## Function `build_canonical_template`
-
-Build canonical template for BitcoinMessageV0 envelope
-Uses the same format as auth_payload.move: "Rooch Transaction:\n" + hex(tx_hash)
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_build_canonical_template">build_canonical_template</a>(tx_hash: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
