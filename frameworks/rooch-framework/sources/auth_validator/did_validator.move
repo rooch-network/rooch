@@ -31,6 +31,9 @@ module rooch_framework::did_validator {
     const ENVELOPE_BITCOIN_MESSAGE_V0: u8 = 0x01;
     const ENVELOPE_WEBAUTHN_V0: u8 = 0x02;
 
+    const BITCOIN_MESSAGE_PREFIX: vector<u8> = b"Bitcoin Signed Message:\n";
+    const ROOCH_TRANSACTION_MESSAGE_PREFIX: vector<u8> = b"Rooch Transaction:\n";
+
     /// Error codes for DID validator (using 101xxx range to avoid conflicts)
     /// DID validator specific errors: 101001-101999
     
@@ -82,7 +85,7 @@ module rooch_framework::did_validator {
     /// Uses the same format as auth_payload.move: "Rooch Transaction:\n" + hex(tx_hash)
     /// This message format is used in BitcoinMessageV0 envelope for DID authentication
     public fun build_rooch_transaction_message(tx_hash: vector<u8>): vector<u8> {
-        let prefix = b"Rooch Transaction:\n";
+        let prefix = ROOCH_TRANSACTION_MESSAGE_PREFIX;
         let hex_hash = hex::encode(tx_hash);
         
         let message = vector::empty<u8>();
@@ -98,7 +101,7 @@ module rooch_framework::did_validator {
         let encoder = consensus_codec::encoder();  
         
         // Add Bitcoin prefix
-        let bitcoin_prefix = b"Bitcoin Signed Message:\n";
+        let bitcoin_prefix = BITCOIN_MESSAGE_PREFIX;
         consensus_codec::emit_var_slice(&mut encoder, bitcoin_prefix);
         
         consensus_codec::emit_var_slice(&mut encoder, message);
@@ -246,7 +249,8 @@ module rooch_framework::did_validator {
         };
         
         let message = build_rooch_transaction_message(tx_hash);
-        let expected = b"Rooch Transaction:\n0000000000000000000000000000000000000000000000000000000000000000";
+        let expected = ROOCH_TRANSACTION_MESSAGE_PREFIX;
+        vector::append(&mut expected, b"0000000000000000000000000000000000000000000000000000000000000000");
         
         assert!(message == expected, 3100);
     }
@@ -262,7 +266,7 @@ module rooch_framework::did_validator {
         assert!(*vector::borrow(&encoded, 0) == 24u8, 4000);
         
         // Verify Bitcoin prefix follows
-        let bitcoin_prefix = b"Bitcoin Signed Message:\n";
+        let bitcoin_prefix = BITCOIN_MESSAGE_PREFIX;
         let i = 0;
         while (i < vector::length(&bitcoin_prefix)) {
             assert!(

@@ -97,6 +97,15 @@ Verification method not found in DID document
 
 
 
+<a name="0x3_did_validator_BITCOIN_MESSAGE_PREFIX"></a>
+
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_BITCOIN_MESSAGE_PREFIX">BITCOIN_MESSAGE_PREFIX</a>: <a href="">vector</a>&lt;u8&gt; = [66, 105, 116, 99, 111, 105, 110, 32, 83, 105, 103, 110, 101, 100, 32, 77, 101, 115, 115, 97, 103, 101, 58, 10];
+</code></pre>
+
+
+
 <a name="0x3_did_validator_DID_VALIDATOR_ID"></a>
 
 DID auth validator ID
@@ -193,6 +202,15 @@ Verification method not authorized for authentication
 
 
 <pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ErrorVerificationMethodNotAuthorized">ErrorVerificationMethodNotAuthorized</a>: u64 = 101004;
+</code></pre>
+
+
+
+<a name="0x3_did_validator_ROOCH_TRANSACTION_MESSAGE_PREFIX"></a>
+
+
+
+<pre><code><b>const</b> <a href="did_validator.md#0x3_did_validator_ROOCH_TRANSACTION_MESSAGE_PREFIX">ROOCH_TRANSACTION_MESSAGE_PREFIX</a>: <a href="">vector</a>&lt;u8&gt; = [82, 111, 111, 99, 104, 32, 84, 114, 97, 110, 115, 97, 99, 116, 105, 111, 110, 58, 10];
 </code></pre>
 
 
