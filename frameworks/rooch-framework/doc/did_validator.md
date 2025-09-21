@@ -14,6 +14,8 @@ without requiring intermediate session key creation.
 -  [Struct `ClientData`](#0x3_did_validator_ClientData)
 -  [Constants](#@Constants_0)
 -  [Function `auth_validator_id`](#0x3_did_validator_auth_validator_id)
+-  [Function `build_rooch_transaction_message`](#0x3_did_validator_build_rooch_transaction_message)
+-  [Function `encode_bitcoin_message`](#0x3_did_validator_encode_bitcoin_message)
 -  [Function `validate`](#0x3_did_validator_validate)
 
 
@@ -202,6 +204,33 @@ Verification method not authorized for authentication
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did_validator.md#0x3_did_validator_auth_validator_id">auth_validator_id</a>(): u64
+</code></pre>
+
+
+
+<a name="0x3_did_validator_build_rooch_transaction_message"></a>
+
+## Function `build_rooch_transaction_message`
+
+Build Rooch transaction message for Bitcoin signature verification
+Uses the same format as auth_payload.move: "Rooch Transaction:\n" + hex(tx_hash)
+This message format is used in BitcoinMessageV0 envelope for DID authentication
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did_validator.md#0x3_did_validator_build_rooch_transaction_message">build_rooch_transaction_message</a>(tx_hash: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x3_did_validator_encode_bitcoin_message"></a>
+
+## Function `encode_bitcoin_message`
+
+Encode Bitcoin message using the same format as TypeScript BitcoinSignMessage
+Format: \u0018 + "Bitcoin Signed Message:\n" + varint(message_len) + message
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did_validator.md#0x3_did_validator_encode_bitcoin_message">encode_bitcoin_message</a>(message: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 

@@ -78,53 +78,30 @@ module rooch_framework::did_validator {
     }
 
 
-    /// Build canonical template for BitcoinMessageV0 envelope
+    /// Build Rooch transaction message for Bitcoin signature verification
     /// Uses the same format as auth_payload.move: "Rooch Transaction:\n" + hex(tx_hash)
-    fun build_canonical_template(tx_hash: &vector<u8>): vector<u8> {
+    /// This message format is used in BitcoinMessageV0 envelope for DID authentication
+    public fun build_rooch_transaction_message(tx_hash: vector<u8>): vector<u8> {
         let prefix = b"Rooch Transaction:\n";
-        let hex_hash = hex::encode(*tx_hash);
+        let hex_hash = hex::encode(tx_hash);
         
-        let template = vector::empty<u8>();
-        vector::append(&mut template, prefix);
-        vector::append(&mut template, hex_hash);
+        let message = vector::empty<u8>();
+        vector::append(&mut message, prefix);
+        vector::append(&mut message, hex_hash);
         
-        template
+        message
     }
 
-    /// Encode Bitcoin message using the same format as bitcoin_validator
-    /// Format: \u0018 + "Bitcoin Signed Message:\n" + varint(message_len) + message + tx_hex
-    fun encode_bitcoin_message(message: &vector<u8>, tx_hash: &vector<u8>): vector<u8> {
-        let encoder = consensus_codec::encoder();
+    /// Encode Bitcoin message using the same format as TypeScript BitcoinSignMessage
+    /// Format: \u0018 + "Bitcoin Signed Message:\n" + varint(message_len) + message
+    public fun encode_bitcoin_message(message: vector<u8>): vector<u8> {
+        let encoder = consensus_codec::encoder();  
         
-        // Add the legacy prefix with length (\u0018 = 24)
-        consensus_codec::emit_u8(&mut encoder, 24u8);
-        
-        // Add Bitcoin prefix (manually since emit_slice is private)
+        // Add Bitcoin prefix
         let bitcoin_prefix = b"Bitcoin Signed Message:\n";
-        let i = 0;
-        while (i < vector::length(&bitcoin_prefix)) {
-            consensus_codec::emit_u8(&mut encoder, *vector::borrow(&bitcoin_prefix, i));
-            i = i + 1;
-        };
+        consensus_codec::emit_var_slice(&mut encoder, bitcoin_prefix);
         
-        // Add message length as Bitcoin CompactSize varint
-        let message_len = vector::length(message);
-        consensus_codec::emit_var_int(&mut encoder, message_len);
-        
-        // Add message content
-        let i = 0;
-        while (i < vector::length(message)) {
-            consensus_codec::emit_u8(&mut encoder, *vector::borrow(message, i));
-            i = i + 1;
-        };
-        
-        // Add tx_hex
-        let tx_hex = hex::encode(*tx_hash);
-        let i = 0;
-        while (i < vector::length(&tx_hex)) {
-            consensus_codec::emit_u8(&mut encoder, *vector::borrow(&tx_hex, i));
-            i = i + 1;
-        };
+        consensus_codec::emit_var_slice(&mut encoder, message);
         
         consensus_codec::unpack_encoder(encoder)
     }
@@ -148,29 +125,29 @@ module rooch_framework::did_validator {
 
 
     /// Compute digest based on envelope type (reuse session validator logic)
-    fun compute_digest(tx_hash: &vector<u8>, envelope: u8, message_option: &Option<vector<u8>>): vector<u8> {
+    fun compute_digest(tx_hash: vector<u8>, envelope: u8, message_option: Option<vector<u8>>): vector<u8> {
         if (envelope == ENVELOPE_RAW_TX_HASH) {
             // RawTxHash: digest = tx_hash
-            *tx_hash
+            tx_hash
         } else if (envelope == ENVELOPE_BITCOIN_MESSAGE_V0) {
             // BitcoinMessageV0: use the same logic as bitcoin_validator
-            assert!(option::is_some(message_option), ErrorInvalidEnvelopeMessage);
-            let message = option::borrow(message_option);
+            assert!(option::is_some(&message_option), ErrorInvalidEnvelopeMessage);
+            let message = option::destroy_some(message_option);
             
-            // Verify message matches canonical template
-            let expected_template = build_canonical_template(tx_hash);
-            assert!(*message == expected_template, ErrorInvalidEnvelopeMessage);
+            // Verify message matches expected Rooch transaction message format
+            let expected_message = build_rooch_transaction_message(tx_hash);
+            assert!(message == expected_message, ErrorInvalidEnvelopeMessage);
             
             // Encode Bitcoin message using the extracted method
-            let full_message = encode_bitcoin_message(message, tx_hash);
+            let full_message = encode_bitcoin_message(message);
             
             // Apply single SHA256 like bitcoin_validator (to match wallet's second hash)
             // ecdsa_k1::verify will apply another SHA256 internally (to match wallet's first hash)
             hash::sha2_256(full_message)
         } else if (envelope == ENVELOPE_WEBAUTHN_V0) {
             // WebAuthn: reconstruct message as authenticator_data || SHA256(client_data_json)
-            assert!(option::is_some(message_option), ErrorInvalidEnvelopeMessage);
-            let webauthn_payload_bytes = option::borrow(message_option);
+            assert!(option::is_some(&message_option), ErrorInvalidEnvelopeMessage);
+            let webauthn_payload_bytes = option::destroy_some(message_option);
             
             // Compute WebAuthn digest (same logic as session_validator)
             compute_webauthn_digest_from_bcs(webauthn_payload_bytes, tx_hash)
@@ -181,8 +158,8 @@ module rooch_framework::did_validator {
     }
 
     /// Compute WebAuthn digest from BCS-encoded WebAuthn envelope data
-    fun compute_webauthn_digest_from_bcs(webauthn_envelope_bytes: &vector<u8>, tx_hash: &vector<u8>): vector<u8> {
-        let webauthn_envelope = bcs::from_bytes<WebauthnEnvelopeData>(*webauthn_envelope_bytes);
+    fun compute_webauthn_digest_from_bcs(webauthn_envelope_bytes: vector<u8>, tx_hash: vector<u8>): vector<u8> {
+        let webauthn_envelope = bcs::from_bytes<WebauthnEnvelopeData>(webauthn_envelope_bytes);
         let WebauthnEnvelopeData {
             authenticator_data,
             client_data_json,
@@ -192,7 +169,7 @@ module rooch_framework::did_validator {
         let client_data = json::from_json<ClientData>(client_data_json);
         let challenge = client_data.challenge;
         let tx_hash_in_client_data = base64::decode(string::bytes(&challenge));
-        assert!(tx_hash_in_client_data == *tx_hash, ErrorInvalidEnvelopeMessage);
+        assert!(tx_hash_in_client_data == tx_hash, ErrorInvalidEnvelopeMessage);
         
         // Reconstruct WebAuthn message: authenticator_data || SHA256(client_data_json)
         let cd_hash = hash::sha2_256(client_data_json);
@@ -238,9 +215,9 @@ module rooch_framework::did_validator {
         // 6. Compute message digest based on envelope type
         let tx_hash = tx_context::tx_hash();
         let digest = compute_digest(
-            &tx_hash, 
+            tx_hash, 
             auth_payload.envelope, 
-            &auth_payload.message
+            auth_payload.message
         );
         
         // 7. Verify signature using DID's signature verification
@@ -259,7 +236,7 @@ module rooch_framework::did_validator {
 
 
     #[test]
-    fun test_build_canonical_template() {
+    fun test_build_rooch_transaction_message() {
         // Test with a 32-byte hash (all zeros for simplicity)
         let tx_hash = vector::empty<u8>();
         let i = 0;
@@ -268,19 +245,18 @@ module rooch_framework::did_validator {
             i = i + 1;
         };
         
-        let template = build_canonical_template(&tx_hash);
+        let message = build_rooch_transaction_message(tx_hash);
         let expected = b"Rooch Transaction:\n0000000000000000000000000000000000000000000000000000000000000000";
         
-        assert!(template == expected, 3100);
+        assert!(message == expected, 3100);
     }
 
     #[test]
     fun test_encode_bitcoin_message() {
         // Test Bitcoin message encoding
         let tx_hash = x"8ba04a9fbfa161a8996db7577894f281e8e61fe4f78e6296e7821ca4c7437986";
-        let message = b"Rooch Transaction:\n8ba04a9fbfa161a8996db7577894f281e8e61fe4f78e6296e7821ca4c7437986";
-        
-        let encoded = encode_bitcoin_message(&message, &tx_hash);
+        let rooch_transaction_message = build_rooch_transaction_message(tx_hash);
+        let encoded = encode_bitcoin_message(rooch_transaction_message);
         
         // Verify the structure: should start with 0x18 (24) + "Bitcoin Signed Message:\n"
         assert!(*vector::borrow(&encoded, 0) == 24u8, 4000);
@@ -297,6 +273,6 @@ module rooch_framework::did_validator {
         };
         
         // The encoded message should be longer than just the prefix
-        assert!(vector::length(&encoded) > 25 + vector::length(&message), 4100);
+        assert!(vector::length(&encoded) > 25 + vector::length(&rooch_transaction_message), 4100);
     }
 }
