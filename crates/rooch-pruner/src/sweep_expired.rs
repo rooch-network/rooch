@@ -117,8 +117,9 @@ impl SweepExpired {
                 since_last_flush += 1000;
                 if since_last_flush >= flush_interval {
                     // periodic flush to persist progress and avoid huge memtables
-                    self.moveos_store.node_store.flush_only()?;
-                    self.moveos_store.node_store.aggressive_compact()?;
+                    // self.moveos_store.node_store.flush_only()?;
+                    // self.moveos_store.node_store.aggressive_compact()?;
+                    self.moveos_store.node_store.flush_and_compact()?;
                     since_last_flush = 0;
                 }
             }
@@ -156,8 +157,9 @@ impl SweepExpired {
         }
 
         // flush after finishing this root to ensure deletions are durable before moving on
-        self.moveos_store.node_store.flush_only()?;
-        self.moveos_store.node_store.aggressive_compact()?;
+        // self.moveos_store.node_store.flush_only()?;
+        // self.moveos_store.node_store.aggressive_compact()?;
+        self.moveos_store.node_store.flush_and_compact()?;
 
         info!(
             "Completed sweeping root {:?}, total deleted nodes: {}",
