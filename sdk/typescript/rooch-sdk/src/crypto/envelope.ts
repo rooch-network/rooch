@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Bytes } from '../types/index.js'
-import { sha256, concatBytes, fromB64 } from '../utils/index.js'
+import { sha256, concatBytes, bytesToString, stringToBytes } from '../utils/index.js'
 import { bcs } from '../bcs/index.js'
 
 /**
@@ -68,19 +68,88 @@ export class WebAuthnUtils {
   }
 
   /**
-   * Validate that the challenge in clientDataJSON matches the expected value
+   * Validate that the challenge in clientDataJSON matches the expected txHash
+   * The challenge should be the URL-safe base64 encoding of the txHash (WebAuthn standard)
    */
-  static validateChallenge(clientDataJSON: Bytes, expectedChallenge: Bytes): boolean {
+  static validateChallenge(clientDataJSON: Bytes, txHash: Bytes): boolean {
     try {
+      // Parse client data JSON
       const clientData = JSON.parse(new TextDecoder().decode(clientDataJSON))
-      const actualChallenge = fromB64(clientData.challenge)
+
+      // Decode the challenge from URL-safe base64 (WebAuthn uses base64url encoding)
+      const actualChallenge = this.decodeBase64Url(clientData.challenge)
+
       // Compare byte arrays manually
-      if (actualChallenge.length !== expectedChallenge.length) {
+      if (actualChallenge.length !== txHash.length) {
+        console.error('[WebAuthnUtils.validateChallenge] Length mismatch:', {
+          actualLength: actualChallenge.length,
+          expectedLength: txHash.length,
+        })
         return false
       }
-      return actualChallenge.every((byte, index) => byte === expectedChallenge[index])
+
+      const isMatch = actualChallenge.every((byte, index) => byte === txHash[index])
+      if (!isMatch) {
+        console.error('[WebAuthnUtils.validateChallenge] Challenge mismatch:', {
+          actualChallengeHex: Array.from(actualChallenge)
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join(''),
+          expectedTxHashHex: Array.from(txHash)
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join(''),
+        })
+      }
+      return isMatch
     } catch (error) {
+      console.error('[WebAuthnUtils.validateChallenge] Error during validation:', error)
       return false
+    }
+  }
+
+  /**
+   * Encode Uint8Array to URL-safe base64 string (base64url)
+   * WebAuthn uses base64url encoding (RFC 4648)
+   */
+  static toUrlSafeBase64(bytes: Bytes): string {
+    return bytesToString('base64url', bytes)
+  }
+
+  /**
+   * Decode base64url string to Uint8Array with proper padding handling
+   * WebAuthn often omits padding characters, so we need to add them back
+   */
+  private static decodeBase64Url(base64url: string): Uint8Array {
+    try {
+      // First try direct decoding
+      return stringToBytes('base64url', base64url)
+    } catch (error) {
+      console.log('[WebAuthnUtils.decodeBase64Url] Direct decode failed, trying with padding:', {
+        original: base64url,
+        error: (error as Error).message,
+      })
+
+      // If direct decoding fails, try adding padding
+      let paddedBase64url = base64url
+      const padding = base64url.length % 4
+      if (padding === 2) {
+        paddedBase64url += '=='
+      } else if (padding === 3) {
+        paddedBase64url += '='
+      }
+
+      console.log('[WebAuthnUtils.decodeBase64Url] Trying with padding:', {
+        original: base64url,
+        padded: paddedBase64url,
+      })
+
+      try {
+        return stringToBytes('base64url', paddedBase64url)
+      } catch (paddingError) {
+        // If base64url still fails, try converting to standard base64
+        console.log('[WebAuthnUtils.decodeBase64Url] base64url failed, trying standard base64')
+        const standardBase64 = paddedBase64url.replace(/-/g, '+').replace(/_/g, '/')
+        return stringToBytes('base64', standardBase64)
+      }
     }
   }
 

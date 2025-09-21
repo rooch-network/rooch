@@ -3,7 +3,6 @@
 
 import { describe, it, expect } from 'vitest'
 import { SigningEnvelope, WebAuthnUtils, WebauthnEnvelopeData } from './envelope.js'
-import { toB64 } from '../utils/index.js'
 
 describe('SigningEnvelope', () => {
   const mockTxHash = new Uint8Array([
@@ -41,7 +40,7 @@ describe('SigningEnvelope', () => {
         const clientDataJSON = new Uint8Array(
           Buffer.from(
             JSON.stringify({
-              challenge: toB64(mockTxHash),
+              challenge: WebAuthnUtils.toUrlSafeBase64(mockTxHash),
               origin: 'https://example.com',
               type: 'webauthn.get',
             }),
@@ -57,7 +56,7 @@ describe('SigningEnvelope', () => {
         const clientDataJSON = new Uint8Array(
           Buffer.from(
             JSON.stringify({
-              challenge: toB64(differentHash),
+              challenge: WebAuthnUtils.toUrlSafeBase64(differentHash),
               origin: 'https://example.com',
               type: 'webauthn.get',
             }),
@@ -73,6 +72,57 @@ describe('SigningEnvelope', () => {
 
         const result = WebAuthnUtils.validateChallenge(invalidJSON, mockTxHash)
         expect(result).toBe(false)
+      })
+
+      it('should validate URL-safe base64 challenge correctly', () => {
+        // Test with a challenge that contains URL-safe base64 characters
+        const testHash = new Uint8Array([
+          0xe9, 0x86, 0xcb, 0xcb, 0x9f, 0xd5, 0x25, 0xe9, 0x42, 0x97, 0x80, 0x9f, 0xbc, 0xcb, 0x84,
+          0xca, 0xb9, 0x73, 0x75, 0x8b, 0x27, 0x80, 0xd7, 0x93, 0xaa, 0x8c, 0xba, 0x7b, 0xe2, 0x87,
+          0xb8, 0x32,
+        ])
+
+        // This should produce a URL-safe base64 string with - and _ characters
+        const urlSafeChallenge = WebAuthnUtils.toUrlSafeBase64(testHash)
+
+        const clientDataJSON = new Uint8Array(
+          Buffer.from(
+            JSON.stringify({
+              challenge: urlSafeChallenge,
+              origin: 'http://localhost:3000',
+              type: 'webauthn.get',
+            }),
+          ),
+        )
+
+        const result = WebAuthnUtils.validateChallenge(clientDataJSON, testHash)
+        expect(result).toBe(true)
+      })
+
+      it('should handle real WebAuthn challenge from error case', () => {
+        // Test with the actual challenge from the error case
+        const realChallenge = '6YbLy5_VJelCl4CfvMuEyrlzdYsngNeTqoy6e-KHuDI'
+
+        const clientDataJSON = new Uint8Array(
+          Buffer.from(
+            JSON.stringify({
+              type: 'webauthn.get',
+              challenge: realChallenge,
+              origin: 'http://localhost:3000',
+            }),
+          ),
+        )
+
+        // The expected hash should be the decoded bytes of the challenge
+        // Let's first decode the challenge to see what bytes it represents
+        const expectedHash = new Uint8Array([
+          0xe9, 0x86, 0xcb, 0xcb, 0x9f, 0xd5, 0x25, 0xe9, 0x42, 0x97, 0x80, 0x9f, 0xbc, 0xcb, 0x84,
+          0xca, 0xb9, 0x73, 0x75, 0x8b, 0x27, 0x80, 0xd7, 0x93, 0xaa, 0x8c, 0xba, 0x7b, 0xe2, 0x87,
+          0xb8, 0x32,
+        ])
+
+        const result = WebAuthnUtils.validateChallenge(clientDataJSON, expectedHash)
+        expect(result).toBe(true)
       })
     })
 

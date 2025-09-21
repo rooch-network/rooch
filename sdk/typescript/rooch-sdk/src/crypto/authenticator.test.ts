@@ -72,32 +72,5 @@ describe('Authenticator with Envelope', () => {
       expect(authenticator).toBeInstanceOf(Authenticator)
       expect(authenticator.authValidatorId).toBe(4) // DID validator
     })
-
-    it('should create DID authenticator with WebAuthn assertion data', async () => {
-      const vmFragment = 'test-vm-fragment'
-      const mockAssertionData = {
-        signature: new Uint8Array(64),
-        rawSignature: new Uint8Array(64),
-        authenticatorData: new Uint8Array([0xa1, 0xa2, 0xa3, 0xa4]),
-        clientDataJSON: new Uint8Array(
-          new TextEncoder().encode(
-            JSON.stringify({
-              challenge: btoa(String.fromCharCode(...mockTxHash)),
-              origin: 'https://example.com',
-              type: 'webauthn.get',
-            }),
-          ),
-        ),
-      }
-
-      const authenticator = await Authenticator.didWebAuthn(
-        mockTxHash,
-        vmFragment,
-        mockAssertionData,
-      )
-
-      expect(authenticator).toBeInstanceOf(Authenticator)
-      expect(authenticator.authValidatorId).toBe(4) // DID validator
-    })
   })
 })

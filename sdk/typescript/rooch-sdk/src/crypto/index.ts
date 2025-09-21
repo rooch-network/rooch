@@ -21,8 +21,8 @@ export {
   BitcoinSignMessage,
   DIDAuthenticator,
   type DIDAuthPayload,
-  type BitcoinWalletSigner,
-  type WebAuthnSigner,
+  BitcoinWalletSigner,
+  WebAuthnSigner,
   isBitcoinWalletSigner,
   isWebAuthnSigner,
 } from './authenticator.js'

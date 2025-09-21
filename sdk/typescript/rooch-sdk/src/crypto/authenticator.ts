@@ -7,12 +7,7 @@ import { bytes, sha256, toHEX, concatBytes, varintByteNum } from '../utils/index
 
 import { Signer } from './signer.js'
 import { SIGNATURE_SCHEME_TO_FLAG } from './signatureScheme.js'
-import {
-  SigningEnvelope,
-  WebauthnEnvelopeData,
-  WebAuthnUtils,
-  type WebAuthnAssertionData,
-} from './envelope.js'
+import { SigningEnvelope, WebauthnEnvelopeData, WebAuthnUtils } from './envelope.js'
 import { BitcoinAddress } from '../address/index.js'
 
 const BitcoinMessagePrefix = '\u0018Bitcoin Signed Message:\n'
@@ -23,16 +18,16 @@ const MessageInfoPrefix = 'Rooch Transaction:\n'
 /**
  * Bitcoin wallet signer that automatically adds Bitcoin message prefix
  */
-export interface BitcoinWalletSigner extends Signer {
-  readonly autoPrefix: true
-  getBitcoinAddress(): BitcoinAddress
+export abstract class BitcoinWalletSigner extends Signer {
+  readonly autoPrefix: boolean = true
+  abstract getBitcoinAddress(): BitcoinAddress
 }
 
 /**
  * WebAuthn signer that provides assertion-based signing
  */
-export interface WebAuthnSigner extends Signer {
-  signAssertion(challenge: Bytes): Promise<WebAuthnAssertionData>
+export abstract class WebAuthnSigner extends Signer {
+  abstract signAssertion(challenge: Bytes): Promise<AuthenticatorAssertionResponse>
 }
 
 /**
@@ -197,11 +192,10 @@ export class Authenticator {
 
   static async didWebAuthn(
     txHash: Bytes,
+    signer: Signer,
     vmFragment: string,
-    assertionData: WebAuthnAssertionData,
   ): Promise<Authenticator> {
-    const payload = await DIDAuthenticator.signWebAuthn(txHash, vmFragment, assertionData)
-    return new Authenticator(BuiltinAuthValidator.DID, payload)
+    return this.did(txHash, signer, vmFragment, SigningEnvelope.WebAuthnV0)
   }
 }
 
@@ -250,20 +244,21 @@ export class DIDAuthenticator {
         }
 
         // Use WebAuthn-specific signing method
-        const assertionData = await signer.signAssertion(txHash)
+        const response = await signer.signAssertion(txHash)
+        const signatureData = WebAuthnUtils.parseAssertionResponse(response)
 
-        // Validate challenge
-        if (!WebAuthnUtils.validateChallenge(assertionData.clientDataJSON, txHash)) {
+        if (!WebAuthnUtils.validateChallenge(signatureData.clientDataJSON, txHash)) {
+          console.error('[DIDAuthenticator] WebAuthn challenge does not match transaction hash')
           throw new Error('WebAuthn challenge does not match transaction hash')
         }
 
         // Build envelope data
         const webauthnEnvelopeData = new WebauthnEnvelopeData(
-          assertionData.authenticatorData,
-          assertionData.clientDataJSON,
+          signatureData.authenticatorData,
+          signatureData.clientDataJSON,
         )
 
-        signature = assertionData.rawSignature
+        signature = signatureData.rawSignature
         message = webauthnEnvelopeData.encode()
         break
 
@@ -278,15 +273,23 @@ export class DIDAuthenticator {
       message,
     }
 
+    console.log('[DIDAuthenticator] DIDAuthPayload:', {
+      envelope,
+      vmFragment,
+      signature: toHEX(signature),
+      message: message ? String.fromCharCode(...message) : null,
+    })
+
     return bcs.DIDAuthPayload.serialize(payload).toBytes()
   }
 
   static async signWebAuthn(
     txHash: Bytes,
     vmFragment: string,
-    assertionData: WebAuthnAssertionData,
+    response: AuthenticatorAssertionResponse,
   ): Promise<Bytes> {
-    // Validate that the challenge matches the transaction hash
+    const assertionData = WebAuthnUtils.parseAssertionResponse(response)
+
     if (!WebAuthnUtils.validateChallenge(assertionData.clientDataJSON, txHash)) {
       throw new Error('WebAuthn challenge does not match transaction hash')
     }
