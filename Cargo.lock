@@ -6610,7 +6610,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -7926,7 +7926,7 @@ dependencies = [
  "serde 1.0.224",
  "serde_bytes",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with 3.9.0",
  "smt",
  "tiny-keccak",
  "tracing",
@@ -10378,7 +10378,7 @@ dependencies = [
  "serde 1.0.224",
  "serde-reflection",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with 3.9.0",
  "serde_yaml 0.9.34+deprecated",
  "smt",
  "tabled",
@@ -10767,7 +10767,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.224",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with 3.9.0",
  "signature 2.2.0",
  "tiny-bip39",
 ]
@@ -11192,7 +11192,7 @@ dependencies = [
  "schemars",
  "serde 1.0.224",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with 3.9.0",
  "serde_yaml 0.9.34+deprecated",
  "sha3 0.10.8",
  "strum",
@@ -12056,22 +12056,6 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "2.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07ff71d2c147a7b57362cead5e22f772cd52f6ab31cfcd9edcd7f6aeb2a0afbe"
-dependencies = [
- "base64 0.13.1",
- "chrono",
- "hex",
- "indexmap 1.9.3",
- "serde 1.0.224",
- "serde_json",
- "serde_with_macros 2.3.3",
- "time",
-]
-
-[[package]]
-name = "serde_with"
 version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69cecfa94848272156ea67b2b1a53f20fc7bc638c4a46d2f8abde08f05f4b857"
@@ -12098,18 +12082,6 @@ dependencies = [
  "proc-macro2 1.0.101",
  "quote 1.0.40",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "serde_with_macros"
-version = "2.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "881b6f881b17d13214e5d494c939ebab463d01264ce1811e9d4ac3a882e7695f"
-dependencies = [
- "darling 0.20.10",
- "proc-macro2 1.0.101",
- "quote 1.0.40",
- "syn 2.0.87",
 ]
 
 [[package]]
