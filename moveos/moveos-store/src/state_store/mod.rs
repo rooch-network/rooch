@@ -70,6 +70,26 @@ impl NodeDBStore {
         }
     }
 
+    /// Delete a continuous range of node hashes `[start, end)` using RocksDB DeleteRange.
+    /// `start` inclusive, `end` exclusive. Caller guarantees the range keys share the same prefix
+    /// and are fully unreachable. When `flush` is true the column family is flushed immediately
+    /// after the delete-range tombstone is written.
+    pub fn delete_range_nodes(&self, start: H256, end: H256, flush: bool) -> Result<()> {
+        if let Some(wrapper) = self.store.store().db() {
+            let raw_db = wrapper.inner();
+            let cf = raw_db
+                .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+                .expect("state node cf");
+
+            raw_db.delete_range_cf(cf, start.0, end.0)?;
+
+            if flush {
+                raw_db.flush_cf(&cf)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Backward-compat helper that preserves the old behaviour (delete then flush)
     pub fn delete_nodes(&self, keys: Vec<H256>) -> Result<()> {
         self.delete_nodes_with_flush(keys, /*flush*/ true)
@@ -99,6 +119,32 @@ impl NodeDBStore {
                 .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
                 .expect("state node cf");
             raw_db.flush_cf(&cf)?;
+        }
+        Ok(())
+    }
+
+    /// Perform an aggressive compaction that forces all levels to be merged down to the bottommost
+    /// level, then immediately purge obsolete files. This effectively removes tombstoned keys and
+    /// reclaims disk space.
+    pub fn aggressive_compact(&self) -> Result<()> {
+        if let Some(wrapper) = self.store.store().db() {
+            let raw_db = wrapper.inner();
+            let cf = raw_db
+                .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+                .expect("state node cf");
+
+            // Disable auto compactions during the manual compaction window to reduce write stall
+            raw_db.set_options_cf(&cf, &[("disable_auto_compactions", "true")])?;
+
+            // Compact the whole key range and force bottommost level rewrite.
+            use rocksdb::{BottommostLevelCompaction, CompactOptions};
+            let mut copt = CompactOptions::default();
+            copt.set_bottommost_level_compaction(BottommostLevelCompaction::Force);
+            raw_db.compact_range_cf_opt(&cf, None::<&[u8]>, None::<&[u8]>, &copt);
+            // raw_db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+
+            // Re-enable automatic compactions.
+            raw_db.set_options_cf(&cf, &[("disable_auto_compactions", "false")])?;
         }
         Ok(())
     }
