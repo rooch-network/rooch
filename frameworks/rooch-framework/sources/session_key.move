@@ -40,7 +40,6 @@ module rooch_framework::session_key {
     const SIGNATURE_SCHEME_ED25519: u8 = 0;
     const SIGNATURE_SCHEME_SECP256K1: u8 = 1;
     const SIGNATURE_SCHEME_ECDSAR1: u8 = 2;
-     
     
     public fun signature_scheme_ed25519(): u8 {
         SIGNATURE_SCHEME_ED25519
