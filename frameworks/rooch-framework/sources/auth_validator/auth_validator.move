@@ -6,14 +6,18 @@
 /// public fun validate(authenticator_payload: vector<u8>)
 
 module rooch_framework::auth_validator {
-    use std::string;
+    use std::string::{Self, String};
     use std::option::{Self, Option};
+    use std::vector;
     use moveos_std::tx_context;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
 
     friend rooch_framework::auth_validator_registry;
     friend rooch_framework::transaction_validator;
     friend rooch_framework::session_key;
+    
+    #[test_only]
+    friend rooch_framework::auth_validator_test;
 
     /// The function must be executed after the transaction is validated
     const ErrorMustExecuteAfterValidate: u64 = 1;
@@ -39,6 +43,9 @@ module rooch_framework::auth_validator {
     const ErrorValidateSessionIsExpired: u64 = 1012;
     /// The function call is beyond the session's scope
     const ErrorValidateFunctionCallBeyondSessionScope: u64 = 1013;
+
+    /// DID VM fragment encoding prefix
+    const DID_VM_FRAGMENT_PREFIX: vector<u8> = b"DID_VM:";
 
     public fun error_validate_sequence_number_too_old(): u64 {
         ErrorValidateSequenceNuberTooOld
@@ -147,6 +154,35 @@ module rooch_framework::auth_validator {
         }
     }
 
+    /// Create TxValidateResult with optional session key or DID VM fragment
+    /// If vm_fragment is provided, it will be encoded and stored in session_key field
+    /// If session_key is provided and vm_fragment is None, session_key is used directly
+    /// This provides a unified API for different authentication methods
+    public(friend) fun new_tx_validate_result_with_optional_data(
+        auth_validator_id: u64,
+        auth_validator: Option<AuthValidator>,
+        session_key: Option<vector<u8>>,
+        vm_fragment: Option<String>,
+        bitcoin_address: BitcoinAddress,
+    ): TxValidateResult {
+        let final_session_key = if (option::is_some(&vm_fragment)) {
+            // If DID VM fragment is provided, encode it
+            let vm_frag = option::extract(&mut vm_fragment);
+            let encoded_vm_fragment = encode_did_vm_fragment(vm_frag);
+            option::some(encoded_vm_fragment)
+        } else {
+            // Otherwise use the provided session key (might be None)
+            session_key
+        };
+        
+        TxValidateResult {
+            auth_validator_id: auth_validator_id,
+            auth_validator: auth_validator,
+            session_key: final_session_key,
+            bitcoin_address: bitcoin_address,
+        }
+    }
+
     /// Get the TxValidateResult from the TxContext, Only can be called after the transaction is validated
     public(friend) fun get_validate_result_from_ctx(): TxValidateResult {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
@@ -162,13 +198,32 @@ module rooch_framework::auth_validator {
 
     /// Get the session key from the TxValidateResult in the TxContext
     /// If the TxValidateResult is None or SessionKey is None, return None
-    public fun get_session_key_from_ctx_option(): Option<vector<u8>> {
+    /// Note: This returns the raw session_key field, which might contain encoded DID VM fragment
+    fun get_raw_session_key_from_ctx_option(): Option<vector<u8>> {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         if (option::is_some(&validate_result_opt)) {
             let validate_result = option::extract(&mut validate_result_opt);
             validate_result.session_key 
         }else {
             option::none<vector<u8>>()
+        }
+    }
+
+    /// Get actual session key from the TxValidateResult in the TxContext
+    /// Returns None if it's DID VM fragment or no session key
+    public fun get_session_key_from_ctx_option(): Option<vector<u8>> {
+        let raw_session_key_opt = get_raw_session_key_from_ctx_option();
+        if (option::is_none(&raw_session_key_opt)) {
+            return option::none<vector<u8>>()
+        };
+        
+        let raw_session_key = option::extract(&mut raw_session_key_opt);
+        
+        // Check if it's encoded DID VM fragment
+        if (is_encoded_did_vm_fragment(&raw_session_key)) {
+            option::none<vector<u8>>()
+        } else {
+            option::some(raw_session_key)
         }
     }
 
@@ -200,6 +255,66 @@ module rooch_framework::auth_validator {
             }
         }else {
             option::none<BitcoinAddress>()
+        }
+    }
+
+    /// Encode DID VM fragment for storage in session_key field
+    /// Format: "DID_VM:" + vm_fragment
+    fun encode_did_vm_fragment(vm_fragment: String): vector<u8> {
+        let prefix = DID_VM_FRAGMENT_PREFIX;
+        let result = vector::empty<u8>();
+        vector::append(&mut result, prefix);
+        vector::append(&mut result, *string::bytes(&vm_fragment));
+        result
+    }
+
+    /// Check if session key data is actually encoded DID validator info
+    fun is_encoded_did_vm_fragment(session_key: &vector<u8>): bool {
+        let prefix = DID_VM_FRAGMENT_PREFIX;
+        if (vector::length(session_key) < vector::length(&prefix)) {
+            return false
+        };
+        
+        let i = 0;
+        while (i < vector::length(&prefix)) {
+            if (*vector::borrow(session_key, i) != *vector::borrow(&prefix, i)) {
+                return false
+            };
+            i = i + 1;
+        };
+        true
+    }
+
+    /// Extract VM fragment from encoded DID validator data
+    fun decode_did_vm_fragment(session_key: &vector<u8>): String {
+        let prefix = DID_VM_FRAGMENT_PREFIX;
+        let prefix_len = vector::length(&prefix);
+        let vm_fragment_bytes = vector::empty<u8>();
+        
+        let i = prefix_len;
+        while (i < vector::length(session_key)) {
+            vector::push_back(&mut vm_fragment_bytes, *vector::borrow(session_key, i));
+            i = i + 1;
+        };
+        
+        string::utf8(vm_fragment_bytes)
+    }
+
+    /// Get DID VM fragment from the TxValidateResult in the TxContext
+    /// Returns None if not using DID validator or no VM fragment
+    public fun get_did_vm_fragment_from_ctx_option(): Option<String> {
+        let raw_session_key_opt = get_raw_session_key_from_ctx_option();
+        if (option::is_none(&raw_session_key_opt)) {
+            return option::none<String>()
+        };
+        
+        let raw_session_key = option::extract(&mut raw_session_key_opt);
+        
+        // Check if it's encoded DID VM fragment
+        if (is_encoded_did_vm_fragment(&raw_session_key)) {
+            option::some(decode_did_vm_fragment(&raw_session_key))
+        } else {
+            option::none<String>()
         }
     }
 

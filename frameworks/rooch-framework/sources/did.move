@@ -24,8 +24,6 @@ module rooch_framework::did {
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
 
-    /// DID VM fragment prefix in session_key context
-    const DID_VM_FRAGMENT_PREFIX: vector<u8> = b"DID_VM:";
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;
@@ -1560,68 +1558,26 @@ module rooch_framework::did {
 
     // =================== Internal helper functions ===================
 
-    /// Encode DID VM fragment for storage in session_key field
-    /// Format: "DID_VM:" + vm_fragment
-    public(friend) fun encode_did_vm_fragment(vm_fragment: String): vector<u8> {
-        let prefix = DID_VM_FRAGMENT_PREFIX;
-        let result = vector::empty<u8>();
-        vector::append(&mut result, prefix);
-        vector::append(&mut result, *string::bytes(&vm_fragment));
-        result
-    }
 
     /// Get verification method fragment from transaction context
     /// Supports both DID validator and session key authentication
     fun get_vm_fragment_from_context(did_document_data: &DIDDocument): Option<String> {
-        // Get session key from context (might be encoded DID info or actual session key)
+        // First try to get DID VM fragment (from DID validator)
+        let did_vm_fragment_opt = auth_validator::get_did_vm_fragment_from_ctx_option();
+        if (option::is_some(&did_vm_fragment_opt)) {
+            return did_vm_fragment_opt
+        };
+        
+        // Fall back to session key logic for backward compatibility
         let session_key_opt = auth_validator::get_session_key_from_ctx_option();
         if (option::is_some(&session_key_opt)) {
             let session_key = option::extract(&mut session_key_opt);
-            
-            // Check if this is encoded DID validator info
-            if (is_encoded_did_vm_fragment(&session_key)) {
-                let vm_fragment = decode_did_vm_fragment(&session_key);
-                return option::some(vm_fragment)
-            } else {
-                // Fall back to session key logic for backward compatibility
-                find_verification_method_by_session_key(did_document_data, &session_key)
-            }
+            find_verification_method_by_session_key(did_document_data, &session_key)
         } else {
             option::none()
         }
     }
 
-    /// Check if session key data is actually encoded DID validator info
-    fun is_encoded_did_vm_fragment(session_key: &vector<u8>): bool {
-        let prefix = DID_VM_FRAGMENT_PREFIX;
-        if (vector::length(session_key) < vector::length(&prefix)) {
-            return false
-        };
-        
-        let i = 0;
-        while (i < vector::length(&prefix)) {
-            if (*vector::borrow(session_key, i) != *vector::borrow(&prefix, i)) {
-                return false
-            };
-            i = i + 1;
-        };
-        true
-    }
-
-    /// Extract VM fragment from encoded DID validator data
-    fun decode_did_vm_fragment(session_key: &vector<u8>): String {
-        let prefix = DID_VM_FRAGMENT_PREFIX;
-        let prefix_len = vector::length(&prefix);
-        let vm_fragment_bytes = vector::empty<u8>();
-        
-        let i = prefix_len;
-        while (i < vector::length(session_key)) {
-            vector::push_back(&mut vm_fragment_bytes, *vector::borrow(session_key, i));
-            i = i + 1;
-        };
-        
-        string::utf8(vm_fragment_bytes)
-    }
 
     /// Helper function to get a mutable reference to DIDDocument with capability delegation authorization
     /// This combines common patterns: resolve ObjectID, check existence, borrow mutable, and verify permissions
