@@ -29,6 +29,7 @@ public fun validate(authenticator_payload: vector<u8>)
 -  [Function `validator_module_address`](#0x3_auth_validator_validator_module_address)
 -  [Function `validator_module_name`](#0x3_auth_validator_validator_module_name)
 -  [Function `new_tx_validate_result`](#0x3_auth_validator_new_tx_validate_result)
+-  [Function `new_tx_validate_result_with_optional_data`](#0x3_auth_validator_new_tx_validate_result_with_optional_data)
 -  [Function `get_validate_result_from_ctx`](#0x3_auth_validator_get_validate_result_from_ctx)
 -  [Function `get_validator_id_from_ctx`](#0x3_auth_validator_get_validator_id_from_ctx)
 -  [Function `get_session_key_from_ctx_option`](#0x3_auth_validator_get_session_key_from_ctx_option)
@@ -36,10 +37,12 @@ public fun validate(authenticator_payload: vector<u8>)
 -  [Function `get_session_key_from_ctx`](#0x3_auth_validator_get_session_key_from_ctx)
 -  [Function `get_bitcoin_address_from_ctx`](#0x3_auth_validator_get_bitcoin_address_from_ctx)
 -  [Function `get_bitcoin_address_from_ctx_option`](#0x3_auth_validator_get_bitcoin_address_from_ctx_option)
+-  [Function `get_did_vm_fragment_from_ctx_option`](#0x3_auth_validator_get_did_vm_fragment_from_ctx_option)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 </code></pre>
@@ -74,6 +77,16 @@ this result will be stored in the TxContext
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x3_auth_validator_DID_VM_FRAGMENT_PREFIX"></a>
+
+DID VM fragment encoding prefix
+
+
+<pre><code><b>const</b> <a href="auth_validator.md#0x3_auth_validator_DID_VM_FRAGMENT_PREFIX">DID_VM_FRAGMENT_PREFIX</a>: <a href="">vector</a>&lt;u8&gt; = [68, 73, 68, 95, 86, 77, 58];
+</code></pre>
+
 
 
 <a name="0x3_auth_validator_ErrorMustExecuteAfterValidate"></a>
@@ -409,6 +422,21 @@ The session is expired
 
 
 
+<a name="0x3_auth_validator_new_tx_validate_result_with_optional_data"></a>
+
+## Function `new_tx_validate_result_with_optional_data`
+
+Create TxValidateResult with optional session key or DID VM fragment
+If vm_fragment is provided, it will be encoded and stored in session_key field
+If session_key is provided and vm_fragment is None, session_key is used directly
+This provides a unified API for different authentication methods
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_new_tx_validate_result_with_optional_data">new_tx_validate_result_with_optional_data</a>(auth_validator_id: u64, <a href="auth_validator.md#0x3_auth_validator">auth_validator</a>: <a href="_Option">option::Option</a>&lt;<a href="auth_validator.md#0x3_auth_validator_AuthValidator">auth_validator::AuthValidator</a>&gt;, <a href="session_key.md#0x3_session_key">session_key</a>: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, vm_fragment: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+</code></pre>
+
+
+
 <a name="0x3_auth_validator_get_validate_result_from_ctx"></a>
 
 ## Function `get_validate_result_from_ctx`
@@ -437,8 +465,8 @@ Get the auth validator's id from the TxValidateResult in the TxContext
 
 ## Function `get_session_key_from_ctx_option`
 
-Get the session key from the TxValidateResult in the TxContext
-If the TxValidateResult is None or SessionKey is None, return None
+Get actual session key from the TxValidateResult in the TxContext
+Returns None if it's DID VM fragment or no session key
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx_option">get_session_key_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
@@ -489,4 +517,17 @@ Only can be called after the transaction is validated
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_bitcoin_address_from_ctx_option">get_bitcoin_address_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_auth_validator_get_did_vm_fragment_from_ctx_option"></a>
+
+## Function `get_did_vm_fragment_from_ctx_option`
+
+Get DID VM fragment from the TxValidateResult in the TxContext
+Returns None if not using DID validator or no VM fragment
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_did_vm_fragment_from_ctx_option">get_did_vm_fragment_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>

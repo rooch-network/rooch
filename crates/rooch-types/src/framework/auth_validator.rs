@@ -48,21 +48,24 @@ pub enum BuiltinAuthValidator {
     Session,
     Bitcoin,
     BitcoinMultisign,
-    Ethereum,
+    WEBAUTHN,
+    DID,
 }
 
 impl BuiltinAuthValidator {
     const SESSION_FLAG: u8 = 0x00;
     const BITCOIN_FLAG: u8 = 0x01;
     const BITCOIN_MULTISIGN: u8 = 0x02;
-    const ETHEREUM_FLAG: u8 = 0x03;
+    const WEBAUTHN_FLAG: u8 = 0x03;
+    const DID_FLAG: u8 = 0x04;
 
     pub fn flag(&self) -> u8 {
         match self {
             BuiltinAuthValidator::Session => Self::SESSION_FLAG,
             BuiltinAuthValidator::Bitcoin => Self::BITCOIN_FLAG,
             BuiltinAuthValidator::BitcoinMultisign => Self::BITCOIN_MULTISIGN,
-            BuiltinAuthValidator::Ethereum => Self::ETHEREUM_FLAG,
+            BuiltinAuthValidator::WEBAUTHN => Self::WEBAUTHN_FLAG,
+            BuiltinAuthValidator::DID => Self::DID_FLAG,
         }
     }
 
@@ -78,7 +81,8 @@ impl BuiltinAuthValidator {
             Self::SESSION_FLAG => Ok(BuiltinAuthValidator::Session),
             Self::BITCOIN_FLAG => Ok(BuiltinAuthValidator::Bitcoin),
             Self::BITCOIN_MULTISIGN => Ok(BuiltinAuthValidator::BitcoinMultisign),
-            Self::ETHEREUM_FLAG => Ok(BuiltinAuthValidator::Ethereum),
+            Self::WEBAUTHN_FLAG => Ok(BuiltinAuthValidator::WEBAUTHN),
+            Self::DID_FLAG => Ok(BuiltinAuthValidator::DID),
             _ => Err(RoochError::KeyConversionError(
                 "Invalid key auth validator".to_owned(),
             )),
@@ -103,10 +107,15 @@ impl BuiltinAuthValidator {
                 module_name: MoveString::from_str("bitcoin_multisign_validator")
                     .expect("Should be valid"),
             },
-            BuiltinAuthValidator::Ethereum => AuthValidator {
+            BuiltinAuthValidator::WEBAUTHN => AuthValidator {
                 id: self.flag().into(),
                 module_address: ROOCH_NURSERY_ADDRESS,
                 module_name: MoveString::from_str("ethereum_validator").expect("Should be valid"),
+            },
+            BuiltinAuthValidator::DID => AuthValidator {
+                id: self.flag().into(),
+                module_address: ROOCH_FRAMEWORK_ADDRESS,
+                module_name: MoveString::from_str("did_validator").expect("Should be valid"),
             },
         }
     }

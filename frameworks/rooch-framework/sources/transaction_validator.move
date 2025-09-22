@@ -28,10 +28,11 @@ module rooch_framework::transaction_validator {
     use rooch_framework::coin;
     use rooch_framework::bitcoin_address;
     use rooch_framework::webauthn_validator;
+    use rooch_framework::did_validator;
 
     const MAX_U64: u128 = 18446744073709551615;
 
-
+    
     /// Just using to get module signer
     struct TransactionValidatorPlaceholder {}
 
@@ -92,17 +93,22 @@ module rooch_framework::transaction_validator {
         // === validate the authenticator ===
 
         // Try the built-in auth validator first
-        let (bitcoin_address_opt, session_key, auth_validator)= if (auth_validator_id == session_validator::auth_validator_id()){
+        let (bitcoin_address_opt, session_key, vm_fragment, auth_validator) = if (auth_validator_id == session_validator::auth_validator_id()){
             let session_key = session_validator::validate(authenticator_payload);
             let bitcoin_address = address_mapping::resolve_bitcoin(sender);
-            (bitcoin_address, option::some(session_key), option::none())
+            (bitcoin_address, option::some(session_key), option::none(), option::none())
         }else if (auth_validator_id == bitcoin_validator::auth_validator_id()){
             let bitcoin_address = bitcoin_validator::validate(authenticator_payload);
-            (option::some(bitcoin_address), option::none(), option::none())
+            (option::some(bitcoin_address), option::none(), option::none(), option::none())
         }else if (auth_validator_id == webauthn_validator::auth_validator_id()){
             let session_key = webauthn_validator::validate(authenticator_payload);
             let bitcoin_address = address_mapping::resolve_bitcoin(sender);
-            (bitcoin_address, option::some(session_key), option::none())
+            (bitcoin_address, option::some(session_key), option::none(), option::none())
+        }else if (auth_validator_id == did_validator::auth_validator_id()){
+            let (_did, vm_fragment) = did_validator::validate(authenticator_payload);
+            // DID accounts may not have associated Bitcoin addresses
+            let bitcoin_address = address_mapping::resolve_bitcoin(sender);
+            (bitcoin_address, option::none(), option::some(vm_fragment), option::none())
         }else{
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
@@ -110,8 +116,9 @@ module rooch_framework::transaction_validator {
             assert!(builtin_validators::is_builtin_auth_validator(validator_id) || account_authentication::is_auth_validator_installed(sender, validator_id),
                     auth_validator::error_validate_not_installed_auth_validator());
             let bitcoin_address = address_mapping::resolve_bitcoin(sender);
-            (bitcoin_address, option::none(), option::some(*auth_validator))
+            (bitcoin_address, option::none(), option::none(), option::some(*auth_validator))
         };
+        
         // We enable the smart contract account(DID account) to send transaction via session key, and the smart contract account does not have a bitcoin address.
         // But for compatibility, we still need to return a empty bitcoin address in the TxValidateResult.
         let bitcoin_address = if (option::is_some(&bitcoin_address_opt)) {
@@ -119,7 +126,15 @@ module rooch_framework::transaction_validator {
         }else {
             bitcoin_address::empty()
         };
-        auth_validator::new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address)
+        
+        // Use unified API for all authentication methods
+        auth_validator::new_tx_validate_result_with_optional_data(
+            auth_validator_id, 
+            auth_validator, 
+            session_key, 
+            vm_fragment, 
+            bitcoin_address
+        )
     }
 
     /// Transaction pre_execute function.

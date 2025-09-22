@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { describe, it, expect } from 'vitest'
-import { BitcoinSignMessage } from './authenticator.js'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { BitcoinSignMessage, Authenticator } from './authenticator.js'
+import { Ed25519Keypair } from '../keypairs/ed25519/index.js'
 
 describe('BitcoinSignMessage', () => {
   it('should correctly construct with valid txData and messageInfo', () => {
@@ -40,5 +41,36 @@ describe('BitcoinSignMessage', () => {
     const encodedData = bitcoinSignMessage.encode()
     expect(encodedData).toBeInstanceOf(Uint8Array)
     expect(encodedData.length).toBeLessThanOrEqual(255)
+  })
+})
+
+describe('Authenticator with Envelope', () => {
+  let keypair: Ed25519Keypair
+  const mockTxHash = new Uint8Array([
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+    0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
+  ])
+
+  beforeEach(() => {
+    keypair = Ed25519Keypair.generate()
+  })
+
+  describe('DID authenticator with different signer types', () => {
+    it('should auto-select RawTxHash envelope for regular signer', async () => {
+      const vmFragment = 'test-vm-fragment'
+      const authenticator = await Authenticator.did(mockTxHash, keypair, vmFragment)
+
+      expect(authenticator).toBeInstanceOf(Authenticator)
+      expect(authenticator.authValidatorId).toBe(4) // DID validator
+      expect(authenticator.payload).toBeInstanceOf(Uint8Array)
+    })
+
+    it('should create DID authenticator with explicit BitcoinMessage envelope', async () => {
+      const vmFragment = 'test-vm-fragment'
+      const authenticator = await Authenticator.didBitcoinMessage(mockTxHash, keypair, vmFragment)
+
+      expect(authenticator).toBeInstanceOf(Authenticator)
+      expect(authenticator.authValidatorId).toBe(4) // DID validator
+    })
   })
 })

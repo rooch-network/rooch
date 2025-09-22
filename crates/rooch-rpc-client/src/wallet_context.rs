@@ -26,7 +26,7 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::did::DIDModule;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
-use rooch_types::transaction::authenticator::SessionAuthenticator;
+use rooch_types::transaction::authenticator::{DIDAuthenticator, SigningEnvelope};
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use rooch_types::{addresses, crypto};
 use std::collections::BTreeMap;
@@ -309,23 +309,46 @@ impl WalletContext {
 
     /// Sign and execute a transaction **on behalf of a DID account**.
     /// 1) sender must be the DID's associated account address
-    /// 2) Automatically selects a controller key available in the local keystore
+    /// 2) Automatically selects a verification method key available in the local keystore
     pub async fn sign_and_execute_as_did(
         &self,
         did_address: RoochAddress,
         action: MoveAction,
         max_gas_amount: Option<u64>,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        // Find a controller key available in local keystore
-        let (_controller_addr, keypair) = self.find_did_controller_keypair(did_address).await?;
+        self.sign_and_execute_as_did_with_options(
+            did_address,
+            action,
+            max_gas_amount,
+            None,
+            SigningEnvelope::RawTxHash,
+        )
+        .await
+    }
+
+    /// Sign and execute a transaction **on behalf of a DID account** with custom options.
+    /// 1) sender must be the DID's associated account address
+    /// 2) Allows specifying verification method fragment and signing envelope
+    pub async fn sign_and_execute_as_did_with_options(
+        &self,
+        did_address: RoochAddress,
+        action: MoveAction,
+        max_gas_amount: Option<u64>,
+        vm_id_fragment: Option<&str>,
+        envelope: SigningEnvelope,
+    ) -> RoochResult<ExecuteTransactionResponseView> {
+        // Find a verification method key available in local keystore
+        let (vm_fragment, _controller_addr, keypair) = self
+            .find_did_verification_method_keypair(did_address, vm_id_fragment)
+            .await?;
 
         // Build tx_data
         let tx_data = self
             .build_tx_data(did_address, action, max_gas_amount)
             .await?;
 
-        // Sign with controller key
-        let authenticator = SessionAuthenticator::sign(&keypair, &tx_data);
+        // Sign with DID authenticator using specified envelope
+        let authenticator = DIDAuthenticator::sign(&keypair, &tx_data, &vm_fragment, envelope)?;
         let tx = RoochTransaction::new(tx_data, authenticator.into());
 
         // Execute
