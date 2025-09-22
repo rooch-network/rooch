@@ -72,7 +72,7 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
 
 export function varintByteNum(input: number): Bytes {
   if (input <= 0xfc) {
-    // Changed from < 253 to <= 0xFC (252)
+    // Changed from < 253 to <= 252 (0xFC) for clarity
     let buf = Buffer.alloc(1)
     buf.writeUInt8(input)
     return buf

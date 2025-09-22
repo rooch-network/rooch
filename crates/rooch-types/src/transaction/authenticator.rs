@@ -221,7 +221,7 @@ impl DIDAuthenticator {
             }
             SigningEnvelope::WebAuthnV0 => {
                 // WebAuthn implementation would go here
-                return Err(anyhow::anyhow!("WebAuthn not yet implemented"));
+                return Err(anyhow::anyhow!("WebAuthn envelope not yet implemented for DID authenticator"));
             }
         };
 
