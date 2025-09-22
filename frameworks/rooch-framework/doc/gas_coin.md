@@ -12,6 +12,7 @@ This module defines Rooch Gas Coin.
 -  [Function `balance`](#0x3_gas_coin_balance)
 -  [Function `burn`](#0x3_gas_coin_burn)
 -  [Function `deduct_gas`](#0x3_gas_coin_deduct_gas)
+-  [Function `refund_gas`](#0x3_gas_coin_refund_gas)
 -  [Function `faucet`](#0x3_gas_coin_faucet)
 -  [Function `faucet_entry`](#0x3_gas_coin_faucet_entry)
 -  [Function `genesis_init`](#0x3_gas_coin_genesis_init)
@@ -96,6 +97,18 @@ deduct gas coin from the given account.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(addr: <b>address</b>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_RGas">gas_coin::RGas</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_gas_coin_refund_gas"></a>
+
+## Function `refund_gas`
+
+Refund gas to account store
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_refund_gas">refund_gas</a>(addr: <b>address</b>, <a href="gas_coin.md#0x3_gas_coin">gas_coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_RGas">gas_coin::RGas</a>&gt;)
 </code></pre>
 
 

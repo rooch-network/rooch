@@ -26,6 +26,7 @@
 -  [Struct `SubRAV`](#0x3_payment_channel_SubRAV)
 -  [Constants](#@Constants_0)
 -  [Function `calc_channel_object_id`](#0x3_payment_channel_calc_channel_object_id)
+-  [Function `borrow_or_create_payment_hub`](#0x3_payment_channel_borrow_or_create_payment_hub)
 -  [Function `ensure_payment_hub_exists`](#0x3_payment_channel_ensure_payment_hub_exists)
 -  [Function `create_payment_hub`](#0x3_payment_channel_create_payment_hub)
 -  [Function `deposit_to_hub_entry`](#0x3_payment_channel_deposit_to_hub_entry)
@@ -64,6 +65,8 @@
 -  [Function `get_sub_channel_method_type`](#0x3_payment_channel_get_sub_channel_method_type)
 -  [Function `get_active_channel_count`](#0x3_payment_channel_get_active_channel_count)
 -  [Function `can_withdraw_from_hub`](#0x3_payment_channel_can_withdraw_from_hub)
+-  [Function `get_balance_in_hub`](#0x3_payment_channel_get_balance_in_hub)
+-  [Function `withdraw_from_hub_internal`](#0x3_payment_channel_withdraw_from_hub_internal)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -624,6 +627,17 @@ This allows anyone to derive the channel ID from sender, receiver, and coin type
 
 
 
+<a name="0x3_payment_channel_borrow_or_create_payment_hub"></a>
+
+## Function `borrow_or_create_payment_hub`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_borrow_or_create_payment_hub">borrow_or_create_payment_hub</a>(owner: <b>address</b>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="payment_channel.md#0x3_payment_channel_PaymentHub">payment_channel::PaymentHub</a>&gt;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ensure_payment_hub_exists"></a>
 
 ## Function `ensure_payment_hub_exists`
@@ -1089,4 +1103,30 @@ Check if withdrawal is allowed for a specific coin type
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_can_withdraw_from_hub">can_withdraw_from_hub</a>(owner: <b>address</b>, coin_type: <a href="_String">string::String</a>): bool
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_get_balance_in_hub"></a>
+
+## Function `get_balance_in_hub`
+
+Get balance of specific coin type in payment hub
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_balance_in_hub">get_balance_in_hub</a>&lt;CoinType: key&gt;(owner: <b>address</b>): <a href="">u256</a>
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_withdraw_from_hub_internal"></a>
+
+## Function `withdraw_from_hub_internal`
+
+Internal function to withdraw specific coin type from payment hub
+(no signer required and does not check for active channels)
+Used by system contracts like transaction_gas module
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_withdraw_from_hub_internal">withdraw_from_hub_internal</a>&lt;CoinType: key&gt;(addr: <b>address</b>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>

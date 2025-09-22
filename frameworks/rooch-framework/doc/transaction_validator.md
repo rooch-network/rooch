@@ -38,6 +38,7 @@
 <b>use</b> <a href="session_validator.md#0x3_session_validator">0x3::session_validator</a>;
 <b>use</b> <a href="transaction.md#0x3_transaction">0x3::transaction</a>;
 <b>use</b> <a href="transaction_fee.md#0x3_transaction_fee">0x3::transaction_fee</a>;
+<b>use</b> <a href="transaction_gas.md#0x3_transaction_gas">0x3::transaction_gas</a>;
 <b>use</b> <a href="webauthn_validator.md#0x3_webauthn_validator">0x3::webauthn_validator</a>;
 </code></pre>
 

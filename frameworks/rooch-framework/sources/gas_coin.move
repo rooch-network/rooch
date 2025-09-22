@@ -14,6 +14,7 @@ module rooch_framework::gas_coin {
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
+    friend rooch_framework::transaction_gas;
     friend rooch_framework::transaction_fee;
 
     /// RGas is the symbol of Rooch Gas Coin
@@ -55,6 +56,11 @@ module rooch_framework::gas_coin {
         account_coin_store::withdraw_extend<RGas>(addr, amount)
     }
 
+    /// Refund gas to account store
+    public(friend) fun refund_gas(addr: address, gas_coin: Coin<RGas>) {
+        account_coin_store::deposit_extend<RGas>(addr, gas_coin)
+    }
+
     /// Mint gas coin to the given account.
     public(friend) fun faucet(addr: address, amount: u256) {
         let coin = mint(amount);
@@ -86,4 +92,5 @@ module rooch_framework::gas_coin {
         );
         object::transfer(coin_info_obj, @rooch_framework);
     }
+
 }
