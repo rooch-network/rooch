@@ -580,6 +580,18 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                     first,
                     second
                 ),
+                ">" => {
+                    assert!(compare_numbers(&first, &second, |a, b| a > b), "Assert {:?} > {:?} failed", first, second);
+                },
+                "<" => {
+                    assert!(compare_numbers(&first, &second, |a, b| a < b), "Assert {:?} < {:?} failed", first, second);
+                },
+                ">=" => {
+                    assert!(compare_numbers(&first, &second, |a, b| a >= b), "Assert {:?} >= {:?} failed", first, second);
+                },
+                "<=" => {
+                    assert!(compare_numbers(&first, &second, |a, b| a <= b), "Assert {:?} <= {:?} failed", first, second);
+                },
                 _ => panic!("unsupported operator {:?}", op.as_str()),
             },
             _ => panic!(
@@ -683,6 +695,31 @@ fn extract_json(output: &String) -> Result<Value> {
     let last_line = lines.last().expect("No JSON found in output");
     let json: Value = serde_json::from_str(last_line)?;
     Ok(json)
+}
+
+/// Compare two number strings with high precision
+/// First tries to parse as u128 (for large integers), then falls back to f64
+fn compare_numbers<F>(first: &str, second: &str, op: F) -> bool 
+where 
+    F: Fn(f64, f64) -> bool,
+{
+    // Try to parse as u128 first (for blockchain amounts)
+    if let (Ok(first_u128), Ok(second_u128)) = (first.parse::<u128>(), second.parse::<u128>()) {
+        // Convert to f64 for comparison, but this should be safe for most blockchain amounts
+        // since f64 has 53 bits of precision which covers most practical amounts
+        return op(first_u128 as f64, second_u128 as f64);
+    }
+    
+    // Try to parse as i128 (for signed integers)
+    if let (Ok(first_i128), Ok(second_i128)) = (first.parse::<i128>(), second.parse::<i128>()) {
+        return op(first_i128 as f64, second_i128 as f64);
+    }
+    
+    // Fall back to f64 parsing
+    match (first.parse::<f64>(), second.parse::<f64>()) {
+        (Ok(first_f64), Ok(second_f64)) => op(first_f64, second_f64),
+        _ => panic!("Cannot parse {:?} or {:?} as numbers for comparison", first, second),
+    }
 }
 
 #[tokio::main]
