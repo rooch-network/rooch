@@ -148,7 +148,36 @@ Example:
 Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 ```
 
-Supported operators: `==`, `!=`, `contains`, `not_contains`.
+### 6.1 Supported Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `==` | Equality comparison | `"{{$.balance}} == 1000"` |
+| `!=` | Inequality comparison | `"{{$.status}} != error"` |
+| `contains` | String contains (case-sensitive) | `"{{$.message}} contains success"` |
+| `not_contains` | String does not contain (case-insensitive fallback) | `"{{$.error}} not_contains timeout"` |
+| `>` | Greater than (numeric) | `"{{$.balance}} > 0"` |
+| `<` | Less than (numeric) | `"{{$.gas_used}} < 1000000"` |
+| `>=` | Greater than or equal (numeric) | `"{{$.amount}} >= 100"` |
+| `<=` | Less than or equal (numeric) | `"{{$.fee}} <= 50000"` |
+
+### 6.2 Numeric Comparison Precision
+
+The framework supports **high-precision numeric comparisons** without precision loss:
+
+- **u128/i128**: Blockchain amounts (up to 128-bit integers) are compared directly without conversion to floating-point
+- **f64**: Floating-point numbers are supported with proper NaN handling
+- **Auto-detection**: The system automatically detects the appropriate numeric type
+
+```gherkin
+# Large blockchain amounts (no precision loss)
+Then assert: "{{$.hub_balance}} > {{$.account_balance}}"
+
+# Floating-point comparisons
+Then assert: "{{$.exchange_rate}} >= 1.5"
+```
+
+### 6.3 Multiple Assertions
 
 Multiple assertions can be written on **one line** — every three tokens form a rule:
 
@@ -217,15 +246,127 @@ Scenario: payment_channel_operations
 
 ---
 
-## 9. Debugging Tips
+## 9. Advanced Testing Patterns & Best Practices
+
+### 9.1 Command History Indexing
+
+Understanding the `move[-N]` indexing pattern is crucial for complex test scenarios:
+
+```gherkin
+# Record balances before transaction
+Then cmd: "move view --function rooch_framework::gas_coin::balance --args address:{{$.account[0].default.address}}"
+Then cmd: "move view --function rooch_framework::payment_channel::get_balance_in_hub --type-args 0x3::gas_coin::RGas --args address:{{$.account[0].default.address}}"
+
+# Execute transaction
+Then cmd: "move run --function rooch_framework::empty::empty --sender {{$.account[0].default.address}} --json"
+
+# Check balances after transaction
+Then cmd: "move view --function rooch_framework::gas_coin::balance --args address:{{$.account[0].default.address}}"
+Then cmd: "move view --function rooch_framework::payment_channel::get_balance_in_hub --type-args 0x3::gas_coin::RGas --args address:{{$.account[0].default.address}}"
+
+# Compare before/after values using correct indices
+Then assert: "{{$.move[-4].return_values[0].decoded_value}} > {{$.move[-1].return_values[0].decoded_value}}"  # hub balance decreased
+Then assert: "{{$.move[-5].return_values[0].decoded_value}} == {{$.move[-2].return_values[0].decoded_value}}"  # account balance unchanged
+```
+
+**Key insight**: `move[-1]` refers to the **last** move command in chronological order, `move[-2]` to the second-to-last, etc.
+
+### 9.2 Testing Gas Payment Sources
+
+When testing gas payment mechanisms, consider the **automatic gas allocation** in local/dev environments:
+
+```gherkin
+# In local/dev, users automatically receive 1000000000000 RGAS when balance is 0
+# So faucet_entry(5000000000000) results in ~6000000000000 total (minus gas consumption)
+Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:5000000000000 --sender {{$.account[0].default.address}} --json"
+Then cmd: "move view --function rooch_framework::transaction_gas::total_available_gas_balance --args address:{{$.account[0].default.address}}"
+Then assert: "{{$.move[-1].return_values[0].decoded_value}} > 5900000000000"  # Account for automatic allocation + gas consumption
+```
+
+### 9.3 Precise Balance Verification Strategy
+
+To verify gas payment sources (hub vs account store), use this pattern:
+
+1. **Record before-state**: Capture both account and hub balances
+2. **Execute transaction**: Perform the operation that consumes gas
+3. **Record after-state**: Capture balances again
+4. **Assert changes**: Use numeric comparisons to verify the expected source was used
+
+```gherkin
+# Scenario: Verify gas comes from payment hub, not account store
+Then cmd: "move view --function rooch_framework::gas_coin::balance --args address:{{$.account[0].default.address}}"
+Then cmd: "move view --function rooch_framework::payment_channel::get_balance_in_hub --type-args 0x3::gas_coin::RGas --args address:{{$.account[0].default.address}}"
+Then cmd: "move run --function rooch_framework::empty::empty --sender {{$.account[0].default.address}} --json"
+Then cmd: "move view --function rooch_framework::gas_coin::balance --args address:{{$.account[0].default.address}}"
+Then cmd: "move view --function rooch_framework::payment_channel::get_balance_in_hub --type-args 0x3::gas_coin::RGas --args address:{{$.account[0].default.address}}"
+
+# Verify hub balance decreased (gas was deducted from hub)
+Then assert: "{{$.move[-4].return_values[0].decoded_value}} > {{$.move[-1].return_values[0].decoded_value}}"
+# Verify account balance unchanged (gas was NOT deducted from account)
+Then assert: "{{$.move[-5].return_values[0].decoded_value}} == {{$.move[-2].return_values[0].decoded_value}}"
+```
+
+### 9.4 Type Arguments in CLI Commands
+
+When calling generic Move functions, use the correct syntax for type arguments:
+
+```gherkin
+# Correct: Use --type-args for generic type parameters
+Then cmd: "move run --function rooch_framework::payment_channel::deposit_to_hub_entry --type-args 0x3::gas_coin::RGas --args address:{{$.account[0].default.address}} --args u256:6000000000 --sender {{$.account[0].default.address}} --json"
+
+# Correct: For view functions too
+Then cmd: "move view --function rooch_framework::payment_channel::get_balance_in_hub --type-args 0x3::gas_coin::RGas --args address:{{$.account[0].default.address}}"
+```
+
+### 9.5 Testing Mixed Payment Scenarios
+
+For complex scenarios like mixed gas payment (hub + account store), create dedicated test cases:
+
+```gherkin
+Scenario: gas_payment_mixed_behavior
+  # Setup: Create payment hub with insufficient balance for full gas payment
+  Then cmd: "move run --function rooch_framework::payment_channel::deposit_to_hub_entry --type-args 0x3::gas_coin::RGas --args address:{{$.account[0].default.address}} --args u256:100000 --sender {{$.account[0].default.address}} --json"
+  
+  # Execute transaction requiring more gas than hub balance
+  # This should trigger: hub balance → 0, remaining gas from account store
+  Then cmd: "move run --function rooch_framework::empty::empty --sender {{$.account[0].default.address}} --json"
+  
+  # Verify both sources were used
+  Then assert: "{{$.move[-4].return_values[0].decoded_value}} > {{$.move[-1].return_values[0].decoded_value}}"  # hub decreased
+  Then assert: "{{$.move[-5].return_values[0].decoded_value}} > {{$.move[-2].return_values[0].decoded_value}}"  # account also decreased
+```
+
+---
+
+## 10. Debugging Tips
 
 1. **Inspect context**: On failure, the framework prints the entire `TemplateContext`.
 2. **Port busy**: `integration.rs` waits for the port to free; after 60 s it panics.
 3. **JSON parsing failed**: Ensure the CLI command includes `--json`; otherwise stdout is stored as plain string.
+4. **Index calculation errors**: When assertions fail with unexpected values, double-check your `move[-N]` indices by counting commands chronologically.
+5. **Precision issues**: If numeric comparisons fail unexpectedly, verify that large integers aren't being truncated. The framework now supports full u128 precision.
+6. **Template resolution failures**: Use descriptive comments to document what each `{{$.move[-N]}}` reference should contain.
+7. **Gas consumption variations**: In local/dev environments, account for automatic RGAS allocation (1000000000000) when testing initial balances.
+
+### 10.1 Common Assertion Patterns
+
+```gherkin
+# Verify transaction succeeded
+Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+# Check balance decreased (gas consumed)
+Then assert: "{{$.move[-2].return_values[0].decoded_value}} > {{$.move[-1].return_values[0].decoded_value}}"
+
+# Verify balance unchanged
+Then assert: "{{$.move[-2].return_values[0].decoded_value}} == {{$.move[-1].return_values[0].decoded_value}}"
+
+# Check non-zero balance
+Then assert: "{{$.move[-1].return_values[0].decoded_value}} > 0"
+```
 
 ---
 
-## 10. References
+## 11. References
 
 * Cucumber for Rust: <https://github.com/cucumber-rs/cucumber>
 * jpst template engine: <https://crates.io/crates/jpst>
