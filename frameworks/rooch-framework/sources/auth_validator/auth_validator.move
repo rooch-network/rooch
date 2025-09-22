@@ -167,7 +167,7 @@ module rooch_framework::auth_validator {
     ): TxValidateResult {
         let final_session_key = if (option::is_some(&vm_fragment)) {
             // If DID VM fragment is provided, encode it
-            let vm_frag = option::extract(&mut vm_fragment);
+            let vm_frag = option::destroy_some(vm_fragment);
             let encoded_vm_fragment = encode_did_vm_fragment(vm_frag);
             option::some(encoded_vm_fragment)
         } else {
@@ -187,7 +187,7 @@ module rooch_framework::auth_validator {
     public(friend) fun get_validate_result_from_ctx(): TxValidateResult {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         assert!(option::is_some(&validate_result_opt), ErrorMustExecuteAfterValidate);
-        option::extract(&mut validate_result_opt)
+        option::destroy_some(validate_result_opt)
     }
 
     /// Get the auth validator's id from the TxValidateResult in the TxContext
@@ -202,7 +202,7 @@ module rooch_framework::auth_validator {
     fun get_raw_session_key_from_ctx_option(): Option<vector<u8>> {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         if (option::is_some(&validate_result_opt)) {
-            let validate_result = option::extract(&mut validate_result_opt);
+            let validate_result = option::destroy_some(validate_result_opt);
             validate_result.session_key 
         }else {
             option::none<vector<u8>>()
@@ -217,7 +217,7 @@ module rooch_framework::auth_validator {
             return option::none<vector<u8>>()
         };
         
-        let raw_session_key = option::extract(&mut raw_session_key_opt);
+        let raw_session_key = option::destroy_some(raw_session_key_opt);
         
         // Check if it's encoded DID VM fragment
         if (is_encoded_did_vm_fragment(&raw_session_key)) {
@@ -236,7 +236,7 @@ module rooch_framework::auth_validator {
     /// Only can be called after the transaction is validated
     public(friend) fun get_session_key_from_ctx(): vector<u8> {
         assert!(is_validate_via_session_key(), ErrorMustExecuteAfterValidate);
-        option::extract(&mut get_session_key_from_ctx_option())
+        option::destroy_some(get_session_key_from_ctx_option())
     }
 
     public(friend) fun get_bitcoin_address_from_ctx(): BitcoinAddress {
@@ -247,7 +247,7 @@ module rooch_framework::auth_validator {
     public fun get_bitcoin_address_from_ctx_option(): Option<BitcoinAddress> {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         if (option::is_some(&validate_result_opt)) {
-            let validate_result = option::extract(&mut validate_result_opt);
+            let validate_result = option::destroy_some(validate_result_opt);
             if (bitcoin_address::is_empty(&validate_result.bitcoin_address)) {
                 option::none<BitcoinAddress>()
             }else {
@@ -264,7 +264,7 @@ module rooch_framework::auth_validator {
         let prefix = DID_VM_FRAGMENT_PREFIX;
         let result = vector::empty<u8>();
         vector::append(&mut result, prefix);
-        vector::append(&mut result, *string::bytes(&vm_fragment));
+        vector::append(&mut result, string::into_bytes(vm_fragment));
         result
     }
 
@@ -276,7 +276,8 @@ module rooch_framework::auth_validator {
         };
         
         let i = 0;
-        while (i < vector::length(&prefix)) {
+        let prefix_len = vector::length(&prefix);
+        while (i < prefix_len) {
             if (*vector::borrow(session_key, i) != *vector::borrow(&prefix, i)) {
                 return false
             };
@@ -289,13 +290,8 @@ module rooch_framework::auth_validator {
     fun decode_did_vm_fragment(session_key: &vector<u8>): String {
         let prefix = DID_VM_FRAGMENT_PREFIX;
         let prefix_len = vector::length(&prefix);
-        let vm_fragment_bytes = vector::empty<u8>();
-        
-        let i = prefix_len;
-        while (i < vector::length(session_key)) {
-            vector::push_back(&mut vm_fragment_bytes, *vector::borrow(session_key, i));
-            i = i + 1;
-        };
+        let session_key_len = vector::length(session_key);
+        let vm_fragment_bytes = vector::slice(session_key, prefix_len, session_key_len);
         
         string::utf8(vm_fragment_bytes)
     }
@@ -308,7 +304,7 @@ module rooch_framework::auth_validator {
             return option::none<String>()
         };
         
-        let raw_session_key = option::extract(&mut raw_session_key_opt);
+        let raw_session_key = option::destroy_some(raw_session_key_opt);
         
         // Check if it's encoded DID VM fragment
         if (is_encoded_did_vm_fragment(&raw_session_key)) {
