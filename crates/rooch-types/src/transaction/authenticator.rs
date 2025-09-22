@@ -8,6 +8,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use bitcoin::consensus::Encodable;
 #[cfg(any(test, feature = "fuzzing"))]
 use fastcrypto::ed25519::Ed25519KeyPair;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -221,7 +222,9 @@ impl DIDAuthenticator {
             }
             SigningEnvelope::WebAuthnV0 => {
                 // WebAuthn implementation would go here
-                return Err(anyhow::anyhow!("WebAuthn envelope not yet implemented for DID authenticator"));
+                return Err(anyhow::anyhow!(
+                    "WebAuthn envelope not yet implemented for DID authenticator"
+                ));
             }
         };
 
@@ -249,36 +252,22 @@ impl BuiltinAuthenticator for DIDAuthenticator {
 }
 
 /// Helper function to compute Bitcoin message digest
+/// Uses bitcoin consensus encoding format to match the standard Bitcoin message signing
 fn bitcoin_message_digest(message: &[u8]) -> Vec<u8> {
-    let prefix = b"Bitcoin Signed Message:\n";
-    let varint = varint_encode(message.len());
+    let prefix = b"Bitcoin Signed Message:\n".to_vec();
+    let message_vec = message.to_vec();
 
-    let mut full_message = Vec::new();
-    full_message.extend_from_slice(prefix);
-    full_message.extend_from_slice(&varint);
-    full_message.extend_from_slice(message);
+    // Use bitcoin consensus encoding for the full message
+    let mut encoded_message = Vec::new();
+    prefix
+        .consensus_encode(&mut encoded_message)
+        .expect("Encoding prefix should not fail");
+    message_vec
+        .consensus_encode(&mut encoded_message)
+        .expect("Encoding message should not fail");
 
-    let first_hash = sha2_256_of(&full_message);
+    let first_hash = sha2_256_of(&encoded_message);
     sha2_256_of(first_hash.as_bytes()).0.to_vec()
-}
-
-/// Simple varint encoding for message length
-fn varint_encode(len: usize) -> Vec<u8> {
-    if len < 0xfd {
-        vec![len as u8]
-    } else if len <= 0xffff {
-        let mut bytes = vec![0xfd];
-        bytes.extend_from_slice(&(len as u16).to_le_bytes());
-        bytes
-    } else if len <= 0xffffffff {
-        let mut bytes = vec![0xfe];
-        bytes.extend_from_slice(&(len as u32).to_le_bytes());
-        bytes
-    } else {
-        let mut bytes = vec![0xff];
-        bytes.extend_from_slice(&(len as u64).to_le_bytes());
-        bytes
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -380,8 +369,6 @@ impl fmt::Display for Authenticator {
 mod tests {
     use super::*;
     use crate::crypto::RoochKeyPair;
-    #[cfg(any(test, feature = "fuzzing"))]
-    use proptest::prelude::*;
 
     proptest! {
         #[test]
@@ -620,29 +607,6 @@ mod tests {
         assert_eq!(serialized1, serialized2);
 
         println!("✅ Authenticator serialization stability verified");
-    }
-
-    #[test]
-    fn test_varint_encoding() {
-        // Test varint encoding for different message lengths
-        let test_cases = vec![
-            (0, vec![0]),
-            (252, vec![252]),
-            (253, vec![0xfd, 253, 0]),
-            (65535, vec![0xfd, 255, 255]),
-            (65536, vec![0xfe, 0, 0, 1, 0]),
-        ];
-
-        for (input, expected) in test_cases {
-            let result = varint_encode(input);
-            assert_eq!(
-                result, expected,
-                "Varint encoding failed for input {}",
-                input
-            );
-        }
-
-        println!("✅ Varint encoding verified");
     }
 
     #[test]
