@@ -581,16 +581,16 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                     second
                 ),
                 ">" => {
-                    assert!(compare_numbers(&first, &second, |a, b| a > b), "Assert {:?} > {:?} failed", first, second);
+                    assert!(compare_numbers(&first, &second, |ord| ord == std::cmp::Ordering::Greater), "Assert {:?} > {:?} failed", first, second);
                 },
                 "<" => {
-                    assert!(compare_numbers(&first, &second, |a, b| a < b), "Assert {:?} < {:?} failed", first, second);
+                    assert!(compare_numbers(&first, &second, |ord| ord == std::cmp::Ordering::Less), "Assert {:?} < {:?} failed", first, second);
                 },
                 ">=" => {
-                    assert!(compare_numbers(&first, &second, |a, b| a >= b), "Assert {:?} >= {:?} failed", first, second);
+                    assert!(compare_numbers(&first, &second, |ord| ord != std::cmp::Ordering::Less), "Assert {:?} >= {:?} failed", first, second);
                 },
                 "<=" => {
-                    assert!(compare_numbers(&first, &second, |a, b| a <= b), "Assert {:?} <= {:?} failed", first, second);
+                    assert!(compare_numbers(&first, &second, |ord| ord != std::cmp::Ordering::Greater), "Assert {:?} <= {:?} failed", first, second);
                 },
                 _ => panic!("unsupported operator {:?}", op.as_str()),
             },
@@ -698,26 +698,31 @@ fn extract_json(output: &String) -> Result<Value> {
 }
 
 /// Compare two number strings with high precision
-/// First tries to parse as u128 (for large integers), then falls back to f64
+/// Supports u128, i128, and f64 comparisons without precision loss
 fn compare_numbers<F>(first: &str, second: &str, op: F) -> bool 
 where 
-    F: Fn(f64, f64) -> bool,
+    F: Fn(std::cmp::Ordering) -> bool,
 {
+    
     // Try to parse as u128 first (for blockchain amounts)
     if let (Ok(first_u128), Ok(second_u128)) = (first.parse::<u128>(), second.parse::<u128>()) {
-        // Convert to f64 for comparison, but this should be safe for most blockchain amounts
-        // since f64 has 53 bits of precision which covers most practical amounts
-        return op(first_u128 as f64, second_u128 as f64);
+        return op(first_u128.cmp(&second_u128));
     }
     
     // Try to parse as i128 (for signed integers)
     if let (Ok(first_i128), Ok(second_i128)) = (first.parse::<i128>(), second.parse::<i128>()) {
-        return op(first_i128 as f64, second_i128 as f64);
+        return op(first_i128.cmp(&second_i128));
     }
     
-    // Fall back to f64 parsing
+    // Fall back to f64 parsing for floating point numbers
     match (first.parse::<f64>(), second.parse::<f64>()) {
-        (Ok(first_f64), Ok(second_f64)) => op(first_f64, second_f64),
+        (Ok(first_f64), Ok(second_f64)) => {
+            // Use partial_cmp for f64 and handle NaN cases
+            match first_f64.partial_cmp(&second_f64) {
+                Some(ordering) => op(ordering),
+                None => panic!("Cannot compare {:?} and {:?} - one or both values are NaN", first, second),
+            }
+        },
         _ => panic!("Cannot parse {:?} or {:?} as numbers for comparison", first, second),
     }
 }
