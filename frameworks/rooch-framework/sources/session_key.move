@@ -40,11 +40,7 @@ module rooch_framework::session_key {
     const SIGNATURE_SCHEME_ED25519: u8 = 0;
     const SIGNATURE_SCHEME_SECP256K1: u8 = 1;
     const SIGNATURE_SCHEME_ECDSAR1: u8 = 2;
-    
-    // Signing envelope constants for message formatting
-    const SIGNING_ENVELOPE_RAW_TX_HASH: u8 = 0;
-    const SIGNING_ENVELOPE_BITCOIN_MESSAGE_V0: u8 = 1;
-    const SIGNING_ENVELOPE_WEBAUTHN_V0: u8 = 2;
+     
     
     public fun signature_scheme_ed25519(): u8 {
         SIGNATURE_SCHEME_ED25519
@@ -437,7 +433,6 @@ module rooch_framework::session_key {
         vector::append(&mut auth_key, hash::sha2_256(*public_key));
         auth_key
     }
-
 
     #[test]
     fun test_parse_scope_string() {

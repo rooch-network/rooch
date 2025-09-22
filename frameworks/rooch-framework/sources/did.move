@@ -22,6 +22,10 @@ module rooch_framework::did {
     use rooch_framework::ecdsa_r1;
 
     friend rooch_framework::genesis;
+    friend rooch_framework::transaction_validator;
+
+    /// DID VM fragment prefix in session_key context
+    const DID_VM_FRAGMENT_PREFIX: vector<u8> = b"DID_VM:";
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;
@@ -1556,6 +1560,16 @@ module rooch_framework::did {
 
     // =================== Internal helper functions ===================
 
+    /// Encode DID VM fragment for storage in session_key field
+    /// Format: "DID_VM:" + vm_fragment
+    public(friend) fun encode_did_vm_fragment(vm_fragment: String): vector<u8> {
+        let prefix = DID_VM_FRAGMENT_PREFIX;
+        let result = vector::empty<u8>();
+        vector::append(&mut result, prefix);
+        vector::append(&mut result, *string::bytes(&vm_fragment));
+        result
+    }
+
     /// Get verification method fragment from transaction context
     /// Supports both DID validator and session key authentication
     fun get_vm_fragment_from_context(did_document_data: &DIDDocument): Option<String> {
@@ -1565,8 +1579,8 @@ module rooch_framework::did {
             let session_key = option::extract(&mut session_key_opt);
             
             // Check if this is encoded DID validator info
-            if (is_did_validator_data(&session_key)) {
-                let vm_fragment = extract_vm_fragment_from_did_data(&session_key);
+            if (is_encoded_did_vm_fragment(&session_key)) {
+                let vm_fragment = decode_did_vm_fragment(&session_key);
                 return option::some(vm_fragment)
             } else {
                 // Fall back to session key logic for backward compatibility
@@ -1578,8 +1592,8 @@ module rooch_framework::did {
     }
 
     /// Check if session key data is actually encoded DID validator info
-    fun is_did_validator_data(session_key: &vector<u8>): bool {
-        let prefix = b"DID_VM:";
+    fun is_encoded_did_vm_fragment(session_key: &vector<u8>): bool {
+        let prefix = DID_VM_FRAGMENT_PREFIX;
         if (vector::length(session_key) < vector::length(&prefix)) {
             return false
         };
@@ -1595,8 +1609,8 @@ module rooch_framework::did {
     }
 
     /// Extract VM fragment from encoded DID validator data
-    fun extract_vm_fragment_from_did_data(session_key: &vector<u8>): String {
-        let prefix = b"DID_VM:";
+    fun decode_did_vm_fragment(session_key: &vector<u8>): String {
+        let prefix = DID_VM_FRAGMENT_PREFIX;
         let prefix_len = vector::length(&prefix);
         let vm_fragment_bytes = vector::empty<u8>();
         

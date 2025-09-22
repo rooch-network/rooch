@@ -29,22 +29,11 @@ module rooch_framework::transaction_validator {
     use rooch_framework::bitcoin_address;
     use rooch_framework::webauthn_validator;
     use rooch_framework::did_validator;
-    use std::string::{Self, String};
-    use std::vector;
+    use rooch_framework::did;
 
     const MAX_U64: u128 = 18446744073709551615;
 
-    /// Encode DID VM fragment for storage in session_key field
-    /// Format: "DID_VM:" + vm_fragment
-    fun encode_did_vm_info(vm_fragment: String): vector<u8> {
-        let prefix = b"DID_VM:";
-        let result = vector::empty<u8>();
-        vector::append(&mut result, prefix);
-        vector::append(&mut result, *string::bytes(&vm_fragment));
-        result
-    }
-
-
+    
     /// Just using to get module signer
     struct TransactionValidatorPlaceholder {}
 
@@ -120,11 +109,11 @@ module rooch_framework::transaction_validator {
             let (_did, vm_fragment) = did_validator::validate(authenticator_payload);
             
             // Encode vm_fragment in session_key field for backward compatibility
-            let encoded_vm_info = encode_did_vm_info(vm_fragment);
+            let encoded_vm_fragment = did::encode_did_vm_fragment(vm_fragment);
             
             // DID accounts may not have associated Bitcoin addresses
             let bitcoin_address = address_mapping::resolve_bitcoin(sender);
-            (bitcoin_address, option::some(encoded_vm_info), option::none())
+            (bitcoin_address, option::some(encoded_vm_fragment), option::none())
         }else{
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);

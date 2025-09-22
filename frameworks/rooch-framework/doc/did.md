@@ -91,6 +91,7 @@
 -  [Function `get_created_timestamp_by_object_id`](#0x3_did_get_created_timestamp_by_object_id)
 -  [Function `get_updated_timestamp_by_object_id`](#0x3_did_get_updated_timestamp_by_object_id)
 -  [Function `get_did_address`](#0x3_did_get_did_address)
+-  [Function `encode_did_vm_fragment`](#0x3_did_encode_did_vm_fragment)
 -  [Function `find_verification_method_by_session_key`](#0x3_did_find_verification_method_by_session_key)
 
 
@@ -313,6 +314,16 @@ Invalid signature (can be reused or made more specific)
 
 
 <pre><code><b>const</b> <a href="did.md#0x3_did_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 11;
+</code></pre>
+
+
+
+<a name="0x3_did_DID_VM_FRAGMENT_PREFIX"></a>
+
+DID VM fragment prefix in session_key context
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_DID_VM_FRAGMENT_PREFIX">DID_VM_FRAGMENT_PREFIX</a>: <a href="">vector</a>&lt;u8&gt; = [68, 73, 68, 95, 86, 77, 58];
 </code></pre>
 
 
@@ -1501,6 +1512,19 @@ This accesses the Object's metadata updated_at timestamp
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_address">get_did_address</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_did_encode_did_vm_fragment"></a>
+
+## Function `encode_did_vm_fragment`
+
+Encode DID VM fragment for storage in session_key field
+Format: "DID_VM:" + vm_fragment
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="did.md#0x3_did_encode_did_vm_fragment">encode_did_vm_fragment</a>(vm_fragment: <a href="_String">string::String</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 

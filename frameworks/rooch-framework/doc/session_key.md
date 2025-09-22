@@ -179,33 +179,6 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_SIGNING_ENVELOPE_BITCOIN_MESSAGE_V0"></a>
-
-
-
-<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNING_ENVELOPE_BITCOIN_MESSAGE_V0">SIGNING_ENVELOPE_BITCOIN_MESSAGE_V0</a>: u8 = 1;
-</code></pre>
-
-
-
-<a name="0x3_session_key_SIGNING_ENVELOPE_RAW_TX_HASH"></a>
-
-
-
-<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNING_ENVELOPE_RAW_TX_HASH">SIGNING_ENVELOPE_RAW_TX_HASH</a>: u8 = 0;
-</code></pre>
-
-
-
-<a name="0x3_session_key_SIGNING_ENVELOPE_WEBAUTHN_V0"></a>
-
-
-
-<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNING_ENVELOPE_WEBAUTHN_V0">SIGNING_ENVELOPE_WEBAUTHN_V0</a>: u8 = 2;
-</code></pre>
-
-
-
 <a name="0x3_session_key_max_inactive_interval"></a>
 
 ## Function `max_inactive_interval`
