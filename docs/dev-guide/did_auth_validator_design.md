@@ -50,31 +50,19 @@ const DID_VALIDATOR_ID: u64 = 4;
 
 ### 1. Authenticator Payload Format
 
-The DID authenticator payload uses **BCS (Binary Canonical Serialization)** for consistent serialization across all platforms:
+The DID authenticator payload uses BCS (Binary Canonical Serialization) and contains:
 
-```move
-struct DIDAuthPayload has copy, store, drop {
-    scheme: u8,
-    envelope: u8,
-    vm_fragment: String,
-    signature: vector<u8>,
-    message: Option<vector<u8>>,
-}
-```
-
-Fields:
-- `scheme`: Authentication scheme (Ed25519, Secp256k1, Secp256r1)
-- `envelope`: Signing envelope type (RawTxHash, BitcoinMessageV0, WebAuthnV0) - **always required**
-- `vm_fragment`: Verification method fragment (e.g., "key-1")
-- `signature`: The signature bytes
-- `message`: Optional message for certain envelope types (BitcoinMessageV0, WebAuthnV0)
+- envelope (u8): Signing envelope type (RawTxHash, BitcoinMessageV0, WebAuthnV0). Always required
+- vm_fragment (String): DID verification method fragment (e.g., "key-1")
+- signature (vector<u8>): Signature bytes
+- message (Option<vector<u8>>): Optional, required by some envelopes (e.g., BitcoinMessageV0, WebAuthnV0)
 
 **Design Decisions**:
-1. **BCS Serialization**: Uses standard BCS format for consistency between Move, Rust, and TypeScript implementations
-2. **Explicit Envelope**: Always requires an envelope byte (no legacy compatibility needed)
-3. **Type Safety**: Leverages Move's type system for better validation
-4. **Specific Error Codes**: Uses detailed error codes for better debugging (see Error Handling section)
-5. **Compatibility Strategy**: Uses session_key field encoding to maintain backward compatibility without structural changes
+1. **BCS Serialization**: Consistent across Move, Rust, and TypeScript
+2. **Explicit Envelope**: Always requires an envelope byte
+3. **No Explicit Scheme**: The verification algorithm is chosen based on the DID Verification Method type, not an explicit `scheme` field
+4. **Specific Error Codes**: Uses detailed error codes (see Error Handling)
+5. **Compatibility Strategy**: Uses `session_key` field encoding to maintain backward compatibility without structural changes
 
 Note: The DID identifier is derived from the transaction sender address, eliminating redundancy in the payload. This optimization:
 - Reduces payload size and gas costs
@@ -83,162 +71,67 @@ Note: The DID identifier is derived from the transaction sender address, elimina
 
 ### 2. Envelope Types
 
-The DID validator supports the same envelope types as session validator:
+The DID validator supports the same envelope types as session validator and defines their verification digests explicitly:
 
 - **0x00 RawTxHash**: Direct signature over transaction hash
+  - Digest: `tx_hash`
 - **0x01 BitcoinMessageV0**: Bitcoin-style message signing
+  - Digest: `SHA256(SHA256("Bitcoin Signed Message:\n" + VarInt(len(message)) + message))`
+  - Requires an explicit `message` in the payload; see Template Binding below
 - **0x02 WebAuthnV0**: WebAuthn authentication
+  - Digest: `authenticator_data || SHA256(client_data_json)`
+  - `message` contains a BCS-encoded `WebauthnAuthPayload` structure; the `challenge` in `client_data_json` MUST equal the base64-encoded `tx_hash`
 
-### 3. Validation Flow
+Unknown envelope values MUST be rejected. Reserved for future extensions: `0x03 Bip322Simple`, `0x10..` vendor-specific envelopes.
 
-```move
-public fun validate(authenticator_payload: vector<u8>): DID {
-    // 1. Parse authenticator payload
-    let auth_payload = parse_did_auth_payload(&authenticator_payload);
-    
-    // 2. Derive DID from sender address
-    let sender = tx_context::sender();
-    let sender_did = did::new_rooch_did_by_address(sender);
-    let did_identifier = did::get_did_identifier_string(&sender_did);
-    
-    // 3. Resolve DID Document
-    let did_object_id = did::resolve_did_object_id(&did_identifier);
-    assert!(
-        object::exists_object_with_type<DIDDocument>(did_object_id),
-        auth_validator::error_validate_invalid_authenticator()
-    );
-    let did_doc = did::borrow_did_document(did_object_id);
-    
-    // 4. Verify the verification method is authorized for authentication
-    assert!(
-        vector::contains(
-            did::doc_authentication_methods(did_doc), 
-            &auth_payload.verification_method_fragment
-        ),
-        auth_validator::error_validate_invalid_authenticator()
-    );
-    
-    // 5. Get verification method details
-    let vm_opt = did::doc_verification_method(
-        did_doc, 
-        &auth_payload.verification_method_fragment
-    );
-    assert!(
-        option::is_some(&vm_opt),
-        auth_validator::error_validate_invalid_authenticator()
-    );
-    let vm = option::extract(&mut vm_opt);
-    
-    // 6. Compute message digest based on envelope type
-    let tx_hash = tx_context::tx_hash();
-    let digest = compute_digest(
-        tx_hash, 
-        auth_payload.envelope_type, 
-        auth_payload.message
-    );
-    
-    // 7. Verify signature
-    let valid = did::verify_signature_by_type(
-        digest,
-        auth_payload.signature,
-        did::verification_method_public_key_multibase(&vm),
-        did::verification_method_type(&vm)
-    );
-    
-    assert!(valid, auth_validator::error_validate_invalid_authenticator());
-    
-    // Return the DID for transaction context
-    sender_did
-}
+#### Template Binding (BitcoinMessageV0)
+
+To prevent replay and phishing, the `message` for `BitcoinMessageV0` MUST equal a canonical template derived from the transaction under verification:
+
+```
+Rooch Transaction:\n<hex_lowercase(tx_hash)>
 ```
 
-### 4. Integration with Transaction Validator
+- `hex_lowercase(tx_hash)` is the lowercase hex encoding of the 32-byte Rooch transaction hash
+- The template MUST be exactly reproduced on-chain for equality comparison; messages deviating from the template MUST be rejected
 
-Add DID validator handling in `transaction_validator::validate`:
+#### Implementation Notes (Move)
 
-```move
-else if (auth_validator_id == did_validator::auth_validator_id()) {
-    let (_did, vm_fragment) = did_validator::validate(authenticator_payload);
-    
-    // Encode vm_fragment in session_key field for backward compatibility
-    let encoded_vm_info = encode_did_vm_info(vm_fragment);
-    
-    // DID accounts may not have associated Bitcoin addresses
-    let bitcoin_address = address_mapping::resolve_bitcoin(sender);
-    (bitcoin_address, option::some(encoded_vm_info), option::none())
-}
+- Hex encoding: implement a simple nibble-to-ASCII function to produce `hex_lowercase(tx_hash)` deterministically
+- VarInt: initially support the single-byte branch (`len(message) < 253`) since the canonical template length is small; extend to full VarInt if/when needed
+- Keep parsing loops and strict length checks to avoid out-of-bounds reads
 
-/// Encode DID VM fragment for storage in session_key field
-/// Format: "DID_VM:" + vm_fragment
-fun encode_did_vm_info(vm_fragment: String): vector<u8> {
-    let prefix = b"DID_VM:";
-    let result = vector::empty<u8>();
-    vector::append(&mut result, prefix);
-    vector::append(&mut result, *string::bytes(&vm_fragment));
-    result
-}
-```
+### 3. Validation Flow (Abstract)
 
-### 5. Compatibility with Existing DID Module
+At a high level, the validator:
 
-To maintain compatibility with existing `did.move` logic that depends on session keys, we encode the DID verification method fragment in the `session_key` field of `TxValidateResult`. This approach avoids modifying the `TxValidateResult` structure while providing full backward compatibility.
+1. Parses the BCS-encoded authenticator payload
+2. Derives the sender's DID from the transaction sender address
+3. Loads the current DID Document for the sender
+4. Checks that `vm_fragment` is authorized under the DID's `authentication` relationship
+5. Computes the message digest according to the `envelope`
+6. Verifies the signature using the DID Verification Method's type and public key
+7. Returns the sender DID and `vm_fragment` to the transaction validator
 
-The `did.move` module is updated to detect and handle both authentication methods:
+Envelope notes (conceptual):
+- RawTxHash: digest is the Rooch `tx_hash`
+- BitcoinMessageV0: digest follows Bitcoin message signing (double SHA-256 over prefix + length + message). The implementation ensures the `message` equals the canonical template derived from `tx_hash`
+- WebAuthnV0: digest is `authenticator_data || SHA256(client_data_json)` and the `challenge` must equal base64-encoded `tx_hash`
 
-```move
-/// Get verification method fragment from transaction context
-/// Supports both DID validator and session key authentication
-fun get_vm_fragment_from_context(did_document_data: &DIDDocument): Option<String> {
-    // Get session key from context (might be encoded DID info or actual session key)
-    let session_key_opt = auth_validator::get_session_key_from_ctx_option();
-    if (option::is_some(&session_key_opt)) {
-        let session_key = option::extract(&mut session_key_opt);
-        
-        // Check if this is encoded DID validator info
-        if (is_did_validator_data(&session_key)) {
-            let vm_fragment = extract_vm_fragment_from_did_data(&session_key);
-            return option::some(vm_fragment)
-        } else {
-            // Fall back to session key logic for backward compatibility
-            find_verification_method_by_session_key(did_document_data, &session_key)
-        }
-    } else {
-        option::none()
-    }
-}
+### 4. Integration with Transaction Validator (Abstract)
 
-/// Check if session key data is actually encoded DID validator info
-fun is_did_validator_data(session_key: &vector<u8>): bool {
-    let prefix = b"DID_VM:";
-    if (vector::length(session_key) < vector::length(&prefix)) {
-        return false
-    };
-    
-    let i = 0;
-    while (i < vector::length(&prefix)) {
-        if (*vector::borrow(session_key, i) != *vector::borrow(&prefix, i)) {
-            return false
-        };
-        i = i + 1;
-    };
-    true
-}
+The transaction validator invokes the DID validator and, on success, stores the result in the transaction context:
 
-/// Extract VM fragment from encoded DID validator data
-fun extract_vm_fragment_from_did_data(session_key: &vector<u8>): String {
-    let prefix = b"DID_VM:";
-    let prefix_len = vector::length(&prefix);
-    let vm_fragment_bytes = vector::empty<u8>();
-    
-    let i = prefix_len;
-    while (i < vector::length(session_key)) {
-        vector::push_back(&mut vm_fragment_bytes, *vector::borrow(session_key, i));
-        i = i + 1;
-    };
-    
-    string::utf8(vm_fragment_bytes)
-}
-```
+- The returned `vm_fragment` is encoded into the existing `session_key` field using a distinct prefix (e.g., `"DID_VM:"`) to preserve backward compatibility
+- Helper APIs in `rooch_framework::auth_validator` handle encoding/decoding and accessors for the transaction context
+
+### 5. Compatibility with Existing DID Module (Abstract)
+
+To remain compatible with contracts that expect a session key in the transaction context:
+
+- The DID validator encodes the `vm_fragment` into the `session_key` field with a distinct prefix (e.g., `"DID_VM:"`)
+- Consumers can detect the prefix to distinguish DID validation from a real session key
+- Convenience functions in `rooch_framework::auth_validator` provide accessors to obtain either the actual session key or the DID VM fragment
 
 **Encoding Strategy**:
 - **DID Validator**: Stores `"DID_VM:" + vm_fragment` in the `session_key` field
@@ -337,180 +230,14 @@ The DID validator uses specific error codes for better debugging and troubleshoo
 
 ## SDK Support
 
-### TypeScript SDK Example
+### SDK Notes (Abstract)
 
-```typescript
-class DIDAuthenticator implements IAuthenticator {
-    constructor(
-        private verificationMethodFragment: string,
-        private signer: Signer,
-        private envelope: SigningEnvelope = SigningEnvelope.RawTxHash
-    ) {}
-    
-    async sign(message: Uint8Array): Promise<Signature> {
-        // Sign based on envelope type
-        const signData = this.prepareSignData(message);
-        return await this.signer.sign(signData);
-    }
-    
-    build(): Authenticator {
-        // Build DID authenticator payload
-        // Note: DID identifier is derived from sender address on-chain
-        const payload = encodeDIDAuthPayload({
-            verificationMethodFragment: this.verificationMethodFragment,
-            envelope: this.envelope,
-            signature: this.signature,
-            message: this.envelopeMessage
-        });
-        
-        return new Authenticator(DID_VALIDATOR_ID, payload);
-    }
-}
-```
-
-### Rust SDK Example
-
-```rust
-use rooch_types::{
-    crypto::{RoochKeyPair, Signature, SignatureScheme},
-    framework::auth_validator::BuiltinAuthValidator,
-    transaction::{Authenticator, RoochTransactionData},
-};
-use serde::{Deserialize, Serialize};
-use anyhow::Result;
-
-const DID_VALIDATOR_ID: u64 = 4;
-
-/// Signing envelope types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SigningEnvelope {
-    RawTxHash = 0x00,
-    BitcoinMessageV0 = 0x01, 
-    WebAuthnV0 = 0x02,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DIDAuthPayload {
-    pub scheme: u8,
-    pub envelope: u8,
-    pub vm_fragment: String,
-    pub signature: Vec<u8>,
-    pub message: Option<Vec<u8>>,
-}
-
-pub struct DIDAuthenticator {
-    vm_fragment: String,
-    envelope: SigningEnvelope,
-}
-
-impl DIDAuthenticator {
-    pub fn new(vm_fragment: String) -> Self {
-        Self {
-            vm_fragment,
-            envelope: SigningEnvelope::RawTxHash,
-        }
-    }
-
-    pub fn with_envelope(mut self, envelope: SigningEnvelope) -> Self {
-        self.envelope = envelope;
-        self
-    }
-
-    pub fn sign(
-        &self,
-        kp: &RoochKeyPair,
-        tx_data: &RoochTransactionData,
-    ) -> Result<Authenticator> {
-        let tx_hash = tx_data.tx_hash();
-        
-        // Compute digest based on envelope type
-        let (digest, message) = match self.envelope {
-            SigningEnvelope::RawTxHash => (tx_hash.as_bytes().to_vec(), None),
-            SigningEnvelope::BitcoinMessageV0 => {
-                let message = format!("Rooch Transaction:\n{}", hex::encode(tx_hash));
-                let message_bytes = message.as_bytes();
-                let digest = bitcoin_message_digest(message_bytes);
-                (digest, Some(message_bytes.to_vec()))
-            }
-            SigningEnvelope::WebAuthnV0 => {
-                // WebAuthn implementation would go here
-                return Err(anyhow::anyhow!("WebAuthn not yet implemented"));
-            }
-        };
-
-        let signature = kp.sign(&digest);
-        
-        let payload = DIDAuthPayload {
-            scheme: signature.scheme().flag(),
-            envelope: self.envelope as u8,
-            vm_fragment: self.vm_fragment.clone(),
-            signature: signature.as_ref().to_vec(),
-            message,
-        };
-
-        let payload_bytes = bcs::to_bytes(&payload)?;
-        Ok(Authenticator::new(DID_VALIDATOR_ID, payload_bytes))
-    }
-}
-
-/// Helper function to compute Bitcoin message digest
-fn bitcoin_message_digest(message: &[u8]) -> Vec<u8> {
-    use sha2::{Sha256, Digest};
-    
-    let mut hasher = Sha256::new();
-    hasher.update(b"Bitcoin Signed Message:\n");
-    hasher.update(&varint_encode(message.len()));
-    hasher.update(message);
-    let first_hash = hasher.finalize();
-    
-    let mut second_hasher = Sha256::new();
-    second_hasher.update(&first_hash);
-    second_hasher.finalize().to_vec()
-}
-
-/// Simple varint encoding for message length
-fn varint_encode(len: usize) -> Vec<u8> {
-    if len < 0xfd {
-        vec![len as u8]
-    } else if len <= 0xffff {
-        let mut bytes = vec![0xfd];
-        bytes.extend_from_slice(&(len as u16).to_le_bytes());
-        bytes
-    } else if len <= 0xffffffff {
-        let mut bytes = vec![0xfe];
-        bytes.extend_from_slice(&(len as u32).to_le_bytes());
-        bytes
-    } else {
-        let mut bytes = vec![0xff];
-        bytes.extend_from_slice(&(len as u64).to_le_bytes());
-        bytes
-    }
-}
-
-// Usage example
-impl Authenticator {
-    /// Create a DID authenticator
-    pub fn did(
-        kp: &RoochKeyPair,
-        tx_data: &RoochTransactionData,
-        vm_fragment: &str,
-    ) -> Result<Self> {
-        let did_auth = DIDAuthenticator::new(vm_fragment.to_string());
-        did_auth.sign(kp, tx_data)
-    }
-    
-    /// Create a DID authenticator with Bitcoin message envelope
-    pub fn did_bitcoin_message(
-        kp: &RoochKeyPair,
-        tx_data: &RoochTransactionData,
-        vm_fragment: &str,
-    ) -> Result<Self> {
-        let did_auth = DIDAuthenticator::new(vm_fragment.to_string())
-            .with_envelope(SigningEnvelope::BitcoinMessageV0);
-        did_auth.sign(kp, tx_data)
-    }
-}
-```
+- Encode DID authenticator payload with BCS; include `envelope`, `vm_fragment`, `signature`, and optional `message`
+- For Bitcoin-only wallets, build the canonical template from `tx_hash` and use the Bitcoin message envelope
+- Do not include an explicit scheme in the DID payload; rely on the DID Verification Method type and signature bytes
+- Reference implementations:
+  - TypeScript: `sdk/typescript/rooch-sdk/src/crypto/authenticator.ts`
+  - Rust: `crates/rooch-types/src/transaction/authenticator.rs`
 
 ### SDK Implementation Notes
 
@@ -539,6 +266,10 @@ Both SDKs should:
 - Payload parsing with various formats
 - Signature verification for each scheme
 - Envelope type handling
+- BitcoinMessageV0 success with correct template and signature
+- Failure when `message` mismatches the canonical template (BitcoinMessageV0)
+- Failure for unknown/unsupported `envelope` values
+- Failure for message length inconsistencies (e.g., VarInt mismatch)
 - Error cases (invalid DID, unauthorized method, bad signature)
 
 ### 2. Integration Tests
@@ -547,30 +278,12 @@ Both SDKs should:
 - Interaction with DID module operations
 - Cross-validator compatibility (e.g., session keys created from DID)
 
-### 3. Test Cases
+### 3. Test Cases (Examples)
 
-```move
-#[test]
-fun test_did_auth_raw_tx_hash() {
-    // Test direct transaction hash signing
-}
-
-#[test]
-fun test_did_auth_bitcoin_message() {
-    // Test Bitcoin message envelope
-}
-
-#[test]
-fun test_did_auth_webauthn() {
-    // Test WebAuthn envelope
-}
-
-#[test]
-#[expected_failure(abort_code = auth_validator::error_validate_invalid_authenticator())]
-fun test_did_auth_unauthorized_method() {
-    // Test using non-authentication verification method
-}
-```
+- Direct `tx_hash` signing (RawTxHash)
+- Bitcoin message envelope with canonical template (BitcoinMessageV0)
+- WebAuthn envelope with challenge binding
+- Unauthorized verification method should fail
 
 ## Migration and Compatibility
 
@@ -644,4 +357,5 @@ struct DIDAuthPayloadV2 {
 
 - [W3C DID Core Specification](https://www.w3.org/TR/did-core/)
 - [Rooch DID Module Documentation](./rooch_move_guide.md#42-did-system-and-authentication)
-- [Session Signing Envelope Design](./session_signing_envelope.md)
+ - Source: `frameworks/rooch-framework/sources/auth_validator/did_validator.move`
+ - Source: `frameworks/rooch-framework/sources/auth_validator/auth_validator.move`
