@@ -257,7 +257,15 @@ impl Default for World {
 }
 
 #[given(expr = "a server for {word}")] // Cucumber Expression
-async fn start_server(w: &mut World, _scenario: String) {
+async fn start_server(w: &mut World, scenario: String) {
+    // Initialize execution context for this scenario
+    if let Some(ref mut ctx) = w.execution_ctx {
+        ctx.scenario_name = scenario.clone();
+        ctx.current_step = "Starting server".to_string();
+        ctx.step_number = 1;
+        ctx.display_progress();
+    }
+    
     tokio::time::sleep(Duration::from_secs(5)).await;
     let mut service = Service::new();
     wait_port_available(w.opt.port()).await;
@@ -389,6 +397,13 @@ async fn sleep(_world: &mut World, args: String) {
 
 #[then(regex = r#"cmd: "(.*)?""#)]
 async fn run_cmd(world: &mut World, args: String) {
+    // Update execution context for this step
+    if let Some(ref mut ctx) = world.execution_ctx {
+        ctx.current_step = format!("Running command: {}", args);
+        ctx.step_number += 1;
+        ctx.display_progress();
+    }
+    
     let config_dir = world.opt.base().base_data_dir().join(ROOCH_CONFIR_DIR);
     debug!("config_dir: {:?}", config_dir);
     if world.tpl_ctx.is_none() {
@@ -1063,20 +1078,56 @@ where
             // Use partial_cmp for f64 and handle NaN cases
             match first_f64.partial_cmp(&second_f64) {
                 Some(ordering) => op(ordering),
-                None => panic!(
-                    "Cannot compare {:?} and {:?} - one or both values are NaN",
-                    first, second
-                ),
+                None => {
+                    eprintln!("⚠️  Cannot compare NaN values: {:?} and {:?}", first, second);
+                    panic!(
+                        "Cannot compare {:?} and {:?} - one or both values are NaN",
+                        first, second
+                    )
+                },
             }
         }
-        _ => panic!(
-            "Cannot parse {:?} or {:?} as numbers for comparison",
-            first, second
-        ),
+        _ => {
+            eprintln!("⚠️  Cannot parse as numbers: {:?} and {:?}", first, second);
+            eprintln!("    Supported formats: integers (u128, i128) or floating point (f64)");
+            panic!(
+                "Cannot parse {:?} or {:?} as numbers for comparison",
+                first, second
+            )
+        },
+    }
+}
+
+/// Display usage information about environment variables
+fn display_env_var_help() {
+    if env::var("ROOCH_TEST_HELP").unwrap_or_default() == "true" {
+        println!("🔧 Rooch Integration Test Framework - Environment Variables:");
+        println!("   ROOCH_TEST_LOG_LEVEL=minimal|normal|verbose|debug   (default: normal)");
+        println!("   ROOCH_TEST_TEMPLATE_DEBUG=true|false               (default: false)");
+        println!("   ROOCH_TEST_SHOW_PROGRESS=true|false                (default: false)");
+        println!("   ROOCH_TEST_TIMEOUT=<seconds>                       (default: 30)");
+        println!("   ROOCH_TEST_HELP=true                               (show this help)");
+        println!();
+        println!("📖 For detailed documentation, see: crates/testsuite/DEBUGGING.md");
+        println!();
     }
 }
 
 #[tokio::main]
 async fn main() {
+    // Display help information if requested
+    display_env_var_help();
+    
+    // Initialize logging with enhanced levels
+    let log_level = LogLevel::from_env();
+    if log_level >= LogLevel::Verbose {
+        println!("🧪 Enhanced Rooch Integration Test Framework");
+        println!("   Log Level: {:?}", log_level);
+        println!("   Template Debug: {}", env::var("ROOCH_TEST_TEMPLATE_DEBUG").unwrap_or_default());
+        println!("   Show Progress: {}", env::var("ROOCH_TEST_SHOW_PROGRESS").unwrap_or_default());
+        println!("   Command Timeout: {}s", env::var("ROOCH_TEST_TIMEOUT").unwrap_or_default());
+        println!();
+    }
+    
     World::cucumber().run_and_exit("./features/").await;
 }

@@ -13073,6 +13073,7 @@ dependencies = [
  "hmac",
  "jpst",
  "rand 0.8.5",
+ "regex",
  "rooch",
  "rooch-config",
  "rooch-rpc-client",
