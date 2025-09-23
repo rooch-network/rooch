@@ -44,7 +44,7 @@ impl CommandAction<FinalizeCancellationOutput> for FinalizeCancellationCommand {
 
         // Execute the transaction
         let result = context
-            .sign_and_execute_action(sender, action, max_gas_amount)
+            .sign_and_execute_as_did(sender, action, max_gas_amount)
             .await?;
 
         Ok(FinalizeCancellationOutput {

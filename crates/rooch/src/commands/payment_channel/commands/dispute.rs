@@ -151,9 +151,9 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
             signature_bytes,
         );
 
-        // Execute the transaction
+        // Execute the transaction using DID account signing
         let result = context
-            .sign_and_execute_action(sender, action, max_gas_amount)
+            .sign_and_execute_as_did(sender, action, max_gas_amount)
             .await?;
 
         Ok(DisputeOutput {

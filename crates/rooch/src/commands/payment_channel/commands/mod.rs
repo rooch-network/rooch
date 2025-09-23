@@ -10,3 +10,5 @@ pub mod finalize_cancellation;
 pub mod init;
 pub mod open;
 pub mod query;
+pub mod query_revenue;
+pub mod withdraw_revenue;

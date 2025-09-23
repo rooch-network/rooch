@@ -21,6 +21,7 @@ module rooch_framework::payment_channel {
     use rooch_framework::did;
     use rooch_framework::account_coin_store;
     use rooch_framework::chain_id;
+    use rooch_framework::payment_revenue;
 
     friend rooch_framework::transaction_gas;
 
@@ -651,8 +652,16 @@ module rooch_framework::payment_channel {
             let hub = object::borrow_mut(hub_obj);
             let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, channel.coin_type, incremental_amount);
 
-            // Deposit the coin directly into the receiver's payment hub
-            deposit_to_hub_generic(channel.receiver, generic_payment);
+            // Deposit the coin as revenue into the receiver's revenue hub
+            payment_revenue::deposit_revenue_generic(
+                channel.receiver,
+                generic_payment,
+                payment_revenue::create_revenue_source(
+                    std::string::utf8(b"payment_channel"),
+                    option::some(channel_id),
+                    std::string::utf8(b"Channel claim")
+                )
+            );
         };
         
         // Emit claim event
@@ -754,13 +763,23 @@ module rooch_framework::payment_channel {
             };
         };
         
-        // Transfer total incremental amount from sender's hub to receiver's hub
+        // Transfer total incremental amount from sender's hub to receiver's revenue hub
         if (total_incremental_amount > 0) {
             let hub_obj = borrow_or_create_payment_hub(channel.sender);
             let hub = object::borrow_mut(hub_obj);
             let coin_type_name = channel.coin_type;
             let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, total_incremental_amount);
-            deposit_to_hub_generic(channel.receiver, generic_payment);
+            
+            // Deposit as revenue from channel closure
+            payment_revenue::deposit_revenue_generic(
+                channel.receiver,
+                generic_payment,
+                payment_revenue::create_revenue_source(
+                    std::string::utf8(b"payment_channel"),
+                    option::some(channel_id),
+                    std::string::utf8(b"Channel closure")
+                )
+            );
         };
         
         // Mark channel as closed and increment epoch
@@ -1032,12 +1051,22 @@ module rooch_framework::payment_channel {
         let final_amount = cancellation_info.pending_amount;
         
         if (final_amount > 0) {
-            // Transfer final payment to receiver
+            // Transfer final payment to receiver as revenue
             let hub_obj = borrow_or_create_payment_hub(channel.sender);
             let hub = object::borrow_mut(hub_obj);
             let coin_type_name = channel.coin_type;
             let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, final_amount);
-            deposit_to_hub_generic(channel.receiver, generic_payment);
+            
+            // Deposit as revenue from channel cancellation
+            payment_revenue::deposit_revenue_generic(
+                channel.receiver,
+                generic_payment,
+                payment_revenue::create_revenue_source(
+                    std::string::utf8(b"payment_channel"),
+                    option::some(channel_id),
+                    std::string::utf8(b"Channel cancellation")
+                )
+            );
         };
         
         // Mark channel as closed and increment epoch
