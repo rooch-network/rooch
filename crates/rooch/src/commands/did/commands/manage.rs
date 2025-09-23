@@ -295,9 +295,9 @@ impl CommandAction<ManageOutput> for AddVerificationMethodCommand {
             relationships,
         );
 
-        // Execute transaction using DID account signing
+        // Execute transaction with automatic address type detection
         let result = context
-            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .sign_and_execute_action(did_address, action, self.tx_options.max_gas_amount)
             .await?;
 
         Ok(ManageOutput {
@@ -325,9 +325,9 @@ impl CommandAction<ManageOutput> for RemoveVerificationMethodCommand {
         let fragment = MoveString::from_str(&self.fragment)?;
         let action = DIDModule::remove_verification_method_action(fragment);
 
-        // Execute transaction using DID account signing
+        // Execute transaction with automatic address type detection
         let result = context
-            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .sign_and_execute_action(did_address, action, self.tx_options.max_gas_amount)
             .await?;
 
         Ok(ManageOutput {
@@ -358,9 +358,9 @@ impl CommandAction<ManageOutput> for AddToRelationshipCommand {
         let action =
             DIDModule::add_to_verification_relationship_action(fragment, relationship as u8);
 
-        // Execute transaction using DID account signing
+        // Execute transaction with automatic address type detection
         let result = context
-            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .sign_and_execute_action(did_address, action, self.tx_options.max_gas_amount)
             .await?;
 
         Ok(ManageOutput {
@@ -391,9 +391,9 @@ impl CommandAction<ManageOutput> for RemoveFromRelationshipCommand {
         let action =
             DIDModule::remove_from_verification_relationship_action(fragment, relationship as u8);
 
-        // Execute transaction using DID account signing
+        // Execute transaction with automatic address type detection
         let result = context
-            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .sign_and_execute_action(did_address, action, self.tx_options.max_gas_amount)
             .await?;
 
         Ok(ManageOutput {
@@ -435,9 +435,9 @@ impl CommandAction<ManageOutput> for AddServiceCommand {
             DIDModule::add_service_action(fragment, service_type, endpoint)
         };
 
-        // Execute transaction using DID account signing
+        // Execute transaction with automatic address type detection
         let result = context
-            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .sign_and_execute_action(did_address, action, self.tx_options.max_gas_amount)
             .await?;
 
         Ok(ManageOutput {
@@ -475,9 +475,9 @@ impl CommandAction<ManageOutput> for UpdateServiceCommand {
         let action =
             DIDModule::update_service_action(fragment, service_type, endpoint, keys, values);
 
-        // Execute transaction using DID account signing
+        // Execute transaction with automatic address type detection
         let result = context
-            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .sign_and_execute_action(did_address, action, self.tx_options.max_gas_amount)
             .await?;
 
         Ok(ManageOutput {
@@ -505,9 +505,9 @@ impl CommandAction<ManageOutput> for RemoveServiceCommand {
         let fragment = MoveString::from_str(&self.fragment)?;
         let action = DIDModule::remove_service_action(fragment);
 
-        // Execute transaction using DID account signing
+        // Execute transaction with automatic address type detection
         let result = context
-            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .sign_and_execute_action(did_address, action, self.tx_options.max_gas_amount)
             .await?;
 
         Ok(ManageOutput {

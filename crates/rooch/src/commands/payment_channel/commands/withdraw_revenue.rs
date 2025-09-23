@@ -66,9 +66,9 @@ impl CommandAction<WithdrawRevenueOutput> for WithdrawRevenueCommand {
         let action =
             PaymentRevenueModule::withdraw_revenue_entry_action(coin_type.clone(), self.amount);
 
-        // Execute transaction using DID account signing
+        // Execute transaction with automatic address type detection
         let result = context
-            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .sign_and_execute_action(sender, action, max_gas_amount)
             .await?;
 
         // For now, no fees are charged, so net amount equals gross amount

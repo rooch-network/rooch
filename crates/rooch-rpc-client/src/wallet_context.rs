@@ -303,8 +303,16 @@ impl WalletContext {
         action: MoveAction,
         max_gas_amount: Option<u64>,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx_data = self.build_tx_data(sender, action, max_gas_amount).await?;
-        self.sign_and_execute(sender, tx_data).await
+        // Check if the sender address has an associated DID document
+        if self.is_did_address(sender).await? {
+            // Use DID signing method
+            self.sign_and_execute_as_did(sender, action, max_gas_amount)
+                .await
+        } else {
+            // Use traditional wallet signing method
+            let tx_data = self.build_tx_data(sender, action, max_gas_amount).await?;
+            self.sign_and_execute(sender, tx_data).await
+        }
     }
 
     /// Sign and execute a transaction **on behalf of a DID account**.
@@ -477,6 +485,27 @@ impl WalletContext {
             rooch_network.genesis_config.bitcoin_network,
         );
         Ok(bitcoin_network)
+    }
+
+    /// Check if the given address has an associated DID document
+    /// Returns true if a DID document exists for this address, false otherwise
+    async fn is_did_address(&self, address: RoochAddress) -> RoochResult<bool> {
+        let client = self.get_client().await?;
+        let did_module = client.as_module_binding::<DIDModule>();
+
+        // Check if DID document exists for this address
+        match did_module.exists_did_for_address(address.into()) {
+            Ok(exists) => Ok(exists),
+            Err(_) => {
+                // If there's an error checking DID existence, assume it's not a DID address
+                // This ensures backward compatibility and graceful fallback
+                tracing::debug!(
+                    "Failed to check DID existence for address {}, assuming wallet address",
+                    address
+                );
+                Ok(false)
+            }
+        }
     }
 }
 

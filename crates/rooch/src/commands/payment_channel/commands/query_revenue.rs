@@ -73,7 +73,7 @@ impl CommandAction<RevenueQueryOutput> for QueryRevenueCommand {
         let owner = context.resolve_rooch_address(self.owner)?;
 
         // 1. Calculate revenue hub ID
-        let hub_id = PaymentRevenueModule::payment_revenue_hub_id(owner.into());
+        let hub_id = PaymentRevenueModule::payment_revenue_hub_id(owner);
 
         // 2. Get PaymentRevenueHub object state
         let mut hub_object_views = client
@@ -85,7 +85,7 @@ impl CommandAction<RevenueQueryOutput> for QueryRevenueCommand {
             // No revenue hub exists yet - return empty result
             return Ok(RevenueQueryOutput {
                 hub_id,
-                owner: owner.into(),
+                owner,
                 revenue_balances: vec![],
                 total_amount: None,
             });
@@ -168,7 +168,7 @@ impl CommandAction<RevenueQueryOutput> for QueryRevenueCommand {
 
             return Ok(RevenueQueryOutput {
                 hub_id,
-                owner: owner.into(),
+                owner,
                 revenue_balances: vec![],
                 total_amount,
             });
@@ -176,7 +176,7 @@ impl CommandAction<RevenueQueryOutput> for QueryRevenueCommand {
 
         Ok(RevenueQueryOutput {
             hub_id,
-            owner: owner.into(),
+            owner,
             revenue_balances,
             total_amount: None,
         })
