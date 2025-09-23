@@ -135,7 +135,7 @@ module rooch_framework::payment_revenue {
     /// Create a revenue hub for the sender
     public entry fun create_revenue_hub() {
         let sender = tx_context::sender();
-        ensure_revenue_hub_exists(sender);
+        let _hub_obj = borrow_or_create_revenue_hub(sender);
     }
 
     /// Withdraw revenue to account coin store
@@ -255,11 +255,6 @@ module rooch_framework::payment_revenue {
         object::borrow_mut_object_extend<PaymentRevenueHub>(hub_obj_id)
     }
 
-    /// Ensure revenue hub exists (public version for entry functions)
-    fun ensure_revenue_hub_exists(owner: address) {
-        let _hub_obj = borrow_or_create_revenue_hub(owner);
-    }
-
     /// Borrow mutable revenue hub (assumes it exists)
     fun borrow_mut_revenue_hub(owner: address): &mut Object<PaymentRevenueHub> {
         let hub_obj_id = object::account_named_object_id<PaymentRevenueHub>(owner);
@@ -313,16 +308,6 @@ module rooch_framework::payment_revenue {
     }
 
     #[test_only]
-    /// Test helper to create revenue source (alias for testing)
-    public fun create_test_revenue_source(
-        source_type: String,
-        source_id: Option<ObjectID>,
-        description: String,
-    ): RevenueSource {
-        create_revenue_source(source_type, source_id, description)
-    }
-
-    #[test_only]
     use rooch_framework::genesis;
     #[test_only]
     use rooch_framework::gas_coin::{Self, RGas};
@@ -360,7 +345,7 @@ module rooch_framework::payment_revenue {
         let generic_coin = coin::convert_coin_to_generic_coin(test_coin);
         
         // Deposit revenue
-        let source = create_test_revenue_source(
+        let source = create_revenue_source(
             std::string::utf8(b"test_source"),
             option::none(),
             std::string::utf8(b"Test deposit")
