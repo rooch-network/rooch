@@ -56,6 +56,15 @@ Bitseed is a SFT asset type.
 ## Constants
 
 
+<a name="0xa_bitseed_ErrorInvalidAmount"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_ErrorInvalidAmount">ErrorInvalidAmount</a>: u64 = 3;
+</code></pre>
+
+
+
 <a name="0xa_bitseed_BIT_SEED_DEPLOY"></a>
 
 
@@ -97,15 +106,6 @@ Bitseed is a SFT asset type.
 
 
 <pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_ErrorBitseedNotSplittable">ErrorBitseedNotSplittable</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="0xa_bitseed_ErrorInvalidAmount"></a>
-
-
-
-<pre><code><b>const</b> <a href="bitseed.md#0xa_bitseed_ErrorInvalidAmount">ErrorInvalidAmount</a>: u64 = 3;
 </code></pre>
 
 

@@ -16,11 +16,13 @@ module rooch_framework::payment_channel {
     use moveos_std::timestamp;
     use moveos_std::event;
     use std::string::String;
-    use rooch_framework::coin::{Coin, GenericCoin};
+    use rooch_framework::coin::{Self, Coin, GenericCoin};
     use rooch_framework::multi_coin_store::{Self, MultiCoinStore};
     use rooch_framework::did;
     use rooch_framework::account_coin_store;
     use rooch_framework::chain_id;
+
+    friend rooch_framework::transaction_gas;
 
     // === Error Constants ===
     /// The signer is not the designated receiver of the channel.
@@ -255,7 +257,7 @@ module rooch_framework::payment_channel {
         object::custom_object_id<ChannelKey, PaymentChannel>(key)
     }
 
-    fun borrow_or_create_payment_hub(owner: address) : &mut Object<PaymentHub> {
+    public(friend) fun borrow_or_create_payment_hub(owner: address) : &mut Object<PaymentHub> {
         let hub_obj_id = object::account_named_object_id<PaymentHub>(owner);
         if (!object::exists_object_with_type<PaymentHub>(hub_obj_id)) {
             let multi_coin_store = multi_coin_store::create();
@@ -1249,6 +1251,33 @@ module rooch_framework::payment_channel {
         did::verify_signature_by_type(msg, signature, &pk_multibase, &method_type)
     }
 
+    // === Generic Coin Functions for Payment Hub ===
+
+    /// Get balance of specific coin type in payment hub
+    public fun get_balance_in_hub<CoinType: key>(owner: address): u256 {
+        if (!payment_hub_exists(owner)) {
+            return 0u256
+        };
+        
+        let hub_id = get_payment_hub_id(owner);
+        let hub_obj = object::borrow_object<PaymentHub>(hub_id);
+        let hub = object::borrow(hub_obj);
+        let coin_type = type_info::type_name<CoinType>();
+        multi_coin_store::balance(&hub.multi_coin_store, coin_type)
+    }
+
+
+    /// Internal function to withdraw specific coin type from payment hub 
+    /// (no signer required and does not check for active channels)
+    /// Used by system contracts like transaction_gas module
+    public(friend) fun withdraw_from_hub_internal<CoinType: key>(addr: address, amount: u256): Coin<CoinType> {
+        let hub_obj = borrow_or_create_payment_hub(addr);
+        let hub = object::borrow_mut(hub_obj);
+        let coin_type = type_info::type_name<CoinType>();
+        let generic_coin = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type, amount);
+        coin::convert_generic_coin_to_coin<CoinType>(generic_coin)
+    }
+
     #[test_only]
     /// Test-only version of claim_from_channel that uses the test signature verification
     public fun claim_from_channel_for_test(
@@ -1324,4 +1353,5 @@ module rooch_framework::payment_channel {
         let method_type = std::string::utf8(b"EcdsaSecp256k1VerificationKey2019");
         assert!(verify_rav_signature(sub_rav, signature, pk_multibase, method_type), 3);    
     }
+
 }

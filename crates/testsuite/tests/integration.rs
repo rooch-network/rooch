@@ -580,6 +580,38 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                     first,
                     second
                 ),
+                ">" => {
+                    assert!(
+                        compare_numbers(&first, &second, |ord| ord == std::cmp::Ordering::Greater),
+                        "Assert {:?} > {:?} failed",
+                        first,
+                        second
+                    );
+                }
+                "<" => {
+                    assert!(
+                        compare_numbers(&first, &second, |ord| ord == std::cmp::Ordering::Less),
+                        "Assert {:?} < {:?} failed",
+                        first,
+                        second
+                    );
+                }
+                ">=" => {
+                    assert!(
+                        compare_numbers(&first, &second, |ord| ord != std::cmp::Ordering::Less),
+                        "Assert {:?} >= {:?} failed",
+                        first,
+                        second
+                    );
+                }
+                "<=" => {
+                    assert!(
+                        compare_numbers(&first, &second, |ord| ord != std::cmp::Ordering::Greater),
+                        "Assert {:?} <= {:?} failed",
+                        first,
+                        second
+                    );
+                }
                 _ => panic!("unsupported operator {:?}", op.as_str()),
             },
             _ => panic!(
@@ -683,6 +715,41 @@ fn extract_json(output: &String) -> Result<Value> {
     let last_line = lines.last().expect("No JSON found in output");
     let json: Value = serde_json::from_str(last_line)?;
     Ok(json)
+}
+
+/// Compare two number strings with high precision
+/// Supports u128, i128, and f64 comparisons without precision loss
+fn compare_numbers<F>(first: &str, second: &str, op: F) -> bool
+where
+    F: Fn(std::cmp::Ordering) -> bool,
+{
+    // Try to parse as u128 first (for blockchain amounts)
+    if let (Ok(first_u128), Ok(second_u128)) = (first.parse::<u128>(), second.parse::<u128>()) {
+        return op(first_u128.cmp(&second_u128));
+    }
+
+    // Try to parse as i128 (for signed integers)
+    if let (Ok(first_i128), Ok(second_i128)) = (first.parse::<i128>(), second.parse::<i128>()) {
+        return op(first_i128.cmp(&second_i128));
+    }
+
+    // Fall back to f64 parsing for floating point numbers
+    match (first.parse::<f64>(), second.parse::<f64>()) {
+        (Ok(first_f64), Ok(second_f64)) => {
+            // Use partial_cmp for f64 and handle NaN cases
+            match first_f64.partial_cmp(&second_f64) {
+                Some(ordering) => op(ordering),
+                None => panic!(
+                    "Cannot compare {:?} and {:?} - one or both values are NaN",
+                    first, second
+                ),
+            }
+        }
+        _ => panic!(
+            "Cannot parse {:?} or {:?} as numbers for comparison",
+            first, second
+        ),
+    }
 }
 
 #[tokio::main]

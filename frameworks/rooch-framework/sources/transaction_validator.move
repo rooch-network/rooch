@@ -18,6 +18,7 @@ module rooch_framework::transaction_validator {
     use rooch_framework::chain_id;
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
+    use rooch_framework::transaction_gas;
     use rooch_framework::transaction::{Self, TransactionSequenceInfo};
     use rooch_framework::session_validator;
     use rooch_framework::bitcoin_validator;
@@ -80,12 +81,13 @@ module rooch_framework::transaction_validator {
             auth_validator::error_validate_max_gas_amount_exceeded(),
         );
 
-        let gas_balance = gas_coin::balance(sender);
+        // Check total gas balance (account store + payment hub)
+        let total_gas_balance = transaction_gas::total_available_gas_balance(sender);
 
         // we do not need to check the gas balance in local or dev chain
         if(!chain_id::is_local_or_dev()){
             assert!(
-                gas_balance >= gas,
+                total_gas_balance >= gas,
                 auth_validator::error_validate_cant_pay_gas_deposit(),
             );
         };
@@ -169,7 +171,13 @@ module rooch_framework::transaction_validator {
         let gas_payment_account = tx_context::tx_gas_payment_account();
         let max_gas_amount = tx_context::max_gas_amount();
         let gas = transaction_fee::calculate_gas(max_gas_amount);
-        let gas_coin = gas_coin::deduct_gas(gas_payment_account, gas);
+        
+        // Use enhanced gas deduction with payment hub fallback
+        let (gas_coin, usage_info) = transaction_gas::deduct_transaction_gas(gas_payment_account, gas);
+        
+        // Store usage info for refund in post_execute
+        transaction_gas::store_gas_usage_info(usage_info);
+        
         transaction_fee::deposit_fee(gas_coin);
     }
 
@@ -210,10 +218,19 @@ module rooch_framework::transaction_validator {
         };
         let sequencer_address = onchain_config::sequencer();
         let remaining_gas_coin = transaction_fee::distribute_fee(paid_gas, gas_used_after_scale, contract_address, sequencer_address);
-        if (coin::value(&remaining_gas_coin) > 0) {
-            account_coin_store::deposit(gas_payment_account, remaining_gas_coin);
-        }else{
-            coin::destroy_zero(remaining_gas_coin);
+        
+        // Get usage info and use smart refund
+        let usage_info_opt = transaction_gas::get_gas_usage_info();
+        if (option::is_some(&usage_info_opt)) {
+            let usage_info = option::extract(&mut usage_info_opt);
+            transaction_gas::refund_transaction_gas(gas_payment_account, remaining_gas_coin, usage_info);
+        } else {
+            // Fallback: refund to account store
+            if (coin::value(&remaining_gas_coin) > 0) {
+                account_coin_store::deposit(gas_payment_account, remaining_gas_coin);
+            } else {
+                coin::destroy_zero(remaining_gas_coin);
+            }
         }
     }
 }
