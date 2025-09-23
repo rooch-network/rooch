@@ -73,7 +73,7 @@ impl CommandAction<RevenueQueryOutput> for QueryRevenueCommand {
         let owner = context.resolve_rooch_address(self.owner)?;
 
         // 1. Calculate revenue hub ID
-        let hub_id = PaymentRevenueModule::payment_revenue_hub_id(owner);
+        let hub_id = PaymentRevenueModule::payment_revenue_hub_id(owner.into());
 
         // 2. Get PaymentRevenueHub object state
         let mut hub_object_views = client
