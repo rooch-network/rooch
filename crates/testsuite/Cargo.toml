@@ -40,6 +40,7 @@ rand = "0.8"
 sha2 = "0.10.9"
 hmac = "0.12.1"
 hex = "0.4.3"
+regex = "1.10"
 
 [dependencies.uuid]
 version = "1.16.0"
