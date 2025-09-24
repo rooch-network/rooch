@@ -151,7 +151,7 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
             signature_bytes,
         );
 
-        // Execute the transaction
+        // Execute the transaction with automatic address type detection
         let result = context
             .sign_and_execute_action(sender, action, max_gas_amount)
             .await?;

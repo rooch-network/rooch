@@ -44,6 +44,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::oracle_data`](oracle_data.md#0x3_oracle_data)
 -  [`0x3::oracle_meta`](oracle_meta.md#0x3_oracle_meta)
 -  [`0x3::payment_channel`](payment_channel.md#0x3_payment_channel)
+-  [`0x3::payment_revenue`](payment_revenue.md#0x3_payment_revenue)
 -  [`0x3::rs256`](rs256.md#0x3_rs256)
 -  [`0x3::session_key`](session_key.md#0x3_session_key)
 -  [`0x3::session_validator`](session_validator.md#0x3_session_validator)

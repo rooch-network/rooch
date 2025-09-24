@@ -84,6 +84,7 @@
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
+<b>use</b> <a href="payment_revenue.md#0x3_payment_revenue">0x3::payment_revenue</a>;
 </code></pre>
 
 

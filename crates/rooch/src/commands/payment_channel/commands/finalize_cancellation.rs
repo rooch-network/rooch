@@ -42,7 +42,7 @@ impl CommandAction<FinalizeCancellationOutput> for FinalizeCancellationCommand {
         let action =
             PaymentChannelModule::finalize_cancellation_entry_action(self.channel_id.clone());
 
-        // Execute the transaction
+        // Execute the transaction with automatic address type detection
         let result = context
             .sign_and_execute_action(sender, action, max_gas_amount)
             .await?;

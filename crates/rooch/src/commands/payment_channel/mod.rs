@@ -10,6 +10,8 @@ use self::commands::finalize_cancellation::FinalizeCancellationCommand;
 use self::commands::init::InitCommand;
 use self::commands::open::OpenCommand;
 use self::commands::query::QueryCommand;
+use self::commands::query_revenue::QueryRevenueCommand;
+use self::commands::withdraw_revenue::WithdrawRevenueCommand;
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
@@ -66,6 +68,14 @@ impl CommandAction<String> for PaymentChannel {
                 let json_value: Value = serde_json::from_str(&json_output)?;
                 Ok(serde_json::to_string_pretty(&json_value)?)
             }
+            PaymentChannelCommand::QueryRevenue(query_revenue) => {
+                let resp = query_revenue.execute().await?;
+                Ok(serde_json::to_string_pretty(&resp)?)
+            }
+            PaymentChannelCommand::WithdrawRevenue(withdraw_revenue) => {
+                let resp = withdraw_revenue.execute().await?;
+                Ok(serde_json::to_string_pretty(&resp)?)
+            }
         }
     }
 }
@@ -108,4 +118,12 @@ pub enum PaymentChannelCommand {
     /// Query payment hub or channel state
     #[clap(name = "query")]
     Query(QueryCommand),
+
+    /// Query payment revenue information
+    #[clap(name = "query-revenue")]
+    QueryRevenue(QueryRevenueCommand),
+
+    /// Withdraw revenue from payment revenue hub
+    #[clap(name = "withdraw-revenue")]
+    WithdrawRevenue(WithdrawRevenueCommand),
 }

@@ -23,6 +23,7 @@ module rooch_framework::payment_channel_test {
     use rooch_framework::did;
     use rooch_framework::session_key;
     use rooch_framework::bitcoin_address;
+    use rooch_framework::payment_revenue;
 
     // === Test Constants ===
     const TEST_AMOUNT_100: u256 = 100;
@@ -296,8 +297,9 @@ module rooch_framework::payment_channel_test {
         let signature = generate_test_signature();
         payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
         
-        // Verify the claim by checking if Bob can withdraw the funds from his hub
-        payment_channel::withdraw_from_hub_entry<RGas>(&bob_signer, TEST_AMOUNT_10);
+        // Verify the claim by checking if Bob can withdraw the funds from his revenue hub
+        // The funds are deposited into Bob's revenue hub, not payment hub
+        payment_revenue::withdraw_revenue_entry<RGas>(&bob_signer, TEST_AMOUNT_10);
         let final_bob_balance = account_coin_store::balance<RGas>(bob_addr);
         assert!(final_bob_balance == initial_bob_balance + TEST_AMOUNT_10, 3001);
         
@@ -367,9 +369,9 @@ module rooch_framework::payment_channel_test {
         let signature2 = generate_test_signature();
         payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_3, signature2);
         
-        // Assertion: Additional 5 transferred verified by successful withdrawal
+        // Assertion: Additional 5 transferred verified by successful withdrawal from revenue hub
         let initial_account_balance = account_coin_store::balance<RGas>(bob_addr);
-        payment_channel::withdraw_from_hub_entry<RGas>(&bob_signer, TEST_AMOUNT_15);
+        payment_revenue::withdraw_revenue_entry<RGas>(&bob_signer, TEST_AMOUNT_15);
         let final_account_balance = account_coin_store::balance<RGas>(bob_addr);
         assert!(final_account_balance == initial_account_balance + TEST_AMOUNT_15, 3008);
         
@@ -721,9 +723,9 @@ module rooch_framework::payment_channel_test {
         // SubChannel still exists, and channel_epoch has been incremented
         assert!(payment_channel::sub_channel_exists(channel_id, vm_id), 8002);
         
-        // 7. Verify funds transferred by checking withdrawal capability
+        // 7. Verify funds transferred by checking withdrawal capability from revenue hub
         let initial_bob_account_balance = account_coin_store::balance<RGas>(bob_addr);
-        payment_channel::withdraw_from_hub_entry<RGas>(&bob_signer, TEST_AMOUNT_15);
+        payment_revenue::withdraw_revenue_entry<RGas>(&bob_signer, TEST_AMOUNT_15);
         let final_bob_account_balance = account_coin_store::balance<RGas>(bob_addr);
         assert!(final_bob_account_balance == initial_bob_account_balance + TEST_AMOUNT_15, 8003);
         
