@@ -39,10 +39,10 @@ const DEFAULT_COMMAND_TIMEOUT_SECS: u64 = 30;
 /// Logging levels for test execution
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 enum LogLevel {
-    Minimal,    // Only failures and final results
-    Normal,     // Current behavior (default)
-    Verbose,    // Include template context changes
-    Debug,      // Full execution trace
+    Minimal, // Only failures and final results
+    Normal,  // Current behavior (default)
+    Verbose, // Include template context changes
+    Debug,   // Full execution trace
 }
 
 impl Default for LogLevel {
@@ -53,7 +53,11 @@ impl Default for LogLevel {
 
 impl LogLevel {
     fn from_env() -> Self {
-        match env::var("ROOCH_TEST_LOG_LEVEL").unwrap_or_default().to_lowercase().as_str() {
+        match env::var("ROOCH_TEST_LOG_LEVEL")
+            .unwrap_or_default()
+            .to_lowercase()
+            .as_str()
+        {
             "minimal" => LogLevel::Minimal,
             "normal" => LogLevel::Normal,
             "verbose" => LogLevel::Verbose,
@@ -67,8 +71,8 @@ impl LogLevel {
 #[derive(Debug, Clone)]
 enum CommandResult {
     Success(String),
-    Failure { 
-        error: String, 
+    Failure {
+        error: String,
         exit_code: Option<i32>,
         template_vars_used: Vec<String>,
     },
@@ -106,13 +110,14 @@ impl Default for TestExecutionContext {
             scenario_name: String::new(),
             command_history: Vec::new(),
             log_level: LogLevel::from_env(),
-            template_debug_enabled: env::var("ROOCH_TEST_TEMPLATE_DEBUG").unwrap_or_default() == "true",
+            template_debug_enabled: env::var("ROOCH_TEST_TEMPLATE_DEBUG").unwrap_or_default()
+                == "true",
             show_progress: env::var("ROOCH_TEST_SHOW_PROGRESS").unwrap_or_default() == "true",
             command_timeout: Duration::from_secs(
                 env::var("ROOCH_TEST_TIMEOUT")
                     .unwrap_or_default()
                     .parse()
-                    .unwrap_or(DEFAULT_COMMAND_TIMEOUT_SECS)
+                    .unwrap_or(DEFAULT_COMMAND_TIMEOUT_SECS),
             ),
         }
     }
@@ -122,11 +127,9 @@ impl TestExecutionContext {
     /// Display test progress if enabled
     fn display_progress(&self) {
         if self.show_progress && self.log_level >= LogLevel::Normal {
-            println!("🧪 [{}/{}] {} - {}", 
-                self.step_number, 
-                self.total_steps, 
-                self.scenario_name,
-                self.current_step
+            println!(
+                "🧪 [{}/{}] {} - {}",
+                self.step_number, self.total_steps, self.scenario_name, self.current_step
             );
         }
     }
@@ -140,7 +143,11 @@ impl TestExecutionContext {
                         println!("  ✅ {}", cmd);
                     }
                 }
-                CommandResult::Failure { error, template_vars_used, .. } => {
+                CommandResult::Failure {
+                    error,
+                    template_vars_used,
+                    ..
+                } => {
                     eprintln!("  ❌ {}", cmd);
                     eprintln!("     Error: {}", error);
                     if self.log_level >= LogLevel::Verbose && !template_vars_used.is_empty() {
@@ -180,7 +187,7 @@ impl TemplateContextExt for TemplateContext {
         let available_vars = self.available_keys();
         let mut used_vars = Vec::new();
         let mut resolution_steps = Vec::new();
-        
+
         // Extract template variables from the expression
         let template_var_pattern = r"\{\{\s*([^}]+)\s*\}\}";
         if let Ok(template_var_regex) = Regex::new(template_var_pattern) {
@@ -192,13 +199,14 @@ impl TemplateContextExt for TemplateContext {
                 }
             }
         } else {
-            resolution_steps.push("Failed to compile regex for template variable extraction".to_string());
+            resolution_steps
+                .push("Failed to compile regex for template variable extraction".to_string());
         }
-        
+
         // Attempt to resolve the template
         let final_value = jpst::format_str!(&expression, self);
         resolution_steps.push("Template resolution completed".to_string());
-        
+
         TemplateDebugInfo {
             available_vars,
             used_vars,
@@ -207,7 +215,7 @@ impl TemplateContextExt for TemplateContext {
             original_expression: expression.to_string(),
         }
     }
-    
+
     fn available_keys(&self) -> Vec<String> {
         let value = self.as_value();
         if let Value::Object(map) = &value {
@@ -216,7 +224,7 @@ impl TemplateContextExt for TemplateContext {
             Vec::new()
         }
     }
-    
+
     fn snapshot(&self) -> HashMap<String, Value> {
         let value = self.as_value();
         if let Value::Object(map) = value {
@@ -265,7 +273,7 @@ async fn start_server(w: &mut World, scenario: String) {
         ctx.step_number = 1;
         ctx.display_progress();
     }
-    
+
     tokio::time::sleep(Duration::from_secs(5)).await;
     let mut service = Service::new();
     wait_port_available(w.opt.port()).await;
@@ -403,7 +411,7 @@ async fn run_cmd(world: &mut World, args: String) {
         ctx.step_number += 1;
         ctx.display_progress();
     }
-    
+
     let config_dir = world.opt.base().base_data_dir().join(ROOCH_CONFIR_DIR);
     debug!("config_dir: {:?}", config_dir);
     if world.tpl_ctx.is_none() {
@@ -451,14 +459,14 @@ async fn run_cmd(world: &mut World, args: String) {
 async fn run_cli_cmd(config_dir: &Path, tpl_ctx: &mut TemplateContext, mut args: Vec<String>) {
     let cmd_name = args[0].clone();
     let full_command = args.join(" ");
-    
+
     args.insert(0, "rooch".to_owned());
     args.push("--config-dir".to_owned());
     args.push(config_dir.to_str().unwrap().to_string());
-    
+
     // Extract template variables used in this command
     let template_vars_used = extract_template_vars(&full_command);
-    
+
     let opts: RoochCli = RoochCli::parse_from(args);
     let start_time = Instant::now();
     let ret = rooch::run_cli(opts).await;
@@ -482,7 +490,7 @@ async fn run_cli_cmd(config_dir: &Path, tpl_ctx: &mut TemplateContext, mut args:
             Err(err) => {
                 let err_msg = Value::String(err.to_string());
                 error!("run_cli cmd: {} fail: {:?}", cmd_name, &err_msg);
-                
+
                 // Enhanced error reporting
                 eprintln!("❌ Command failed: {}", full_command);
                 eprintln!("   Error: {}", err);
@@ -490,7 +498,7 @@ async fn run_cli_cmd(config_dir: &Path, tpl_ctx: &mut TemplateContext, mut args:
                     eprintln!("   Template vars used: {:?}", template_vars_used);
                     eprintln!("   Available context keys: {:?}", tpl_ctx.available_keys());
                 }
-                
+
                 tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
                 CommandResult::Failure {
                     error: err.to_string(),
@@ -786,21 +794,24 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
 async fn assert_output(world: &mut World, orginal_args: String) {
     assert!(world.tpl_ctx.is_some(), "tpl_ctx is none");
     assert!(orginal_args.len() > 0, "assert args is empty");
-    
+
     let tpl_ctx = world.tpl_ctx.as_ref().unwrap();
-    
+
     // Enhanced template debugging
     let template_debug = tpl_ctx.debug_resolve(&orginal_args);
-    
+
     if template_debug.final_value.is_empty() && !orginal_args.is_empty() {
         eprintln!("❌ Template resolution failed:");
         eprintln!("   Expression: {}", orginal_args);
         eprintln!("   Available vars: {:?}", template_debug.available_vars);
         eprintln!("   Used vars: {:?}", template_debug.used_vars);
-        eprintln!("   Resolution steps: {:#?}", template_debug.resolution_steps);
+        eprintln!(
+            "   Resolution steps: {:#?}",
+            template_debug.resolution_steps
+        );
         panic!("Template variable resolution failed for: {}", orginal_args);
     }
-    
+
     let args = template_debug.final_value;
     let splited_args = split_string_with_quotes(&args).unwrap_or_else(|e| {
         eprintln!("❌ Failed to parse assertion arguments:");
@@ -809,20 +820,23 @@ async fn assert_output(world: &mut World, orginal_args: String) {
         eprintln!("   Parse error: {}", e);
         panic!("Invalid assertion commands: {}", e);
     });
-    
+
     debug!(
         "originl args: {}\n after eval: {}\n after split: {:?}",
         orginal_args, args, splited_args
     );
-    
+
     if splited_args.is_empty() {
         eprintln!("❌ Empty assertion arguments:");
         eprintln!("   Original: {}", orginal_args);
         eprintln!("   After template resolution: {}", args);
         eprintln!("   Template vars used: {:?}", template_debug.used_vars);
-        panic!("splited_args should not empty, the orginal_args:{}", orginal_args);
+        panic!(
+            "splited_args should not empty, the orginal_args:{}",
+            orginal_args
+        );
     }
-    
+
     for chunk in splited_args.chunks(3) {
         let first = chunk.get(0).cloned();
         let op = chunk.get(1).cloned();
@@ -844,7 +858,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             eprintln!("   Template vars used: {:?}", template_debug.used_vars);
                         }
                         passed
-                    },
+                    }
                     "!=" => {
                         let passed = first != second;
                         if !passed {
@@ -856,7 +870,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             eprintln!("   Template vars used: {:?}", template_debug.used_vars);
                         }
                         passed
-                    },
+                    }
                     "contains" => {
                         let passed = first.contains(&second);
                         if !passed {
@@ -867,9 +881,10 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             eprintln!("   Template vars used: {:?}", template_debug.used_vars);
                         }
                         passed
-                    },
+                    }
                     "not_contains" => {
-                        let passed = !first.contains(&second) && !first.to_lowercase().contains(&second.to_lowercase());
+                        let passed = !first.contains(&second)
+                            && !first.to_lowercase().contains(&second.to_lowercase());
                         if !passed {
                             eprintln!("❌ Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
@@ -878,9 +893,11 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             eprintln!("   Template vars used: {:?}", template_debug.used_vars);
                         }
                         passed
-                    },
+                    }
                     ">" => {
-                        let passed = compare_numbers(&first, &second, |ord| ord == std::cmp::Ordering::Greater);
+                        let passed = compare_numbers(&first, &second, |ord| {
+                            ord == std::cmp::Ordering::Greater
+                        });
                         if !passed {
                             eprintln!("❌ Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
@@ -889,9 +906,10 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             eprintln!("   Template vars used: {:?}", template_debug.used_vars);
                         }
                         passed
-                    },
+                    }
                     "<" => {
-                        let passed = compare_numbers(&first, &second, |ord| ord == std::cmp::Ordering::Less);
+                        let passed =
+                            compare_numbers(&first, &second, |ord| ord == std::cmp::Ordering::Less);
                         if !passed {
                             eprintln!("❌ Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
@@ -900,9 +918,10 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             eprintln!("   Template vars used: {:?}", template_debug.used_vars);
                         }
                         passed
-                    },
+                    }
                     ">=" => {
-                        let passed = compare_numbers(&first, &second, |ord| ord != std::cmp::Ordering::Less);
+                        let passed =
+                            compare_numbers(&first, &second, |ord| ord != std::cmp::Ordering::Less);
                         if !passed {
                             eprintln!("❌ Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
@@ -911,9 +930,11 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             eprintln!("   Template vars used: {:?}", template_debug.used_vars);
                         }
                         passed
-                    },
+                    }
                     "<=" => {
-                        let passed = compare_numbers(&first, &second, |ord| ord != std::cmp::Ordering::Greater);
+                        let passed = compare_numbers(&first, &second, |ord| {
+                            ord != std::cmp::Ordering::Greater
+                        });
                         if !passed {
                             eprintln!("❌ Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
@@ -922,28 +943,41 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             eprintln!("   Template vars used: {:?}", template_debug.used_vars);
                         }
                         passed
-                    },
+                    }
                     _ => {
                         eprintln!("❌ Unsupported operator: {}", op);
-                        eprintln!("   Supported operators: ==, !=, contains, not_contains, >, <, >=, <=");
+                        eprintln!(
+                            "   Supported operators: ==, !=, contains, not_contains, >, <, >=, <="
+                        );
                         panic!("unsupported operator {:?}", op.as_str());
                     }
                 };
-                
-                assert!(assertion_passed, "Assertion failed: {} {} {}", first, op, second);
-            },
+
+                assert!(
+                    assertion_passed,
+                    "Assertion failed: {} {} {}",
+                    first, op, second
+                );
+            }
             _ => {
                 eprintln!("❌ Invalid assertion format:");
                 eprintln!("   Original: {}", orginal_args);
                 eprintln!("   After parsing: {:?}", args);
                 eprintln!("   Expected format: 'value operator value'");
                 eprintln!("   Examples: 'foo == bar', '{{$.cmd[-1].status}} == success'");
-                panic!("expected 3 arguments: first [==|!=] second, but got input {:?}", args);
+                panic!(
+                    "expected 3 arguments: first [==|!=] second, but got input {:?}",
+                    args
+                );
             }
         }
     }
-    
-    if world.execution_ctx.as_ref().map_or(false, |ctx| ctx.show_progress) {
+
+    if world
+        .execution_ctx
+        .as_ref()
+        .map_or(false, |ctx| ctx.show_progress)
+    {
         println!("✅ Assertion passed: {}", orginal_args);
     }
     info!("assert ok!");
@@ -1079,12 +1113,15 @@ where
             match first_f64.partial_cmp(&second_f64) {
                 Some(ordering) => op(ordering),
                 None => {
-                    eprintln!("⚠️  Cannot compare NaN values: {:?} and {:?}", first, second);
+                    eprintln!(
+                        "⚠️  Cannot compare NaN values: {:?} and {:?}",
+                        first, second
+                    );
                     panic!(
                         "Cannot compare {:?} and {:?} - one or both values are NaN",
                         first, second
                     )
-                },
+                }
             }
         }
         _ => {
@@ -1094,7 +1131,7 @@ where
                 "Cannot parse {:?} or {:?} as numbers for comparison",
                 first, second
             )
-        },
+        }
     }
 }
 
@@ -1117,17 +1154,26 @@ fn display_env_var_help() {
 async fn main() {
     // Display help information if requested
     display_env_var_help();
-    
+
     // Initialize logging with enhanced levels
     let log_level = LogLevel::from_env();
     if log_level >= LogLevel::Verbose {
         println!("🧪 Enhanced Rooch Integration Test Framework");
         println!("   Log Level: {:?}", log_level);
-        println!("   Template Debug: {}", env::var("ROOCH_TEST_TEMPLATE_DEBUG").unwrap_or_default());
-        println!("   Show Progress: {}", env::var("ROOCH_TEST_SHOW_PROGRESS").unwrap_or_default());
-        println!("   Command Timeout: {}s", env::var("ROOCH_TEST_TIMEOUT").unwrap_or_default());
+        println!(
+            "   Template Debug: {}",
+            env::var("ROOCH_TEST_TEMPLATE_DEBUG").unwrap_or_default()
+        );
+        println!(
+            "   Show Progress: {}",
+            env::var("ROOCH_TEST_SHOW_PROGRESS").unwrap_or_default()
+        );
+        println!(
+            "   Command Timeout: {}s",
+            env::var("ROOCH_TEST_TIMEOUT").unwrap_or_default()
+        );
         println!();
     }
-    
+
     World::cucumber().run_and_exit("./features/").await;
 }
