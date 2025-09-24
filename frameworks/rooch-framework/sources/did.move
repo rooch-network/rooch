@@ -93,6 +93,14 @@ module rooch_framework::did {
     const ErrorControllerBitcoinAddressMismatch: u64 = 33;
     /// Invalid VM type for the specified controller
     const ErrorInvalidVMTypeForController: u64 = 34;
+    /// Exceeded maximum number of verification methods allowed in a DID document
+    const ErrorTooManyVerificationMethods: u64 = 35;
+    /// Exceeded maximum number of verification methods allowed in a relationship
+    const ErrorTooManyRelationshipMethods: u64 = 36;
+
+    // Limits for verification methods
+    const MAX_VERIFICATION_METHODS_PER_DOCUMENT: u64 = 64;
+    const MAX_METHODS_PER_RELATIONSHIP: u64 = 64;
 
     // Verification relationship types
     const VERIFICATION_RELATIONSHIP_AUTHENTICATION: u8 = 0;
@@ -954,6 +962,8 @@ module rooch_framework::did {
             public_key_multibase,
         };
 
+        // Enforce VM count limit before adding
+        ensure_can_add_vm(did_document_data);
         simple_map::add(&mut did_document_data.verification_methods, fragment, verification_method);
 
         // Add to specified verification relationships
@@ -972,18 +982,22 @@ module rooch_framework::did {
                 );
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
                 if (!vector::contains(&did_document_data.assertion_method, &fragment)) {
+                    ensure_can_add_relationship(&did_document_data.assertion_method);
                     vector::push_back(&mut did_document_data.assertion_method, fragment);
                 };
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION) {
                 if (!vector::contains(&did_document_data.capability_invocation, &fragment)) {
+                    ensure_can_add_relationship(&did_document_data.capability_invocation);
                     vector::push_back(&mut did_document_data.capability_invocation, fragment);
                 };
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION) {
                 if (!vector::contains(&did_document_data.capability_delegation, &fragment)) {
+                    ensure_can_add_relationship(&did_document_data.capability_delegation);
                     vector::push_back(&mut did_document_data.capability_delegation, fragment);
                 };
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_KEY_AGREEMENT) {
                 if (!vector::contains(&did_document_data.key_agreement, &fragment)) {
+                    ensure_can_add_relationship(&did_document_data.key_agreement);
                     vector::push_back(&mut did_document_data.key_agreement, fragment);
                 };
             };
@@ -1108,6 +1122,7 @@ module rooch_framework::did {
 
             // Add to the relationship if not already present
             if (!vector::contains(target_relationship_vec_mut, &fragment)) {
+                ensure_can_add_relationship(target_relationship_vec_mut);
                 vector::push_back(target_relationship_vec_mut, fragment);
             };
         };
@@ -1655,6 +1670,17 @@ module rooch_framework::did {
         }
     }
 
+    /// Ensure the document can accept one more verification method
+    fun ensure_can_add_vm(did_document_data: &DIDDocument) {
+        let count = simple_map::length(&did_document_data.verification_methods);
+        assert!(count < MAX_VERIFICATION_METHODS_PER_DOCUMENT, ErrorTooManyVerificationMethods);
+    }
+
+    /// Ensure a relationship vector can accept one more fragment
+    fun ensure_can_add_relationship(relationship_vec: &vector<String>) {
+        let count = vector::length(relationship_vec);
+        assert!(count < MAX_METHODS_PER_RELATIONSHIP, ErrorTooManyRelationshipMethods);
+    }
 
     /// Helper function to get a mutable reference to DIDDocument with capability delegation authorization
     /// This combines common patterns: resolve ObjectID, check existence, borrow mutable, and verify permissions
@@ -1787,6 +1813,8 @@ module rooch_framework::did {
         
         // 1. Add the verification method if it doesn't exist
         if (!simple_map::contains_key(&did_document_data.verification_methods, &fragment)) {
+            // Enforce VM count limit before adding
+            ensure_can_add_vm(did_document_data);
             let vm_id = VerificationMethodID {
                 did: did_document_data.id,
                 fragment: fragment,
@@ -1804,6 +1832,8 @@ module rooch_framework::did {
         
         // 2. Add to authentication relationship if not already present
         if (!vector::contains(&did_document_data.authentication, &fragment)) {
+            // Enforce relationship size limit before pushing
+            ensure_can_add_relationship(&did_document_data.authentication);
             vector::push_back(&mut did_document_data.authentication, fragment);
             
             // 3. Register as session key
