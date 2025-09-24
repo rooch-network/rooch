@@ -348,7 +348,63 @@ Scenario: gas_payment_mixed_behavior
 6. **Template resolution failures**: Use descriptive comments to document what each `{{$.move[-N]}}` reference should contain.
 7. **Gas consumption variations**: In local/dev environments, account for automatic RGAS allocation (1000000000000) when testing initial balances.
 
-### 10.1 Common Assertion Patterns
+### 10.1 Enhanced Debugging Features (New!)
+
+The testsuite framework now includes enhanced debugging capabilities controlled by environment variables:
+
+#### Environment Variables
+- `ROOCH_TEST_LOG_LEVEL=minimal|normal|verbose|debug` - Control output verbosity
+- `ROOCH_TEST_TEMPLATE_DEBUG=true` - Enable detailed template resolution debugging
+- `ROOCH_TEST_SHOW_PROGRESS=true` - Show progressive test execution indicators
+- `ROOCH_TEST_TIMEOUT=60` - Set command timeout in seconds (default: 30)
+- `ROOCH_TEST_HELP=true` - Display environment variable help
+
+#### Example Usage
+```bash
+# Full debugging mode
+ROOCH_TEST_LOG_LEVEL=debug \
+ROOCH_TEST_TEMPLATE_DEBUG=true \
+ROOCH_TEST_SHOW_PROGRESS=true \
+cargo test --test integration -- --nocapture
+
+# Development mode with progress indicators
+ROOCH_TEST_LOG_LEVEL=verbose \
+ROOCH_TEST_SHOW_PROGRESS=true \
+cargo test --test integration -- --nocapture
+
+# Minimal output for CI
+ROOCH_TEST_LOG_LEVEL=minimal \
+cargo test --test integration
+```
+
+#### Enhanced Error Messages
+
+**Before:**
+```
+ERROR integration: run_cli cmd: payment-channel fail: String("Transaction error...")
+thread 'test' panicked at crates/testsuite/tests/integration.rs:554:5:
+splited_args should not empty, the orginal_args:\
+```
+
+**After:**
+```
+🧪 [16/42] payment_channel_operations - Running command: payment-channel withdraw-revenue
+  ❌ payment-channel withdraw-revenue --owner rooch1abc... --amount 5000
+     Error: Transaction execution failed: MoveAbort { location: 0x3::payment_revenue, abort_code: 1 }
+     Template vars used: ["$.did[1].did_address"]
+     Available context keys: ["account", "did", "payment-channel", "address_mapping"]
+
+❌ Assertion failed:
+   Expression: executed == moveabort  
+   Expected: executed
+   Actual: moveabort
+   Operator: ==
+   Template vars used: ["$.payment-channel[-1].execution_info.status.type"]
+```
+
+For detailed documentation, see: `crates/testsuite/DEBUGGING.md`
+
+### 10.2 Common Assertion Patterns
 
 ```gherkin
 # Verify transaction succeeded
