@@ -196,7 +196,7 @@ module verity_oracle_example::test_foreign_module {
     }
 
     #[test]
-    #[expected_failure(abort_code = rooch_framework::coin_store::ErrorInsufficientBalance, location = rooch_framework::coin_store)] // Adjust abort code as needed
+    #[expected_failure(abort_code = rooch_framework::account_coin_store::ErrorInsufficientBalance, location = rooch_framework::account_coin_store)] // Adjust abort code as needed
     fun test_insufficient_funds() {
         setup_test();
         let test_signer = moveos_std::signer::module_signer<Test>();
