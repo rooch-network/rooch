@@ -41,6 +41,8 @@
 -  [Function `create_did_object_via_cadop_with_did_key`](#0x3_did_create_did_object_via_cadop_with_did_key)
 -  [Function `create_did_object_via_cadop_with_did_key_and_scopes`](#0x3_did_create_did_object_via_cadop_with_did_key_and_scopes)
     -  [Arguments](#@Arguments_2)
+-  [Function `create_did_object_via_cadop_with_controller_and_scopes_entry`](#0x3_did_create_did_object_via_cadop_with_controller_and_scopes_entry)
+-  [Function `create_did_object_via_cadop_with_controller_and_scopes`](#0x3_did_create_did_object_via_cadop_with_controller_and_scopes)
 -  [Function `add_verification_method_entry`](#0x3_did_add_verification_method_entry)
 -  [Function `add_verification_method_with_scopes_entry`](#0x3_did_add_verification_method_with_scopes_entry)
 -  [Function `remove_verification_method_entry`](#0x3_did_remove_verification_method_entry)
@@ -327,6 +329,36 @@ Associated AccountCap not found in DIDDocument when expected
 
 
 
+<a name="0x3_did_ErrorControllerBitcoinAddressMismatch"></a>
+
+did:bitcoin address does not match provided public key
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorControllerBitcoinAddressMismatch">ErrorControllerBitcoinAddressMismatch</a>: u64 = 33;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorControllerDIDMethodNotSupported"></a>
+
+Controller DID method is not supported
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorControllerDIDMethodNotSupported">ErrorControllerDIDMethodNotSupported</a>: u64 = 31;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorControllerMissingUserVMInfo"></a>
+
+Missing user VM info for non did:key controller
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorControllerMissingUserVMInfo">ErrorControllerMissingUserVMInfo</a>: u64 = 32;
+</code></pre>
+
+
+
 <a name="0x3_did_ErrorControllerPermissionDenied"></a>
 
 Permission denied based on controller check
@@ -433,6 +465,16 @@ Invalid DID string format (should be "did:method:identifier")
 
 
 <pre><code><b>const</b> <a href="did.md#0x3_did_ErrorInvalidDIDStringFormat">ErrorInvalidDIDStringFormat</a>: u64 = 22;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorInvalidVMTypeForController"></a>
+
+Invalid VM type for the specified controller
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorInvalidVMTypeForController">ErrorInvalidVMTypeForController</a>: u64 = 34;
 </code></pre>
 
 
@@ -861,6 +903,7 @@ Create a DID via CADOP (Custodian-Assisted DID Onboarding Protocol) using did:ke
 The custodian assists in DID creation but the user retains control.
 Each user gets a unique service key from the custodian.
 The user's public key is extracted from their did:key string.
+Backward-compatible non-scope entry; delegates to scoped version with default scopes.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_did_key_entry">create_did_object_via_cadop_with_did_key_entry</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>)
@@ -898,6 +941,7 @@ This function allows custodians to create DID objects with customized scope perm
 
 Internal function for CADOP DID creation with did:key.
 Returns the ObjectID of the created DID document for testing and verification.
+Backward-compatible non-scope internal; delegates to scoped version with default scopes.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_did_key">create_did_object_via_cadop_with_did_key</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>): <a href="_ObjectID">object::ObjectID</a>
@@ -925,6 +969,32 @@ Returns the ObjectID of the created DID document for testing and verification.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_did_key_and_scopes">create_did_object_via_cadop_with_did_key_and_scopes</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>, custom_scope_strings: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;&gt;): <a href="_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x3_did_create_did_object_via_cadop_with_controller_and_scopes_entry"></a>
+
+## Function `create_did_object_via_cadop_with_controller_and_scopes_entry`
+
+New entry: Create a DID Object via CADOP with arbitrary controller DID and custom scopes.
+Supports did:key and did:bitcoin (future did:ethereum can be added similarly).
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_controller_and_scopes_entry">create_did_object_via_cadop_with_controller_and_scopes_entry</a>(custodian_signer: &<a href="">signer</a>, controller_did_string: <a href="_String">string::String</a>, user_vm_pk_multibase: <a href="_String">string::String</a>, user_vm_type: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>, custom_scope_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x3_did_create_did_object_via_cadop_with_controller_and_scopes"></a>
+
+## Function `create_did_object_via_cadop_with_controller_and_scopes`
+
+Internal: controller-based CADOP DID creation with custom scopes.
+Controller can be did:key (auto-extract VM) or did:bitcoin (require VM pk/type and verify).
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_controller_and_scopes">create_did_object_via_cadop_with_controller_and_scopes</a>(custodian_signer: &<a href="">signer</a>, controller_did_string: <a href="_String">string::String</a>, user_vm_pk_multibase_opt: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, user_vm_type_opt: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>, custom_scope_strings: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;&gt;): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

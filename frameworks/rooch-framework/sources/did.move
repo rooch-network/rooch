@@ -85,6 +85,14 @@ module rooch_framework::did {
     const ErrorCustodianDoesNotHaveCADOPService: u64 = 29;
     /// Custodian DID document does not exist
     const ErrorCustodianDIDNotFound: u64 = 30;
+    /// Controller DID method is not supported
+    const ErrorControllerDIDMethodNotSupported: u64 = 31;
+    /// Missing user VM info for non did:key controller
+    const ErrorControllerMissingUserVMInfo: u64 = 32;
+    /// did:bitcoin address does not match provided public key
+    const ErrorControllerBitcoinAddressMismatch: u64 = 33;
+    /// Invalid VM type for the specified controller
+    const ErrorInvalidVMTypeForController: u64 = 34;
 
     // Verification relationship types
     const VERIFICATION_RELATIONSHIP_AUTHENTICATION: u8 = 0;
@@ -632,6 +640,7 @@ module rooch_framework::did {
     /// The custodian assists in DID creation but the user retains control.
     /// Each user gets a unique service key from the custodian.
     /// The user's public key is extracted from their did:key string.
+    /// Backward-compatible non-scope entry; delegates to scoped version with default scopes.
     public entry fun create_did_object_via_cadop_with_did_key_entry(
         custodian_signer: &signer,              // Custodian's Rooch account, pays gas
         user_did_key_string: String,            // User's did:key string (e.g., "did:key:zABC...")
@@ -675,6 +684,7 @@ module rooch_framework::did {
 
     /// Internal function for CADOP DID creation with did:key.
     /// Returns the ObjectID of the created DID document for testing and verification.
+    /// Backward-compatible non-scope internal; delegates to scoped version with default scopes.
     public fun create_did_object_via_cadop_with_did_key(
         custodian_signer: &signer,              // Custodian's Rooch account, pays gas
         user_did_key_string: String,            // User's did:key string (e.g., "did:key:zABC...")
@@ -688,7 +698,7 @@ module rooch_framework::did {
             custodian_service_vm_type,
             option::none<vector<String>>() // Use default scopes for existing functions
         )
-    } 
+    }
 
     /// Internal function for CADOP DID creation with did:key and custom scopes.
     /// Returns the ObjectID of the created DID document for testing and verification.
@@ -706,57 +716,87 @@ module rooch_framework::did {
         custodian_service_vm_type: String,
         custom_scope_strings: Option<vector<String>>
     ): ObjectID {
-        // Parse user's did:key
-        let user_did_key = parse_did_string(&user_did_key_string);
-        
-        // Extract public key from did:key identifier
-        // For did:key, the identifier contains multicodec prefix + raw public key
-        assert!(user_did_key.method == string::utf8(b"key"), ErrorInvalidDIDStringFormat);
-        
-        // Extract raw public key from did:key identifier and re-encode as regular multibase
-        let (key_type, raw_pk_bytes) = multibase_key::decode_with_type(&user_did_key.identifier);
-        
-        let (user_vm_type, user_vm_pk_multibase) = if (key_type == multibase_key::key_type_ed25519()) {
-            (string::utf8(VERIFICATION_METHOD_TYPE_ED25519), multibase_codec::encode_base58btc(&raw_pk_bytes))
-        } else if (key_type == multibase_key::key_type_secp256k1()) {
-            (string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1), multibase_codec::encode_base58btc(&raw_pk_bytes))
-        } else if (key_type == multibase_key::key_type_ecdsar1()) {
-            (string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1), multibase_codec::encode_base58btc(&raw_pk_bytes))
-        } else {
-            abort ErrorUnsupportedAuthKeyTypeForSessionKey
-        };
-        
+        // Delegate to generic controller-based flow
+        create_did_object_via_cadop_with_controller_and_scopes(
+            custodian_signer,
+            user_did_key_string,
+            option::none<String>(),
+            option::none<String>(),
+            custodian_service_pk_multibase,
+            custodian_service_vm_type,
+            custom_scope_strings,
+        )
+    } 
+
+    /// New entry: Create a DID Object via CADOP with arbitrary controller DID and custom scopes.
+    /// Supports did:key and did:bitcoin (future did:ethereum can be added similarly).
+    public entry fun create_did_object_via_cadop_with_controller_and_scopes_entry(
+        custodian_signer: &signer,
+        controller_did_string: String,
+        user_vm_pk_multibase: String,
+        user_vm_type: String,
+        custodian_service_pk_multibase: String,
+        custodian_service_vm_type: String,
+        custom_scope_strings: vector<String>
+    ) {
+        let _ = create_did_object_via_cadop_with_controller_and_scopes(
+            custodian_signer,
+            controller_did_string,
+            option::some(user_vm_pk_multibase),
+            option::some(user_vm_type),
+            custodian_service_pk_multibase,
+            custodian_service_vm_type,
+            option::some(custom_scope_strings)
+        );
+    }
+
+    /// Internal: controller-based CADOP DID creation with custom scopes.
+    /// Controller can be did:key (auto-extract VM) or did:bitcoin (require VM pk/type and verify).
+    public fun create_did_object_via_cadop_with_controller_and_scopes(
+        custodian_signer: &signer,
+        controller_did_string: String,
+        user_vm_pk_multibase_opt: Option<String>,
+        user_vm_type_opt: Option<String>,
+        custodian_service_pk_multibase: String,
+        custodian_service_vm_type: String,
+        custom_scope_strings: Option<vector<String>>
+    ): ObjectID {
+        // Parse controller DID
+        let controller_did = parse_did_string(&controller_did_string);
+
+        // Resolve initial VM for user based on controller DID method
+        let (doc_controller, user_vm_pk_multibase, user_vm_type) =
+            resolve_controller_and_initial_vm(controller_did, user_vm_pk_multibase_opt, user_vm_type_opt);
+
         // Derive custodian's DID from signer address
         let custodian_address = signer::address_of(custodian_signer);
-        let custodian_did = new_rooch_did_by_address(custodian_address); 
+        let custodian_did = new_rooch_did_by_address(custodian_address);
 
         let custodian_did_str = address::to_bech32_string(custodian_address);
         let custodian_did_object_id = resolve_did_object_id(&custodian_did_str);
-        
+
         // First check if custodian DID document exists
         assert!(
-            object::exists_object_with_type<DIDDocument>(custodian_did_object_id), 
+            object::exists_object_with_type<DIDDocument>(custodian_did_object_id),
             ErrorCustodianDIDNotFound
         );
-        
+
         // Then check if custodian has CADOP service
         let custodian_did_doc = get_did_document_by_object_id(custodian_did_object_id);
         let has_cadop_service = has_cadop_service_in_doc(custodian_did_doc);
         assert!(has_cadop_service, ErrorCustodianDoesNotHaveCADOPService);
 
-        let doc_controller = user_did_key;
         let user_vm_relationships = vector[
             VERIFICATION_RELATIONSHIP_AUTHENTICATION,
             VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION,
             VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
             VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
-        ]; 
+        ];
 
-        // Standardize user VM to Ed25519 (most common for did:key)
         let user_vm_fragment = string::utf8(b"account-key");
 
-        // Generate unique service fragment for this user
-        let custodian_service_vm_fragment = generate_service_fragment_for_user(&user_did_key_string);
+        // Generate unique service fragment for this controller DID
+        let custodian_service_vm_fragment = generate_service_fragment_for_user(&controller_did_string);
 
         create_did_object_internal(
             custodian_signer,
@@ -771,7 +811,48 @@ module rooch_framework::did {
             option::some(custodian_service_vm_fragment),
             custom_scope_strings
         )
-    } 
+    }
+
+    /// Resolve controller DID and initial user VM settings.
+    /// For did:key: extract VM from identifier. For did:bitcoin: require VM info and verify address matches pk.
+    fun resolve_controller_and_initial_vm(
+        controller_did: DID,
+        user_vm_pk_multibase_opt: Option<String>,
+        user_vm_type_opt: Option<String>
+    ): (DID, String, String) {
+        if (controller_did.method == string::utf8(b"key")) {
+            // did:key -> extract pk and type from identifier
+            let (key_type, raw_pk_bytes) = multibase_key::decode_with_type(&controller_did.identifier);
+            let (user_vm_type, user_vm_pk_multibase) = if (key_type == multibase_key::key_type_ed25519()) {
+                (string::utf8(VERIFICATION_METHOD_TYPE_ED25519), multibase_codec::encode_base58btc(&raw_pk_bytes))
+            } else if (key_type == multibase_key::key_type_secp256k1()) {
+                (string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1), multibase_codec::encode_base58btc(&raw_pk_bytes))
+            } else if (key_type == multibase_key::key_type_ecdsar1()) {
+                (string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1), multibase_codec::encode_base58btc(&raw_pk_bytes))
+            } else {
+                abort ErrorUnsupportedAuthKeyTypeForSessionKey
+            };
+            (controller_did, user_vm_pk_multibase, user_vm_type)
+        } else if (controller_did.method == string::utf8(b"bitcoin")) {
+            // did:bitcoin -> must provide pk and type, and type must be Secp256k1
+            assert!(option::is_some(&user_vm_pk_multibase_opt) && option::is_some(&user_vm_type_opt), ErrorControllerMissingUserVMInfo);
+            let user_vm_pk_multibase = option::destroy_some(user_vm_pk_multibase_opt);
+            let user_vm_type = option::destroy_some(user_vm_type_opt);
+            assert!(user_vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1), ErrorInvalidVMTypeForController);
+
+            // Verify that the controller bitcoin address matches the provided pk
+            let pk_bytes_opt = multibase_codec::decode(&user_vm_pk_multibase);
+            assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+            let pk_bytes = option::destroy_some(pk_bytes_opt);
+            assert!(
+                bitcoin_address::verify_with_public_key(&controller_did.identifier, &pk_bytes),
+                ErrorControllerBitcoinAddressMismatch
+            );
+            (controller_did, user_vm_pk_multibase, user_vm_type)
+        } else {
+            abort ErrorControllerDIDMethodNotSupported
+        }
+    }
 
     /// Helper function to check if a DID document has a CADOP custodian service
     fun has_cadop_service_in_doc(did_doc: &DIDDocument): bool {
@@ -792,26 +873,22 @@ module rooch_framework::did {
     }
 
     /// Generate a unique service fragment for a user based on their DID
-    fun generate_service_fragment_for_user(user_did_key_string: &String): String {
+    fun generate_service_fragment_for_user(controller_did_string: &String): String {
         let fragment = string::utf8(b"custodian-service-");
-        
-        // Extract a short identifier from the user's did:key
-        // For did:key:zABC..., we take the first 8 characters after 'z'
-        let did_bytes = string::bytes(user_did_key_string);
-        let start_pos = 8; // Skip "did:key:z"
-        let end_pos = if (vector::length(did_bytes) > start_pos + 8) {
-            start_pos + 8
-        } else {
-            vector::length(did_bytes)
-        };
-        
+
+        // Extract a short suffix from the controller DID string: last up to 8 bytes
+        let did_bytes = string::bytes(controller_did_string);
+        let len = vector::length(did_bytes);
+        let count = if (len > 8) { 8 } else { len };
+        let start_pos = len - count;
+
         let i = start_pos;
-        while (i < end_pos) {
+        while (i < len) {
             let byte_val = *vector::borrow(did_bytes, i);
             string::append_utf8(&mut fragment, vector[byte_val]);
             i = i + 1;
         };
-        
+
         fragment
     }
 
