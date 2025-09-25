@@ -9,7 +9,7 @@
         clean clean-all clean-rust clean-move \
         rust-machete rust-clippy \
         move-framework move-stdlib move-nursery move-bitcoin-framework move-examples \
-        ci-checks verify dev quick-check
+        ci-checks verify dev quick-check install-tools
 
 # Default target: Show help
 help:
@@ -65,6 +65,7 @@ help:
 	@echo "    clean-move          - Clean Move build artifacts (frameworks and examples build dirs)"
 	@echo ""
 	@echo "  Utilities:"
+	@echo "    install-tools       - Install required cargo tools (cargo-machete, cargo-nextest)"
 	@echo "    verify              - Verify Rooch CLI availability and version via cargo run"
 	@echo ""
 	@echo "Note: Rust builds default to 'debug' profile unless 'release' is specified (e.g., build-rust-release)."
@@ -215,13 +216,13 @@ test-move-examples:
 		if [ -f "$$dir/Move.toml" ]; then \
 			name_addr=$$(basename "$$dir"); \
 			echo "Building and Testing Move example: $$dir (named address: $$name_addr)"; \
-			$(ROOCH_CMD) move build -p "$$dir" --named-addresses rooch_examples=default,$$name_addr=default && \
+			$(ROOCH_CMD) move build -d -p "$$dir" && \
 			$(ROOCH_CMD) move test -p "$$dir"|| exit 1; \
 		fi \
 	done
 	@echo "✅ All Move example tests passed."
 
-test-move: test-move-frameworks test-move-examples
+test-move: test-move-frameworks
 
 test-integration:
 	@echo "🧪 Running Cucumber integration tests (testsuite only, profile: $(RUST_PROFILE_DEFAULT))..."
@@ -269,3 +270,20 @@ quick-check: build-rust-debug move-framework
 # The original 'stdlib' is move-stdlib.
 # The original 'test' only tested rooch-framework, now test-move-frameworks is more comprehensive.
 # The original 'examples' target is move-examples.
+
+# Install required cargo tools
+install-tools:
+	@echo "🔧 Installing required cargo tools..."
+	@if ! command -v cargo-machete &>/dev/null; then \
+		echo "Installing cargo-machete..."; \
+		cargo install cargo-machete --locked --version 0.7.0; \
+	else \
+		echo "cargo-machete already installed"; \
+	fi
+	@if ! command -v cargo-nextest &>/dev/null; then \
+		echo "Installing cargo-nextest..."; \
+		cargo install cargo-nextest --locked --version 0.9.97-b.2; \
+	else \
+		echo "cargo-nextest already installed"; \
+	fi
+	@echo "✅ All required cargo tools are available"

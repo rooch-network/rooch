@@ -75,13 +75,16 @@ jobs:
       - name: Setup Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: ./.github/actions/rust-setup
+      - name: Install cargo tools
+        if: ${{ steps.changes.outputs.core == 'true' }}
+        run: make install-tools
       - name: Build Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
           cargo build
       - name: Run Rust Lint
         if: ${{ steps.changes.outputs.core == 'true'}}
-        run: ./scripts/pr.sh -c
+        run: make lint
       - name: Rooch init
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
@@ -89,13 +92,13 @@ jobs:
           cargo run --profile optci --bin rooch init --skip-password
       - name: Run Rust tests
         if: ${{ steps.changes.outputs.core == 'true'}}
-        run: ./scripts/pr.sh -t
+        run: make test-rust
       - name: Run Move tests
         if: ${{ steps.changes.outputs.core == 'true'}}
-        run: ./scripts/pr.sh -m
+        run: make test-move
       - name: Run example tests
         if: ${{ steps.changes.outputs.core == 'true'}}
-        run: ./scripts/pr.sh -e
+        run: make test-move-examples
       - name: Generate genesis files for Mainnet and Testnet
         if: ${{ steps.changes.outputs.core == 'true'}}
         run: |
