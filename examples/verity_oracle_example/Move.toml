@@ -18,3 +18,4 @@ rooch_framework = "0x3"
 
 [dev-addresses]
 verity_oracle_example = "0x43"
+verity_test_foreign_module = "0x44"
