@@ -83,6 +83,7 @@ impl SweepExpired {
         let mut batch = Vec::with_capacity(1000); // Process deletion in small batches
         let mut total_deleted: u64 = 0;
         let mut since_last_flush: u64 = 0;
+        let flush_interval: u64 = 100000; // flush every 100k deletions
 
         while let Some(node_hash) = stack.pop_back() {
             // if node is reachable by other live roots, keep it
@@ -106,6 +107,7 @@ impl SweepExpired {
                     batch.len(),
                     total_deleted
                 );
+
                 if total_deleted <= 1000 || total_deleted % 10000 == 0 {
                     info!("Sweep expired this loop delete batch {:?}", batch);
                 }
@@ -113,9 +115,11 @@ impl SweepExpired {
                 batch.clear();
 
                 since_last_flush += 1000;
-                if since_last_flush >= 10_000 {
+                if since_last_flush >= flush_interval {
                     // periodic flush to persist progress and avoid huge memtables
-                    self.moveos_store.node_store.flush_only()?;
+                    // self.moveos_store.node_store.flush_only()?;
+                    // self.moveos_store.node_store.aggressive_compact()?;
+                    self.moveos_store.node_store.flush_and_compact()?;
                     since_last_flush = 0;
                 }
             }
@@ -153,7 +157,9 @@ impl SweepExpired {
         }
 
         // flush after finishing this root to ensure deletions are durable before moving on
-        self.moveos_store.node_store.flush_only()?;
+        // self.moveos_store.node_store.flush_only()?;
+        // self.moveos_store.node_store.aggressive_compact()?;
+        self.moveos_store.node_store.flush_and_compact()?;
 
         info!(
             "Completed sweeping root {:?}, total deleted nodes: {}",

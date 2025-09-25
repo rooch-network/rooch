@@ -40,13 +40,13 @@ impl StatePruner {
         mut shutdown_rx: Receiver<()>,
         // metrics: Arc<StateDBMetrics>,
     ) -> Result<Self> {
-        info!("Starting pruner");
         if !cfg.enable {
             return Ok(Self {
                 handle: None,
                 running: Arc::new(AtomicBool::new(false)),
             });
         }
+        info!("Starting pruner");
 
         info!("Starting pruner with config: {:?}", cfg);
         let running = Arc::new(AtomicBool::new(true));
