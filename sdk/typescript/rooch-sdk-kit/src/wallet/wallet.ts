@@ -1,12 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { ThirdPartyAddress, Bytes, Signer } from '@roochnetwork/rooch-sdk'
+import { ThirdPartyAddress, Bytes, BitcoinWalletSigner } from '@roochnetwork/rooch-sdk'
 
 import { SupportChain } from '../feature/index.js'
 import { WalletNetworkType } from './types.js'
 
-export abstract class Wallet extends Signer {
+export abstract class Wallet extends BitcoinWalletSigner {
   protected address: ThirdPartyAddress[] | undefined
   protected publicKey: string | undefined
   protected currentAddress: ThirdPartyAddress | undefined
