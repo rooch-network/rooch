@@ -1,8 +1,7 @@
-use crate::utils::open_rooch_db;
+use crate::utils::open_rooch_db_readonly;
 use clap::Parser;
 use raw_store::SchemaStore;
 use rocksdb::checkpoint::Checkpoint;
-use rocksdb::FlushOptions;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
@@ -23,7 +22,7 @@ pub struct GenerateDBCheckPointCommand {
 impl GenerateDBCheckPointCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let (_root, rooch_db, _start_time) =
-            open_rooch_db(self.base_data_dir.clone(), self.chain_id.clone());
+            open_rooch_db_readonly(self.base_data_dir.clone(), self.chain_id.clone());
         let rocks_db = rooch_db
             .moveos_store
             .node_store
@@ -32,11 +31,7 @@ impl GenerateDBCheckPointCommand {
             .db()
             .expect("open rocksdb instance failed.")
             .inner();
-        let mut fopts = FlushOptions::default();
-        fopts.set_wait(true);
-        rocks_db.flush_opt(&fopts).expect("flush rocksdb failed.");
 
-        rocks_db.flush_wal(true).expect("flush rocksdb failed.");
         let check_point = Checkpoint::new(rocks_db).expect("create checkpoint failed.");
         check_point
             .create_checkpoint(self.output_dir.as_path())
