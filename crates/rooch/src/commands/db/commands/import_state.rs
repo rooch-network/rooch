@@ -16,6 +16,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::info;
 
+/// import disk file to state DB
 #[derive(Debug, Parser)]
 pub struct ImportStateCommand {
     #[clap(long, short = 'i')]
