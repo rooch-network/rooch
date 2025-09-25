@@ -579,6 +579,26 @@ The signer is not the DID's associated account
 
 
 
+<a name="0x3_did_ErrorTooManyRelationshipMethods"></a>
+
+Exceeded maximum number of verification methods allowed in a relationship
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorTooManyRelationshipMethods">ErrorTooManyRelationshipMethods</a>: u64 = 36;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorTooManyVerificationMethods"></a>
+
+Exceeded maximum number of verification methods allowed in a DID document
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorTooManyVerificationMethods">ErrorTooManyVerificationMethods</a>: u64 = 35;
+</code></pre>
+
+
+
 <a name="0x3_did_ErrorUnauthorized"></a>
 
 Unauthorized operation (generic, consider specific ErrorControllerPermissionDenied)
@@ -635,6 +655,24 @@ Verification method not in the relationship
 
 
 <pre><code><b>const</b> <a href="did.md#0x3_did_ErrorVerificationMethodNotInRelationship">ErrorVerificationMethodNotInRelationship</a>: u64 = 10;
+</code></pre>
+
+
+
+<a name="0x3_did_MAX_METHODS_PER_RELATIONSHIP"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_MAX_METHODS_PER_RELATIONSHIP">MAX_METHODS_PER_RELATIONSHIP</a>: u64 = 64;
+</code></pre>
+
+
+
+<a name="0x3_did_MAX_VERIFICATION_METHODS_PER_DOCUMENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_MAX_VERIFICATION_METHODS_PER_DOCUMENT">MAX_VERIFICATION_METHODS_PER_DOCUMENT</a>: u64 = 64;
 </code></pre>
 
 
