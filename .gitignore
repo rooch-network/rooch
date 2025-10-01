@@ -43,3 +43,7 @@ rooch-book
 sdk-examples
 
 __pycache__
+
+# ctags
+tags
+
