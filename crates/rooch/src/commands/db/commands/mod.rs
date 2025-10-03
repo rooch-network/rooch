@@ -24,6 +24,8 @@ pub mod import_state;
 pub mod list_anomaly;
 pub mod repair;
 pub mod revert;
+pub mod rocksdb_gc;
+pub mod rocksdb_stats;
 pub mod rollback;
 pub mod stat_changeset;
 pub mod verify_order;

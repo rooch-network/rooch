@@ -75,3 +75,79 @@ async fn test_prune_meta_bloom_persist() {
 //     assert!(list.contains(&(mid_root, node2)));
 //     assert!(!list.contains(&(new_root, node3)));
 // }
+
+/// Verify that deleted roots bloom filter can be persisted and reloaded.
+#[tokio::test]
+async fn test_deleted_state_root_bloom_persist() {
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+
+    // Initially, no bloom filter should exist
+    let loaded = store.load_deleted_state_root_bloom().unwrap();
+    assert!(loaded.is_none());
+
+    // Create a bloom filter and mark some roots as deleted
+    let mut bloom = BloomFilter::new(1 << 20, 4);
+    let root1 = H256::random();
+    let root2 = H256::random();
+    let root3 = H256::random();
+
+    bloom.insert(&root1);
+    bloom.insert(&root2);
+
+    // Save the bloom filter
+    store.save_deleted_state_root_bloom(bloom.clone()).unwrap();
+
+    // Reload and verify
+    let loaded = store.load_deleted_state_root_bloom().unwrap().unwrap();
+    assert!(loaded.contains(&root1));
+    assert!(loaded.contains(&root2));
+    assert!(!loaded.contains(&root3)); // This one was not inserted
+
+    // Add more roots and save again
+    let mut bloom2 = loaded;
+    bloom2.insert(&root3);
+    store.save_deleted_state_root_bloom(bloom2.clone()).unwrap();
+
+    // Reload and verify all three are present
+    let loaded2 = store.load_deleted_state_root_bloom().unwrap().unwrap();
+    assert!(loaded2.contains(&root1));
+    assert!(loaded2.contains(&root2));
+    assert!(loaded2.contains(&root3));
+}
+
+/// Test that the bloom filter correctly filters duplicate state roots
+#[tokio::test]
+async fn test_deleted_state_root_bloom_deduplication() {
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+
+    let mut bloom = BloomFilter::new(1 << 20, 4);
+
+    // Generate some state roots
+    let roots: Vec<H256> = (0..100).map(|_| H256::random()).collect();
+
+    // Mark first 50 as deleted
+    for root in roots.iter().take(50) {
+        bloom.insert(root);
+    }
+
+    store.save_deleted_state_root_bloom(bloom).unwrap();
+
+    // Load and filter
+    let loaded_bloom = store.load_deleted_state_root_bloom().unwrap().unwrap();
+
+    let roots_to_process: Vec<_> = roots
+        .iter()
+        .filter(|root| !loaded_bloom.contains(root))
+        .collect();
+
+    // Should only have the last 50 roots
+    assert_eq!(roots_to_process.len(), 50);
+
+    // Verify the filtered roots are the correct ones
+    for item in roots.iter().take(50) {
+        assert!(!roots_to_process.contains(&item));
+    }
+    for item in roots.iter().take(100).skip(50) {
+        assert!(!roots_to_process.contains(&item));
+    }
+}

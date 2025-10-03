@@ -126,6 +126,11 @@ impl NodeDBStore {
     /// Perform an aggressive compaction that forces all levels to be merged down to the bottommost
     /// level, then immediately purge obsolete files. This effectively removes tombstoned keys and
     /// reclaims disk space.
+    ///
+    /// Ordering and safety fixes:
+    /// - Flush WAL and memtable BEFORE compaction so deletions participate in SST compaction
+    /// - Use an RAII guard to ensure auto compactions are always re-enabled
+    /// - Add timing and size stats for observability
     pub fn aggressive_compact(&self) -> Result<()> {
         if let Some(wrapper) = self.store.store().db() {
             let raw_db = wrapper.inner();
@@ -133,18 +138,58 @@ impl NodeDBStore {
                 .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
                 .expect("state node cf");
 
-            // Disable auto compactions during the manual compaction window to reduce write stall
-            raw_db.set_options_cf(&cf, &[("disable_auto_compactions", "true")])?;
+            // RAII guard to guarantee auto compaction re-enabled even on error/panic
+            struct AutoCompactionGuard<'a> {
+                db: &'a rocksdb::DB,
+                cf: &'a rocksdb::ColumnFamily,
+            }
+            impl<'a> Drop for AutoCompactionGuard<'a> {
+                fn drop(&mut self) {
+                    let _ = self
+                        .db
+                        .set_options_cf(self.cf, &[("disable_auto_compactions", "false")]);
+                }
+            }
 
-            // Compact the whole key range and force bottommost level rewrite.
+            // Record size before
+            let before_size = raw_db
+                .property_int_value_cf(&cf, "rocksdb.total-sst-files-size")
+                .ok()
+                .flatten()
+                .unwrap_or(0);
+
+            // Disable auto compactions during the manual compaction window
+            raw_db.set_options_cf(&cf, &[("disable_auto_compactions", "true")])?;
+            let _guard = AutoCompactionGuard { db: raw_db, cf };
+
+            // Flush BEFORE compaction so tombstones are included in SSTs
+            raw_db.flush_wal(true)?;
+            raw_db.flush_cf(&cf)?;
+
+            // Force a bottommost major compaction that rewrites every level so that range
+            // tombstones physically delete data.
             use rocksdb::{BottommostLevelCompaction, CompactOptions};
             let mut copt = CompactOptions::default();
             copt.set_bottommost_level_compaction(BottommostLevelCompaction::Force);
-            raw_db.compact_range_cf_opt(&cf, None::<&[u8]>, None::<&[u8]>, &copt);
-            // raw_db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+            copt.set_exclusive_manual_compaction(true);
 
-            // Re-enable automatic compactions.
-            raw_db.set_options_cf(&cf, &[("disable_auto_compactions", "false")])?;
+            let start = std::time::Instant::now();
+            raw_db.compact_range_cf_opt(&cf, None::<&[u8]>, None::<&[u8]>, &copt);
+            let elapsed = start.elapsed();
+
+            let after_size = raw_db
+                .property_int_value_cf(&cf, "rocksdb.total-sst-files-size")
+                .ok()
+                .flatten()
+                .unwrap_or(0);
+            let reclaimed = before_size.saturating_sub(after_size);
+            tracing::info!(
+                "Aggressive compaction finished in {:?}: before {:.2} GB, after {:.2} GB, reclaimed {:.2} GB",
+                elapsed,
+                before_size as f64 / 1e9,
+                after_size as f64 / 1e9,
+                reclaimed as f64 / 1e9
+            );
         }
         Ok(())
     }

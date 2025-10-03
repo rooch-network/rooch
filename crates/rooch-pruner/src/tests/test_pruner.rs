@@ -108,9 +108,9 @@ async fn test_reachable_and_sweep() {
     let scanned = builder.build(vec![hash1], 1).unwrap();
     assert_eq!(scanned, 1);
 
-    // Sweep expired roots containing both hashes
+    // Sweep expired roots containing both hashes (with tx_order for traceability)
     let sweeper = SweepExpired::new(Arc::new(store.clone()), bloom);
-    let _deleted = sweeper.sweep(vec![hash1, hash2], 1).unwrap();
+    let _deleted = sweeper.sweep(vec![(hash1, 1), (hash2, 2)], 1).unwrap();
     // assert_eq!(deleted, 1);
 
     // Validate storage

@@ -16,6 +16,8 @@ use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
+use crate::commands::db::commands::rocksdb_gc::RocksDBGcCommand;
+use crate::commands::db::commands::rocksdb_stats::RocksDBStatsCommand;
 use crate::commands::db::commands::stat_changeset::StatChangesetCommand;
 use crate::commands::db::commands::verify_order::VerifyOrderCommand;
 use async_trait::async_trait;
@@ -98,6 +100,8 @@ impl CommandAction<String> for DB {
             DBCommand::ImportToStateDB(import_state) => import_state.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            DBCommand::RocksdbStats(stats) => stats.execute().await,
+            DBCommand::RocksdbGc(gc) => gc.execute().await,
         }
     }
 }
@@ -122,4 +126,6 @@ pub enum DBCommand {
     GetAccumulatorLeafByIndex(GetAccumulatorLeafByIndexCommand),
     DumpFromStateDB(DumpStateCommand),
     ImportToStateDB(ImportStateCommand),
+    RocksdbStats(RocksDBStatsCommand),
+    RocksdbGc(RocksDBGcCommand),
 }
