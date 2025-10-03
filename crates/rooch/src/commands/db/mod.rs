@@ -20,6 +20,7 @@ use crate::commands::db::commands::rocksdb_gc::RocksDBGcCommand;
 use crate::commands::db::commands::rocksdb_stats::RocksDBStatsCommand;
 use crate::commands::db::commands::stat_changeset::StatChangesetCommand;
 use crate::commands::db::commands::verify_order::VerifyOrderCommand;
+use crate::commands::db::commands::prune_diagnosis::PruneDiagnosisCommand;
 use async_trait::async_trait;
 use clap::Parser;
 use commands::rollback::RollbackCommand;
@@ -102,6 +103,7 @@ impl CommandAction<String> for DB {
             }),
             DBCommand::RocksdbStats(stats) => stats.execute().await,
             DBCommand::RocksdbGc(gc) => gc.execute().await,
+            DBCommand::PruneDiagnosis(diag) => diag.execute().await,
         }
     }
 }
@@ -128,4 +130,5 @@ pub enum DBCommand {
     ImportToStateDB(ImportStateCommand),
     RocksdbStats(RocksDBStatsCommand),
     RocksdbGc(RocksDBGcCommand),
+    PruneDiagnosis(PruneDiagnosisCommand),
 }
