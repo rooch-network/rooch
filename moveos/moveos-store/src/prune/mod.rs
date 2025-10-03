@@ -3,8 +3,9 @@
 
 use crate::{
     NODE_REFCOUNT_COLUMN_FAMILY_NAME, PRUNE_META_BLOOM_COLUMN_FAMILY_NAME,
-    PRUNE_META_PHASE_COLUMN_FAMILY_NAME, PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME,
-    REACH_SEEN_COLUMN_FAMILY_NAME, SMT_STALE_INDEX_COLUMN_FAMILY_NAME,
+    PRUNE_META_DELETED_ROOTS_BLOOM_COLUMN_FAMILY_NAME, PRUNE_META_PHASE_COLUMN_FAMILY_NAME,
+    PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME, REACH_SEEN_COLUMN_FAMILY_NAME,
+    SMT_STALE_INDEX_COLUMN_FAMILY_NAME,
 };
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
@@ -16,6 +17,7 @@ const META_KEY_PHASE: &str = "phase";
 // const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
 const META_KEY_BLOOM: &str = "bloom_snapshot";
 const META_KEY_SNAPSHOT: &str = "meta_snapshot";
+const META_KEY_DELETED_STATE_ROOT_BLOOM: &str = "deleted_state_root_bloom";
 
 derive_store!(
     ReachSeenDBStore,
@@ -53,6 +55,12 @@ derive_store!(
     PruneSnapshot,
     PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME
 );
+derive_store!(
+    DeletedStateRootBloomStore,
+    String,
+    BloomFilter,
+    PRUNE_META_DELETED_ROOTS_BLOOM_COLUMN_FAMILY_NAME
+);
 
 pub trait PruneStore {
     fn load_prune_meta_phase(&self) -> Result<PrunePhase>;
@@ -71,6 +79,10 @@ pub trait PruneStore {
     fn save_prune_meta_snapshot(&self, snap: PruneSnapshot) -> Result<()>;
 
     fn load_prune_meta_snapshot(&self) -> Result<Option<PruneSnapshot>>;
+
+    // New methods for tracking deleted state roots
+    fn load_deleted_state_root_bloom(&self) -> Result<Option<BloomFilter>>;
+    fn save_deleted_state_root_bloom(&self, bloom: BloomFilter) -> Result<()>;
 }
 
 #[derive(Clone)]
@@ -79,6 +91,7 @@ pub struct PruneDBStore {
     pub prune_meta_phase_store: PruneMetaPhaseStore,
     pub prune_meta_bloom_store: PruneMetaBloomStore,
     pub prune_meta_snapshot_store: PruneMetaSnapshotStore,
+    pub deleted_state_root_bloom_store: DeletedStateRootBloomStore,
     pub stale_index_store: StaleIndexStore,
     pub node_refcount_store: NodeRefcountStore,
 }
@@ -90,6 +103,7 @@ impl PruneDBStore {
             prune_meta_phase_store: PruneMetaPhaseStore::new(instance.clone()),
             prune_meta_bloom_store: PruneMetaBloomStore::new(instance.clone()),
             prune_meta_snapshot_store: PruneMetaSnapshotStore::new(instance.clone()),
+            deleted_state_root_bloom_store: DeletedStateRootBloomStore::new(instance.clone()),
             stale_index_store: StaleIndexStore::new(instance.clone()),
             node_refcount_store: NodeRefcountStore::new(instance),
         }
@@ -131,6 +145,18 @@ impl PruneDBStore {
     pub fn load_prune_meta_snapshot(&self) -> Result<Option<PruneSnapshot>> {
         self.prune_meta_snapshot_store
             .kv_get(META_KEY_SNAPSHOT.to_string())
+    }
+
+    /// Load BloomFilter of deleted state roots.
+    pub fn load_deleted_state_root_bloom(&self) -> Result<Option<BloomFilter>> {
+        self.deleted_state_root_bloom_store
+            .kv_get(META_KEY_DELETED_STATE_ROOT_BLOOM.to_string())
+    }
+
+    /// Save BloomFilter of deleted state roots.
+    pub fn save_deleted_state_root_bloom(&self, bloom: BloomFilter) -> Result<()> {
+        self.deleted_state_root_bloom_store
+            .kv_put(META_KEY_DELETED_STATE_ROOT_BLOOM.to_string(), bloom)
     }
 
     /// Fallback implementation: iterate CF and collect the first `limit` keys whose
