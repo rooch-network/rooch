@@ -26,6 +26,7 @@ pub mod repair;
 pub mod revert;
 pub mod rocksdb_gc;
 pub mod rocksdb_stats;
+pub mod prune_diagnosis;
 pub mod rollback;
 pub mod stat_changeset;
 pub mod verify_order;

@@ -29,6 +29,7 @@ impl SweepExpired {
     pub fn new(
         moveos_store: Arc<MoveOSStore>,
         bloom: Arc<Mutex<BloomFilter>>, // pass the same bloom instance
+        bloom_bits: usize, // configurable bloom filter size
                                         // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         // Load or create deleted roots bloom filter
@@ -37,9 +38,9 @@ impl SweepExpired {
             .ok()
             .flatten()
             .unwrap_or_else(|| {
-                // Create a new BloomFilter: 2^38 bits, 4 hash functions
-                // Can track ~137438M state roots with <1% false positive rate
-                BloomFilter::new(1 << 38, 4)
+                // Use same size as reachable bloom to avoid serialization issues
+                // Previous 2^38 (32GB) was too large and caused save failures
+                BloomFilter::new(bloom_bits, 4)
             });
 
         Self {

@@ -151,7 +151,7 @@ impl StatePruner {
                         };
                         info!("Starting scan from order {}", order_cursor);
 
-                        let sweeper = SweepExpired::new(moveos_store.clone(), bloom.clone());
+                        let sweeper = SweepExpired::new(moveos_store.clone(), bloom.clone(), cfg.bloom_bits);
                         let mut processed_count = 0;
                         let mut batch_roots = Vec::with_capacity(1000); // Process in smaller batches
 
