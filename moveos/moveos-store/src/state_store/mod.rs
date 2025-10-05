@@ -117,7 +117,7 @@ impl NodeDBStore {
             use rocksdb::{BottommostLevelCompaction, CompactOptions};
             let mut copt = CompactOptions::default();
             copt.set_bottommost_level_compaction(BottommostLevelCompaction::Force);
-            
+
             raw_db.compact_range_cf_opt(&cf, None::<&[u8]>, None::<&[u8]>, &copt);
         }
         Ok(())

@@ -22,6 +22,7 @@ pub struct SweepExpired {
     bloom: Arc<Mutex<BloomFilter>>, // same Bloom used by ReachableBuilder
     deleted_state_root_bloom: Arc<Mutex<BloomFilter>>, // BloomFilter tracking deleted state roots
     processed_roots_count: Arc<std::sync::atomic::AtomicU64>, // Counter for aggressive compaction
+    should_stop: Arc<std::sync::atomic::AtomicBool>, // Signal to stop processing
                                     // metrics: Arc<StateDBMetrics>,
 }
 
@@ -30,6 +31,7 @@ impl SweepExpired {
         moveos_store: Arc<MoveOSStore>,
         bloom: Arc<Mutex<BloomFilter>>, // pass the same bloom instance
         bloom_bits: usize,              // configurable bloom filter size
+        should_stop: Arc<std::sync::atomic::AtomicBool>, // signal to stop
                                         // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         // Load or create deleted roots bloom filter
@@ -48,6 +50,7 @@ impl SweepExpired {
             bloom,
             deleted_state_root_bloom: Arc::new(Mutex::new(deleted_state_root_bloom)),
             processed_roots_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            should_stop,
         }
     }
 
@@ -113,6 +116,12 @@ impl SweepExpired {
 
         // ✅ Step 3: Process batches sequentially (largest tx_order first)
         for (batch_idx, mini_batch) in roots_to_process.chunks(mini_batch_size).enumerate() {
+            // Check if we should stop early
+            if self.should_stop.load(std::sync::atomic::Ordering::Relaxed) {
+                info!("Sweep stopping: received shutdown signal");
+                return Ok(deleted.load(std::sync::atomic::Ordering::Relaxed));
+            }
+
             let batch_max_order = mini_batch.first().map(|(_, o)| *o).unwrap_or(0);
             let batch_min_order = mini_batch.last().map(|(_, o)| *o).unwrap_or(0);
 
@@ -157,13 +166,33 @@ impl SweepExpired {
                 batch_idx + 1,
                 total_batches
             );
-            
+
+            // If shutdown is requested, skip compaction to exit quickly
+            if self.should_stop.load(std::sync::atomic::Ordering::Relaxed) {
+                info!("Skipping compaction due to shutdown request");
+                // Persist bloom progress before exit
+                {
+                    all_processed_roots.extend_from_slice(&processed_roots.lock());
+                }
+                if let Err(e) = self
+                    .moveos_store
+                    .save_deleted_state_root_bloom(self.deleted_state_root_bloom.lock().clone())
+                {
+                    tracing::warn!(
+                        "Failed to save deleted roots bloom during shutdown at batch {}: {}",
+                        batch_idx + 1,
+                        e
+                    );
+                }
+                return Ok(deleted.load(std::sync::atomic::Ordering::Relaxed));
+            }
+
             let compact_start = std::time::Instant::now();
-            let count = self
-                .processed_roots_count
-                .fetch_add(mini_batch.len() as u64, std::sync::atomic::Ordering::Relaxed)
-                + mini_batch.len() as u64;
-            
+            let count = self.processed_roots_count.fetch_add(
+                mini_batch.len() as u64,
+                std::sync::atomic::Ordering::Relaxed,
+            ) + mini_batch.len() as u64;
+
             // Decide whether to use aggressive or standard compaction
             // More frequent aggressive compaction for better space reclamation
             let aggressive_compact_interval = 200; // Every 200 roots (more aggressive)
@@ -175,13 +204,19 @@ impl SweepExpired {
                 if let Err(e) = self.moveos_store.node_store.aggressive_compact() {
                     tracing::error!("Aggressive compaction failed: {}", e);
                 } else {
-                    info!("Aggressive compaction completed in {:?}", compact_start.elapsed());
+                    info!(
+                        "Aggressive compaction completed in {:?}",
+                        compact_start.elapsed()
+                    );
                 }
             } else {
                 if let Err(e) = self.moveos_store.node_store.flush_and_compact() {
                     tracing::error!("Flush and compact failed: {}", e);
                 } else {
-                    info!("Flush and compact completed in {:?}", compact_start.elapsed());
+                    info!(
+                        "Flush and compact completed in {:?}",
+                        compact_start.elapsed()
+                    );
                 }
             }
 
@@ -258,6 +293,24 @@ impl SweepExpired {
         let flush_interval: u64 = 500000; // Reduced flush frequency for better performance
 
         while let Some(node_hash) = stack.pop_back() {
+            // Check shutdown signal periodically (every 1000 nodes)
+            if total_deleted % 1000 == 0
+                && self.should_stop.load(std::sync::atomic::Ordering::Relaxed)
+            {
+                info!(
+                    "sweep_root stopping: received shutdown signal at {} nodes",
+                    total_deleted
+                );
+                // Flush remaining deletions before exit
+                if !batch.is_empty() {
+                    self.moveos_store
+                        .node_store
+                        .delete_nodes_with_flush(batch.clone(), /*flush*/ true)?;
+                    deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
+                }
+                return Ok(());
+            }
+
             // Step 1: OPTIMIZATION - Check reachability BEFORE reading node
             // This avoids expensive RocksDB get() for reachable nodes
             // Only read node content if it's actually going to be deleted
@@ -294,14 +347,12 @@ impl SweepExpired {
                 self.moveos_store
                     .node_store
                     .delete_nodes_with_flush(batch.clone(), /*flush*/ false)?;
-                
+
                 // Reduced logging frequency - only log every 100k deletions
                 if total_deleted % 100000 == 0 {
                     info!(
                         "Sweep progress: tx_order {}, state root {:?}, deleted {} nodes so far",
-                        tx_order,
-                        root_hash,
-                        total_deleted
+                        tx_order, root_hash, total_deleted
                     );
                 }
 
