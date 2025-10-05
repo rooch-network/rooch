@@ -144,10 +144,12 @@ async fn test_deleted_state_root_bloom_deduplication() {
     assert_eq!(roots_to_process.len(), 50);
 
     // Verify the filtered roots are the correct ones
+    // First 50 roots were marked deleted, so they should NOT be in roots_to_process
     for item in roots.iter().take(50) {
         assert!(!roots_to_process.contains(&item));
     }
-    for item in roots.iter().take(100).skip(50) {
-        assert!(!roots_to_process.contains(&item));
+    // Last 50 roots were NOT marked deleted, so they SHOULD be in roots_to_process
+    for item in roots.iter().skip(50) {
+        assert!(roots_to_process.contains(&item));
     }
 }
