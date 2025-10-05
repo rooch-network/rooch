@@ -21,6 +21,7 @@ use crate::commands::db::commands::rocksdb_stats::RocksDBStatsCommand;
 use crate::commands::db::commands::stat_changeset::StatChangesetCommand;
 use crate::commands::db::commands::verify_order::VerifyOrderCommand;
 use crate::commands::db::commands::prune_diagnosis::PruneDiagnosisCommand;
+use crate::commands::db::commands::delete_benchmark::DeleteBenchmarkCommand;
 use async_trait::async_trait;
 use clap::Parser;
 use commands::rollback::RollbackCommand;
@@ -104,6 +105,7 @@ impl CommandAction<String> for DB {
             DBCommand::RocksdbStats(stats) => stats.execute().await,
             DBCommand::RocksdbGc(gc) => gc.execute().await,
             DBCommand::PruneDiagnosis(diag) => diag.execute().await,
+            DBCommand::DeleteBenchmark(bench) => bench.execute().await,
         }
     }
 }
@@ -131,4 +133,5 @@ pub enum DBCommand {
     RocksdbStats(RocksDBStatsCommand),
     RocksdbGc(RocksDBGcCommand),
     PruneDiagnosis(PruneDiagnosisCommand),
+    DeleteBenchmark(DeleteBenchmarkCommand),
 }

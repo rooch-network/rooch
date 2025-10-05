@@ -98,6 +98,9 @@ impl NodeDBStore {
     /// Flush the state-node column family and trigger a manual compaction.  Call this once after a
     /// bulk pruning run to quickly reclaim space without generating a huge number of temporary
     /// files during the run.
+    ///
+    /// # Fix: Now uses BottommostLevelCompaction::Force to ensure tombstones are actually removed
+    /// and disk space is reclaimed. Without this, deleted data remains in L6 and space is not freed.
     pub fn flush_and_compact(&self) -> Result<()> {
         if let Some(wrapper) = self.store.store().db() {
             let raw_db = wrapper.inner();
@@ -105,8 +108,17 @@ impl NodeDBStore {
                 .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
                 .expect("state node cf");
 
+            // Flush WAL and memtable first
+            raw_db.flush_wal(true)?;
             raw_db.flush_cf(&cf)?;
-            raw_db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+
+            // Use BottommostLevelCompaction::Force to actually remove tombstones
+            // This is critical for space reclamation - without it, deleted data stays in L6
+            use rocksdb::{BottommostLevelCompaction, CompactOptions};
+            let mut copt = CompactOptions::default();
+            copt.set_bottommost_level_compaction(BottommostLevelCompaction::Force);
+            
+            raw_db.compact_range_cf_opt(&cf, None::<&[u8]>, None::<&[u8]>, &copt);
         }
         Ok(())
     }
