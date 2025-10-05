@@ -35,7 +35,8 @@ impl PruneDiagnosisCommand {
     fn execute_impl(self) -> Result<String> {
         let opt = RoochOpt::new_with_default(None, None, None)?;
         let registry_service = RegistryService::default();
-        let rooch_db = rooch_db::RoochDB::init(opt.store_config(), &registry_service.default_registry())?;
+        let rooch_db =
+            rooch_db::RoochDB::init(opt.store_config(), &registry_service.default_registry())?;
         let moveos_store = Arc::new(rooch_db.moveos_store);
         let rooch_store = Arc::new(rooch_db.rooch_store);
 
@@ -43,11 +44,8 @@ impl PruneDiagnosisCommand {
         out.push_str("=== Pruner Diagnosis ===\n\n");
 
         // 1. Check deleted_state_root_bloom
-        let deleted_bloom = moveos_store
-            .load_deleted_state_root_bloom()
-            .ok()
-            .flatten();
-        
+        let deleted_bloom = moveos_store.load_deleted_state_root_bloom().ok().flatten();
+
         if deleted_bloom.is_some() {
             out.push_str("Deleted State Root Bloom: EXISTS\n");
         } else {
@@ -55,11 +53,8 @@ impl PruneDiagnosisCommand {
         }
 
         // 2. Check reachable bloom
-        let reachable_bloom = moveos_store
-            .load_prune_meta_bloom()
-            .ok()
-            .flatten();
-        
+        let reachable_bloom = moveos_store.load_prune_meta_bloom().ok().flatten();
+
         if reachable_bloom.is_some() {
             out.push_str("Reachable Bloom: EXISTS\n");
         } else {
@@ -67,14 +62,17 @@ impl PruneDiagnosisCommand {
         }
 
         // 3. Sample recent state roots and check their status
-        out.push_str(&format!("\n=== Recent {} State Roots Analysis ===\n", self.sample_size));
-        
+        out.push_str(&format!(
+            "\n=== Recent {} State Roots Analysis ===\n",
+            self.sample_size
+        ));
+
         let snapshot = moveos_store
             .load_prune_meta_snapshot()
             .ok()
             .flatten()
             .unwrap_or_default();
-        
+
         let latest_order = snapshot.latest_order;
         out.push_str(&format!("Latest processed order: {}\n", latest_order));
 
@@ -83,7 +81,10 @@ impl PruneDiagnosisCommand {
         let mut already_deleted = 0;
         let mut root_nodes_reachable = 0;
 
-        for order in (start_order..=latest_order).rev().take(self.sample_size as usize) {
+        for order in (start_order..=latest_order)
+            .rev()
+            .take(self.sample_size as usize)
+        {
             if let Some(scs) = rooch_store.get_state_change_set(order).ok().flatten() {
                 sampled += 1;
                 let root = scs.state_change_set.state_root;
@@ -104,9 +105,20 @@ impl PruneDiagnosisCommand {
             }
         }
 
-        out.push_str(&format!("\nSampled {} roots from order {} to {}\n", sampled, start_order, latest_order));
-        out.push_str(&format!("  Already marked deleted: {} ({:.1}%)\n", already_deleted, already_deleted as f64 / sampled as f64 * 100.0));
-        out.push_str(&format!("  Root marked as reachable: {} ({:.1}%)\n", root_nodes_reachable, root_nodes_reachable as f64 / sampled as f64 * 100.0));
+        out.push_str(&format!(
+            "\nSampled {} roots from order {} to {}\n",
+            sampled, start_order, latest_order
+        ));
+        out.push_str(&format!(
+            "  Already marked deleted: {} ({:.1}%)\n",
+            already_deleted,
+            already_deleted as f64 / sampled as f64 * 100.0
+        ));
+        out.push_str(&format!(
+            "  Root marked as reachable: {} ({:.1}%)\n",
+            root_nodes_reachable,
+            root_nodes_reachable as f64 / sampled as f64 * 100.0
+        ));
 
         // 4. Estimate deletion effectiveness
         if already_deleted > 0 {
@@ -121,22 +133,37 @@ impl PruneDiagnosisCommand {
         if let Some(wrapper) = moveos_store.node_store.get_store().store().db() {
             let raw = wrapper.inner();
             if let Some(cf) = raw.cf_handle("state_node") {
-                if let Ok(Some(total)) = raw.property_int_value_cf(&cf, "rocksdb.total-sst-files-size") {
-                    if let Ok(Some(live)) = raw.property_int_value_cf(&cf, "rocksdb.live-sst-files-size") {
+                if let Ok(Some(total)) =
+                    raw.property_int_value_cf(&cf, "rocksdb.total-sst-files-size")
+                {
+                    if let Ok(Some(live)) =
+                        raw.property_int_value_cf(&cf, "rocksdb.live-sst-files-size")
+                    {
                         let dead = total.saturating_sub(live);
                         out.push_str("\n=== State Node SST Stats ===\n");
                         out.push_str(&format!("Total SST: {:.2} GB\n", total as f64 / 1e9));
                         out.push_str(&format!("Live SST:  {:.2} GB\n", live as f64 / 1e9));
-                        out.push_str(&format!("Dead SST:  {:.2} GB ({:.1}%)\n", dead as f64 / 1e9, dead as f64 / total as f64 * 100.0));
-                        
+                        out.push_str(&format!(
+                            "Dead SST:  {:.2} GB ({:.1}%)\n",
+                            dead as f64 / 1e9,
+                            dead as f64 / total as f64 * 100.0
+                        ));
+
                         if dead == 0 {
-                            out.push_str("\n⚠️  Dead SST is 0: deletions not effective or fully compacted\n");
+                            out.push_str(
+                                "\n⚠️  Dead SST is 0: deletions not effective or fully compacted\n",
+                            );
                         }
                     }
                 }
 
-                if let Ok(Some(pending)) = raw.property_int_value_cf(&cf, "rocksdb.estimate-pending-compaction-bytes") {
-                    out.push_str(&format!("\nPending compaction: {:.2} GB\n", pending as f64 / 1e9));
+                if let Ok(Some(pending)) =
+                    raw.property_int_value_cf(&cf, "rocksdb.estimate-pending-compaction-bytes")
+                {
+                    out.push_str(&format!(
+                        "\nPending compaction: {:.2} GB\n",
+                        pending as f64 / 1e9
+                    ));
                     if pending > 100_000_000 {
                         out.push_str("  → Significant compaction backlog, run GC to compact\n");
                     }
