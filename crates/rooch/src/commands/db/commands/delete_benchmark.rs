@@ -58,7 +58,7 @@ impl CommandAction<String> for DeleteBenchmarkCommand {
     async fn execute(self) -> RoochResult<String> {
         let result = self
             .execute_impl()
-            .map_err(|e| rooch_types::error::RoochError::from(e))?;
+            .map_err(rooch_types::error::RoochError::from)?;
         Ok(result)
     }
 }
@@ -288,19 +288,10 @@ impl DeleteBenchmarkCommand {
             0.0
         };
 
-        let arrow = if diff < 0 {
-            "↓"
-        } else if diff > 0 {
-            "↑"
-        } else {
-            "="
-        };
-        let indicator = if diff < 0 {
-            "✅"
-        } else if diff > 0 {
-            "⚠️ "
-        } else {
-            "  "
+        let (indicator, arrow) = match diff.cmp(&0) {
+            std::cmp::Ordering::Less => ("OK", "v"),
+            std::cmp::Ordering::Greater => ("WARN", "^"),
+            std::cmp::Ordering::Equal => ("  ", "="),
         };
 
         format!(

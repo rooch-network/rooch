@@ -26,7 +26,7 @@ impl CommandAction<String> for PruneDiagnosisCommand {
     async fn execute(self) -> RoochResult<String> {
         let result = self
             .execute_impl()
-            .map_err(|e| rooch_types::error::RoochError::from(e))?;
+            .map_err(rooch_types::error::RoochError::from)?;
         Ok(result)
     }
 }

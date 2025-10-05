@@ -63,7 +63,7 @@ impl StatePruner {
 
             thread::sleep(Duration::from_secs(60));
             // only for test
-            let mut phase = PrunePhase::BuildReach;
+            // let mut phase = PrunePhase::BuildReach;
             loop {
                 if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {
                     info!("Pruner thread stopping");
@@ -71,9 +71,9 @@ impl StatePruner {
                 }
 
                 // load current phase
-                // let phase = moveos_store
-                //     .load_prune_meta_phase()
-                //     .unwrap_or(PrunePhase::BuildReach);
+                let phase = moveos_store
+                    .load_prune_meta_phase()
+                    .unwrap_or(PrunePhase::BuildReach);
                 // only for test
                 // let phase = PrunePhase::BuildReach;
                 info!("Current prune phase: {:?}", phase);
@@ -127,7 +127,7 @@ impl StatePruner {
                             .save_prune_meta_phase(PrunePhase::SweepExpired)
                             .ok();
                         // only for test
-                        phase = PrunePhase::SweepExpired;
+                        // phase = PrunePhase::SweepExpired;
                         info!("Transitioning to SweepExpired phase");
                     }
                     PrunePhase::SweepExpired => {
@@ -245,7 +245,7 @@ impl StatePruner {
                             .save_prune_meta_phase(PrunePhase::Incremental)
                             .ok();
                         // only for test
-                        phase = PrunePhase::Incremental;
+                        // phase = PrunePhase::Incremental;
                         info!("Transitioning back to Incremental phase");
                     }
                     PrunePhase::Incremental => {

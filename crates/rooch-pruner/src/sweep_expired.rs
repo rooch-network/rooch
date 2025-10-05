@@ -209,15 +209,13 @@ impl SweepExpired {
                         compact_start.elapsed()
                     );
                 }
+            } else if let Err(e) = self.moveos_store.node_store.flush_and_compact() {
+                tracing::error!("Flush and compact failed: {}", e);
             } else {
-                if let Err(e) = self.moveos_store.node_store.flush_and_compact() {
-                    tracing::error!("Flush and compact failed: {}", e);
-                } else {
-                    info!(
-                        "Flush and compact completed in {:?}",
-                        compact_start.elapsed()
-                    );
-                }
+                info!(
+                    "Flush and compact completed in {:?}",
+                    compact_start.elapsed()
+                );
             }
 
             // ✅ Step 6: After each mini-batch, persist progress
