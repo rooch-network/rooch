@@ -172,7 +172,8 @@ impl RocksDB {
 
         cf_opts.set_enable_blob_files(true);
         cf_opts.set_min_blob_size(1024);
-        cf_opts.set_enable_blob_gc(false);
+        // Enable BlobDB garbage collection to reclaim space of obsolete blob records
+        cf_opts.set_enable_blob_gc(true);
         cf_opts.set_blob_compression_type(DBCompressionType::Lz4);
 
         if cf_name == "state_node" {
