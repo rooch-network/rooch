@@ -43,3 +43,6 @@ rooch-book
 sdk-examples
 
 __pycache__
+
+# rust .tool-versions
+.tool-versions

@@ -22,6 +22,10 @@ jobs:
             target: x86_64-unknown-linux-gnu
             binary_names: ['rooch']
             artifact_names: ['rooch-linux-x64']
+          - os: ubuntu-24.04-arm # the arm64 image is public beta preview and does not have latest tag
+            target: aarch64-unknown-linux-gnu
+            binary_names: ['rooch']
+            artifact_names: ['rooch-linux-arm64']
           - os: macos-latest
             target: aarch64-apple-darwin
             binary_names: ['rooch']
@@ -58,7 +62,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Linux dependencies
+      - name: Install Linux x86 dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
@@ -72,6 +76,18 @@ jobs:
             protobuf-compiler \
             lld \
             clang
+
+      - name: Install Linux arm64 dependencies
+        if: matrix.os == 'ubuntu-24.04-arm'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libssl-dev \
+            pkg-config \
+            libclang-dev \
+            protobuf-compiler \
+            lld
 
       - name: Install macOS dependencies
         if: matrix.os == 'macos-latest'
@@ -92,7 +108,7 @@ jobs:
       - name: Set Rust environment variables
         shell: bash
         run: |
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          if [ "${{ matrix.os }}" = "ubuntu-latest" || "${{ matrix.os }}" = "ubuntu-24.04-arm" ]; then
             echo "RUSTFLAGS=-C link-arg=-fuse-ld=gold" >> $GITHUB_ENV
           fi
 
@@ -141,6 +157,7 @@ jobs:
         with:
           files: |
             artifacts/rooch-linux-x64.tar.gz
+            artifacts/rooch-linux-aarch64.tar.gz
             artifacts/rooch-macos-arm64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
