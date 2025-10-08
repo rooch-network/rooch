@@ -44,5 +44,5 @@ sdk-examples
 
 __pycache__
 
-# rust .tool-versions
+# asdf .tool-versions
 .tool-versions
