@@ -24,7 +24,7 @@ dependencies = [
  "mirai-annotations",
  "moveos-types",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
@@ -2658,7 +2658,7 @@ dependencies = [
  "crossterm_winapi",
  "libc",
  "mio 0.8.11",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "signal-hook",
  "signal-hook-mio",
  "winapi",
@@ -2674,7 +2674,7 @@ dependencies = [
  "crossterm_winapi",
  "libc",
  "mio 0.8.11",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "signal-hook",
  "signal-hook-mio",
  "winapi",
@@ -3005,7 +3005,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
- "parking_lot_core 0.9.11",
+ "parking_lot_core 0.9.12",
  "serde 1.0.228",
 ]
 
@@ -3020,7 +3020,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
- "parking_lot_core 0.9.11",
+ "parking_lot_core 0.9.12",
 ]
 
 [[package]]
@@ -4985,7 +4985,7 @@ dependencies = [
  "futures-timer",
  "no-std-compat",
  "nonzero_ext",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "portable-atomic",
  "quanta",
  "rand 0.8.5",
@@ -5920,7 +5920,7 @@ dependencies = [
  "dashmap 5.5.3",
  "hashbrown 0.12.3",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
 ]
 
 [[package]]
@@ -6228,7 +6228,7 @@ dependencies = [
  "http-body 1.0.0",
  "http-body-util",
  "jsonrpsee-types 0.24.9",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "pin-project",
  "rand 0.8.5",
  "rustc-hash 2.1.1",
@@ -6745,11 +6745,10 @@ dependencies = [
 
 [[package]]
 name = "lock_api"
-version = "0.4.13"
+version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96936507f153605bddfcda068dd804796c84324ed2510809e5b2a624c81da765"
+checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
 dependencies = [
- "autocfg",
  "scopeguard",
 ]
 
@@ -6875,7 +6874,7 @@ dependencies = [
  "dashmap 6.0.1",
  "futures",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "prometheus",
  "protobuf",
  "scopeguard",
@@ -7746,7 +7745,7 @@ dependencies = [
  "moveos-types",
  "moveos-verifier",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "rayon",
  "regex",
  "serde 1.0.228",
@@ -7830,7 +7829,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-types",
  "moveos-types",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "tracing",
 ]
 
@@ -8013,7 +8012,7 @@ checksum = "40a3eb6b7c682b65d1f631ec3176829d72ab450b3aacdd3f719bf220822e59ac"
 dependencies = [
  "libc",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "thiserror",
  "widestring",
  "winapi",
@@ -8625,12 +8624,12 @@ dependencies = [
 
 [[package]]
 name = "parking_lot"
-version = "0.12.4"
+version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70d58bf43669b5795d1576d0641cfb6fbb2057bf629506267a92807158584a13"
+checksum = "93857453250e3077bd71ff98b6a65ea6621a19bb0f559a85248955ac12c45a1a"
 dependencies = [
  "lock_api",
- "parking_lot_core 0.9.11",
+ "parking_lot_core 0.9.12",
 ]
 
 [[package]]
@@ -8649,15 +8648,15 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.9.11"
+version = "0.9.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc838d2a56b5b1a6c25f55575dfc605fabb63bb2365f6c2353ef9159aa69e4a5"
+checksum = "2621685985a2ebf1c516881c026032ac7deafcda1a2c9b7850dc81e3dfcb64c1"
 dependencies = [
  "cfg-if",
  "libc",
  "redox_syscall 0.5.1",
  "smallvec",
- "windows-targets 0.52.6",
+ "windows-link",
 ]
 
 [[package]]
@@ -9160,7 +9159,7 @@ dependencies = [
  "log",
  "nix",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "protobuf",
  "protobuf-codegen-pure",
  "smallvec",
@@ -9373,7 +9372,7 @@ dependencies = [
  "fnv",
  "lazy_static 1.5.0",
  "memchr",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "protobuf",
  "thiserror",
 ]
@@ -9584,7 +9583,7 @@ dependencies = [
  "ahash 0.8.11",
  "equivalent",
  "hashbrown 0.15.2",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
 ]
 
 [[package]]
@@ -9660,7 +9659,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51de85fb3fb6524929c8a2eb85e6b6d363de4e8c48f9e2c2eac4944abc181c93"
 dependencies = [
  "log",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "scheduled-thread-pool",
 ]
 
@@ -10336,7 +10335,7 @@ dependencies = [
  "moveos-verifier",
  "multibase",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "rand 0.8.5",
  "raw-store",
  "regex",
@@ -10773,7 +10772,7 @@ dependencies = [
  "move-core-types",
  "moveos-eventbus",
  "moveos-types",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "prometheus",
  "rooch-rpc-api",
  "rooch-types",
@@ -10950,7 +10949,7 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "num_cpus",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "primitive-types 0.12.2",
  "prometheus",
  "rayon",
@@ -11595,7 +11594,7 @@ version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3cbc66816425a074528352f5789333ecff06ca41b36b0b0efdfbb29edc391a19"
 dependencies = [
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
 ]
 
 [[package]]
@@ -12154,7 +12153,7 @@ dependencies = [
  "futures",
  "fxhash",
  "mime_guess",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "percent-encoding",
  "reqwest 0.11.27",
  "secrecy",
@@ -12457,7 +12456,7 @@ dependencies = [
  "num-derive",
  "num-traits 0.2.19",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "primitive-types 0.12.2",
  "prometheus",
  "proptest",
@@ -12600,7 +12599,7 @@ checksum = "f91138e76242f575eb1d3b38b4f1362f10d3a43f47d182a5b359af488a02293b"
 dependencies = [
  "new_debug_unreachable",
  "once_cell",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "phf_shared 0.10.0",
  "precomputed-hash",
 ]
@@ -13267,7 +13266,7 @@ dependencies = [
  "io-uring",
  "libc",
  "mio 1.0.1",
- "parking_lot 0.12.4",
+ "parking_lot 0.12.5",
  "pin-project-lite",
  "signal-hook-registry",
  "slab",
