@@ -22,7 +22,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
             binary_names: ['rooch']
             artifact_names: ['rooch-linux-x64']
-          - os: ubuntu-24.04-arm # the arm64 image is public beta preview and does not have latest tag
+          - os: ubuntu-24.04-arm            
             target: aarch64-unknown-linux-gnu
             binary_names: ['rooch']
             artifact_names: ['rooch-linux-arm64']
@@ -83,7 +83,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
-            openssl \
             libssl-dev \
             pkg-config \
             libclang-dev \
