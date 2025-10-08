@@ -47,7 +47,7 @@ Please refer to [Rooch's built-in library](https://rooch.network/learn/core-conc
 
 1. Building from source:
     ```bash
-    cargo build && cp target/debug/rooch ~/.cargo/bin/
+    cargo build && cp target/debug/rooch ${CARGO_HOME:-$HOME/.cargo}/bin/
     ```
 
 2. initialize Rooch config:
