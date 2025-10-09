@@ -93,6 +93,16 @@ The session's scope
 ## Constants
 
 
+<a name="0x3_session_key_ErrorInvalidAddressLengthOfSessionScope"></a>
+
+The address length of session scope invalid
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ErrorInvalidAddressLengthOfSessionScope">ErrorInvalidAddressLengthOfSessionScope</a>: u64 = 6;
+</code></pre>
+
+
+
 <a name="0x3_session_key_ErrorInvalidMaxInactiveInterval"></a>
 
 The max inactive interval is invalid
