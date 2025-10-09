@@ -11,8 +11,8 @@ use tracing::{debug, error, warn};
 use wasmer::Value::I32;
 use wasmer::*;
 
-use wasmer_compiler_singlepass::Singlepass;
 use wasmer::sys::{engine::Engine, CompilerConfig};
+use wasmer_compiler_singlepass::Singlepass;
 
 use crate::cost_function::cost_function;
 use crate::gas_meter::GasMeter;
