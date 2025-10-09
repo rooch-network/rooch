@@ -76,7 +76,7 @@ jobs:
       - name: Install macOS dependencies
         if: matrix.os == 'macos-latest'
         run: |
-          brew install openssl@3
+          brew install openssl@3.5
           brew install pkg-config
           brew install protobuf
           which protoc
