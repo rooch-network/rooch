@@ -5,7 +5,7 @@ use std::fmt;
 use std::sync::{Arc, Mutex};
 
 use wasmer::wasmparser::Operator;
-use wasmer::{LocalFunctionIndex, MiddlewareError, MiddlewareReaderState, ModuleMiddleware, Type};
+use wasmer::{LocalFunctionIndex, sys::{MiddlewareError, MiddlewareReaderState, ModuleMiddleware}, Type};
 use wasmer_types::{
     entity::PrimaryMap, ExportIndex, FunctionIndex, FunctionType, ImportIndex, ImportKey,
 };
@@ -55,7 +55,7 @@ impl ModuleMiddleware for GasMiddleware {
     fn generate_function_middleware(
         &self,
         _index: LocalFunctionIndex,
-    ) -> Box<dyn wasmer::FunctionMiddleware> {
+    ) -> Box<dyn wasmer::sys::FunctionMiddleware> {
         let charge_function_index = self.charge_function_index.lock().unwrap().unwrap();
 
         Box::new(GasFunctionMiddleware {
@@ -65,7 +65,7 @@ impl ModuleMiddleware for GasMiddleware {
         })
     }
 
-    fn transform_module_info(&self, module_info: &mut wasmer_types::ModuleInfo) {
+    fn transform_module_info(&self, module_info: &mut wasmer_types::ModuleInfo) -> Result<(), MiddlewareError> {
         // Insert the signature for the charge function
         let charge_signature = FunctionType::new(vec![Type::I64], vec![]);
         let charge_signature_index = module_info.signatures.push(charge_signature);
@@ -140,6 +140,8 @@ impl ModuleMiddleware for GasMiddleware {
 
         let mut charge_function_index_lock = self.charge_function_index.lock().unwrap();
         *charge_function_index_lock = Some(charge_function_index);
+	
+        Ok(())
     }
 }
 
@@ -158,7 +160,7 @@ impl fmt::Debug for GasFunctionMiddleware {
     }
 }
 
-impl wasmer::FunctionMiddleware for GasFunctionMiddleware {
+impl wasmer::sys::FunctionMiddleware for GasFunctionMiddleware {
     fn feed<'a>(
         &mut self,
         operator: Operator<'a>,

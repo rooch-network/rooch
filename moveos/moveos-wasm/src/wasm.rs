@@ -12,6 +12,7 @@ use wasmer::Value::I32;
 use wasmer::*;
 
 use wasmer_compiler_singlepass::Singlepass;
+use wasmer::sys::{engine::Engine, CompilerConfig};
 
 use crate::cost_function::cost_function;
 use crate::gas_meter::GasMeter;
@@ -274,7 +275,7 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
     compiler.push_middleware(Arc::new(gas_middleware));
 
     // Create the store
-    let mut store = Store::new(compiler);
+    let mut store = Store::new(Engine::from(compiler));
 
     let bytecode = match wasmer::wat2wasm(code) {
         Ok(m) => m,
