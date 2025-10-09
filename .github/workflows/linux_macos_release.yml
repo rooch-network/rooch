@@ -89,6 +89,14 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       
+      - name: Set Rust environment variables
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            echo "RUSTFLAGS=-C link-arg=-fuse-ld=gold" >> $GITHUB_ENV
+            echo "RUSTFLAGS=-C link-arg=-Wl,--allow-multiple-definition" >> $GITHUB_ENV
+          fi     
+ 
       - name: Set Protoc Environment Variables
         run: |
           echo "PROTOC=$(which protoc)" >> $GITHUB_ENV
