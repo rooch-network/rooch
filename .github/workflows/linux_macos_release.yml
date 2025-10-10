@@ -97,7 +97,7 @@ jobs:
             echo "RUSTFLAGS=-C link-arg=-Wl,--allow-multiple-definition" >> $GITHUB_ENV
           fi
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            echo "RUSTFLAGS=-C link-arg=-Wl,-w" >> $GITHUB_ENV
+            echo "RUSTFLAGS=-C link-arg=-Wl,-m" >> $GITHUB_ENV
           fi
  
       - name: Set Protoc Environment Variables
