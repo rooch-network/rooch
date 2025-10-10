@@ -97,7 +97,7 @@ jobs:
     - name: Build rooch binary
       run: cargo build --release --bin rooch
       env:
-        RUSTFLAGS: ${{ env.RUSTFLAGS }} -C link-arg=advapi32.lib -C link-arg=secur32.lib -C link-arg=userenv.lib -C link-arg=-Wl,--allow-multiple-definition
+        RUSTFLAGS: ${{ env.RUSTFLAGS }} -C link-arg=advapi32.lib -C link-arg=secur32.lib -C link-arg=userenv.lib -C link-arg=--allow-multiple-definition
         SKIP_STDLIB_BUILD: "1"
 
     - name: Create release archive
