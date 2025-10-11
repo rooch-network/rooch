@@ -8,11 +8,13 @@ use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
 use rand;
 use tracing::{debug, error, warn};
-use wasmer::Value::I32;
-use wasmer::*;
 
-use wasmer::sys::{engine::Engine, CompilerConfig};
-use wasmer_compiler_singlepass::Singlepass;
+use wasmer::{
+    imports,
+    sys::{CompilerConfig, Singlepass},
+    AsStoreRef, Function, FunctionEnv, FunctionEnvMut, Instance, Memory, Module, Store,
+    Value::I32,
+};
 
 use crate::cost_function::cost_function;
 use crate::gas_meter::GasMeter;
@@ -275,7 +277,7 @@ pub fn create_wasm_instance(code: &[u8]) -> anyhow::Result<WASMInstance> {
     compiler.push_middleware(Arc::new(gas_middleware));
 
     // Create the store
-    let mut store = Store::new(Engine::from(compiler));
+    let mut store = Store::new(compiler);
 
     let bytecode = match wasmer::wat2wasm(code) {
         Ok(m) => m,

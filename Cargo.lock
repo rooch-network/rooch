@@ -8142,7 +8142,6 @@ dependencies = [
  "rand 0.8.5",
  "tracing",
  "wasmer 6.1.0",
- "wasmer-compiler-singlepass 6.1.0",
  "wasmer-types 6.1.0",
 ]
 
@@ -14738,6 +14737,7 @@ dependencies = [
  "wasm-bindgen",
  "wasmer-compiler 6.1.0",
  "wasmer-compiler-cranelift",
+ "wasmer-compiler-singlepass 6.1.0",
  "wasmer-derive 6.1.0",
  "wasmer-types 6.1.0",
  "wasmer-vm 6.1.0",
