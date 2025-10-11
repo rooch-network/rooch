@@ -13,9 +13,8 @@ rust-version = { workspace = true }
 
 [dependencies]
 once_cell = { workspace = true }
-wasmer = { workspace = true }
+wasmer = { workspace = true, features = ["singlepass"] }
 wasmer-types = { workspace = true }
-wasmer-compiler-singlepass = { workspace = true }
 rand = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
