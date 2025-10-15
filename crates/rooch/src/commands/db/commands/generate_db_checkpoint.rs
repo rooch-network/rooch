@@ -29,13 +29,16 @@ impl GenerateDBCheckPointCommand {
             .get_store()
             .store()
             .db()
-            .expect("open rocksdb instance failed.")
+            .expect("Failed to open RocksDB instance")
             .inner();
 
-        let check_point = Checkpoint::new(rocks_db).expect("create checkpoint failed.");
+        let check_point = Checkpoint::new(rocks_db).expect("failed to create Checkpoint object from RocksDB instance.");
         check_point
             .create_checkpoint(self.output_dir.as_path())
-            .expect("create checkpoint failed.");
+            .expect(&format!(
+                "failed to create checkpoint directory at {:?}.",
+                self.output_dir
+            ));
         println!("create checkpoint succeeded.");
 
         Ok(())
