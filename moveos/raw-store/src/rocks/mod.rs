@@ -105,6 +105,7 @@ impl RocksDB {
 
         let table_opts = Self::generate_table_opts(&rocksdb_config);
         let db = if readonly {
+            rocksdb_opts.set_error_if_exists(false);
             Self::open_readonly_inner_db(&rocksdb_opts, path, column_families.clone())?
         } else {
             rocksdb_opts.create_if_missing(true);

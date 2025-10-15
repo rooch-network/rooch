@@ -18,6 +18,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::info;
 
+/// dump state DB from RocksDB in disk
 #[derive(Debug, Parser)]
 pub struct DumpStateCommand {
     #[clap(long, short = 'o')]

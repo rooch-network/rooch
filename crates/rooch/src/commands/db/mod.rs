@@ -7,6 +7,7 @@ use crate::commands::db::commands::changeset::ChangesetCommand;
 use crate::commands::db::commands::cp_cf::CpCfCommand;
 use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::dump_state::DumpStateCommand;
+use crate::commands::db::commands::generate_db_checkpoint::GenerateDBCheckPointCommand;
 use crate::commands::db::commands::get_accumulator_leaf_by_index::GetAccumulatorLeafByIndexCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
 use crate::commands::db::commands::get_execution_info_by_hash::GetExecutionInfoByHashCommand;
@@ -98,6 +99,11 @@ impl CommandAction<String> for DB {
             DBCommand::ImportToStateDB(import_state) => import_state.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            DBCommand::GenerateDBCheckPoint(generate_db_checkpoint) => {
+                generate_db_checkpoint.execute().await.map(|resp| {
+                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                })
+            }
         }
     }
 }
@@ -122,4 +128,5 @@ pub enum DBCommand {
     GetAccumulatorLeafByIndex(GetAccumulatorLeafByIndexCommand),
     DumpFromStateDB(DumpStateCommand),
     ImportToStateDB(ImportStateCommand),
+    GenerateDBCheckPoint(GenerateDBCheckPointCommand),
 }
