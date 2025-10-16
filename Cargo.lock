@@ -3252,7 +3252,16 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
 dependencies = [
- "derive_more-impl",
+ "derive_more-impl 1.0.0",
+]
+
+[[package]]
+name = "derive_more"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+dependencies = [
+ "derive_more-impl 2.0.1",
 ]
 
 [[package]]
@@ -3265,6 +3274,17 @@ dependencies = [
  "quote 1.0.40",
  "syn 2.0.87",
  "unicode-xid 0.2.4",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
+dependencies = [
+ "proc-macro2 1.0.101",
+ "quote 1.0.40",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -11186,7 +11206,7 @@ dependencies = [
  "chacha20poly1305",
  "clap 4.5.17",
  "coerce",
- "derive_more 1.0.0",
+ "derive_more 2.0.1",
  "enum_dispatch",
  "ethers",
  "eyre",
