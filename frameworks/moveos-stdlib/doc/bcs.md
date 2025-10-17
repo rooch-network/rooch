@@ -6,7 +6,7 @@
 Part source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/from_bcs.move
 This module provides a number of functions to convert _primitive_ types from their representation in <code>std::bcs</code>
 to values. This is the opposite of <code><a href="_to_bytes">bcs::to_bytes</a></code>.
-Note we provie a generic public <code>from_bytes</code> function and protected it with <code>#[data_struct(T)]</code>.
+Note we provide a generic public <code>from_bytes</code> function and protected it with <code>#[data_struct(T)]</code>.
 
 
 -  [Struct `BCS`](#0x2_bcs_BCS)

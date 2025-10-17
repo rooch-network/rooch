@@ -5,7 +5,7 @@
 
 /// This module provides a number of functions to convert _primitive_ types from their representation in `std::bcs`
 /// to values. This is the opposite of `bcs::to_bytes`. 
-/// Note we provie a generic public `from_bytes` function and protected it with `#[data_struct(T)]`.
+/// Note we provide a generic public `from_bytes` function and protected it with `#[data_struct(T)]`.
 module moveos_std::bcs{
 
     use std::option::{Self, Option};

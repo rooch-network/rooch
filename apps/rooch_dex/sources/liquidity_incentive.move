@@ -375,7 +375,7 @@ module rooch_dex::liquidity_incentive {
         withdraw_token
     }
 
-    /// The user can quering all yield farming amount in any time and scene
+    /// The user can querying all yield farming amount in any time and scene
     public fun query_harvest_token_amount<X: key+store, Y: key+store, RewardToken: key+store>(
         account: address,
         farming_asset_obj: &Object<FarmingAsset<X, Y, RewardToken>>
