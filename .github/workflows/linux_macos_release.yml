@@ -21,11 +21,15 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             binary_names: ['rooch']
-            artifact_names: ['rooch-linux-x64']
+            artifact_names: ['rooch-linux-x86_64']
+          - os: ubuntu-24.04-arm            
+            target: aarch64-unknown-linux-gnu
+            binary_names: ['rooch']
+            artifact_names: ['rooch-linux-aarch64']
           - os: macos-latest
             target: aarch64-apple-darwin
             binary_names: ['rooch']
-            artifact_names: ['rooch-macos-arm64']
+            artifact_names: ['rooch-macos-aarch64']
 
     runs-on: ${{ matrix.os }}
 
@@ -58,7 +62,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Linux dependencies
+      - name: Install Linux x86_64 dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
@@ -72,6 +76,18 @@ jobs:
             protobuf-compiler \
             lld \
             clang
+
+      - name: Install Linux aarch64 dependencies
+        if: matrix.os == 'ubuntu-24.04-arm'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libssl-dev \
+            pkg-config \
+            libclang-dev \
+            protobuf-compiler \
+            lld
 
       - name: Install macOS dependencies
         if: matrix.os == 'macos-latest'
@@ -92,7 +108,7 @@ jobs:
       - name: Set Rust environment variables
         shell: bash
         run: |
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          if [ "${{ matrix.os }}" = "ubuntu-latest" || "${{ matrix.os }}" = "ubuntu-24.04-arm" ]; then
             echo "RUSTFLAGS=-C link-arg=-fuse-ld=gold" >> $GITHUB_ENV
           fi
 
@@ -105,7 +121,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }} --verbose
         env:
           OPENSSL_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3' || '/usr' }}
-          OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || '/usr/lib/x86_64-linux-gnu' }}
+          OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || matrix.os == 'ubuntu-latest' && '/usr/lib/x86_64-linux-gnu' || '/usr/lib/aarch64-linux-gnu' }}
           OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || '/usr/include' }}
           LIBGIT2_SYS_USE_PKG_CONFIG: 1
 
@@ -140,7 +156,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/rooch-linux-x64.tar.gz
-            artifacts/rooch-macos-arm64.tar.gz
+            artifacts/rooch-linux-x86_64.tar.gz
+            artifacts/rooch-linux-aarch64.tar.gz
+            artifacts/rooch-macos-aarch64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
