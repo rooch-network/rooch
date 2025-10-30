@@ -218,7 +218,7 @@ module nostr::event {
         };
         let pre_event_object = object::new_account_named_object<PreEvent>(rooch_address, pre_event);
 
-        // emit a move event nofitication
+        // emit a move event notification
         let pre_event_object_id = object::id(&pre_event_object);
         let move_pre_event = NostrPreEventCreatedEvent {
             id: pre_event_object_id
@@ -284,7 +284,7 @@ module nostr::event {
         };
         let event_object = object::new_account_named_object<Event>(rooch_address, event);
 
-        // emit a move event nofitication
+        // emit a move event notification
         let event_object_id = object::id(&event_object);
         let move_event = NostrEventCreatedEvent {
             id: event_object_id
@@ -347,7 +347,7 @@ module nostr::event {
         };
         let event_object = object::new_account_named_object<Event>(rooch_address, event);
 
-        // emit a move event nofitication
+        // emit a move event notification
         let event_object_id = object::id(&event_object);
         let move_event = NostrEventSavedEvent {
             id: event_object_id
@@ -413,7 +413,7 @@ module nostr::event {
         };
         let event_object = object::new_account_named_object<Event>(rooch_address, event);
 
-        // emit a move event nofitication
+        // emit a move event notification
         let event_object_id = object::id(&event_object);
         let move_event = NostrPlaintextEventSavedEvent {
             id: event_object_id

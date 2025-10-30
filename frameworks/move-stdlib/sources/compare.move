@@ -53,7 +53,7 @@ module std::compare {
             if (elem_cmp != 0) return elem_cmp
             // else, compare next element
         };
-        // all compared elements equal; use length comparion to break the tie
+        // all compared elements equal; use length comparison to break the tie
         len_cmp
     }
 

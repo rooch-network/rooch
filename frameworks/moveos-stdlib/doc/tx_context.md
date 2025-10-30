@@ -198,7 +198,7 @@ Check if the key is in the context map
 ## Function `tx_meta`
 
 Get the transaction meta data
-The TxMeta is writed by the VM before the transaction execution.
+The TxMeta is written by the VM before the transaction execution.
 The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
 
 

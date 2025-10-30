@@ -612,7 +612,7 @@ module grow_bitcoin::grow_bitcoin {
         withdraw_token
     }
 
-    /// The user can quering all yield farming amount in any time and scene
+    /// The user can querying all yield farming amount in any time and scene
     public fun query_gov_token_amount(
         asset_id: ObjectID
     ): u128 {
@@ -773,7 +773,7 @@ module grow_bitcoin::grow_bitcoin {
     // x not exceeding 1000, so y never over 31 and bbn stake weight is 22
     public fun calculate_time_lock_weight(tx_lock_time: u32): u64{
         if (tx_lock_time < LOCK_TIME_THRESHOLD) {
-            // lock_time is a block heigh
+            // lock_time is a block height
             // We assume that each block takes 10 minutes, 1day ~ 144 block
             let btc_block = latest_block_height();
             if (btc_block >= (tx_lock_time as u64)){

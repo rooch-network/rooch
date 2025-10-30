@@ -188,7 +188,7 @@ module bitcoin_move::bitcoin{
         // create new utxo
         let repeat_txid = handle_new_utxo(tx, is_coinbase, &mut output_seals, block_height, sender);
 
-        //We do not remove the value from output_seals, for the preformance reason.
+        //We do not remove the value from output_seals, for the performance reason.
         //So, we can not check the output_seals is empty here. just drop it.
         let _ = output_seals;
 
