@@ -35,6 +35,8 @@ module rooch_framework::session_key {
     const ErrorSessionScopePartLengthNotMatch: u64 = 4;
     /// The max inactive interval is invalid
     const ErrorInvalidMaxInactiveInterval: u64 = 5;
+    /// The address length of session scope invalid
+    const ErrorInvalidAddressLengthOfSessionScope: u64 = 6;
 
     // Signature scheme constant, similar to session_validator.move
     const SIGNATURE_SCHEME_ED25519: u8 = 0;
@@ -157,7 +159,7 @@ module rooch_framework::session_key {
         max_inactive_interval: u64) {
 
         assert!(max_inactive_interval <= MAX_INACTIVE_INTERVAL, ErrorInvalidMaxInactiveInterval);
-
+        
         let sender_addr = signer::address_of(sender);
         assert!(!exists_session_key(sender_addr, authentication_key), ErrorSessionKeyAlreadyExists);
         let now_seconds = timestamp::now_seconds();
@@ -177,6 +179,10 @@ module rooch_framework::session_key {
 
         let session_keys = account::borrow_mut_resource<SessionKeys>(sender_addr);
         table::add(&mut session_keys.keys, authentication_key, session_key);
+    }
+
+    fun check_first_part_of_session_scope_valid(first_part_scope: std::string::String): bool {
+        std::string::length(&first_part_scope) == address::length()
     }
 
     public entry fun create_session_key_entry(
@@ -241,6 +247,10 @@ module rooch_framework::session_key {
         
         // Extract address part and parse it
         let address_str = *vector::borrow(&parts, 0);
+        
+        // #3700 check if the first part of session scope is valid
+        assert!(check_first_part_of_session_scope_valid(address_str), ErrorInvalidAddressLengthOfSessionScope);
+        
         let module_address =  address::from_string(&address_str);
         
         // Extract module name and function name
