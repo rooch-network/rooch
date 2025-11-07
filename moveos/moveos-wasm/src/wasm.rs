@@ -8,10 +8,13 @@ use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
 use rand;
 use tracing::{debug, error, warn};
-use wasmer::Value::I32;
-use wasmer::*;
 
-use wasmer_compiler_singlepass::Singlepass;
+use wasmer::{
+    imports,
+    sys::{CompilerConfig, Singlepass},
+    AsStoreRef, Function, FunctionEnv, FunctionEnvMut, Instance, Memory, Module, Store,
+    Value::I32,
+};
 
 use crate::cost_function::cost_function;
 use crate::gas_meter::GasMeter;
