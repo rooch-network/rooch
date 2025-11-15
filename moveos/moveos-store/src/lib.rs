@@ -64,6 +64,8 @@ pub const NODE_REFCOUNT_COLUMN_FAMILY_NAME: ColumnFamilyName = "node_refcount";
 pub const PRUNE_META_PHASE_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_phase";
 pub const PRUNE_META_BLOOM_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_bloom";
 pub const PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_snapshot";
+pub const PRUNE_META_DELETED_ROOTS_BLOOM_COLUMN_FAMILY_NAME: ColumnFamilyName =
+    "prune_meta_deleted_state_root_bloom";
 
 // pub const META_KEY_PHASE: &str = "phase";
 // pub const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
@@ -85,6 +87,7 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         PRUNE_META_PHASE_COLUMN_FAMILY_NAME,
         PRUNE_META_BLOOM_COLUMN_FAMILY_NAME,
         PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME,
+        PRUNE_META_DELETED_ROOTS_BLOOM_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -413,6 +416,14 @@ impl PruneStore for MoveOSStore {
 
     fn load_prune_meta_snapshot(&self) -> Result<Option<PruneSnapshot>> {
         self.prune_store.load_prune_meta_snapshot()
+    }
+
+    fn load_deleted_state_root_bloom(&self) -> Result<Option<BloomFilter>> {
+        self.prune_store.load_deleted_state_root_bloom()
+    }
+
+    fn save_deleted_state_root_bloom(&self, bloom: BloomFilter) -> Result<()> {
+        self.prune_store.save_deleted_state_root_bloom(bloom)
     }
 }
 
