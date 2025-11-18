@@ -42,6 +42,11 @@
 -  [Function `open_channel_with_sub_channel_entry`](#0x3_payment_channel_open_channel_with_sub_channel_entry)
 -  [Function `claim_from_channel`](#0x3_payment_channel_claim_from_channel)
 -  [Function `claim_from_channel_entry`](#0x3_payment_channel_claim_from_channel_entry)
+-  [Function `apply_receipt`](#0x3_payment_channel_apply_receipt)
+    -  [Arguments](#@Arguments_1)
+    -  [Behavior](#@Behavior_2)
+    -  [Panics](#@Panics_3)
+-  [Function `apply_receipt_entry`](#0x3_payment_channel_apply_receipt_entry)
 -  [Function `close_channel`](#0x3_payment_channel_close_channel)
 -  [Function `close_channel_entry`](#0x3_payment_channel_close_channel_entry)
 -  [Function `initiate_cancellation_entry`](#0x3_payment_channel_initiate_cancellation_entry)
@@ -812,7 +817,7 @@ Anyone can claim funds from a specific sub-channel on behalf of the receiver.
 The funds will always be transferred to the channel receiver regardless of who calls this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel">claim_from_channel</a>(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel">claim_from_channel</a>(_claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -825,6 +830,72 @@ Entry function for claiming from channel
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel_entry">claim_from_channel_entry</a>(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_apply_receipt"></a>
+
+## Function `apply_receipt`
+
+Unified entrypoint for x402 channel receipt processing
+Implements scheme_channel.md Appendix C settlement specification
+
+Handles complete receipt lifecycle with lazy initialization:
+1. Lazy channel open (if channel doesn't exist)
+2. Lazy sub-channel authorization (if sub-channel doesn't exist)
+3. Settlement execution (if delta > 0)
+
+This function enables zero client blockchain interaction when used with a facilitator.
+The facilitator can call this function on behalf of the client, paying gas fees.
+
+
+<a name="@Arguments_1"></a>
+
+### Arguments
+
+* <code>did_address</code> - Payer's DID address (channel sender)
+* <code>channel_receiver</code> - Payee's address
+* <code>coin_type</code> - Asset type (e.g., "0x3::gas_coin::RGas")
+* <code>vm_id_fragment</code> - Sub-channel identifier (DID verification method fragment)
+* <code>sub_accumulated_amount</code> - Cumulative amount for this sub-channel
+* <code>sub_nonce</code> - Monotonic nonce for this sub-channel
+* <code>sender_signature</code> - Signature over the SubRAV
+
+
+<a name="@Behavior_2"></a>
+
+### Behavior
+
+- First receipt (nonce=0, amount=0): Creates channel + authorizes sub-channel, no settlement
+- Subsequent receipts (nonce>0 or amount>0): Settles incremental amount
+- Idempotent: Duplicate receipts are treated as successful retries
+
+
+<a name="@Panics_3"></a>
+
+### Panics
+
+- If DID document doesn't exist
+- If signature is invalid
+- If VM doesn't have authentication permission
+- If nonce/amount monotonicity is violated (for delta > 0)
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_apply_receipt">apply_receipt</a>(did_address: <b>address</b>, channel_receiver: <b>address</b>, coin_type: <a href="_String">string::String</a>, vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_apply_receipt_entry"></a>
+
+## Function `apply_receipt_entry`
+
+Entry function wrapper for apply_receipt
+Facilitator can call this function to process receipts on behalf of clients
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_apply_receipt_entry">apply_receipt_entry</a>(did_address: <b>address</b>, channel_receiver: <b>address</b>, coin_type: <a href="_String">string::String</a>, vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
