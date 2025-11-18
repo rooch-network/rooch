@@ -238,6 +238,36 @@ module rooch_framework::did_validator {
     }
 
 
+    #[test_only]
+    /// Create a DIDAuthPayload for testing purposes
+    public fun create_test_did_auth_payload(
+        envelope: u8,
+        vm_fragment: String,
+        signature: vector<u8>,
+        message: Option<vector<u8>>
+    ): vector<u8> {
+        let payload = DIDAuthPayload {
+            envelope,
+            vm_fragment,
+            signature,
+            message,
+        };
+        bcs::to_bytes(&payload)
+    }
+
+    #[test_only]
+    /// Create a WebAuthnEnvelopeData for testing purposes
+    public fun create_test_webauthn_envelope(
+        authenticator_data: vector<u8>,
+        client_data_json: vector<u8>
+    ): vector<u8> {
+        let envelope = WebauthnEnvelopeData {
+            authenticator_data,
+            client_data_json,
+        };
+        bcs::to_bytes(&envelope)
+    }
+
     #[test]
     fun test_build_rooch_transaction_message() {
         // Test with a 32-byte hash (all zeros for simplicity)
