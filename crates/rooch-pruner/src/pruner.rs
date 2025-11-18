@@ -7,6 +7,7 @@ use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::config_store::ConfigStore;
 use moveos_store::prune::PruneStore;
+use moveos_store::state_store::metrics::StateDBMetrics;
 use moveos_store::MoveOSStore;
 use moveos_types::prune::{PrunePhase, PruneSnapshot};
 use parking_lot::Mutex;
@@ -38,7 +39,7 @@ impl StatePruner {
         moveos_store: Arc<MoveOSStore>,
         rooch_store: Arc<RoochStore>,
         mut shutdown_rx: Receiver<()>,
-        // metrics: Arc<StateDBMetrics>,
+        metrics: Option<Arc<StateDBMetrics>>,
     ) -> Result<Self> {
         if !cfg.enable {
             return Ok(Self {
@@ -61,6 +62,13 @@ impl StatePruner {
                 .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits, 4))));
             info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
 
+            // Record bloom filter size metric
+            if let Some(ref metrics) = metrics {
+                let bloom_size_bytes = cfg.bloom_bits / 8 + (cfg.bloom_bits % 8 != 0) as usize;
+                metrics.pruner_bloom_filter_size_bytes
+                    .with_label_values(&[])
+                    .set(bloom_size_bytes as f64);
+            }
             thread::sleep(Duration::from_secs(60));
             // only for test
             // let mut phase = PrunePhase::BuildReach;
@@ -77,6 +85,18 @@ impl StatePruner {
                 // only for test
                 // let phase = PrunePhase::BuildReach;
                 info!("Current prune phase: {:?}", phase);
+
+                // Record current phase metric
+                if let Some(ref metrics) = metrics {
+                    let phase_value = match phase {
+                        PrunePhase::BuildReach => 0.0,
+                        PrunePhase::SweepExpired => 1.0,
+                        PrunePhase::Incremental => 2.0,
+                    };
+                    metrics.pruner_current_phase
+                        .with_label_values(&[&format!("{:?}", phase)])
+                        .set(phase_value);
+                }
 
                 match phase {
                     PrunePhase::BuildReach => {
@@ -106,12 +126,36 @@ impl StatePruner {
 
                         let builder = ReachableBuilder::new(moveos_store.clone(), bloom.clone());
                         // if let Ok(scanned_size) =
+                        let start_time = std::time::Instant::now();
                         match builder.build(live_roots, num_cpus::get()) {
-                            Ok(scanned_size) => info!(
-                                "Completed reachability build, scanned size {}",
-                                scanned_size
-                            ),
-                            Err(e) => warn!("Failed to reachability build: {}", e),
+                            Ok(scanned_size) => {
+                                let duration = start_time.elapsed();
+                                let nodes_per_sec = scanned_size as f64 / duration.as_secs_f64();
+
+                                info!(
+                                    "Completed reachability build, scanned size {} in {:?} ({:.2} nodes/sec)",
+                                    scanned_size, duration, nodes_per_sec
+                                );
+
+                                // Record metrics
+                                if let Some(ref metrics) = metrics {
+                                    metrics.pruner_reachable_nodes_scanned
+                                        .with_label_values(&["BuildReach"])
+                                        .observe(scanned_size as f64);
+
+                                    metrics.pruner_processing_speed_nodes_per_sec
+                                        .with_label_values(&["reachability_build"])
+                                        .observe(nodes_per_sec);
+                                }
+                            },
+                            Err(e) => {
+                                warn!("Failed to reachability build: {}", e);
+                                if let Some(ref metrics) = metrics {
+                                    metrics.pruner_error_count
+                                        .with_label_values(&["reachability_build", "BuildReach"])
+                                        .inc();
+                                }
+                            },
                         }
 
                         // Persist bloom snapshot after reachability phase
@@ -151,13 +195,10 @@ impl StatePruner {
                         };
                         info!("Starting scan from order {}", order_cursor);
 
-                        let sweeper = SweepExpired::new(
-                            moveos_store.clone(),
-                            bloom.clone(),
-                            cfg.bloom_bits,
-                            thread_running.clone(),
-                        );
+                      let sweeper = SweepExpired::new(moveos_store.clone(), bloom.clone());
+                        let sweep_start_time = std::time::Instant::now();
                         let mut processed_count = 0;
+                        let mut total_deleted = 0;
                         let mut batch_roots = Vec::with_capacity(1000); // Process in smaller batches
 
                         // while processed_count < cfg.scan_batch && order_cursor > 0 {
@@ -189,6 +230,7 @@ impl StatePruner {
                                     if let Ok(deleted) =
                                         sweeper.sweep(batch_roots.clone(), num_cpus::get())
                                     {
+                                    total_deleted += deleted;
                                         let (from_state_root, from_tx_order) = batch_roots
                                             .first()
                                             .map(|(root, order)| (*root, *order))
@@ -197,8 +239,27 @@ impl StatePruner {
                                             .last()
                                             .map(|(root, order)| (*root, *order))
                                             .unwrap_or((H256::zero(), 0));
-                                        info!("Pruner swept batch from tx_order {} (root {:?}) to tx_order {} (root {:?}), deleted {} nodes, total processed {} batches", 
+                                        info!("Pruner swept batch from tx_order {} (root {:?}) to tx_order {} (root {:?}), deleted {} nodes, total processed {} batches",
                                             from_tx_order, from_state_root, to_tx_order, to_state_root, deleted, processed_count);
+
+                                        // Record metrics for this batch
+                                        if let Some(ref metrics) = metrics {
+                                            metrics.pruner_sweep_nodes_deleted
+                                                .with_label_values(&["SweepExpired"])
+                                                .observe(deleted as f64);
+
+                                            // Estimate disk space reclaimed (assuming average node size of 32 bytes)
+                                            let estimated_bytes_reclaimed = deleted * 32;
+                                            metrics.pruner_disk_space_reclaimed_bytes
+                                                .with_label_values(&["SweepExpired"])
+                                                .inc_by(estimated_bytes_reclaimed as u64);
+                                        }
+                                    } else {
+                                        if let Some(ref metrics) = metrics {
+                                            metrics.pruner_error_count
+                                                .with_label_values(&["sweep_batch", "SweepExpired"])
+                                                .inc();
+                                        }
                                     }
                                     processed_count += 1000;
                                     batch_roots = Vec::with_capacity(1000);
@@ -211,6 +272,7 @@ impl StatePruner {
                         if !batch_roots.is_empty() {
                             if let Ok(deleted) = sweeper.sweep(batch_roots.clone(), num_cpus::get())
                             {
+                              total_deleted += deleted;
                                 let (from_state_root, from_tx_order) = batch_roots
                                     .first()
                                     .map(|(root, order)| (*root, *order))
@@ -223,13 +285,49 @@ impl StatePruner {
                                     "Pruner swept final batch from tx_order {} (root {:?}) to tx_order {} (root {:?}), deleted {} nodes",
                                     from_tx_order, from_state_root, to_tx_order, to_state_root, deleted
                                 );
+
+                                // Record metrics for final batch
+                                if let Some(ref metrics) = metrics {
+                                    metrics.pruner_sweep_nodes_deleted
+                                        .with_label_values(&["SweepExpired"])
+                                        .observe(deleted as f64);
+
+                                    let estimated_bytes_reclaimed = deleted * 32;
+                                    metrics.pruner_disk_space_reclaimed_bytes
+                                        .with_label_values(&["SweepExpired"])
+                                        .inc_by(estimated_bytes_reclaimed as u64);
+                                }
+                            } else {
+                                if let Some(ref metrics) = metrics {
+                                    metrics.pruner_error_count
+                                        .with_label_values(&["sweep_final", "SweepExpired"])
+                                        .inc();
+                                }
                             }
                         }
 
+                        let sweep_duration = sweep_start_time.elapsed();
+                        let total_nodes_per_sec = if sweep_duration.as_secs() > 0 {
+                            total_deleted as f64 / sweep_duration.as_secs_f64()
+                        } else {
+                            0.0
+                        };
+
                         info!(
-                            "Completed expired roots sweep, processed {} roots",
-                            processed_count
+                            "Completed expired roots sweep, processed {} roots, deleted {} nodes in {:?} ({:.2} nodes/sec)",
+                            processed_count, total_deleted, sweep_duration, total_nodes_per_sec
                         );
+
+                        // Record final sweep metrics
+                        if let Some(ref metrics) = metrics {
+                            metrics.pruner_sweep_nodes_deleted
+                                .with_label_values(&["SweepExpired_Total"])
+                                .observe(total_deleted as f64);
+
+                            metrics.pruner_processing_speed_nodes_per_sec
+                                .with_label_values(&["sweep_expired_total"])
+                                .observe(total_nodes_per_sec);
+                        }
 
                         // Persist bloom snapshot after sweep phase
                         {

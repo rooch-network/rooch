@@ -11,6 +11,7 @@ pub const METRICS_HOST_PORT: u16 = 9184;
 pub use metrics::start_prometheus_server;
 use raw_store::metrics::DBMetrics;
 use rooch_indexer::store::metrics::IndexerDBMetrics;
+use moveos_store::state_store::metrics::StateDBMetrics;
 
 /// Use the standard IP (0.0.0.0) and port (9184) to start a new
 /// prometheus server.
@@ -57,4 +58,5 @@ pub fn start_basic_prometheus_server() -> Registry {
 pub fn init_metrics(prometheus_registry: &Registry) {
     DBMetrics::init(prometheus_registry);
     IndexerDBMetrics::init(prometheus_registry);
+    StateDBMetrics::init(prometheus_registry);
 }
