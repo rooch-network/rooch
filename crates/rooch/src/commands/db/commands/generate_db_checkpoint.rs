@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::utils::open_rooch_db_readonly;
 use clap::Parser;
 use raw_store::SchemaStore;
@@ -32,7 +35,8 @@ impl GenerateDBCheckPointCommand {
             .expect("Failed to open RocksDB instance")
             .inner();
 
-        let check_point = Checkpoint::new(rocks_db).expect("failed to create Checkpoint object from RocksDB instance.");
+        let check_point = Checkpoint::new(rocks_db)
+            .expect("failed to create Checkpoint object from RocksDB instance.");
         check_point
             .create_checkpoint(self.output_dir.as_path())
             .expect(&format!(
