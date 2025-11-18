@@ -134,31 +134,32 @@ impl SweepExpired {
                 batch_min_order
             );
 
-            let processed_roots = Arc::new(Mutex::new(Vec::new()));
+            // Collect processed roots in thread-local vectors, then merge after parallel processing
+            let processed_roots: Vec<H256> = mini_batch
+                .par_iter()
+                .filter_map(|&(root, tx_order)| {
+                    match self.sweep_root(root, tx_order, &deleted) {
+                        Ok(()) => Some(root),
+                        Err(e) => {
+                            tracing::error!(
+                                "sweep error for root {:?} at tx_order {}: {}",
+                                root,
+                                tx_order,
+                                e
+                            );
+                            None
+                        }
+                    }
+                })
+                .collect();
 
-            // ✅ Step 4: Within each mini-batch, process in parallel
-            // Note: Each root is processed without individual compaction to avoid concurrent conflicts
-            // Optimization: Immediately update deleted_bloom after each root is processed
-            // This allows subsequent roots in the same mini_batch to benefit from the updated bloom
-            mini_batch.par_iter().for_each(|&(root, tx_order)| {
-                match self.sweep_root(root, tx_order, &deleted) {
-                    Ok(()) => {
-                        // Immediately mark this root as deleted in the bloom filter
-                        // This prevents other threads from redundantly processing the same root
-                        self.deleted_state_root_bloom.lock().insert(&root);
-                        processed_roots.lock().push(root);
-                    }
-                    Err(e) => {
-                        tracing::error!(
-                            "sweep error for root {:?} at tx_order {}: {}",
-                            root,
-                            tx_order,
-                            e
-                        );
-                    }
+            // Batch update the bloom filter after parallel processing
+            {
+                let mut bloom = self.deleted_state_root_bloom.lock();
+                for root in &processed_roots {
+                    bloom.insert(root);
                 }
-            });
-
+            }
             // ✅ Step 5: Compact once after all roots in mini-batch are processed
             // This avoids concurrent compaction conflicts and is much more efficient
             info!(
