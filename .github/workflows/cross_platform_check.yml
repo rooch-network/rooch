@@ -122,7 +122,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
-          echo "RUSTFLAGS=-C link-arg=-fuse-ld=gold" >> $GITHUB_ENV
+          # Note: Linux RUSTFLAGS are configured in .cargo/config.toml
+          echo "Linux build will use config from .cargo/config.toml"
 
       - name: Set Protoc Environment Variables
         if: matrix.os != 'windows-latest'
@@ -145,5 +146,4 @@ jobs:
           OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || (matrix.os == 'ubuntu-latest' && '/usr/lib/x86_64-linux-gnu' || '') }}
           OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || (matrix.os == 'ubuntu-latest' && '/usr/include' || '') }}
           LIBGIT2_SYS_USE_PKG_CONFIG: ${{ matrix.os == 'ubuntu-latest' && '1' || '0' }}
-          RUSTFLAGS: ${{ matrix.os == 'windows-latest' && '-C link-arg=advapi32.lib -C link-arg=secur32.lib -C link-arg=userenv.lib' || env.RUSTFLAGS }}
 
