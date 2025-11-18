@@ -39,10 +39,13 @@ impl GenerateDBCheckPointCommand {
             .expect("failed to create Checkpoint object from RocksDB instance.");
         check_point
             .create_checkpoint(self.output_dir.as_path())
-            .expect(&format!(
-                "failed to create checkpoint directory at {:?}.",
-                self.output_dir
-            ));
+            .map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "failed to create checkpoint directory at {:?}: {}",
+                    self.output_dir,
+                    e
+                ))
+            })?;
         println!("create checkpoint succeeded.");
 
         Ok(())
