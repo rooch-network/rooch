@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
-use anyhow::{Context, Result};
+use crate::commands::db::commands::expand_tilde;
+use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_types::error::RoochResult;
@@ -32,14 +33,7 @@ impl CommandAction<String> for RocksDBStatsCommand {
 
 impl RocksDBStatsCommand {
     fn execute_impl(self) -> Result<String> {
-        // Expand tilde manually
-        let path_str = if self.db_path.starts_with("~") {
-            let home = std::env::var("HOME").context("HOME environment variable not set")?;
-            self.db_path.replacen("~", &home, 1)
-        } else {
-            self.db_path.clone()
-        };
-
+        let path_str = expand_tilde(&self.db_path)?;
         let db_path = PathBuf::from(&path_str);
 
         if !db_path.exists() {

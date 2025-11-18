@@ -159,7 +159,8 @@ impl NodeDBStore {
                 fn drop(&mut self) {
                     if let Err(e) = self
                         .db
-                        .set_options_cf(self.cf, &[("disable_auto_compactions", "false")]) {
+                        .set_options_cf(self.cf, &[("disable_auto_compactions", "false")])
+                    {
                         tracing::warn!("Failed to re-enable auto compactions: {:?}", e);
                     }
                 }

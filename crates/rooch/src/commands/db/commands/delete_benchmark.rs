@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
-use anyhow::{anyhow, Context, Result};
+use crate::commands::db::commands::expand_tilde;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_config::store_config::RocksdbConfig;
@@ -65,12 +66,7 @@ impl CommandAction<String> for DeleteBenchmarkCommand {
 
 impl DeleteBenchmarkCommand {
     fn execute_impl(self) -> Result<String> {
-        let path_str = if self.db_path.starts_with("~") {
-            let home = std::env::var("HOME").context("HOME not set")?;
-            self.db_path.replacen("~", &home, 1)
-        } else {
-            self.db_path.clone()
-        };
+        let path_str = expand_tilde(&self.db_path)?;
         let db_path = PathBuf::from(&path_str);
 
         if !db_path.exists() {

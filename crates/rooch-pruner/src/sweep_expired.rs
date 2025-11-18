@@ -137,8 +137,8 @@ impl SweepExpired {
             // Collect processed roots in thread-local vectors, then merge after parallel processing
             let processed_roots: Vec<H256> = mini_batch
                 .par_iter()
-                .filter_map(|&(root, tx_order)| {
-                    match self.sweep_root(root, tx_order, &deleted) {
+                .filter_map(
+                    |&(root, tx_order)| match self.sweep_root(root, tx_order, &deleted) {
                         Ok(()) => Some(root),
                         Err(e) => {
                             tracing::error!(
@@ -149,8 +149,8 @@ impl SweepExpired {
                             );
                             None
                         }
-                    }
-                })
+                    },
+                )
                 .collect();
 
             // Batch update the bloom filter after parallel processing
@@ -173,7 +173,7 @@ impl SweepExpired {
                 info!("Skipping compaction due to shutdown request");
                 // Persist bloom progress before exit
                 {
-                    all_processed_roots.extend_from_slice(&processed_roots.lock());
+                    all_processed_roots.extend_from_slice(&processed_roots);
                 }
                 if let Err(e) = self
                     .moveos_store
@@ -223,7 +223,7 @@ impl SweepExpired {
             // Note: deleted_bloom has already been updated during root processing (Step 4)
             // Here we only need to persist it to disk for crash recovery
             {
-                all_processed_roots.extend_from_slice(&processed_roots.lock());
+                all_processed_roots.extend_from_slice(&processed_roots);
             }
 
             // Persist the bloom filter after each batch (crash recovery checkpoint)
