@@ -35,7 +35,7 @@ jobs:
           fi
 
   build-rooch-docker:
-    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && needs.check-docker-label.outputs.has-label == 'true') }}
+    if: ${{ github.event_name != 'pull_request' || needs.check-docker-label.outputs.has-label == 'true' }}
     needs: [check-docker-label]
     name: Build Rooch Docker
     runs-on: self-hosted
@@ -78,7 +78,7 @@ jobs:
           path: docker_tag.txt
 
   build-debug-rooch-docker:
-    if: ${{ github.event_name != 'pull_request' || (github.event_name == 'pull_request' && needs.check-docker-label.outputs.has-label == 'true') }}
+    if: ${{ github.event_name != 'pull_request' || needs.check-docker-label.outputs.has-label == 'true' }}
     needs: [check-docker-label]
     name: Build and Deploy Debug Rooch Docker
     runs-on: self-hosted
