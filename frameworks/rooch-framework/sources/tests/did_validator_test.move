@@ -90,12 +90,7 @@ module rooch_framework::did_validator_test {
         
         // Create a valid BCS-encoded DIDAuthPayload with valid envelope type
         let vm_fragment = string::utf8(b"key-1");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             0, // ENVELOPE_RAW_TX_HASH
@@ -134,6 +129,22 @@ module rooch_framework::did_validator_test {
         tx_hash
     }
 
+    /// Create an empty signature of specified size (filled with zeros) for testing
+    fun create_empty_signature(size: u64): vector<u8> {
+        let signature = vector::empty<u8>();
+        let i = 0;
+        while (i < size) {
+            vector::push_back(&mut signature, 0x00);
+            i = i + 1;
+        };
+        signature
+    }
+
+    /// Create a 64-byte empty signature for testing (common size for Ed25519, Secp256k1, ECDSA R1)
+    fun create_empty_signature_64(): vector<u8> {
+        create_empty_signature(64)
+    }
+
     // ========================================
     // Test Group 1: RawTxHash Envelope Tests
     // ========================================
@@ -148,12 +159,7 @@ module rooch_framework::did_validator_test {
         tx_context::set_ctx_tx_hash_for_testing(tx_hash);
         
         let vm_fragment = string::utf8(b"auth-key-1");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             0, // ENVELOPE_RAW_TX_HASH
@@ -195,12 +201,7 @@ module rooch_framework::did_validator_test {
         tx_context::set_ctx_sender_for_testing(did_address);
         
         // Create payload with non-authentication verification method
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             0, // ENVELOPE_RAW_TX_HASH
@@ -228,12 +229,7 @@ module rooch_framework::did_validator_test {
         
         // Create payload with non-existent vm_fragment
         let vm_fragment = string::utf8(b"non-existent-key");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             0, // ENVELOPE_RAW_TX_HASH
@@ -275,12 +271,7 @@ module rooch_framework::did_validator_test {
         tx_context::set_ctx_sender_for_testing(did_address);
         
         // Create payload with invalid signature (all zeros)
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             0, // ENVELOPE_RAW_TX_HASH
@@ -312,12 +303,7 @@ module rooch_framework::did_validator_test {
         
         // Create payload without message (should fail for BitcoinMessageV0)
         let vm_fragment = string::utf8(b"account-key");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             1, // ENVELOPE_BITCOIN_MESSAGE_V0
@@ -345,12 +331,7 @@ module rooch_framework::did_validator_test {
         
         // Create payload with invalid message format
         let vm_fragment = string::utf8(b"account-key");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let invalid_message = b"Invalid message format";
         let payload = create_did_auth_payload_bcs(
@@ -387,12 +368,7 @@ module rooch_framework::did_validator_test {
         let wrong_message = did_validator::build_rooch_transaction_message(wrong_tx_hash);
         
         let vm_fragment = string::utf8(b"account-key");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             1, // ENVELOPE_BITCOIN_MESSAGE_V0
@@ -424,12 +400,7 @@ module rooch_framework::did_validator_test {
         
         // Create payload without message (should fail for WebAuthnV0)
         let vm_fragment = string::utf8(b"account-key");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             2, // ENVELOPE_WEBAUTHN_V0
@@ -451,12 +422,7 @@ module rooch_framework::did_validator_test {
         tx_context::set_ctx_tx_hash_for_testing(tx_hash);
         
         let vm_fragment = string::utf8(b"key-1");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             99, // Invalid envelope type
@@ -490,12 +456,7 @@ module rooch_framework::did_validator_test {
         let message = did_validator::build_rooch_transaction_message(tx_hash);
         
         // Create payload with invalid signature (all zeros)
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             1, // ENVELOPE_BITCOIN_MESSAGE_V0
@@ -537,12 +498,7 @@ module rooch_framework::did_validator_test {
         );
         
         let vm_fragment = string::utf8(b"account-key");
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             2, // ENVELOPE_WEBAUTHN_V0
@@ -591,12 +547,7 @@ module rooch_framework::did_validator_test {
         );
         
         // Create payload with invalid signature
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             2, // ENVELOPE_WEBAUTHN_V0
@@ -650,12 +601,7 @@ module rooch_framework::did_validator_test {
         tx_context::set_ctx_sender_for_testing(did_address);
         
         // Create payload using fragment1 but with signature that doesn't match (all zeros)
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             0, // ENVELOPE_RAW_TX_HASH
@@ -700,12 +646,7 @@ module rooch_framework::did_validator_test {
         tx_context::set_ctx_sender_for_testing(did_address);
         
         // Create payload with signature that doesn't match the key
-        let signature = vector::empty<u8>();
-        let i = 0;
-        while (i < 64) {
-            vector::push_back(&mut signature, 0x00);
-            i = i + 1;
-        };
+        let signature = create_empty_signature(64);
         
         let payload = create_did_auth_payload_bcs(
             0, // ENVELOPE_RAW_TX_HASH
