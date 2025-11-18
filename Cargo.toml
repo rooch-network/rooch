@@ -252,7 +252,7 @@ walkdir = "2.3.3"
 prometheus = "0.13.3"
 hyper = { version = "1.0.0", features = ["full"] }
 libc = "^0.2"
-include_dir = { version = "0.6.2" }
+include_dir = { version = "0.7.4" }
 serde-reflection = "0.3.6"
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
 http = "1.0.0"
