@@ -12,7 +12,10 @@ jobs:
       - uses: styfle/cancel-workflow-action@0.3.1
         with:
           # get work flow id by https://api.github.com/repos/rooch-network/rooch/actions/workflows
-          # 57258338: check_build_test 62413072:docker_build.yml
+          # 57258338: check_build_test
+          # 62413072: docker_build.yml
+          # TODO: Add workflow IDs for quick_checks.yml and cross_platform_check.yml after they are created
+          # Get IDs from: https://api.github.com/repos/rooch-network/rooch/actions/workflows
           workflow_id: 57258338,62413072
           ignore_sha: true
           access_token: ${{ github.token }}
