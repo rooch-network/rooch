@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use accumulator::MerkleAccumulator;
+use anyhow::{Context, Result};
 use raw_store::rocks::RocksDB;
 use rooch_config::RoochOpt;
 use rooch_store::RoochStore;
@@ -13,6 +14,7 @@ use tracing::info;
 pub mod best_rollback;
 pub mod changeset;
 pub mod cp_cf;
+pub mod delete_benchmark;
 pub mod drop;
 pub mod dump_state;
 pub mod get_accumulator_leaf_by_index;
@@ -22,8 +24,11 @@ pub mod get_sequencer_info;
 pub mod get_tx_by_order;
 pub mod import_state;
 pub mod list_anomaly;
+pub mod prune_diagnosis;
 pub mod repair;
 pub mod revert;
+pub mod rocksdb_gc;
+pub mod rocksdb_stats;
 pub mod rollback;
 pub mod stat_changeset;
 pub mod verify_order;
@@ -70,4 +75,15 @@ fn load_accumulator(rooch_store: RoochStore) -> anyhow::Result<(MerkleAccumulato
         rooch_store.get_transaction_accumulator_store(),
     );
     Ok((tx_accumulator, last_order))
+}
+
+/// Expand tilde (~) in a path string to the user's home directory.
+/// Returns the expanded path string, or the original string if it doesn't start with ~.
+pub fn expand_tilde(path: &str) -> Result<String> {
+    if path.starts_with("~") {
+        let home = std::env::var("HOME").context("HOME environment variable not set")?;
+        Ok(path.replacen("~", &home, 1))
+    } else {
+        Ok(path.to_string())
+    }
 }
