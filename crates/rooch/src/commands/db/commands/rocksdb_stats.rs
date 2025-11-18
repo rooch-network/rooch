@@ -3,7 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::expand_tilde;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_types::error::RoochResult;

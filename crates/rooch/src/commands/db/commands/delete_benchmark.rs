@@ -3,7 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::expand_tilde;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_config::store_config::RocksdbConfig;
