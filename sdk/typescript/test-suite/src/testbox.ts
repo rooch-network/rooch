@@ -221,7 +221,9 @@ export class TestBox {
 
   private buildRoochCommand(args: string[] | string, envs: string[] = []) {
     const root = this.findRootDir('pnpm-workspace.yaml')
-    const roochDir = path.join(root!, 'target', 'debug')
+    // Use ROOCH_BINARY_BUILD_PROFILE environment variable or default to 'debug'
+    const profile = process.env.ROOCH_BINARY_BUILD_PROFILE || 'debug'
+    const roochDir = path.join(root!, 'target', profile)
 
     const envString = envs.length > 0 ? `${envs.join(' ')} ` : ''
     return `${envString} ${roochDir}/./rooch ${typeof args === 'string' ? args : args.join(' ')}`

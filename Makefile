@@ -9,7 +9,7 @@
         clean clean-all clean-rust clean-move \
         rust-machete rust-clippy \
         move-framework move-stdlib move-nursery move-bitcoin-framework move-examples \
-        ci-checks verify dev quick-check install-tools
+        ci-checks verify dev quick-check install-tools generate-genesis
 
 # Default target: Show help
 help:
@@ -78,9 +78,11 @@ RUST_PROFILE_RELEASE = optci # Profile for optimized/CI builds, as used in pr.sh
 # Determine the profile for building the rooch CLI used for Move tasks
 # Always use the release profile for the rooch binary when interacting with Move packages
 # If you want to use the default (dev) profile, the binary is in target/debug, not target/dev
-ROOCH_BINARY_BUILD_PROFILE = debug
+# Can be overridden by environment variable
+ROOCH_BINARY_BUILD_PROFILE ?= debug
 ROOCH_BIN_PATH = target/$(ROOCH_BINARY_BUILD_PROFILE)/rooch
 ROOCH_CMD = $(ROOCH_BIN_PATH)
+ROOCH_GENESIS_BIN = target/$(ROOCH_BINARY_BUILD_PROFILE)/rooch-genesis
 
 # Default Rust build alias
 build-rust: build-rust-debug
@@ -127,22 +129,18 @@ rust-machete:
 
 test-rust-unit:
 	@echo "🧪 Running Rust unit tests with cargo nextest (profile: $(RUST_PROFILE_RELEASE))..."
-	@if ! command -v cargo-nextest &>/dev/null; then \
-		echo "Warning: cargo-nextest not found. Skipping unit tests. Install with: cargo install cargo-nextest --locked"; \
-	else \
-		export RUST_BACKTRACE=1; \
-		cargo nextest run \
-			--workspace \
-			--all-features \
-			--exclude rooch-framework-tests \
-			--exclude rooch-integration-test-runner \
-			--exclude testsuite \
-			-j 8 \
-			--retries 2 \
-			--success-output final \
-			--failure-output immediate-final \
-			--cargo-profile $(RUST_PROFILE_RELEASE); \
-	fi
+	export RUST_BACKTRACE=1; \
+	cargo nextest run \
+		--workspace \
+		--all-features \
+		--exclude rooch-framework-tests \
+		--exclude rooch-integration-test-runner \
+		--exclude testsuite \
+		-j 8 \
+		--retries 2 \
+		--success-output final \
+		--failure-output immediate-final \
+		--cargo-profile $(RUST_PROFILE_RELEASE)
 
 test-rust-integration:
 	@echo "🧪 Running specific Rust framework and integration tests (profile: $(RUST_PROFILE_RELEASE))..."
@@ -263,6 +261,20 @@ dev: clean-all build test
 quick-check: build-rust-debug move-framework
 	@echo "✅ Quick compilation check for Rust (debug) and rooch-framework (Move) passed."
 
+# Generate genesis files for mainnet and testnet
+generate-genesis:
+	@echo "🌱 Generating genesis files for Mainnet and Testnet using $(ROOCH_BINARY_BUILD_PROFILE) profile..."
+	@if [ ! -f "$(ROOCH_GENESIS_BIN)" ]; then \
+		echo "Error: rooch-genesis binary not found at $(ROOCH_GENESIS_BIN)"; \
+		echo "Please build it first with: cargo build --profile $(ROOCH_BINARY_BUILD_PROFILE) --bin rooch-genesis"; \
+		exit 1; \
+	fi
+	@echo "Generating mainnet genesis..."
+	@$(ROOCH_GENESIS_BIN) -n main
+	@echo "Generating testnet genesis..."
+	@$(ROOCH_GENESIS_BIN) -n test
+	@echo "✅ Genesis files generated successfully."
+
 # Preserve the old `check` target if it was just framework build for quick syntax
 # This is now covered by quick-check or specific move-framework target.
 # The original 'clean' only removed Move artifacts and build/, now use clean-all, clean-rust, clean-move.
@@ -274,16 +286,6 @@ quick-check: build-rust-debug move-framework
 # Install required cargo tools
 install-tools:
 	@echo "🔧 Installing required cargo tools..."
-	@if ! command -v cargo-machete &>/dev/null; then \
-		echo "Installing cargo-machete..."; \
-		cargo install cargo-machete --locked --version 0.7.0; \
-	else \
-		echo "cargo-machete already installed"; \
-	fi
-	@if ! command -v cargo-nextest &>/dev/null; then \
-		echo "Installing cargo-nextest..."; \
-		cargo install cargo-nextest --locked --version 0.9.97-b.2; \
-	else \
-		echo "cargo-nextest already installed"; \
-	fi
-	@echo "✅ All required cargo tools are available"
+	cargo install cargo-machete --locked --version 0.7.0
+	cargo install cargo-nextest --locked --version 0.9.97-b.2
+	@echo "✅ All required cargo tools are installed"

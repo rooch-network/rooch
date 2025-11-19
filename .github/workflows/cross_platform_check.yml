@@ -1,0 +1,149 @@
+name: Cross-Platform Build Check
+
+on:
+  push:
+    branches: [ 'main' ]
+    paths-ignore:
+      - 'docs/**'
+      - 'fixtures/**'
+      - 'kube/**'
+      - '**.md'
+      - 'crates/rooch-anomalies/static/**'
+  pull_request:
+    branches: [ 'main' ]
+    paths-ignore:
+      - 'docs/**'
+      - 'fixtures/**'
+      - 'kube/**'
+      - '**.md'
+      - 'crates/rooch-anomalies/static/**'
+  workflow_run:
+    workflows: ["Check-Build-Test"]
+    types:
+      - completed
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  cross_platform_build:
+    name: Cross-Platform Build Check
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' || github.event_name == 'push') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git/db
+            target
+          key: ${{ runner.os }}-cargo-debug-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-debug-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-debug-
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            gcc \
+            libssl-dev \
+            pkg-config \
+            libclang-dev \
+            protobuf-compiler \
+            lld \
+            clang
+
+      - name: Install macOS dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install openssl@3
+          brew install pkg-config
+          brew install protobuf
+          which protoc
+          protoc --version
+
+      - name: Install Windows dependencies
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          # Install Scoop package manager
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          
+          # Add Scoop to PATH for current session
+          $env:PATH += ";$env:USERPROFILE\scoop\shims"
+          
+          scoop bucket add main
+          scoop bucket add extras
+          
+          # Install LLVM, MinGW, Protobuf, and CMake using Scoop
+          scoop install llvm
+          scoop install mingw
+          scoop install protobuf
+          scoop install cmake
+          
+          # Update PATH for subsequent steps
+          echo "$env:USERPROFILE\scoop\shims" >> $env:GITHUB_PATH
+          echo "$env:USERPROFILE\scoop\apps\protobuf\current\bin" >> $env:GITHUB_PATH
+          echo "$env:USERPROFILE\scoop\apps\llvm\current\bin" >> $env:GITHUB_PATH
+          echo "$env:USERPROFILE\scoop\apps\mingw\current\bin" >> $env:GITHUB_PATH
+          echo "$env:USERPROFILE\scoop\apps\cmake\current\bin" >> $env:GITHUB_PATH
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Set Rust environment variables (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          # Note: Linux RUSTFLAGS are configured in .cargo/config.toml
+          echo "Linux build will use config from .cargo/config.toml"
+
+      - name: Set Protoc Environment Variables
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          echo "PROTOC=$(which protoc)" >> $GITHUB_ENV
+
+      - name: Set Windows environment variables
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          echo "LIBGIT2_SYS_USE_PKG_CONFIG=0" >> $GITHUB_ENV
+          echo "LIBGIT2_SYS_USE_VCPKG=0" >> $GITHUB_ENV
+          echo "SKIP_STDLIB_BUILD=1" >> $GITHUB_ENV
+
+      - name: Build (Debug)
+        run: cargo build --target ${{ matrix.target }}
+        env:
+          OPENSSL_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3' || (matrix.os == 'ubuntu-latest' && '/usr' || '') }}
+          OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || (matrix.os == 'ubuntu-latest' && '/usr/lib/x86_64-linux-gnu' || '') }}
+          OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || (matrix.os == 'ubuntu-latest' && '/usr/include' || '') }}
+          LIBGIT2_SYS_USE_PKG_CONFIG: ${{ matrix.os == 'ubuntu-latest' && '1' || '0' }}
+

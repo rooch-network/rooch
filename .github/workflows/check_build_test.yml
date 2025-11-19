@@ -75,50 +75,61 @@ jobs:
       - name: Setup Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "ci-build"
+          cache-on-failure: true
+
       - name: Install cargo tools
         if: ${{ steps.changes.outputs.core == 'true' }}
-        run: make install-tools
-      - name: Build Rust
+        run: |
+          # Ensure cargo bin directory is in PATH
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          # Install required tools
+          make install-tools
+
+      - name: Build Rust (optci profile)
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
-          cargo build
+          # Build all binaries in the workspace
+          cargo build --profile optci --workspace --bins
       - name: Run Rust Lint
         if: ${{ steps.changes.outputs.core == 'true'}}
         run: make lint
       - name: Rooch init
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
-          cargo run --profile optci --package framework-release --bin framework-release 
-          cargo run --profile optci --bin rooch init --skip-password
+          # Use pre-built binaries from optci profile
+          ./target/optci/framework-release
+          ./target/optci/rooch init --skip-password
       - name: Run Rust tests
         if: ${{ steps.changes.outputs.core == 'true'}}
-        run: make test-rust
+        run: |
+          # Run test targets using optci profile (already built above)
+          make test-rust-unit
+          make test-rust-integration
       - name: Run Move tests
         if: ${{ steps.changes.outputs.core == 'true'}}
-        run: make test-move
+        run: |
+          echo "ROOCH_BINARY_BUILD_PROFILE is set to: $ROOCH_BINARY_BUILD_PROFILE"
+          echo "Expected rooch binary at: target/$ROOCH_BINARY_BUILD_PROFILE/rooch"
+          ls -la target/$ROOCH_BINARY_BUILD_PROFILE/rooch || echo "Binary not found!"
+          make test-move
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
       - name: Run example tests
         if: ${{ steps.changes.outputs.core == 'true'}}
         run: make test-move-examples
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
       - name: Generate genesis files for Mainnet and Testnet
         if: ${{ steps.changes.outputs.core == 'true'}}
-        run: |
-          cargo run --profile optci -p rooch-genesis -- -n main &
-          PID_MAIN=$!
-          cargo run --profile optci -p rooch-genesis -- -n test &
-          PID_TEST=$!
-          wait $PID_MAIN
-          EXIT_CODE_MAIN=$?
-          wait $PID_TEST
-          EXIT_CODE_TEST=$?
-          if [ $EXIT_CODE_MAIN -ne 0 ]; then
-          echo "Error: The mainnet genesis generation failed."
-          exit $EXIT_CODE_MAIN
-          fi
-          if [ $EXIT_CODE_TEST -ne 0 ]; then
-          echo "Error: The testnet genesis generation failed."
-          exit $EXIT_CODE_TEST
-          fi
-          echo "Genesis files generated successfully."
+        run: make generate-genesis
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
 
       - name: Setup Node.js
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
@@ -127,10 +138,17 @@ jobs:
           node-version: '20.3.1'
       - name: Run Web and SDK tests
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
         run: |
-          # Check Docker
+          # Check Docker and use cached image if available
           docker --version
-          docker pull lncm/bitcoind:v25.1
+          if ! docker images | grep -q 'lncm/bitcoind.*v25.1'; then
+            echo "Pulling Docker image..."
+            docker pull lncm/bitcoind:v25.1
+          else
+            echo "Using cached Docker image"
+          fi
           # docker pull bitseed/ord:0.18.0-burn
           # docker pull bitseed/bitseed:0.1.8
           # Setup pnpm and run web/SDK tests
