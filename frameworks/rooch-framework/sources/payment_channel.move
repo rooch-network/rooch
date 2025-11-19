@@ -782,6 +782,30 @@ module rooch_framework::payment_channel {
         sub_nonce: u64,
         sender_signature: vector<u8>
     ) {
+        internal_apply_receipt(
+            did_address,
+            channel_receiver,
+            coin_type,
+            vm_id_fragment,
+            sub_accumulated_amount,
+            sub_nonce,
+            sender_signature,
+            false  // Normal signature verification
+        );
+    }
+
+    /// Internal helper: Apply receipt with optional signature verification skip
+    /// This allows code reuse between production apply_receipt and test version
+    fun internal_apply_receipt(
+        did_address: address,
+        channel_receiver: address,
+        coin_type: String,
+        vm_id_fragment: String,
+        sub_accumulated_amount: u256,
+        sub_nonce: u64,
+        sender_signature: vector<u8>,
+        skip_signature_verification: bool
+    ) {
         let channel_id = calc_channel_object_id(did_address, channel_receiver, coin_type);
         
         // Phase 1: Lazy channel open (if channel doesn't exist)
@@ -791,8 +815,8 @@ module rooch_framework::payment_channel {
         
         // Phase 2: Lazy sub-channel authorization (if sub-channel doesn't exist)
         let sub_channel_exists = {
-            let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
-            let channel = object::borrow_mut(channel_obj);
+            let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
+            let channel = object::borrow(channel_obj);
             table::contains(&channel.sub_channels, vm_id_fragment)
         };
         
@@ -809,7 +833,7 @@ module rooch_framework::payment_channel {
                 sub_accumulated_amount,
                 sub_nonce,
                 sender_signature,
-                false  // Normal signature verification
+                skip_signature_verification
             );
         };
     }
@@ -1501,36 +1525,16 @@ module rooch_framework::payment_channel {
         sub_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        let channel_id = calc_channel_object_id(did_address, channel_receiver, coin_type);
-        
-        // Phase 1: Lazy channel open (if channel doesn't exist)
-        if (!object::exists_object_with_type<PaymentChannel>(channel_id)) {
-            internal_open_channel(did_address, channel_receiver, coin_type);
-        };
-        
-        // Phase 2: Lazy sub-channel authorization (if sub-channel doesn't exist)
-        let sub_channel_exists = {
-            let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
-            let channel = object::borrow_mut(channel_obj);
-            table::contains(&channel.sub_channels, vm_id_fragment)
-        };
-        
-        if (!sub_channel_exists) {
-            internal_authorize_sub_channel(did_address, channel_id, vm_id_fragment);
-        };
-        
-        // Phase 3: Settlement (if nonce > 0 or amount > 0)
-        // For initialization receipts (nonce=0, amount=0), skip settlement
-        if (sub_nonce > 0 || sub_accumulated_amount > 0) {
-            internal_claim_from_channel(
-                channel_id,
-                vm_id_fragment,
-                sub_accumulated_amount,
-                sub_nonce,
-                sender_signature,
-                true  // Skip signature verification for testing
-            );
-        };
+        internal_apply_receipt(
+            did_address,
+            channel_receiver,
+            coin_type,
+            vm_id_fragment,
+            sub_accumulated_amount,
+            sub_nonce,
+            sender_signature,
+            true  // Skip signature verification for testing
+        );
     }
 
     #[test]

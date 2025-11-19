@@ -928,7 +928,7 @@ module rooch_framework::payment_channel_test {
     }
 
     #[test]
-    fun test_apply_receipt_multiple_sub_channels() {
+    fun test_apply_receipt_progressive_settlement() {
         let (alice_signer, alice_addr, _bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
         
         // Setup: Deposit funds
@@ -937,7 +937,7 @@ module rooch_framework::payment_channel_test {
         let coin_type = type_info::type_name<RGas>();
         let signature = generate_test_signature();
         
-        // Create channel with first sub-channel
+        // Test: First receipt with lazy open and authorize
         payment_channel::apply_receipt_for_test(
             alice_addr,
             bob_addr,
@@ -948,11 +948,7 @@ module rooch_framework::payment_channel_test {
             signature
         );
         
-        // Add second VM to DID (simulated by using different vm_id)
-        // Note: In real scenario, this would require adding a new VM to DID document
-        // For testing, we'll use the same vm_id but verify the behavior
-        
-        // Test: Second receipt with same sub-channel (should work)
+        // Test: Second receipt with incremental amount (progressive settlement)
         payment_channel::apply_receipt_for_test(
             alice_addr,
             bob_addr,
@@ -963,7 +959,7 @@ module rooch_framework::payment_channel_test {
             signature
         );
         
-        // Assertion: State updated correctly
+        // Assertion: State updated correctly with progressive amounts
         let channel_id = payment_channel::get_channel_id(alice_addr, bob_addr, coin_type);
         let (last_amount, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
         assert!(last_amount == TEST_AMOUNT_15, 9041);
