@@ -94,8 +94,8 @@ jobs:
       - name: Build Rust (optci profile)
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
-          # Build all binaries needed for testing
-          cargo build --profile optci --bins
+          # Build all binaries in the workspace
+          cargo build --profile optci --workspace --bins
       - name: Run Rust Lint
         if: ${{ steps.changes.outputs.core == 'true'}}
         run: make lint
