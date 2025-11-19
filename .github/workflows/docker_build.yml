@@ -23,8 +23,8 @@ jobs:
       - name: Check for docker-build label
         id: check
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            LABELS="${{ toJSON(github.event.pull_request.labels) }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            LABELS='${{ toJSON(github.event.pull_request.labels) }}'
             if echo "$LABELS" | grep -q '"name":"docker-build"'; then
               echo "has-label=true" >> $GITHUB_OUTPUT
             else
