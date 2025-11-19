@@ -7,14 +7,12 @@
 // === x402 Channel Scheme Integration ===
 // 
 // This module implements x402 channel scheme as specified in:
+// https://github.com/coinbase/x402/pull/537
 // Key features:
 // - Unified entrypoint: apply_receipt() handles lazy open + lazy authorize + settle
 // - Zero client blockchain interaction (facilitator-proxied mode)
 // - Full backward compatibility with existing APIs
 // - DID-based sub-channel authorization
-//
-// For x402 integration guide, see:
-// docs/dev-guide/payment-channel-x402-integration.md
 
 module rooch_framework::payment_channel {
     use std::option::{Self, Option};
@@ -808,8 +806,17 @@ module rooch_framework::payment_channel {
     ) {
         let channel_id = calc_channel_object_id(did_address, channel_receiver, coin_type);
         
-        // Phase 1: Lazy channel open (if channel doesn't exist)
-        if (!object::exists_object_with_type<PaymentChannel>(channel_id)) {
+        // Phase 1: Lazy channel open (if channel doesn't exist or is closed)
+        let need_open_channel = if (!object::exists_object_with_type<PaymentChannel>(channel_id)) {
+            true
+        } else {
+            // Channel exists, check if it's closed and needs reactivation
+            let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
+            let channel = object::borrow(channel_obj);
+            channel.status == STATUS_CLOSED
+        };
+        
+        if (need_open_channel) {
             internal_open_channel(did_address, channel_receiver, coin_type);
         };
         
