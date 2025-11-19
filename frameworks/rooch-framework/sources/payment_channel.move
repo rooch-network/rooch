@@ -3,6 +3,16 @@
 
 // PaymentHub and PaymentChannel implementation for unidirectional payment channel protocol
 // See: docs/dev-guide/unidirectional-payment-channel-protocol.md
+//
+// === x402 Channel Scheme Integration ===
+// 
+// This module implements x402 channel scheme as specified in:
+// https://github.com/coinbase/x402/pull/537
+// Key features:
+// - Unified entrypoint: apply_receipt() handles lazy open + lazy authorize + settle
+// - Zero client blockchain interaction (facilitator-proxied mode)
+// - Full backward compatibility with existing APIs
+// - DID-based sub-channel authorization
 
 module rooch_framework::payment_channel {
     use std::option::{Self, Option};
@@ -370,82 +380,10 @@ module rooch_framework::payment_channel {
         channel_receiver: address,
     ) : ObjectID {
         let sender_addr = signer::address_of(channel_sender);
-        assert!(sender_addr != channel_receiver, ErrorNotReceiver);
-        assert!(did::exists_did_for_address(sender_addr), ErrorSenderMustIsDID);
         let coin_type = type_info::type_name<CoinType>();
-        let channel_id = calc_channel_object_id(sender_addr, channel_receiver, coin_type);
         
-        // Check if channel already exists
-        if (object::exists_object_with_type<PaymentChannel>(channel_id)) {
-            // Channel exists, check if it can be reused
-            let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
-            let channel = object::borrow_mut(channel_obj);
-            
-            // Only allow reuse if channel is closed
-            assert!(channel.status == STATUS_CLOSED, ErrorChannelAlreadyExists);
-            
-            // Verify coin type matches
-            assert!(channel.coin_type == coin_type, ErrorMismatchedCoinType);
-            
-            // Reactivate the channel
-            channel.status = STATUS_ACTIVE;
-            channel.cancellation_info = option::none();
-            // Note: sub_channels table is preserved, so previously authorized VMs remain valid
-            
-            // Increment active channel count for this coin type
-            let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
-            let payment_hub = object::borrow_mut(payment_hub_obj);
-            if (table::contains(&payment_hub.active_channels, coin_type)) {
-                let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type);
-                *count = *count + 1;
-            } else {
-                table::add(&mut payment_hub.active_channels, coin_type, 1);
-            };
-            
-            // Emit event for channel reactivation
-            event::emit(PaymentChannelOpenedEvent {
-                channel_id,
-                sender: sender_addr,
-                receiver: channel_receiver,
-                coin_type,
-            });
-            
-            return channel_id
-        };
-        
-        // Create new channel
-        let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
-        
-        // Increment active channel count for this coin type
-        let payment_hub = object::borrow_mut(payment_hub_obj);
-        if (table::contains(&payment_hub.active_channels, coin_type)) {
-            let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type);
-            *count = *count + 1;
-        } else {
-            table::add(&mut payment_hub.active_channels, coin_type, 1);
-        };
-        
-        let key = ChannelKey { sender: sender_addr, receiver: channel_receiver, coin_type };
-        let channel_obj = object::new_with_id(key, PaymentChannel {
-            sender: sender_addr,
-            receiver: channel_receiver,
-            coin_type,
-            sub_channels: table::new(),
-            status: STATUS_ACTIVE,
-            channel_epoch: 0,
-            cancellation_info: option::none(),
-        });
-        object::transfer_extend(channel_obj, sender_addr);
-        
-        // Emit event for new channel creation
-        event::emit(PaymentChannelOpenedEvent {
-            channel_id,
-            sender: sender_addr,
-            receiver: channel_receiver,
-            coin_type,
-        });
-        
-        channel_id
+        // Delegate to internal_open_channel
+        internal_open_channel(sender_addr, channel_receiver, coin_type)
     }
 
     /// Entry function for opening a channel
@@ -464,49 +402,16 @@ module rooch_framework::payment_channel {
         vm_id_fragment: String,
     ) {
         let sender_addr = signer::address_of(channel_sender);
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
-        let channel = object::borrow_mut(channel_obj);
         
         // Verify the transaction sender is the channel sender
-        assert!(channel.sender == sender_addr, ErrorVMAuthorizeOnlySender);
-        assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
+        {
+            let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
+            let channel = object::borrow(channel_obj);
+            assert!(channel.sender == sender_addr, ErrorVMAuthorizeOnlySender);
+        };
         
-        // Get DID document and verify the verification method
-        let did_doc = did::get_did_document_by_address(sender_addr);
-        let vm_opt = did::doc_verification_method(did_doc, &vm_id_fragment);
-        assert!(option::is_some(&vm_opt), ErrorVerificationMethodNotFound);
-        
-        let vm = option::extract(&mut vm_opt);
-        
-        // Check if verification method has authentication permission
-        assert!(
-            did::has_verification_relationship_in_doc(did_doc, &vm_id_fragment, did::verification_relationship_authentication()),
-            ErrorInsufficientPermission
-        );
-        
-        // Extract metadata from verification method
-        let pk_multibase = *did::verification_method_public_key_multibase(&vm);
-        let method_type = *did::verification_method_type(&vm);
-        
-        // A sub-channel can only be authorized once.
-        assert!(!table::contains(&channel.sub_channels, vm_id_fragment), ErrorVerificationMethodAlreadyExists);
-        
-        // Create and store the sub-channel with authorization metadata
-        table::add(&mut channel.sub_channels, vm_id_fragment, SubChannel {
-            pk_multibase,
-            method_type,
-            last_claimed_amount: 0u256,
-            last_confirmed_nonce: 0,
-        });
- 
-        // Emit sub-channel authorized event
-        event::emit(SubChannelAuthorizedEvent {
-            channel_id,
-            sender: sender_addr,
-            vm_id_fragment,
-            pk_multibase,
-            method_type,
-        });
+        // Delegate to internal_authorize_sub_channel
+        internal_authorize_sub_channel(sender_addr, channel_id, vm_id_fragment);
     }
 
     /// Entry function for authorizing a sub-channel
@@ -572,7 +477,7 @@ module rooch_framework::payment_channel {
     /// Anyone can claim funds from a specific sub-channel on behalf of the receiver.
     /// The funds will always be transferred to the channel receiver regardless of who calls this function.
     public fun claim_from_channel(
-        claimer: &signer,
+        _claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
         sub_accumulated_amount: u256,
@@ -580,7 +485,6 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>
     ) {
         internal_claim_from_channel(
-            claimer,
             channel_id,
             sender_vm_id_fragment,
             sub_accumulated_amount,
@@ -590,9 +494,10 @@ module rooch_framework::payment_channel {
         );
     }
 
-    /// The receiver claims funds from a specific sub-channel.
+    /// Internal helper: Claim from channel
+    /// This function does not require a signer, allowing facilitator to proxy the operation
+    /// Can be used by both traditional claim_from_channel and x402 apply_receipt
     fun internal_claim_from_channel(
-        _claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
         sub_accumulated_amount: u256,
@@ -688,6 +593,274 @@ module rooch_framework::payment_channel {
             claimer,
             channel_id,
             sender_vm_id_fragment,
+            sub_accumulated_amount,
+            sub_nonce,
+            sender_signature
+        );
+    } 
+
+    // === x402 Channel Scheme: Unified Receipt Processing ===
+
+    /// Internal helper: Open a channel between sender and receiver
+    /// This function does not require a signer, allowing facilitator to proxy the operation
+    /// Can be used by both traditional open_channel and x402 apply_receipt
+    fun internal_open_channel(
+        sender_addr: address,
+        receiver_addr: address,
+        coin_type: String,
+    ): ObjectID {
+        assert!(sender_addr != receiver_addr, ErrorNotReceiver);
+        assert!(did::exists_did_for_address(sender_addr), ErrorSenderMustIsDID);
+        
+        let channel_id = calc_channel_object_id(sender_addr, receiver_addr, coin_type);
+        
+        // Check if channel already exists
+        if (object::exists_object_with_type<PaymentChannel>(channel_id)) {
+            // Channel exists, check if it can be reused
+            let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
+            let channel = object::borrow_mut(channel_obj);
+            
+            // Only allow reuse if channel is closed
+            assert!(channel.status == STATUS_CLOSED, ErrorChannelAlreadyExists);
+            
+            // Verify coin type matches
+            assert!(channel.coin_type == coin_type, ErrorMismatchedCoinType);
+            
+            // Reactivate the channel
+            channel.status = STATUS_ACTIVE;
+            channel.cancellation_info = option::none();
+            // Note: sub_channels table is preserved, so previously authorized VMs remain valid
+            
+            // Increment active channel count for this coin type
+            let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
+            let payment_hub = object::borrow_mut(payment_hub_obj);
+            if (table::contains(&payment_hub.active_channels, coin_type)) {
+                let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type);
+                *count = *count + 1;
+            } else {
+                table::add(&mut payment_hub.active_channels, coin_type, 1);
+            };
+            
+            // Emit event for channel reactivation
+            event::emit(PaymentChannelOpenedEvent {
+                channel_id,
+                sender: sender_addr,
+                receiver: receiver_addr,
+                coin_type,
+            });
+            
+            return channel_id
+        };
+        
+        // Create new channel
+        let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
+        
+        // Increment active channel count for this coin type
+        let payment_hub = object::borrow_mut(payment_hub_obj);
+        if (table::contains(&payment_hub.active_channels, coin_type)) {
+            let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type);
+            *count = *count + 1;
+        } else {
+            table::add(&mut payment_hub.active_channels, coin_type, 1);
+        };
+        
+        let key = ChannelKey { sender: sender_addr, receiver: receiver_addr, coin_type };
+        let channel_obj = object::new_with_id(key, PaymentChannel {
+            sender: sender_addr,
+            receiver: receiver_addr,
+            coin_type,
+            sub_channels: table::new(),
+            status: STATUS_ACTIVE,
+            channel_epoch: 0,
+            cancellation_info: option::none(),
+        });
+        object::transfer_extend(channel_obj, sender_addr);
+        
+        // Emit event for new channel creation
+        event::emit(PaymentChannelOpenedEvent {
+            channel_id,
+            sender: sender_addr,
+            receiver: receiver_addr,
+            coin_type,
+        });
+        
+        channel_id
+    }
+
+    /// Internal helper: Authorize a sub-channel for a DID address
+    /// This function does not require a signer, allowing facilitator to proxy the operation
+    /// The authorization is verified by checking the DID document for the verification method
+    /// Can be used by both traditional authorize_sub_channel and x402 apply_receipt
+    fun internal_authorize_sub_channel(
+        did_address: address,
+        channel_id: ObjectID,
+        vm_id_fragment: String,
+    ) {
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
+        let channel = object::borrow_mut(channel_obj);
+        
+        // Verify the DID address is the channel sender
+        assert!(channel.sender == did_address, ErrorNotSender);
+        assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
+        
+        // Get DID document and verify the verification method
+        let did_doc = did::get_did_document_by_address(did_address);
+        let vm_opt = did::doc_verification_method(did_doc, &vm_id_fragment);
+        assert!(option::is_some(&vm_opt), ErrorVerificationMethodNotFound);
+        
+        let vm = option::extract(&mut vm_opt);
+        
+        // Check if verification method has authentication permission
+        assert!(
+            did::has_verification_relationship_in_doc(did_doc, &vm_id_fragment, did::verification_relationship_authentication()),
+            ErrorInsufficientPermission
+        );
+        
+        // Extract metadata from verification method
+        let pk_multibase = *did::verification_method_public_key_multibase(&vm);
+        let method_type = *did::verification_method_type(&vm);
+        
+        // A sub-channel can only be authorized once.
+        assert!(!table::contains(&channel.sub_channels, vm_id_fragment), ErrorVerificationMethodAlreadyExists);
+        
+        // Create and store the sub-channel with authorization metadata
+        table::add(&mut channel.sub_channels, vm_id_fragment, SubChannel {
+            pk_multibase,
+            method_type,
+            last_claimed_amount: 0u256,
+            last_confirmed_nonce: 0,
+        });
+ 
+        // Emit sub-channel authorized event
+        event::emit(SubChannelAuthorizedEvent {
+            channel_id,
+            sender: did_address,
+            vm_id_fragment,
+            pk_multibase,
+            method_type,
+        });
+    }
+
+    /// Unified entrypoint for x402 channel receipt processing
+    /// Implements scheme_channel.md Appendix C settlement specification
+    /// 
+    /// Handles complete receipt lifecycle with lazy initialization:
+    /// 1. Lazy channel open (if channel doesn't exist)
+    /// 2. Lazy sub-channel authorization (if sub-channel doesn't exist)  
+    /// 3. Settlement execution (if delta > 0)
+    /// 
+    /// This function enables zero client blockchain interaction when used with a facilitator.
+    /// The facilitator can call this function on behalf of the client, paying gas fees.
+    /// 
+    /// # Arguments
+    /// * `did_address` - Payer's DID address (channel sender)
+    /// * `channel_receiver` - Payee's address
+    /// * `coin_type` - Asset type (e.g., "0x3::gas_coin::RGas")
+    /// * `vm_id_fragment` - Sub-channel identifier (DID verification method fragment)
+    /// * `sub_accumulated_amount` - Cumulative amount for this sub-channel
+    /// * `sub_nonce` - Monotonic nonce for this sub-channel
+    /// * `sender_signature` - Signature over the SubRAV
+    /// 
+    /// # Behavior
+    /// - First receipt (nonce=0, amount=0): Creates channel + authorizes sub-channel, no settlement
+    /// - Subsequent receipts (nonce>0 or amount>0): Settles incremental amount
+    /// - Idempotent: Duplicate receipts are treated as successful retries
+    /// 
+    /// # Panics
+    /// - If DID document doesn't exist
+    /// - If signature is invalid
+    /// - If VM doesn't have authentication permission
+    /// - If nonce/amount monotonicity is violated (for delta > 0)
+    public fun apply_receipt(
+        did_address: address,
+        channel_receiver: address,
+        coin_type: String,
+        vm_id_fragment: String,
+        sub_accumulated_amount: u256,
+        sub_nonce: u64,
+        sender_signature: vector<u8>
+    ) {
+        internal_apply_receipt(
+            did_address,
+            channel_receiver,
+            coin_type,
+            vm_id_fragment,
+            sub_accumulated_amount,
+            sub_nonce,
+            sender_signature,
+            false  // Normal signature verification
+        );
+    }
+
+    /// Internal helper: Apply receipt with optional signature verification skip
+    /// This allows code reuse between production apply_receipt and test version
+    fun internal_apply_receipt(
+        did_address: address,
+        channel_receiver: address,
+        coin_type: String,
+        vm_id_fragment: String,
+        sub_accumulated_amount: u256,
+        sub_nonce: u64,
+        sender_signature: vector<u8>,
+        skip_signature_verification: bool
+    ) {
+        let channel_id = calc_channel_object_id(did_address, channel_receiver, coin_type);
+        
+        // Phase 1: Lazy channel open (if channel doesn't exist or is closed)
+        let need_open_channel = if (!object::exists_object_with_type<PaymentChannel>(channel_id)) {
+            true
+        } else {
+            // Channel exists, check if it's closed and needs reactivation
+            let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
+            let channel = object::borrow(channel_obj);
+            channel.status == STATUS_CLOSED
+        };
+        
+        if (need_open_channel) {
+            internal_open_channel(did_address, channel_receiver, coin_type);
+        };
+        
+        // Phase 2: Lazy sub-channel authorization (if sub-channel doesn't exist)
+        let sub_channel_exists = {
+            let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
+            let channel = object::borrow(channel_obj);
+            table::contains(&channel.sub_channels, vm_id_fragment)
+        };
+        
+        if (!sub_channel_exists) {
+            internal_authorize_sub_channel(did_address, channel_id, vm_id_fragment);
+        };
+        
+        // Phase 3: Settlement (if nonce > 0 or amount > 0)
+        // For initialization receipts (nonce=0, amount=0), skip settlement
+        if (sub_nonce > 0 || sub_accumulated_amount > 0) {
+            internal_claim_from_channel(
+                channel_id,
+                vm_id_fragment,
+                sub_accumulated_amount,
+                sub_nonce,
+                sender_signature,
+                skip_signature_verification
+            );
+        };
+    }
+
+    /// Entry function wrapper for apply_receipt
+    /// Facilitator can call this function to process receipts on behalf of clients
+    public entry fun apply_receipt_entry(
+        did_address: address,
+        channel_receiver: address,
+        coin_type: String,
+        vm_id_fragment: String,
+        sub_accumulated_amount: u256,
+        sub_nonce: u64,
+        sender_signature: vector<u8>
+    ) {
+        apply_receipt(
+            did_address,
+            channel_receiver,
+            coin_type,
+            vm_id_fragment,
             sub_accumulated_amount,
             sub_nonce,
             sender_signature
@@ -1308,9 +1481,9 @@ module rooch_framework::payment_channel {
     }
 
     #[test_only]
-    /// Test-only version of claim_from_channel that uses the test signature verification
+    /// Test-only version of claim_from_channel that skips signature verification
     public fun claim_from_channel_for_test(
-        claimer: &signer,
+        _claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
         sub_accumulated_amount: u256,
@@ -1318,13 +1491,12 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>
     ) {
         internal_claim_from_channel(
-            claimer,
             channel_id,
             sender_vm_id_fragment,
             sub_accumulated_amount,
             sub_nonce,
             sender_signature,
-            true
+            true  // Skip signature verification for testing
         );
     }
 
@@ -1345,6 +1517,30 @@ module rooch_framework::payment_channel {
             dispute_nonce,
             sender_signature,
             true
+        );
+    }
+
+    #[test_only]
+    /// Test-only version of apply_receipt that skips signature verification
+    /// This allows testing the lazy initialization and settlement logic without requiring valid signatures
+    public fun apply_receipt_for_test(
+        did_address: address,
+        channel_receiver: address,
+        coin_type: String,
+        vm_id_fragment: String,
+        sub_accumulated_amount: u256,
+        sub_nonce: u64,
+        sender_signature: vector<u8>
+    ) {
+        internal_apply_receipt(
+            did_address,
+            channel_receiver,
+            coin_type,
+            vm_id_fragment,
+            sub_accumulated_amount,
+            sub_nonce,
+            sender_signature,
+            true  // Skip signature verification for testing
         );
     }
 

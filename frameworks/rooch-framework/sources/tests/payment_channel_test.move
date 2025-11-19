@@ -732,4 +732,237 @@ module rooch_framework::payment_channel_test {
         // 8. Alice can now withdraw remaining funds
         payment_channel::withdraw_from_hub_entry<RGas>(&alice_signer, TEST_AMOUNT_100 - TEST_AMOUNT_15);
     }
+
+    // === x402 Channel Scheme: apply_receipt Tests ===
+
+    #[test]
+    fun test_apply_receipt_lazy_open_and_authorize() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
+        
+        // Setup: Deposit funds
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+        
+        // Test: First receipt (nonce=0, amount=0) - lazy initialization
+        let coin_type = type_info::type_name<RGas>();
+        let signature = generate_test_signature();
+        
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            0u256,  // accumulated_amount = 0
+            0u64,   // nonce = 0
+            signature
+        );
+        
+        // Assertion: Channel created and sub-channel authorized
+        let channel_id = payment_channel::get_channel_id(alice_addr, bob_addr, coin_type);
+        assert!(payment_channel::channel_exists(alice_addr, bob_addr, coin_type), 9001);
+        assert!(payment_channel::sub_channel_exists(channel_id, vm_id), 9002);
+        
+        let (_sender, _receiver, _coin_type_ret, status) = payment_channel::get_channel_info(channel_id);
+        assert!(status == 0, 9003); // STATUS_ACTIVE
+        
+        // Verify no funds were transferred (delta = 0)
+        let (last_amount, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
+        assert!(last_amount == 0u256, 9004);
+        assert!(last_nonce == 0u64, 9005);
+    }
+
+    #[test]
+    fun test_apply_receipt_settlement() {
+        let (alice_signer, alice_addr, bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
+        
+        // Setup: Deposit funds
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+        
+        let coin_type = type_info::type_name<RGas>();
+        let signature = generate_test_signature();
+        
+        // Step 1: First receipt (lazy initialization)
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            0u256,
+            0u64,
+            signature
+        );
+        
+        // Step 2: Second receipt (settlement with delta > 0)
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            TEST_AMOUNT_10,  // accumulated_amount = 10
+            TEST_NONCE_1,     // nonce = 1
+            signature
+        );
+        
+        // Assertion: Funds transferred
+        let channel_id = payment_channel::get_channel_id(alice_addr, bob_addr, coin_type);
+        let (last_amount, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
+        assert!(last_amount == TEST_AMOUNT_10, 9011);
+        assert!(last_nonce == TEST_NONCE_1, 9012);
+        
+        // Verify funds in receiver's revenue hub
+        let initial_bob_balance = account_coin_store::balance<RGas>(bob_addr);
+        payment_revenue::withdraw_revenue_entry<RGas>(&bob_signer, TEST_AMOUNT_10);
+        let final_bob_balance = account_coin_store::balance<RGas>(bob_addr);
+        assert!(final_bob_balance == initial_bob_balance + TEST_AMOUNT_10, 9013);
+    }
+
+    #[test]
+    fun test_apply_receipt_idempotent() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
+        
+        // Setup: Deposit funds and initialize
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+        
+        let coin_type = type_info::type_name<RGas>();
+        let signature = generate_test_signature();
+        
+        // First receipt
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            TEST_AMOUNT_10,
+            TEST_NONCE_1,
+            signature
+        );
+        
+        // Duplicate receipt (same nonce and amount)
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            TEST_AMOUNT_10,
+            TEST_NONCE_1,
+            signature
+        );
+        
+        // Assertion: State unchanged (idempotent)
+        let channel_id = payment_channel::get_channel_id(alice_addr, bob_addr, coin_type);
+        let (last_amount, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
+        assert!(last_amount == TEST_AMOUNT_10, 9021);
+        assert!(last_nonce == TEST_NONCE_1, 9022);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = payment_channel::ErrorSenderMustIsDID)]
+    fun test_apply_receipt_no_did() {
+        genesis::init_for_test();
+        timestamp::fast_forward_milliseconds_for_test(1000);
+        
+        // Create account without DID
+        let alice_addr = @0x42;
+        let bob_addr = @0x43;
+        
+        let coin_type = type_info::type_name<RGas>();
+        let vm_id = string::utf8(b"account-key");
+        let signature = generate_test_signature();
+        
+        // Test: Should fail because alice_addr doesn't have DID
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            0u256,
+            0u64,
+            signature
+        );
+    }
+
+    #[test]
+    fun test_apply_receipt_backward_compatibility() {
+        let (alice_signer, alice_addr, bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
+        
+        // Setup: Deposit funds
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+        
+        // Test: Use old API to create channel and authorize sub-channel
+        let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
+        payment_channel::authorize_sub_channel_entry(&alice_signer, channel_id, vm_id);
+        
+        // Test: Use new apply_receipt API for settlement
+        let coin_type = type_info::type_name<RGas>();
+        let signature = generate_test_signature();
+        
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            TEST_AMOUNT_10,
+            TEST_NONCE_1,
+            signature
+        );
+        
+        // Assertion: Works correctly
+        let (last_amount, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
+        assert!(last_amount == TEST_AMOUNT_10, 9031);
+        assert!(last_nonce == TEST_NONCE_1, 9032);
+        
+        // Test: Use old claim API after apply_receipt
+        let signature2 = generate_test_signature();
+        payment_channel::claim_from_channel_for_test(
+            &bob_signer,
+            channel_id,
+            vm_id,
+            TEST_AMOUNT_15,
+            TEST_NONCE_2,
+            signature2
+        );
+        
+        // Assertion: Both APIs work together
+        let (last_amount2, last_nonce2) = payment_channel::get_sub_channel_state(channel_id, vm_id);
+        assert!(last_amount2 == TEST_AMOUNT_15, 9033);
+        assert!(last_nonce2 == TEST_NONCE_2, 9034);
+    }
+
+    #[test]
+    fun test_apply_receipt_progressive_settlement() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
+        
+        // Setup: Deposit funds
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+        
+        let coin_type = type_info::type_name<RGas>();
+        let signature = generate_test_signature();
+        
+        // Test: First receipt with lazy open and authorize
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            TEST_AMOUNT_10,
+            TEST_NONCE_1,
+            signature
+        );
+        
+        // Test: Second receipt with incremental amount (progressive settlement)
+        payment_channel::apply_receipt_for_test(
+            alice_addr,
+            bob_addr,
+            coin_type,
+            vm_id,
+            TEST_AMOUNT_15,
+            TEST_NONCE_2,
+            signature
+        );
+        
+        // Assertion: State updated correctly with progressive amounts
+        let channel_id = payment_channel::get_channel_id(alice_addr, bob_addr, coin_type);
+        let (last_amount, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
+        assert!(last_amount == TEST_AMOUNT_15, 9041);
+        assert!(last_nonce == TEST_NONCE_2, 9042);
+    }
 } 
