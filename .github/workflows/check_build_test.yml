@@ -138,6 +138,8 @@ jobs:
           node-version: '20.3.1'
       - name: Run Web and SDK tests
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
         run: |
           # Check Docker and use cached image if available
           docker --version
