@@ -141,24 +141,35 @@ Rooch 引入了 **CADOP (Custodian-Assisted DID Onboarding Protocol，托管辅�
 
 ```mermaid
 graph TD
-    User((用户/Owner)) -->|1. 控制权 (WebAuthn/BTC Key)| DID[链上 DID 实体\n(Account & Asset)]
+    User((用户/Owner)) -->|"1. 控制权 (WebAuthn/BTC Key)"| DID["链上 DID 实体<br/>(Account & Asset)"]
     
-    subgraph "Verification Methods (授权列表)"
+    subgraph VM_Group ["Verification Methods (授权列表)"]
+        direction TB
         VM1[Key 1: 手机 Passkey]
         VM2[Key 2: 交易 Agent]
         VM3[Key 3: 内容 Agent]
     end
     
-    DID --- VM1
-    DID --- VM2
-    DID --- VM3
+    DID -.-> VM1
+    DID -.-> VM2
+    DID -.-> VM3
     
     VM1 -->|签名交易| Tx1[日常操作/转账]
     VM2 -->|自动签名| Tx2[DeFi 套利交易]
     VM3 -->|自动签名| Tx3[发布社交内容]
     
-    style DID fill:#f9f,stroke:#333,stroke-width:4px
-    style User fill:#bbf,stroke:#333,stroke-width:2px
+    %% 样式定义
+    classDef entity fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b,rx:10,ry:10;
+    classDef user fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#f57f17;
+    classDef vm fill:#f3e5f5,stroke:#8e24aa,stroke-width:1px,color:#4a148c,rx:5,ry:5;
+    classDef tx fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:#1b5e20,stroke-dasharray: 5 5;
+
+    class DID entity;
+    class User user;
+    class VM1,VM2,VM3 vm;
+    class Tx1,Tx2,Tx3 tx;
+    
+    style VM_Group fill:#fafafa,stroke:#bdbdbd,stroke-width:1px,stroke-dasharray: 5 5;
 ```
 
 在这个架构中：
