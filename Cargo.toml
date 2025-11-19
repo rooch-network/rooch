@@ -210,7 +210,7 @@ ordinals = "0.0.9"
 parking_lot = "0.12.4"
 petgraph = "0.6.5"
 primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
-proptest = "1.8.0"
+proptest = "1.9.0"
 proptest-derive = "0.3.0"
 rayon = "1.11.0"
 rand = "0.8.5"
