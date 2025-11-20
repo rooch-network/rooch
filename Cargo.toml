@@ -338,7 +338,7 @@ celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = 
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 opendal = { version = "0.50.2", features = ["services-fs", "services-gcs"] }
 toml = "0.9.8"
-tabled = "0.16.0"
+tabled = "0.20.0"
 csv = "1.4.0"
 revm-precompile = "16.2.0"
 revm-primitives = "15.2.0"
