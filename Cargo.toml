@@ -340,7 +340,7 @@ opendal = { version = "0.50.2", features = ["services-fs", "services-gcs"] }
 toml = "0.9.8"
 tabled = "0.16.0"
 csv = "1.4.0"
-revm-precompile = "16.2.0"
+revm-precompile = "17.0.0"
 revm-primitives = "15.2.0"
 scopeguard = "1.1"
 uuid = { version = "1.16.0", features = ["v4", "fast-rng"] }
