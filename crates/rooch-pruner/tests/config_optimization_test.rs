@@ -3,6 +3,7 @@
 
 use moveos_common::bloom_filter::BloomFilter;
 use parking_lot::Mutex;
+use rand::SeedableRng;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use rooch_config::prune_config::PruneConfig;
@@ -19,7 +20,7 @@ fn test_bloom_filter_configuration_optimization() {
         (100_000_000, 8, "large_8hash"),
     ];
 
-    let mut rng = rand::rngs::StdRng::from_seed([42; 32]);
+    let mut rng = rand::rngs::StdRng::seed_from_u64(42);
 
     for (bits, hash_funcs, name) in test_cases {
         println!("Testing bloom filter: {} bits, {} hash functions - {}", bits, hash_funcs, name);
@@ -190,7 +191,7 @@ fn test_concurrent_performance() {
             .map(|_| {
                 let bloom = bloom.clone();
                 thread::spawn(move || {
-                    let mut rng = rand::rngs::StdRng::from_seed([42; 32]);
+                    let mut rng = rand::rngs::StdRng::seed_from_u64(42);
 
                     for _ in 0..operations_per_thread {
                         let hash = moveos_types::h256::H256::random_using(&mut rng);

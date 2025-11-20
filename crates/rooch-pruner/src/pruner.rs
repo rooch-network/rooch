@@ -195,7 +195,12 @@ impl StatePruner {
                         };
                         info!("Starting scan from order {}", order_cursor);
 
-                      let sweeper = SweepExpired::new(moveos_store.clone(), bloom.clone());
+                      let sweeper = SweepExpired::new(
+                            moveos_store.clone(),
+                            bloom.clone(),
+                            cfg.bloom_bits,
+                            thread_running.clone(),
+                        );
                         let sweep_start_time = std::time::Instant::now();
                         let mut processed_count = 0;
                         let mut total_deleted = 0;
@@ -252,7 +257,7 @@ impl StatePruner {
                                             let estimated_bytes_reclaimed = deleted * 32;
                                             metrics.pruner_disk_space_reclaimed_bytes
                                                 .with_label_values(&["SweepExpired"])
-                                                .inc_by(estimated_bytes_reclaimed as u64);
+                                                .inc_by(estimated_bytes_reclaimed as f64);
                                         }
                                     } else {
                                         if let Some(ref metrics) = metrics {
@@ -295,7 +300,7 @@ impl StatePruner {
                                     let estimated_bytes_reclaimed = deleted * 32;
                                     metrics.pruner_disk_space_reclaimed_bytes
                                         .with_label_values(&["SweepExpired"])
-                                        .inc_by(estimated_bytes_reclaimed as u64);
+                                        .inc_by(estimated_bytes_reclaimed as f64);
                                 }
                             } else {
                                 if let Some(ref metrics) = metrics {

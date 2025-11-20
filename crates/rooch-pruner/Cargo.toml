@@ -35,5 +35,5 @@ tempfile = { workspace = true }
 rand = { workspace = true }
 
 [[bench]]
-name = "bench_pruner"
+name = "bench_bloom_comparison"
 harness = false
