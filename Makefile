@@ -117,7 +117,47 @@ lint-rust: rust-clippy rust-machete
 
 rust-clippy:
 	@echo "🔍 Running Rust clippy linter..."
-	cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings
+	@echo "Note: Checking only rooch packages (excluding third_party/move)..."
+	@cargo clippy --workspace --all-targets --all-features --tests --benches \
+		--exclude move-stackless-bytecode-generator \
+		--exclude move-transactional-test-runner \
+		--exclude move-abstract-stack \
+		--exclude move-binary-format \
+		--exclude move-borrow-graph \
+		--exclude move-bytecode-source-map \
+		--exclude move-bytecode-utils \
+		--exclude move-bytecode-verifier \
+		--exclude move-bytecode-viewer \
+		--exclude move-cli \
+		--exclude move-command-line-common \
+		--exclude move-compiler \
+		--exclude move-core-types \
+		--exclude move-coverage \
+		--exclude move-disassembler \
+		--exclude move-docgen \
+		--exclude move-errmapgen \
+		--exclude move-ir-compiler \
+		--exclude move-ir-to-bytecode \
+		--exclude move-ir-to-bytecode-syntax \
+		--exclude move-ir-types \
+		--exclude move-model \
+		--exclude move-package \
+		--exclude move-prover \
+		--exclude move-prover-boogie-backend \
+		--exclude move-resource-viewer \
+		--exclude move-stackless-bytecode \
+		--exclude move-stdlib \
+		--exclude move-symbol-pool \
+		--exclude move-table-extension \
+		--exclude move-unit-test \
+		--exclude move-vm-integration-tests \
+		--exclude move-vm-profiler \
+		--exclude move-vm-runtime \
+		--exclude move-vm-test-utils \
+		--exclude move-vm-types \
+		--exclude read-write-set \
+		--exclude read-write-set-dynamic \
+		-- -D warnings
 
 rust-machete:
 	@echo "🔍 Checking for unused Rust dependencies with cargo-machete..."
