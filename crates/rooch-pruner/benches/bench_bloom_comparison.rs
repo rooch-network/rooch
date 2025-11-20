@@ -1,20 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_types::h256::H256;
 use parking_lot::Mutex;
-use rand::SeedableRng;
 use rand::rngs::StdRng;
+use rand::SeedableRng;
 use std::sync::Arc;
 
 // Old problematic configuration
 const OLD_BLOOM_BITS: usize = 8589934592; // 2^33 = 8.6GB
 
 // New optimized configurations (power of 2)
-const SMALL_BLOOM_BITS: usize = 8388608;    // 2^23 = 1MB
-const MEDIUM_BLOOM_BITS: usize = 67108864;  // 2^26 = 8MB
+const SMALL_BLOOM_BITS: usize = 8388608; // 2^23 = 1MB
+const MEDIUM_BLOOM_BITS: usize = 67108864; // 2^26 = 8MB
 const LARGE_BLOOM_BITS: usize = 536870912; // 2^29 = 64MB
 
 fn bench_bloom_filter_creation(c: &mut Criterion) {
@@ -28,7 +28,10 @@ fn bench_bloom_filter_creation(c: &mut Criterion) {
     ];
 
     for (name, bloom_bits) in configs {
-        println!("Testing bloom filter creation for: {} ({} bits)", name, bloom_bits);
+        println!(
+            "Testing bloom filter creation for: {} ({} bits)",
+            name, bloom_bits
+        );
 
         group.bench_with_input(
             BenchmarkId::new("create_bloom_filter", name),
@@ -91,7 +94,10 @@ fn bench_bloom_filter_operations(c: &mut Criterion) {
     let test_operations = 10000;
 
     for (name, bloom_bits) in configs {
-        println!("Testing bloom filter operations for: {} ({} bits)", name, bloom_bits);
+        println!(
+            "Testing bloom filter operations for: {} ({} bits)",
+            name, bloom_bits
+        );
 
         // Create bloom filter
         let bloom = Arc::new(Mutex::new(BloomFilter::new(bloom_bits, 4)));
@@ -169,7 +175,10 @@ fn bench_false_positive_rate_simulation(c: &mut Criterion) {
     let test_count = 10000;
 
     for (name, bloom_bits) in configs {
-        println!("Testing false positive rate for: {} (insert: {}, test: {})", name, insert_count, test_count);
+        println!(
+            "Testing false positive rate for: {} (insert: {}, test: {})",
+            name, insert_count, test_count
+        );
 
         group.bench_with_input(
             BenchmarkId::new("false_positive_test", name),
@@ -255,7 +264,10 @@ fn print_config_comparison() {
         ("NEW Large (100MB)", LARGE_BLOOM_BITS),
     ];
 
-    println!("{:<20} {:<15} {:<15} {:<15}", "Configuration", "Bits", "Memory (MB)", "Size Reduction");
+    println!(
+        "{:<20} {:<15} {:<15} {:<15}",
+        "Configuration", "Bits", "Memory (MB)", "Size Reduction"
+    );
     println!("{}", "-".repeat(70));
 
     let old_memory = OLD_BLOOM_BITS as f64 / 8.0 / 1024.0 / 1024.0;
@@ -268,7 +280,10 @@ fn print_config_comparison() {
             format!("{:.1}x", old_memory / memory_mb)
         };
 
-        println!("{:<20} {:<15} {:<15.1} {:<15}", name, bits, memory_mb, reduction);
+        println!(
+            "{:<20} {:<15} {:<15.1} {:<15}",
+            name, bits, memory_mb, reduction
+        );
     }
 
     println!();

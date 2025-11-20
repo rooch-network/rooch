@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use metrics::metrics_util::LATENCY_SEC_BUCKETS;
-use prometheus::{register_histogram_vec_with_registry, register_gauge_vec_with_registry, register_counter_vec_with_registry, HistogramVec, GaugeVec, CounterVec, Registry};
+use prometheus::{
+    register_counter_vec_with_registry, register_gauge_vec_with_registry,
+    register_histogram_vec_with_registry, CounterVec, GaugeVec, HistogramVec, Registry,
+};
 
 #[derive(Debug)]
 pub struct StateDBMetrics {

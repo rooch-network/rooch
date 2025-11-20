@@ -9,9 +9,9 @@ pub const METRICS_HOST_PORT: u16 = 9184;
 
 /// This is an option if you need to use the underlying method
 pub use metrics::start_prometheus_server;
+use moveos_store::state_store::metrics::StateDBMetrics;
 use raw_store::metrics::DBMetrics;
 use rooch_indexer::store::metrics::IndexerDBMetrics;
-use moveos_store::state_store::metrics::StateDBMetrics;
 
 /// Use the standard IP (0.0.0.0) and port (9184) to start a new
 /// prometheus server.

@@ -3,8 +3,9 @@
 
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use rand::{Rng, SeedableRng};
+use parking_lot::Mutex;
 use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use rooch_config::prune_config::PruneConfig;
 use rooch_pruner::reachability::ReachableBuilder;
 use rooch_pruner::sweep_expired::SweepExpired;
@@ -12,7 +13,6 @@ use smt::jellyfish_merkle::node_type::Node;
 use smt::SMTObject;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use parking_lot::Mutex;
 
 #[test]
 fn test_pruner_deletion_effectiveness_basic() {
@@ -58,7 +58,7 @@ fn test_pruner_deletion_effectiveness_basic() {
     // Phase 1: Mark reachable nodes
     println!("\n🔍 Phase 1: Marking reachable nodes");
     let bloom = Arc::new(parking_lot::Mutex::new(
-        moveos_common::bloom_filter::BloomFilter::new(8_388_608, 4) // 1MB
+        moveos_common::bloom_filter::BloomFilter::new(8_388_608, 4), // 1MB
     ));
 
     // Mark first 1/3 as reachable
@@ -70,8 +70,14 @@ fn test_pruner_deletion_effectiveness_basic() {
         Ok(scanned_size) => {
             let reachable_time = reachable_start.elapsed();
             println!("   ✅ Reachability build completed:");
-            println!("      Scanned {} nodes in {:?}", scanned_size, reachable_time);
-            println!("      Throughput: {:.0} nodes/sec", scanned_size as f64 / reachable_time.as_secs_f64());
+            println!(
+                "      Scanned {} nodes in {:?}",
+                scanned_size, reachable_time
+            );
+            println!(
+                "      Throughput: {:.0} nodes/sec",
+                scanned_size as f64 / reachable_time.as_secs_f64()
+            );
         }
         Err(e) => {
             println!("   ❌ Reachability build failed: {}", e);
@@ -103,13 +109,25 @@ fn test_pruner_deletion_effectiveness_basic() {
             let sweep_time = sweep_start.elapsed();
             println!("   ✅ Sweep completed:");
             println!("      Deleted {} nodes in {:?}", deleted_count, sweep_time);
-            println!("      Throughput: {:.0} nodes/sec", deleted_count as f64 / sweep_time.as_secs_f64());
-            println!("      Deletion ratio: {:.1}%", (deleted_count as f64 / expired_nodes.len() as f64) * 100.0);
+            println!(
+                "      Throughput: {:.0} nodes/sec",
+                deleted_count as f64 / sweep_time.as_secs_f64()
+            );
+            println!(
+                "      Deletion ratio: {:.1}%",
+                (deleted_count as f64 / expired_nodes.len() as f64) * 100.0
+            );
 
             // Effectiveness assertions
             assert!(deleted_count > 0, "Should delete some nodes");
-            assert!(deleted_count >= (expired_nodes.len() / 2) as u64, "Should delete at least 50% of expired nodes");
-            assert!(sweep_time < Duration::from_secs(30), "Should complete within reasonable time");
+            assert!(
+                deleted_count >= (expired_nodes.len() / 2) as u64,
+                "Should delete at least 50% of expired nodes"
+            );
+            assert!(
+                sweep_time < Duration::from_secs(30),
+                "Should complete within reasonable time"
+            );
 
             println!("   🎯 Deletion effectiveness: ✅ PASSED");
         }
@@ -126,7 +144,7 @@ fn test_pruner_effectiveness_different_scenarios() {
 
     let scenarios = vec![
         ("Small Scale", 500, 0.3, 1_048_576),   // 1MB bloom
-        ("Medium Scale", 2000, 0.3, 8_388_608),  // 1MB bloom
+        ("Medium Scale", 2000, 0.3, 8_388_608), // 1MB bloom
         ("Large Scale", 5000, 0.3, 67_108_864), // 8MB bloom
     ];
 
@@ -163,11 +181,15 @@ fn test_pruner_effectiveness_different_scenarios() {
             }
         }
 
-        println!("   {} nodes, {} expired", test_nodes.len(), expired_nodes.len());
+        println!(
+            "   {} nodes, {} expired",
+            test_nodes.len(),
+            expired_nodes.len()
+        );
 
         // Build reachability
         let bloom = Arc::new(parking_lot::Mutex::new(
-            moveos_common::bloom_filter::BloomFilter::new(bloom_bits, 4)
+            moveos_common::bloom_filter::BloomFilter::new(bloom_bits, 4),
         ));
         // Use first 1/3 as reachable (not overlapping with expired nodes)
         let live_roots: Vec<H256> = test_nodes[0..total_nodes / 3].to_vec();
@@ -198,7 +220,12 @@ fn test_pruner_effectiveness_different_scenarios() {
                 let memory_mb = bloom_bits as f64 / 8.0 / 1024.0 / 1024.0;
 
                 println!("   📈 Results:");
-                println!("      Deleted: {}/{} ({:.1}%)", deleted_count, expired_nodes.len(), deletion_ratio * 100.0);
+                println!(
+                    "      Deleted: {}/{} ({:.1}%)",
+                    deleted_count,
+                    expired_nodes.len(),
+                    deletion_ratio * 100.0
+                );
                 println!("      Time: {:?}", duration);
                 println!("      Throughput: {:.0} nodes/sec", throughput);
                 println!("      Memory: {:.1} MB", memory_mb);
@@ -206,9 +233,13 @@ fn test_pruner_effectiveness_different_scenarios() {
                 // Effectiveness criteria
                 let is_effective = deletion_ratio > 0.3 &&  // At least 30% deletion
                                    throughput > 50.0 &&  // Reasonable throughput
-                                   memory_mb < 100.0;  // Reasonable memory
+                                   memory_mb < 100.0; // Reasonable memory
 
-                let effectiveness = if is_effective { "✅ Effective" } else { "❌ Ineffective" };
+                let effectiveness = if is_effective {
+                    "✅ Effective"
+                } else {
+                    "❌ Ineffective"
+                };
                 println!("      Effectiveness: {}", effectiveness);
 
                 // Basic effectiveness assertions
@@ -236,40 +267,51 @@ fn test_pruner_config_impact_on_deletion() {
     println!("📊 Testing Pruner Configuration Impact on Deletion Effectiveness");
 
     let configs = vec![
-        ("Conservative", PruneConfig {
-            enable: true,
-            boot_cleanup_done: false,
-            scan_batch: 500,
-            delete_batch: 250,
-            interval_s: 120,
-            bloom_bits: 1_048_576, // 1MB
-            enable_reach_seen_cf: false,
-            window_days: 30,
-        }),
-        ("Balanced", PruneConfig {
-            enable: true,
-            boot_cleanup_done: false,
-            scan_batch: 2000,
-            delete_batch: 1000,
-            interval_s: 60,
-            bloom_bits: 8_388_608, // 1MB
-            enable_reach_seen_cf: false,
-            window_days: 30,
-        }),
-        ("Aggressive", PruneConfig {
-            enable: true,
-            boot_cleanup_done: false,
-            scan_batch: 5000,
-            delete_batch: 2500,
-            interval_s: 30,
-            bloom_bits: 67_108_864, // 8MB
-            enable_reach_seen_cf: true,
-            window_days: 30,
-        }),
+        (
+            "Conservative",
+            PruneConfig {
+                enable: true,
+                boot_cleanup_done: false,
+                scan_batch: 500,
+                delete_batch: 250,
+                interval_s: 120,
+                bloom_bits: 1_048_576, // 1MB
+                enable_reach_seen_cf: false,
+                window_days: 30,
+            },
+        ),
+        (
+            "Balanced",
+            PruneConfig {
+                enable: true,
+                boot_cleanup_done: false,
+                scan_batch: 2000,
+                delete_batch: 1000,
+                interval_s: 60,
+                bloom_bits: 8_388_608, // 1MB
+                enable_reach_seen_cf: false,
+                window_days: 30,
+            },
+        ),
+        (
+            "Aggressive",
+            PruneConfig {
+                enable: true,
+                boot_cleanup_done: false,
+                scan_batch: 5000,
+                delete_batch: 2500,
+                interval_s: 30,
+                bloom_bits: 67_108_864, // 8MB
+                enable_reach_seen_cf: true,
+                window_days: 30,
+            },
+        ),
     ];
 
-    println!("{:<12} {:<10} {:<10} {:<10} {:<15} {:<15}",
-             "Config", "Batch", "Interval", "Bloom", "Deleted", "Throughput");
+    println!(
+        "{:<12} {:<10} {:<10} {:<10} {:<15} {:<15}",
+        "Config", "Batch", "Interval", "Bloom", "Deleted", "Throughput"
+    );
     println!("{}", "-".repeat(70));
 
     for (name, config) in configs {
@@ -304,11 +346,15 @@ fn test_pruner_config_impact_on_deletion() {
             }
         }
 
-        println!("   Test data: {} nodes, {} expired", test_nodes.len(), expired_nodes.len());
+        println!(
+            "   Test data: {} nodes, {} expired",
+            test_nodes.len(),
+            expired_nodes.len()
+        );
 
         // Build reachability with config-appropriate bloom filter
         let bloom = Arc::new(parking_lot::Mutex::new(
-            moveos_common::bloom_filter::BloomFilter::new(config.bloom_bits, 4)
+            moveos_common::bloom_filter::BloomFilter::new(config.bloom_bits, 4),
         ));
         let live_roots: Vec<H256> = test_nodes[0..test_size / 3].to_vec();
 
@@ -338,13 +384,25 @@ fn test_pruner_config_impact_on_deletion() {
                 let memory_mb = config.bloom_bits as f64 / 8.0 / 1024.0 / 1024.0;
 
                 println!("   📈 {} Results:", name);
-                println!("      Deleted: {}/{} ({:.1}%)", deleted_count, expired_nodes.len(), deletion_ratio * 100.0);
+                println!(
+                    "      Deleted: {}/{} ({:.1}%)",
+                    deleted_count,
+                    expired_nodes.len(),
+                    deletion_ratio * 100.0
+                );
                 println!("      Time: {:?}", duration);
                 println!("      Throughput: {:.0} nodes/sec", throughput);
                 println!("      Memory: {:.1} MB", memory_mb);
 
-                println!("{:<12} {:<10} {:<10} {:<10.2} {:<7} {:<15.1}",
-                         name, config.scan_batch, config.interval_s, config.bloom_bits, deleted_count, throughput);
+                println!(
+                    "{:<12} {:<10} {:<10} {:<10.2} {:<7} {:<15.1}",
+                    name,
+                    config.scan_batch,
+                    config.interval_s,
+                    config.bloom_bits,
+                    deleted_count,
+                    throughput
+                );
             }
             Err(e) => {
                 println!("   ❌ {} failed: {}", name, e);

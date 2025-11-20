@@ -4,9 +4,9 @@
 use moveos_common::bloom_filter::BloomFilter;
 use parking_lot::Mutex;
 use rand::SeedableRng;
+use rooch_config::prune_config::PruneConfig;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use rooch_config::prune_config::PruneConfig;
 
 /// Test different bloom filter configurations for optimal performance
 #[test]
@@ -23,7 +23,10 @@ fn test_bloom_filter_configuration_optimization() {
     let mut rng = rand::rngs::StdRng::seed_from_u64(42);
 
     for (bits, hash_funcs, name) in test_cases {
-        println!("Testing bloom filter: {} bits, {} hash functions - {}", bits, hash_funcs, name);
+        println!(
+            "Testing bloom filter: {} bits, {} hash functions - {}",
+            bits, hash_funcs, name
+        );
 
         let bloom = Arc::new(Mutex::new(BloomFilter::new(bits, hash_funcs)));
         let test_count = 100000; // Fixed test size for comparison
@@ -51,8 +54,14 @@ fn test_bloom_filter_configuration_optimization() {
         println!("  Insertion time: {:?}", insertion_time);
         println!("  Lookup time: {:?}", lookup_time);
         println!("  Memory usage: {:.2} MB", memory_mb);
-        println!("  Insertion rate: {:.0} ops/sec", test_count as f64 / insertion_time.as_secs_f64());
-        println!("  Lookup rate: {:.0} ops/sec", test_count as f64 / lookup_time.as_secs_f64());
+        println!(
+            "  Insertion rate: {:.0} ops/sec",
+            test_count as f64 / insertion_time.as_secs_f64()
+        );
+        println!(
+            "  Lookup rate: {:.0} ops/sec",
+            test_count as f64 / lookup_time.as_secs_f64()
+        );
         println!();
     }
 }
@@ -168,7 +177,10 @@ fn test_memory_pressure_scenarios() {
 
         println!("  Allocation time: {:?}", allocation_time);
         println!("  Insertion time: {:?}", insertion_time);
-        println!("  Memory allocation rate: {:.0} MB/sec", total_memory_mb / allocation_time.as_secs_f64());
+        println!(
+            "  Memory allocation rate: {:.0} MB/sec",
+            total_memory_mb / allocation_time.as_secs_f64()
+        );
         println!();
     }
 }
@@ -213,7 +225,10 @@ fn test_concurrent_performance() {
         println!("  Total time: {:?}", total_time);
         println!("  Total operations: {}", total_operations as u64);
         println!("  Throughput: {:.0} ops/sec", throughput);
-        println!("  Throughput per thread: {:.0} ops/sec", throughput / thread_count as f64);
+        println!(
+            "  Throughput per thread: {:.0} ops/sec",
+            throughput / thread_count as f64
+        );
         println!();
     }
 }
@@ -257,7 +272,7 @@ fn test_configuration_recommendations() {
 
 fn create_optimized_config(node_count: usize) -> PruneConfig {
     let bloom_bits = match node_count {
-        0..=1_000_000 => 8_000_000,      // 8M bits = 1MB
+        0..=1_000_000 => 8_000_000,           // 8M bits = 1MB
         1_000_001..=10_000_000 => 80_000_000, // 80M bits = 10MB
         _ => 800_000_000,                     // 800M bits = 100MB
     };
@@ -298,12 +313,18 @@ fn test_optimized_configurations() {
     for (name, node_count) in test_cases {
         let config = create_optimized_config(node_count);
 
-        println!("Optimized configuration for {} ({} nodes):", name, node_count);
+        println!(
+            "Optimized configuration for {} ({} nodes):",
+            name, node_count
+        );
         println!("  Bloom filter bits: {}", config.bloom_bits);
         println!("  Scan batch: {}", config.scan_batch);
         println!("  Delete batch: {}", config.delete_batch);
         println!("  Interval: {} seconds", config.interval_s);
-        println!("  Estimated memory: {:.2} MB", config.bloom_bits as f64 / 8.0 / 1024.0 / 1024.0);
+        println!(
+            "  Estimated memory: {:.2} MB",
+            config.bloom_bits as f64 / 8.0 / 1024.0 / 1024.0
+        );
         println!();
     }
 }
