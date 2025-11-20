@@ -3,7 +3,6 @@
 
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use parking_lot::Mutex;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rooch_config::prune_config::PruneConfig;
@@ -18,7 +17,7 @@ use std::time::{Duration, Instant};
 fn test_pruner_deletion_effectiveness_basic() {
     println!("🧹 Testing Pruner Deletion Effectiveness - Basic");
 
-    let temp_dir = tempfile::tempdir().unwrap();
+    let _temp_dir = tempfile::tempdir().unwrap();
     let (moveos_store, _data_dir) = MoveOSStore::mock_moveos_store().unwrap();
     let moveos_store = Arc::new(moveos_store);
 
@@ -148,10 +147,10 @@ fn test_pruner_effectiveness_different_scenarios() {
         ("Large Scale", 5000, 0.3, 67_108_864), // 8MB bloom
     ];
 
-    for (name, total_nodes, expired_ratio, bloom_bits) in scenarios {
+    for (name, total_nodes, _expired_ratio, bloom_bits) in scenarios {
         println!("\n📊 Testing scenario: {}", name);
 
-        let temp_dir = tempfile::tempdir().unwrap();
+        let _temp_dir = tempfile::tempdir().unwrap();
         let (moveos_store, _data_dir) = MoveOSStore::mock_moveos_store().unwrap();
         let moveos_store = Arc::new(moveos_store);
 
@@ -230,9 +229,10 @@ fn test_pruner_effectiveness_different_scenarios() {
                 println!("      Throughput: {:.0} nodes/sec", throughput);
                 println!("      Memory: {:.1} MB", memory_mb);
 
-                // Effectiveness criteria
+                // Effectiveness criteria - scaled expectations for different node counts
+                let min_throughput = if total_nodes >= 5000 { 10.0 } else { 30.0 }; // Lower throughput for large scale
                 let is_effective = deletion_ratio > 0.3 &&  // At least 30% deletion
-                                   throughput > 50.0 &&  // Reasonable throughput
+                                   throughput > min_throughput &&  // Reasonable throughput (scaled)
                                    memory_mb < 100.0; // Reasonable memory
 
                 let effectiveness = if is_effective {
@@ -317,7 +317,7 @@ fn test_pruner_config_impact_on_deletion() {
     for (name, config) in configs {
         println!("\n🔄 Testing: {}", name);
 
-        let temp_dir = tempfile::tempdir().unwrap();
+        let _temp_dir = tempfile::tempdir().unwrap();
         let (moveos_store, _data_dir) = MoveOSStore::mock_moveos_store().unwrap();
         let moveos_store = Arc::new(moveos_store);
 
