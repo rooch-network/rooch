@@ -12,12 +12,12 @@ use std::time::{Duration, Instant};
 #[test]
 fn test_bloom_filter_configuration_optimization() {
     let test_cases = vec![
-        (1_000_000, 4, "small_4hash"),
-        (1_000_000, 8, "small_8hash"),
-        (10_000_000, 4, "medium_4hash"),
-        (10_000_000, 8, "medium_8hash"),
-        (100_000_000, 4, "large_4hash"),
-        (100_000_000, 8, "large_8hash"),
+        (1_048_576, 4, "small_4hash"),       // 2^20
+        (1_048_576, 8, "small_8hash"),       // 2^20
+        (8_388_608, 4, "medium_4hash"),      // 2^23
+        (8_388_608, 8, "medium_8hash"),      // 2^23
+        (67_108_864, 4, "large_4hash"),      // 2^26
+        (67_108_864, 8, "large_8hash"),      // 2^26
     ];
 
     let mut rng = rand::rngs::StdRng::seed_from_u64(42);
@@ -133,9 +133,9 @@ fn test_memory_pressure_scenarios() {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     let scenarios = vec![
-        ("low_memory", 100_000, 1_000_000),
-        ("medium_memory", 500_000, 5_000_000),
-        ("high_memory", 1_000_000, 10_000_000),
+        ("low_memory", 100_000, 1_048_576),        // 2^20
+        ("medium_memory", 500_000, 4_194_304),      // 2^22
+        ("high_memory", 1_000_000, 8_388_608),      // 2^23
     ];
 
     for (name, node_count, bloom_bits) in scenarios {
@@ -196,7 +196,7 @@ fn test_concurrent_performance() {
     for thread_count in thread_counts {
         println!("Testing with {} threads", thread_count);
 
-        let bloom = Arc::new(Mutex::new(BloomFilter::new(10_000_000, 4)));
+        let bloom = Arc::new(Mutex::new(BloomFilter::new(8_388_608, 4))); // 2^23
         let start_time = Instant::now();
 
         let handles: Vec<_> = (0..thread_count)
