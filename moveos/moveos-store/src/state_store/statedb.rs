@@ -138,6 +138,7 @@ impl StateDBStore {
     }
 
     #[named]
+    #[allow(clippy::type_complexity)]
     pub fn change_set_to_nodes(
         &self,
         state_change_set: &mut StateChangeSet,

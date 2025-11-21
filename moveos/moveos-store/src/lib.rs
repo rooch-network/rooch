@@ -192,7 +192,7 @@ impl MoveOSStore {
             self.state_store.change_set_to_nodes(&mut changeset)?;
 
         // Maintain refcount & stale indices
-        for (hash, _) in &changed_nodes {
+        for hash in changed_nodes.keys() {
             let _ = self.prune_store.inc_node_refcount(*hash);
         }
         if !stale_indices.is_empty() {
