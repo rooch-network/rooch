@@ -252,6 +252,7 @@ fn bench_scalability_comparison(c: &mut Criterion) {
     group.finish();
 }
 
+#[allow(dead_code)]
 fn print_config_comparison() {
     println!("===============================================");
     println!("📊 BLOOM FILTER CONFIGURATION COMPARISON");

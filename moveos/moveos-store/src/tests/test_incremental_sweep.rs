@@ -48,7 +48,7 @@ async fn test_incremental_sweep_via_handle_tx_output() {
         .unwrap();
 
     let mut nodes_with_refcount = 0;
-    for (hash, _) in &nodes_v1 {
+    for hash in nodes_v1.keys() {
         let refcount = store.prune_store.get_node_refcount(*hash).unwrap();
         if refcount > 0 {
             nodes_with_refcount += 1;
