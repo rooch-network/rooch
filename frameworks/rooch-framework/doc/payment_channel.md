@@ -14,8 +14,10 @@
 -  [Struct `ChannelCancellationFinalizedEvent`](#0x3_payment_channel_ChannelCancellationFinalizedEvent)
 -  [Struct `SubChannelAuthorizedEvent`](#0x3_payment_channel_SubChannelAuthorizedEvent)
 -  [Struct `PaymentHubWithdrawEvent`](#0x3_payment_channel_PaymentHubWithdrawEvent)
+-  [Struct `LockedUnitConfigUpdatedEvent`](#0x3_payment_channel_LockedUnitConfigUpdatedEvent)
 -  [Struct `ChannelKey`](#0x3_payment_channel_ChannelKey)
 -  [Resource `PaymentHub`](#0x3_payment_channel_PaymentHub)
+-  [Resource `PaymentHubConfig`](#0x3_payment_channel_PaymentHubConfig)
 -  [Resource `PaymentChannel`](#0x3_payment_channel_PaymentChannel)
 -  [Struct `SubChannel`](#0x3_payment_channel_SubChannel)
 -  [Struct `CancellationInfo`](#0x3_payment_channel_CancellationInfo)
@@ -71,6 +73,10 @@
 -  [Function `get_active_channel_count`](#0x3_payment_channel_get_active_channel_count)
 -  [Function `can_withdraw_from_hub`](#0x3_payment_channel_can_withdraw_from_hub)
 -  [Function `get_balance_in_hub`](#0x3_payment_channel_get_balance_in_hub)
+-  [Function `get_required_locked_for_owner`](#0x3_payment_channel_get_required_locked_for_owner)
+-  [Function `get_unlocked_balance_in_hub`](#0x3_payment_channel_get_unlocked_balance_in_hub)
+-  [Function `get_locked_unit`](#0x3_payment_channel_get_locked_unit)
+-  [Function `set_locked_unit`](#0x3_payment_channel_set_locked_unit)
 -  [Function `withdraw_from_hub_internal`](#0x3_payment_channel_withdraw_from_hub_internal)
 
 
@@ -87,8 +93,10 @@
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
+<b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
 <b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
+<b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 <b>use</b> <a href="payment_revenue.md#0x3_payment_revenue">0x3::payment_revenue</a>;
 </code></pre>
 
@@ -202,6 +210,18 @@ Event emitted when funds are withdrawn from a payment hub
 
 
 
+<a name="0x3_payment_channel_LockedUnitConfigUpdatedEvent"></a>
+
+## Struct `LockedUnitConfigUpdatedEvent`
+
+Event emitted when locked unit config is updated
+
+
+<pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_LockedUnitConfigUpdatedEvent">LockedUnitConfigUpdatedEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ChannelKey"></a>
 
 ## Struct `ChannelKey`
@@ -225,6 +245,19 @@ Every account can only have one payment hub, and the hub can not be transferred.
 
 
 <pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_PaymentHub">PaymentHub</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_PaymentHubConfig"></a>
+
+## Resource `PaymentHubConfig`
+
+Global configuration for PaymentHub.
+Stores per-coin locked unit requirement used to reserve balance while channels are active.
+
+
+<pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_PaymentHubConfig">PaymentHubConfig</a> <b>has</b> key
 </code></pre>
 
 
@@ -374,6 +407,15 @@ The specified Verification Method was not found in the sender's DID.
 
 
 
+<a name="0x3_payment_channel_ErrorNotAdmin"></a>
+
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorNotAdmin">ErrorNotAdmin</a>: u64 = 26;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_CHALLENGE_PERIOD_MILLISECONDS"></a>
 
 
@@ -449,6 +491,16 @@ The owner of the payment hub does not match the sender of the channel.
 
 
 <pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorHubOwnerMismatch">ErrorHubOwnerMismatch</a>: u64 = 9;
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_ErrorInsufficientUnlockedBalance"></a>
+
+Insufficient unlocked balance when active channels require reserve.
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorInsufficientUnlockedBalance">ErrorInsufficientUnlockedBalance</a>: u64 = 25;
 </code></pre>
 
 
@@ -709,7 +761,7 @@ Deposits a generic coin into the payment hub of the account
 ## Function `withdraw_from_hub`
 
 Withdraws funds from the payment hub to the owner's account coin store
-Will fail if there are active channels for this coin type
+The owner must have enough unlocked balance after reserving locked_unit_per_coin * active_channels
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_withdraw_from_hub">withdraw_from_hub</a>&lt;CoinType: store, key&gt;(owner: &<a href="">signer</a>, amount: <a href="">u256</a>)
@@ -1172,6 +1224,7 @@ Get the number of active channels for a specific coin type
 ## Function `can_withdraw_from_hub`
 
 Check if withdrawal is allowed for a specific coin type
+Returns true when there is any unlocked balance available to withdraw
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_can_withdraw_from_hub">can_withdraw_from_hub</a>(owner: <b>address</b>, coin_type: <a href="_String">string::String</a>): bool
@@ -1187,6 +1240,54 @@ Get balance of specific coin type in payment hub
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_balance_in_hub">get_balance_in_hub</a>&lt;CoinType: key&gt;(owner: <b>address</b>): <a href="">u256</a>
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_get_required_locked_for_owner"></a>
+
+## Function `get_required_locked_for_owner`
+
+Get required locked balance for an owner and coin type
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_required_locked_for_owner">get_required_locked_for_owner</a>&lt;CoinType: key&gt;(owner: <b>address</b>): <a href="">u256</a>
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_get_unlocked_balance_in_hub"></a>
+
+## Function `get_unlocked_balance_in_hub`
+
+Get unlocked balance in hub after reserving locked units for active channels
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_unlocked_balance_in_hub">get_unlocked_balance_in_hub</a>&lt;CoinType: key&gt;(owner: <b>address</b>): <a href="">u256</a>
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_get_locked_unit"></a>
+
+## Function `get_locked_unit`
+
+Get per-coin locked unit configuration
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_locked_unit">get_locked_unit</a>(coin_type: <a href="_String">string::String</a>): <a href="">u256</a>
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_set_locked_unit"></a>
+
+## Function `set_locked_unit`
+
+Config API: set locked unit for a coin type
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_set_locked_unit">set_locked_unit</a>&lt;CoinType: store, key&gt;(<a href="">account</a>: &<a href="">signer</a>, locked_unit: <a href="">u256</a>)
 </code></pre>
 
 

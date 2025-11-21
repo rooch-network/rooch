@@ -21,10 +21,12 @@ module rooch_framework::genesis {
     use rooch_framework::onchain_config;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use rooch_framework::did;
+    use rooch_framework::payment_channel;
 
     const ErrorGenesisInit: u64 = 1;
 
     const GENESIS_INIT_GAS_AMOUNT: u256 = 500000000_00000000u256;
+    const GENESIS_INIT_RGAS_LOCKED_UNIT: u256 = 100_00000000u256;
 
     /// GenesisContext is a genesis init parameters in the TxContext.
     struct GenesisContext has copy,store,drop{
@@ -88,7 +90,23 @@ module rooch_framework::genesis {
             gas_coin::faucet(sequencer_addr, GENESIS_INIT_GAS_AMOUNT);
         };
 
+        init_v23();
+        init_v25(genesis_account);
+    }
+
+    public entry fun init_v23(){
         did::genesis_init();
+    }
+
+    public entry fun init_v25(sender: &signer){
+        // Only set locked unit on mainnet, keep 0 for test/dev networks
+        if(chain_id::is_main()){
+            payment_channel::set_locked_unit<gas_coin::RGas>(sender, GENESIS_INIT_RGAS_LOCKED_UNIT);
+        };
+    }
+
+    public fun genesis_init_rgas_locked_unit() : u256 {
+        GENESIS_INIT_RGAS_LOCKED_UNIT
     }
 
     #[test_only]

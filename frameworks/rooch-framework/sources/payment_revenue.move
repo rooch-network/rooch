@@ -324,114 +324,28 @@ module rooch_framework::payment_revenue {
         }
     }
 
+    // === Test Only Functions ===
+
     #[test_only]
-    use rooch_framework::genesis;
+    /// Test-only function to access borrow_or_create_revenue_hub
+    public fun borrow_or_create_revenue_hub_for_test(owner: address): &mut Object<PaymentRevenueHub> {
+        borrow_or_create_revenue_hub(owner)
+    }
+
     #[test_only]
-    use rooch_framework::gas_coin::{Self, RGas};
+    /// Test-only function to access revenue_event_handle_id
+    public fun revenue_event_handle_id_for_test<T>(hub_id: ObjectID): ObjectID {
+        revenue_event_handle_id<T>(hub_id)
+    }
+
     #[test_only]
-    use std::option;
-
-    #[test]
-    fun test_revenue_hub_creation() {
-        genesis::init_for_test();
-        
-        let test_addr = @0x42;
-        
-        // Initially no revenue hub exists
-        assert!(!revenue_hub_exists(test_addr), 1);
-        assert!(get_revenue_balance<RGas>(test_addr) == 0, 2);
-        
-        // Create revenue hub
-        let hub_obj = borrow_or_create_revenue_hub(test_addr);
-        let _hub = object::borrow(hub_obj);
-        
-        // Now revenue hub exists
-        assert!(revenue_hub_exists(test_addr), 3);
-        assert!(get_revenue_balance<RGas>(test_addr) == 0, 4);
+    /// Test-only function to deposit revenue (exposes friend function for testing)
+    public fun deposit_revenue_generic_for_test(
+        account: address,
+        coin: GenericCoin,
+        source: RevenueSource,
+    ) {
+        deposit_revenue_generic(account, coin, source);
     }
 
-    #[test]
-    fun test_revenue_deposit_and_withdrawal() {
-        genesis::init_for_test();
-        
-        let test_addr = @0x42;
-        let test_account = moveos_std::account::create_signer_for_testing(test_addr);
-        
-        // Create some test coins
-        let test_coin = gas_coin::mint_for_test(1000u256);
-        let generic_coin = coin::convert_coin_to_generic_coin(test_coin);
-        
-        // Deposit revenue
-        let source = create_revenue_source(
-            std::string::utf8(b"test_source"),
-            option::none(),
-            std::string::utf8(b"Test deposit")
-        );
-        deposit_revenue_generic(test_addr, generic_coin, source);
-        
-        // Check balance
-        assert!(get_revenue_balance<RGas>(test_addr) == 1000, 1);
-        assert!(get_revenue_by_source(test_addr, std::string::utf8(b"test_source"), type_info::type_name<RGas>()) == 1000, 2);
-        
-        // Withdraw revenue
-        withdraw_revenue<RGas>(&test_account, 500);
-        
-        // Check remaining balance
-        assert!(get_revenue_balance<RGas>(test_addr) == 500, 3);
-        
-        // Check account coin store received the withdrawal
-        assert!(account_coin_store::balance<RGas>(test_addr) == 500, 4);
-    }
-
-
-    #[test]
-    #[expected_failure(abort_code = ErrorInsufficientBalance, location = Self)]
-    fun test_withdraw_insufficient_balance() {
-        genesis::init_for_test();
-        
-        let test_addr = @0x42;
-        let test_account = moveos_std::account::create_signer_for_testing(test_addr);
-        
-        // Try to withdraw without any revenue
-        withdraw_revenue<RGas>(&test_account, 100);
-    }
-
-    #[test]
-    fun test_preview_withdrawal_fee() {
-        genesis::init_for_test();
-        
-        let test_addr = @0x42;
-        
-        // Test fee preview (currently returns zero fee)
-        let (gross, fee, net) = preview_withdrawal_fee<RGas>(test_addr, 1000);
-        assert!(gross == 1000, 1);
-        assert!(fee == 0, 2);
-        assert!(net == 1000, 3);
-    }
-
-    #[test]
-    fun test_revenue_event_handles_are_per_hub_and_type() {
-        genesis::init_for_test();
-
-        let addr1 = @0x42;
-        let addr2 = @0x43;
-
-        let hub1 = borrow_or_create_revenue_hub(addr1);
-        let hub2 = borrow_or_create_revenue_hub(addr2);
-
-        let hub1_id = object::id(hub1);
-        let hub2_id = object::id(hub2);
-
-        let hub1_deposit_handle = revenue_event_handle_id<RevenueDepositedEvent>(hub1_id);
-        let hub1_deposit_handle_again = revenue_event_handle_id<RevenueDepositedEvent>(hub1_id);
-        let hub1_withdraw_handle = revenue_event_handle_id<RevenueWithdrawnEvent>(hub1_id);
-        let hub2_deposit_handle = revenue_event_handle_id<RevenueDepositedEvent>(hub2_id);
-
-        // Same hub and event type -> same handle
-        assert!(hub1_deposit_handle == hub1_deposit_handle_again, 1);
-        // Different hubs -> different handle ids
-        assert!(hub1_deposit_handle != hub2_deposit_handle, 2);
-        // Different event types on same hub -> different handles
-        assert!(hub1_deposit_handle != hub1_withdraw_handle, 3);
-    }
 }
