@@ -24,6 +24,7 @@ module rooch_framework::payment_channel_test {
     use rooch_framework::session_key;
     use rooch_framework::bitcoin_address;
     use rooch_framework::payment_revenue;
+    use rooch_framework::core_addresses;
 
     // === Test Constants ===
     const TEST_AMOUNT_100: u256 = 100;
@@ -195,16 +196,34 @@ module rooch_framework::payment_channel_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = payment_channel::ErrorActiveChannelExists)]
-    fun test_1_4_withdraw_from_hub_with_active_channels() {
+    fun test_1_4_withdraw_from_hub_with_active_channels_respects_unlocked() {
         let (alice_signer, alice_addr, _bob_signer, bob_addr, _vm_id) = setup_payment_channel_test();
-        
-        // Setup: Deposit and open channel
+        let genesis_signer = account::create_signer_for_testing(core_addresses::genesis_address());
+
+        // locked_unit = 10; active channels = 1 => unlocked = 90
+        payment_channel::set_locked_unit<RGas>(&genesis_signer, TEST_AMOUNT_10);
+
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
-        
-        // Test: Attempt withdrawal with active channel - should abort
+
+        let initial_balance = account_coin_store::balance<RGas>(alice_addr);
         payment_channel::withdraw_from_hub_entry<RGas>(&alice_signer, TEST_AMOUNT_50);
+        let final_balance = account_coin_store::balance<RGas>(alice_addr);
+        assert!(final_balance == initial_balance + TEST_AMOUNT_50, 1006);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = payment_channel::ErrorInsufficientUnlockedBalance)]
+    fun test_1_5_withdraw_exceed_unlocked_should_fail() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, _vm_id) = setup_payment_channel_test();
+        let genesis_signer = account::create_signer_for_testing(core_addresses::genesis_address());
+
+        // locked_unit = 50; active channels = 1 => unlocked = 50
+        payment_channel::set_locked_unit<RGas>(&genesis_signer, TEST_AMOUNT_50);
+
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+        payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
+        payment_channel::withdraw_from_hub_entry<RGas>(&alice_signer, 60);
     }
 
     // === Test Group 2: Channel / Sub-Channel Lifecycle ===
@@ -656,7 +675,6 @@ module rooch_framework::payment_channel_test {
     // === Test Group 7: Withdrawal Security ===
 
     #[test]
-    #[expected_failure(abort_code = payment_channel::ErrorActiveChannelExists)]
     fun test_7_1_alice_withdraw_with_active_channel() {
         let (alice_signer, alice_addr, _bob_signer, bob_addr, _vm_id) = setup_payment_channel_test();
         
@@ -664,8 +682,11 @@ module rooch_framework::payment_channel_test {
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
         
-        // Test: Alice attempts withdraw_from_hub - should fail
+        // Test: Alice withdraws with default locked_unit (0) even with active channel
+        let initial_balance = account_coin_store::balance<RGas>(alice_addr);
         payment_channel::withdraw_from_hub_entry<RGas>(&alice_signer, TEST_AMOUNT_50);
+        let final_balance = account_coin_store::balance<RGas>(alice_addr);
+        assert!(final_balance == initial_balance + TEST_AMOUNT_50, 7000);
     }
 
     #[test]

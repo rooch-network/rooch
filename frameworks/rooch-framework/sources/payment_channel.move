@@ -32,6 +32,7 @@ module rooch_framework::payment_channel {
     use rooch_framework::account_coin_store;
     use rooch_framework::chain_id;
     use rooch_framework::payment_revenue;
+    use rooch_framework::core_addresses;
 
     friend rooch_framework::transaction_gas;
 
@@ -84,6 +85,8 @@ module rooch_framework::payment_channel {
     const ErrorInvalidChainId: u64 = 23;
     /// The SubRAV version is not supported.
     const ErrorUnsupportedVersion: u64 = 24;
+    /// Insufficient unlocked balance when active channels require reserve.
+    const ErrorInsufficientUnlockedBalance: u64 = 25;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -187,6 +190,12 @@ module rooch_framework::payment_channel {
         // Record the number of active channels for each coin type
         active_channels: Table<String, u64>,
         //TODO add more settings to channel
+    }
+
+    /// Global configuration for PaymentHub.
+    /// Stores per-coin locked unit requirement used to reserve balance while channels are active.
+    struct PaymentHubConfig has key {
+        locked_unit_per_coin: Table<String, u256>,
     }
 
     /// A lightweight object representing a payment relationship, linked to a PaymentHub.
@@ -334,22 +343,19 @@ module rooch_framework::payment_channel {
     }
 
     /// Withdraws funds from the payment hub to the owner's account coin store
-    /// Will fail if there are active channels for this coin type
+    /// The owner must have enough unlocked balance after reserving locked_unit_per_coin * active_channels
     public fun withdraw_from_hub<CoinType: key + store>(
         owner: &signer,
         amount: u256,
     ) {
         let owner_addr = signer::address_of(owner);
+        let coin_type_name = type_info::type_name<CoinType>();
+        let coin_type_for_calc = copy coin_type_name;
+        let unlocked = get_unlocked_balance_in_hub_with_name_internal(owner_addr, coin_type_for_calc);
+        assert!(amount <= unlocked, ErrorInsufficientUnlockedBalance);
+
         let hub_obj = borrow_or_create_payment_hub(owner_addr);
         let hub = object::borrow_mut(hub_obj);
-        
-        // Check if there are active channels for this coin type
-        let coin_type_name = type_info::type_name<CoinType>();
-        if (table::contains(&hub.active_channels, coin_type_name)) {
-            let count = table::borrow(&hub.active_channels, coin_type_name);
-            assert!(*count == 0, ErrorActiveChannelExists);
-        };
-        
         // Withdraw from multi_coin_store and deposit to account coin store
         let coin = multi_coin_store::withdraw_by_type<CoinType>(&mut hub.multi_coin_store, amount);
         account_coin_store::deposit<CoinType>(owner_addr, coin);
@@ -1391,8 +1397,9 @@ module rooch_framework::payment_channel {
     }
 
     /// Check if withdrawal is allowed for a specific coin type
+    /// Returns true when there is any unlocked balance available to withdraw
     public fun can_withdraw_from_hub(owner: address, coin_type: String): bool {
-        get_active_channel_count(owner, coin_type) == 0
+        get_unlocked_balance_in_hub_with_name_internal(owner, coin_type) > 0u256
     }
 
     // === Internal Helper Functions ===
@@ -1468,6 +1475,50 @@ module rooch_framework::payment_channel {
         multi_coin_store::balance(&hub.multi_coin_store, coin_type)
     }
 
+    /// Get required locked balance for an owner and coin type
+    public fun get_required_locked_for_owner<CoinType: key>(owner: address): u256 {
+        let coin_type = type_info::type_name<CoinType>();
+        get_required_locked_for_owner_with_name(owner, coin_type)
+    }
+
+    /// Get unlocked balance in hub after reserving locked units for active channels
+    public fun get_unlocked_balance_in_hub<CoinType: key>(owner: address): u256 {
+        let coin_type = type_info::type_name<CoinType>();
+        get_unlocked_balance_in_hub_with_name_internal(owner, coin_type)
+    }
+
+    /// Get per-coin locked unit configuration
+    public fun get_locked_unit(coin_type: String): u256 {
+        if (!payment_hub_config_exists()) {
+            return 0u256
+        };
+
+        let config_id = object::named_object_id<PaymentHubConfig>();
+        let config_obj = object::borrow_object<PaymentHubConfig>(config_id);
+        let config = object::borrow(config_obj);
+        let coin_type_contains = copy coin_type;
+        if (table::contains(&config.locked_unit_per_coin, coin_type_contains)) {
+            *table::borrow(&config.locked_unit_per_coin, coin_type)
+        } else {
+            0u256
+        }
+    }
+
+    /// Admin API: set locked unit for a coin type
+    public entry fun set_locked_unit<CoinType: key + store>(account: &signer, locked_unit: u256) {
+        // Restrict to genesis/framework account for now; can later swap to governance cap
+        core_addresses::assert_rooch_genesis(account);
+
+        let config = borrow_or_create_payment_hub_config();
+        let coin_type = type_info::type_name<CoinType>();
+        let coin_type_contains = copy coin_type;
+        if (table::contains(&config.locked_unit_per_coin, coin_type_contains)) {
+            let current = table::borrow_mut(&mut config.locked_unit_per_coin, coin_type);
+            *current = locked_unit;
+        } else {
+            table::add(&mut config.locked_unit_per_coin, coin_type, locked_unit);
+        };
+    }
 
     /// Internal function to withdraw specific coin type from payment hub 
     /// (no signer required and does not check for active channels)
@@ -1478,6 +1529,60 @@ module rooch_framework::payment_channel {
         let coin_type = type_info::type_name<CoinType>();
         let generic_coin = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type, amount);
         coin::convert_generic_coin_to_coin<CoinType>(generic_coin)
+    }
+
+    // Internal: obtain or create global config object
+    fun borrow_or_create_payment_hub_config(): &mut PaymentHubConfig {
+        let config_id = object::named_object_id<PaymentHubConfig>();
+        if (!object::exists_object_with_type<PaymentHubConfig>(config_id)) {
+            let config = PaymentHubConfig { locked_unit_per_coin: table::new<String, u256>() };
+            let obj = object::new_named_object(config);
+            object::transfer_extend(obj, @rooch_framework);
+        };
+
+        let config_obj = object::borrow_mut_object_extend<PaymentHubConfig>(config_id);
+        object::borrow_mut(config_obj)
+    }
+
+    fun payment_hub_config_exists(): bool {
+        let config_id = object::named_object_id<PaymentHubConfig>();
+        object::exists_object_with_type<PaymentHubConfig>(config_id)
+    }
+
+    fun get_locked_unit_for_coin(coin_type: String): u256 {
+        get_locked_unit(coin_type)
+    }
+
+    fun get_required_locked_for_owner_with_name(owner: address, coin_type: String): u256 {
+        let locked_unit = get_locked_unit_for_coin(copy coin_type);
+        if (locked_unit == 0u256) {
+            return 0u256
+        };
+
+        let active_count = get_active_channel_count(owner, coin_type);
+        locked_unit * (active_count as u256)
+    }
+
+    fun get_unlocked_balance_in_hub_with_name_internal(owner: address, coin_type: String): u256 {
+        if (!payment_hub_exists(owner)) {
+            return 0u256
+        };
+
+        let hub_id = get_payment_hub_id(owner);
+        let hub_obj = object::borrow_object<PaymentHub>(hub_id);
+        get_unlocked_balance_in_hub_with_name(hub_obj, owner, coin_type)
+    }
+
+    fun get_unlocked_balance_in_hub_with_name(hub_obj: &Object<PaymentHub>, owner: address, coin_type: String): u256 {
+        let hub = object::borrow(hub_obj);
+        let coin_type_for_balance = copy coin_type;
+        let balance = multi_coin_store::balance(&hub.multi_coin_store, coin_type_for_balance);
+        let required = get_required_locked_for_owner_with_name(owner, coin_type);
+        if (balance > required) {
+            balance - required
+        } else {
+            0u256
+        }
     }
 
     #[test_only]
