@@ -33,6 +33,7 @@ module rooch_framework::payment_channel {
     use rooch_framework::chain_id;
     use rooch_framework::payment_revenue;
     use rooch_framework::core_addresses;
+    use rooch_framework::onchain_config;
 
     friend rooch_framework::transaction_gas;
 
@@ -1509,10 +1510,10 @@ module rooch_framework::payment_channel {
         }
     }
 
-    /// Admin API: set locked unit for a coin type
+    /// Config API: set locked unit for a coin type
     public entry fun set_locked_unit<CoinType: key + store>(account: &signer, locked_unit: u256) {
-        // Restrict to genesis/framework account for now; can later swap to governance cap
-        core_addresses::assert_rooch_genesis(account);
+        // Restrict to config account for now; can later swap to governance cap
+        onchain_config::ensure_admin(account);
 
         let config = borrow_or_create_payment_hub_config();
         let coin_type = type_info::type_name<CoinType>();

@@ -21,6 +21,7 @@ module rooch_framework::genesis {
     use rooch_framework::onchain_config;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use rooch_framework::did;
+    use rooch_framework::payment_channel;
 
     const ErrorGenesisInit: u64 = 1;
 
@@ -88,7 +89,16 @@ module rooch_framework::genesis {
             gas_coin::faucet(sequencer_addr, GENESIS_INIT_GAS_AMOUNT);
         };
 
+        init_v23();
+        init_v25(&genesis_account);
+    }
+
+    public entry fun init_v23(){
         did::genesis_init();
+    }
+
+    public entry fun init_v25(sender: &signer){
+        payment_channel::set_locked_unit<RGas>(sender, 100_00000000u256);
     }
 
     #[test_only]
