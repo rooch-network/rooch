@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::incremental_sweep::IncrementalSweep;
 use crate::reachability::ReachableBuilder;
 use crate::sweep_expired::SweepExpired;
-use crate::incremental_sweep::IncrementalSweep;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::config_store::ConfigStore;
@@ -267,13 +267,11 @@ impl StatePruner {
                                                 .with_label_values(&["SweepExpired"])
                                                 .inc_by(estimated_bytes_reclaimed as f64);
                                         }
-                                    } else {
-                                        if let Some(ref metrics) = metrics {
-                                            metrics
-                                                .pruner_error_count
-                                                .with_label_values(&["sweep_batch", "SweepExpired"])
-                                                .inc();
-                                        }
+                                    } else if let Some(ref metrics) = metrics {
+                                        metrics
+                                            .pruner_error_count
+                                            .with_label_values(&["sweep_batch", "SweepExpired"])
+                                            .inc();
                                     }
                                     processed_count += 1000;
                                     batch_roots = Vec::with_capacity(1000);
@@ -313,14 +311,12 @@ impl StatePruner {
                                         .with_label_values(&["SweepExpired"])
                                         .inc_by(estimated_bytes_reclaimed as f64);
                                 }
-                            } else {
-                                if let Some(ref metrics) = metrics {
+                            } else if let Some(ref metrics) = metrics {
                                     metrics
                                         .pruner_error_count
                                         .with_label_values(&["sweep_final", "SweepExpired"])
                                         .inc();
                                 }
-                            }
                         }
 
                         let sweep_duration = sweep_start_time.elapsed();
@@ -386,7 +382,9 @@ impl StatePruner {
                             // Use incremental sweep to clean up remaining stale nodes
                             let incremental_sweeper = IncrementalSweep::new(moveos_store.clone());
 
-                            match incremental_sweeper.sweep(snapshot.state_root, cfg.incremental_sweep_batch) {
+                            match incremental_sweeper
+                                .sweep(snapshot.state_root, cfg.incremental_sweep_batch)
+                            {
                                 Ok(deleted_count) => {
                                     if deleted_count > 0 {
                                         info!("Incremental sweep deleted {} nodes", deleted_count);
@@ -407,7 +405,10 @@ impl StatePruner {
                                     if let Some(ref metrics) = metrics {
                                         metrics
                                             .pruner_error_count
-                                            .with_label_values(&["incremental_sweep", "Incremental"])
+                                            .with_label_values(&[
+                                                "incremental_sweep",
+                                                "Incremental",
+                                            ])
                                             .inc();
                                     }
                                 }
