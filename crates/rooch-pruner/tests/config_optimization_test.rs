@@ -299,6 +299,8 @@ fn create_optimized_config(node_count: usize) -> PruneConfig {
         bloom_bits,
         enable_reach_seen_cf: false,
         window_days: 30,
+        enable_incremental_sweep: true,
+        incremental_sweep_batch: 1000,
     }
 }
 

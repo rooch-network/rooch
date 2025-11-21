@@ -278,6 +278,8 @@ fn test_pruner_config_impact_on_deletion() {
                 bloom_bits: 1_048_576, // 1MB
                 enable_reach_seen_cf: false,
                 window_days: 30,
+                enable_incremental_sweep: true,
+                incremental_sweep_batch: 500,
             },
         ),
         (
@@ -291,6 +293,8 @@ fn test_pruner_config_impact_on_deletion() {
                 bloom_bits: 8_388_608, // 1MB
                 enable_reach_seen_cf: false,
                 window_days: 30,
+                enable_incremental_sweep: true,
+                incremental_sweep_batch: 1000,
             },
         ),
         (
@@ -304,6 +308,8 @@ fn test_pruner_config_impact_on_deletion() {
                 bloom_bits: 67_108_864, // 8MB
                 enable_reach_seen_cf: true,
                 window_days: 30,
+                enable_incremental_sweep: true,
+                incremental_sweep_batch: 2000,
             },
         ),
     ];

@@ -3,6 +3,7 @@
 
 use crate::reachability::ReachableBuilder;
 use crate::sweep_expired::SweepExpired;
+use crate::incremental_sweep::IncrementalSweep;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::config_store::ConfigStore;
@@ -365,14 +366,64 @@ impl StatePruner {
                         info!("Transitioning back to Incremental phase");
                     }
                     PrunePhase::Incremental => {
-                        info!("Incremental phase disabled, do Nothing");
-                        // moveos_store
-                        //     .save_prune_meta_phase(PrunePhase::BuildReach)
-                        //     .ok();
+                        if !cfg.enable_incremental_sweep {
+                            info!("Incremental sweep disabled in config, skipping");
+                            // Transition back to BuildReach if incremental sweep is disabled
+                            moveos_store
+                                .save_prune_meta_phase(PrunePhase::BuildReach)
+                                .ok();
+                            info!("Skipping Incremental phase, transitioning to BuildReach");
+                        } else {
+                            info!("Starting Incremental sweep phase");
+
+                            // Load snapshot to determine cutoff root
+                            let snapshot = moveos_store
+                                .load_prune_meta_snapshot()
+                                .ok()
+                                .flatten()
+                                .unwrap_or_default();
+
+                            // Use incremental sweep to clean up remaining stale nodes
+                            let incremental_sweeper = IncrementalSweep::new(moveos_store.clone());
+
+                            match incremental_sweeper.sweep(snapshot.state_root, cfg.incremental_sweep_batch) {
+                                Ok(deleted_count) => {
+                                    if deleted_count > 0 {
+                                        info!("Incremental sweep deleted {} nodes", deleted_count);
+                                    } else {
+                                        info!("Incremental sweep found no nodes to delete");
+                                    }
+
+                                    // Record metrics for nodes deleted during incremental sweep
+                                    if let Some(ref metrics) = metrics {
+                                        metrics
+                                            .pruner_sweep_nodes_deleted
+                                            .with_label_values(&["incremental"])
+                                            .observe(deleted_count as f64);
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!("Incremental sweep failed: {}", e);
+                                    if let Some(ref metrics) = metrics {
+                                        metrics
+                                            .pruner_error_count
+                                            .with_label_values(&["incremental_sweep", "Incremental"])
+                                            .inc();
+                                    }
+                                }
+                            }
+
+                            // After incremental sweep is complete, transition back to BuildReach
+                            moveos_store
+                                .save_prune_meta_phase(PrunePhase::BuildReach)
+                                .ok();
+                            info!("Completed Incremental phase, transitioning to BuildReach");
+                        }
+
                         // Check exit signal frequently
                         if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok()
                         {
-                            info!("Pruner thread stopping during sweep");
+                            info!("Pruner thread stopping during incremental sweep");
                             return;
                         }
                     }

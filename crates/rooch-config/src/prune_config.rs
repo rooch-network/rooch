@@ -44,6 +44,14 @@ pub struct PruneConfig {
     /// Window size in days for reachable roots (default 30).
     #[clap(long, default_value_t = 30)]
     pub window_days: u64,
+
+    /// Enable incremental sweep phase for continuous cleanup (default true).
+    #[clap(long, default_value_t = true)]
+    pub enable_incremental_sweep: bool,
+
+    /// Batch size for incremental sweep operations (default 1000).
+    #[clap(long, default_value_t = 1000)]
+    pub incremental_sweep_batch: usize,
 }
 
 impl Default for PruneConfig {
@@ -57,6 +65,8 @@ impl Default for PruneConfig {
             bloom_bits: 8589934592, // 2^33
             enable_reach_seen_cf: false,
             window_days: 30,
+            enable_incremental_sweep: true,
+            incremental_sweep_batch: 1000,
         }
     }
 }
