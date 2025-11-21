@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use prometheus::{
-    register_counter_vec_with_registry, register_histogram_vec_with_registry, register_gauge_vec_with_registry,
-    CounterVec, GaugeVec, HistogramVec, Registry,
+    register_counter_vec_with_registry, register_gauge_vec_with_registry,
+    register_histogram_vec_with_registry, CounterVec, GaugeVec, HistogramVec, Registry,
 };
 
 #[derive(Debug)]

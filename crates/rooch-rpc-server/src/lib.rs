@@ -224,7 +224,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         ..Default::default()
     };
 
-      let pruner = StatePruner::start(
+    let pruner = StatePruner::start(
         Arc::new(prune_cfg),
         Arc::new(moveos_store.clone()),
         Arc::new(rooch_store.clone()),
