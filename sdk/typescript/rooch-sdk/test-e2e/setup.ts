@@ -35,7 +35,7 @@ export class TestBox extends TestBoxA {
 
   async loadRoochEnv(
     target: RoochContainer | 'local' | 'container' = 'local',
-    port: number = 6768,
+    port: number = 0, // Use 0 to auto-assign available port
   ): Promise<void> {
     await super.loadRoochEnv(target, port)
     const roochServerAddress = super.getRoochServerAddress()

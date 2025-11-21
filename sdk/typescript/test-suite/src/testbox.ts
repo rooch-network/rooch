@@ -104,9 +104,21 @@ export class TestBox {
 
     // The container test in the linux environment is incomplete, so use it first
     if (target === 'local') {
-      if (port === 0) {
+      // Always use dynamic port in local mode to avoid conflicts
+      // Check if the requested port is available, if not, get a random one
+      if (port !== 0) {
+        const available = await isPortAvailable(port)
+        if (!available) {
+          log(`Port ${port} is not available, getting a random port instead`)
+          port = await getUnusedPort()
+        } else {
+          log(`Port ${port} is available`)
+        }
+      } else {
         port = await getUnusedPort()
       }
+
+      log(`Using port ${port} for Rooch server`)
 
       // Generate a random port for metrics
       const metricsPort = await getUnusedPort()
@@ -139,6 +151,8 @@ export class TestBox {
 
       this.roochContainer = parseInt(result.toString().trim(), 10)
       this.roochPort = port
+
+      log(`Rooch server started with PID ${this.roochContainer} on port ${port}`)
 
       return
     }
@@ -201,12 +215,59 @@ export class TestBox {
     this.ordContainer?.stop()
 
     if (typeof this.roochContainer === 'number') {
-      process.kill(this.roochContainer)
+      const pid = this.roochContainer
+      log(`Cleaning up Rooch server process with PID: ${pid}`)
+
+      try {
+        // Try graceful shutdown first with SIGTERM
+        process.kill(pid, 'SIGTERM')
+        log(`Sent SIGTERM to process ${pid}`)
+
+        // Wait a bit, then force kill if process still exists
+        setTimeout(() => {
+          try {
+            // Check if process still exists (will throw if not)
+            process.kill(pid, 0)
+            // Process still exists, force kill
+            log(`Process ${pid} still running, sending SIGKILL`)
+            process.kill(pid, 'SIGKILL')
+          } catch (e) {
+            // Process already dead, this is expected
+            log(`Process ${pid} already terminated`)
+          }
+        }, 2000)
+      } catch (e: any) {
+        // Process might already be dead
+        log(`Failed to kill process ${pid}: ${e.message}`)
+      }
+
+      // Fallback: kill any process listening on the port
+      if (this.roochPort) {
+        try {
+          log(`Cleaning up any process on port ${this.roochPort}`)
+          const { execSync } = require('child_process')
+          // Use platform-appropriate command
+          if (process.platform === 'win32') {
+            execSync(
+              `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${this.roochPort}') do taskkill /F /PID %a`,
+              { stdio: 'ignore' },
+            )
+          } else {
+            execSync(`lsof -ti:${this.roochPort} | xargs kill -9 2>/dev/null || true`, {
+              stdio: 'ignore',
+            })
+          }
+        } catch (e) {
+          // Ignore errors - port might already be free
+          log(`Port cleanup completed (or was already free)`)
+        }
+      }
     } else {
       this.roochContainer?.stop()
     }
 
     this.tmpDir.removeCallback()
+    log('Environment cleanup completed')
   }
 
   delay(second: number) {
@@ -241,6 +302,7 @@ export class TestBox {
     args: string[] | string,
     waitFor: string,
     envs: string[] = [],
+    timeoutMs: number = 30000, // 30 seconds default timeout
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       const command = this.buildRoochCommand(args, envs)
@@ -249,33 +311,57 @@ export class TestBox {
       let output = ''
       let pidOutput = ''
 
+      // Set up timeout
+      const timeout = setTimeout(() => {
+        child.kill('SIGTERM')
+        // Force kill after 2 seconds if SIGTERM doesn't work
+        setTimeout(() => {
+          try {
+            child.kill('SIGKILL')
+          } catch (e) {
+            // Process already dead, ignore
+          }
+        }, 2000)
+        reject(new Error(`Timeout (${timeoutMs}ms) waiting for: ${waitFor}\nOutput so far: ${output}`))
+      }, timeoutMs)
+
       child.on('spawn', () => {
         if (child.pid) {
           pidOutput = child.pid.toString()
+          log(`Spawned rooch process with PID: ${pidOutput}`)
         } else {
+          clearTimeout(timeout)
           reject(new Error('Failed to obtain PID of the process'))
         }
       })
 
       child.stdout.on('data', (data) => {
         output += data.toString()
+        log(`[rooch stdout]: ${data.toString().trim()}`)
 
         if (output.includes(waitFor)) {
+          clearTimeout(timeout)
+          log(`Found expected output: ${waitFor}`)
           resolve(pidOutput.trim())
         }
       })
 
       child.stderr.on('data', (data) => {
+        const errStr = data.toString()
+        log(`[rooch stderr]: ${errStr.trim()}`)
         process.stderr.write(data)
       })
 
       child.on('error', (error) => {
+        clearTimeout(timeout)
+        log(`Process error: ${error.message}`)
         reject(error)
       })
 
-      child.on('close', () => {
+      child.on('close', (code) => {
+        clearTimeout(timeout)
         if (!output.includes(waitFor)) {
-          reject(new Error('Expected output not found'))
+          reject(new Error(`Process exited with code ${code}. Expected output not found: ${waitFor}\nFull output: ${output}`))
         }
       })
     })
@@ -421,6 +507,29 @@ export class TestBox {
   }
 }
 
+/**
+ * Check if a port is available for binding
+ * @param port Port number to check
+ * @returns Promise that resolves to true if port is available, false otherwise
+ */
+export async function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = net.createServer()
+    server.once('error', () => {
+      resolve(false)
+    })
+    server.once('listening', () => {
+      server.close()
+      resolve(true)
+    })
+    server.listen(port)
+  })
+}
+
+/**
+ * Get an unused port by binding to port 0 (OS will assign a free port)
+ * @returns Promise that resolves to an available port number
+ */
 export async function getUnusedPort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer()
