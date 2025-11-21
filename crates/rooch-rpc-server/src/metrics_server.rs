@@ -9,7 +9,6 @@ pub const METRICS_HOST_PORT: u16 = 9184;
 
 /// This is an option if you need to use the underlying method
 pub use metrics::start_prometheus_server;
-use moveos_store::state_store::metrics::StateDBMetrics;
 use raw_store::metrics::DBMetrics;
 use rooch_indexer::store::metrics::IndexerDBMetrics;
 
@@ -58,5 +57,5 @@ pub fn start_basic_prometheus_server() -> Registry {
 pub fn init_metrics(prometheus_registry: &Registry) {
     DBMetrics::init(prometheus_registry);
     IndexerDBMetrics::init(prometheus_registry);
-    StateDBMetrics::init(prometheus_registry);
+    // StateDBMetrics::init(prometheus_registry); // Removed - StateDBMetrics is not available in this crate
 }

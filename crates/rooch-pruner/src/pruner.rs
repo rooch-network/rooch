@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::incremental_sweep::IncrementalSweep;
+use crate::metrics::PrunerMetrics;
 use crate::reachability::ReachableBuilder;
 use crate::sweep_expired::SweepExpired;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::config_store::ConfigStore;
 use moveos_store::prune::PruneStore;
-use moveos_store::state_store::metrics::StateDBMetrics;
 use moveos_store::MoveOSStore;
 use moveos_types::prune::{PrunePhase, PruneSnapshot};
 use parking_lot::Mutex;
@@ -40,7 +40,7 @@ impl StatePruner {
         moveos_store: Arc<MoveOSStore>,
         rooch_store: Arc<RoochStore>,
         mut shutdown_rx: Receiver<()>,
-        metrics: Option<Arc<StateDBMetrics>>,
+        metrics: Option<Arc<PrunerMetrics>>,
     ) -> Result<Self> {
         if !cfg.enable {
             return Ok(Self {
@@ -312,11 +312,11 @@ impl StatePruner {
                                         .inc_by(estimated_bytes_reclaimed as f64);
                                 }
                             } else if let Some(ref metrics) = metrics {
-                                    metrics
-                                        .pruner_error_count
-                                        .with_label_values(&["sweep_final", "SweepExpired"])
-                                        .inc();
-                                }
+                                metrics
+                                    .pruner_error_count
+                                    .with_label_values(&["sweep_final", "SweepExpired"])
+                                    .inc();
+                            }
                         }
 
                         let sweep_duration = sweep_start_time.elapsed();

@@ -17,7 +17,6 @@ use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::RpcModule;
 use moveos_eventbus::bus::EventBus;
-use moveos_store::state_store::metrics::StateDBMetrics;
 use raw_store::errors::RawStoreError;
 use rooch_config::da_config::derive_namespace_from_genesis;
 use rooch_config::server_config::ServerConfig;
@@ -225,15 +224,12 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         ..Default::default()
     };
 
-    // Create metrics for pruner
-    let state_db_metrics = Arc::new(StateDBMetrics::new(&prometheus_registry));
-
-    let pruner = StatePruner::start(
+      let pruner = StatePruner::start(
         Arc::new(prune_cfg),
         Arc::new(moveos_store.clone()),
         Arc::new(rooch_store.clone()),
         shutdown_tx.subscribe(),
-        Some(state_db_metrics),
+        None, // No metrics for now - will need rooch-pruner dependency to add PrunerMetrics
     )?;
 
     // Check for key pairs
