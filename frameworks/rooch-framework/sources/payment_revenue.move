@@ -159,17 +159,21 @@ module rooch_framework::payment_revenue {
         // Deposit to user's account coin store
         account_coin_store::deposit<CoinType>(owner_addr, coin);
         
-        // Emit withdrawal event
+        // Emit withdrawal event with per-hub handle for account-scoped queries
         let hub_id = object::id(hub_obj);
-        event::emit(RevenueWithdrawnEvent {
-            hub_id,
-            owner: owner_addr,
-            coin_type,
-            amount,
-            fee_amount: 0u256,      // No fees currently implemented
-            net_amount: amount,     // Net equals gross when no fees
-            fee_rate_bps: 0u16,     // No fee rate currently
-        });
+        let handle_id = revenue_event_handle_id<RevenueWithdrawnEvent>(hub_id);
+        event::emit_with_handle(
+            handle_id,
+            RevenueWithdrawnEvent {
+                hub_id,
+                owner: owner_addr,
+                coin_type,
+                amount,
+                fee_amount: 0u256,      // No fees currently implemented
+                net_amount: amount,     // Net equals gross when no fees
+                fee_rate_bps: 0u16,     // No fee rate currently
+            },
+        );
     }
 
     /// Entry function for withdrawing revenue
@@ -201,17 +205,21 @@ module rooch_framework::payment_revenue {
         // Update source statistics
         update_revenue_by_source(hub, &source.source_type, &coin_type, amount);
         
-        // Emit deposit event
+        // Emit deposit event with per-hub handle for account-scoped queries
         let hub_id = object::id(hub_obj);
-        event::emit(RevenueDepositedEvent {
-            hub_id,
-            owner: account,
-            coin_type,
-            amount,
-            source_type: source.source_type,
-            source_id: source.source_id,
-            source_description: source.description,
-        });
+        let handle_id = revenue_event_handle_id<RevenueDepositedEvent>(hub_id);
+        event::emit_with_handle(
+            handle_id,
+            RevenueDepositedEvent {
+                hub_id,
+                owner: account,
+                coin_type,
+                amount,
+                source_type: source.source_type,
+                source_id: source.source_id,
+                source_description: source.description,
+            },
+        );
     }
 
 
@@ -246,11 +254,15 @@ module rooch_framework::payment_revenue {
             let hub_obj = object::new_account_named_object(owner, hub);
             object::transfer_extend(hub_obj, owner);
             
-            // Emit creation event
-            event::emit(RevenueHubCreatedEvent {
-                hub_id: hub_obj_id,
-                owner,
-            });
+            // Emit creation event with per-hub handle for account-scoped queries
+            let handle_id = revenue_event_handle_id<RevenueHubCreatedEvent>(hub_obj_id);
+            event::emit_with_handle(
+                handle_id,
+                RevenueHubCreatedEvent {
+                    hub_id: hub_obj_id,
+                    owner,
+                },
+            );
         };
         object::borrow_mut_object_extend<PaymentRevenueHub>(hub_obj_id)
     }
@@ -280,6 +292,11 @@ module rooch_framework::payment_revenue {
         } else {
             table::add(source_table, *coin_type, amount);
         };
+    }
+
+    /// Derive the per-hub event handle for any revenue event type
+    fun revenue_event_handle_id<T>(hub_id: ObjectID): ObjectID {
+        event::custom_event_handle_id<ObjectID, T>(hub_id)
     }
 
     // === Future Extension Points ===
@@ -390,5 +407,31 @@ module rooch_framework::payment_revenue {
         assert!(gross == 1000, 1);
         assert!(fee == 0, 2);
         assert!(net == 1000, 3);
+    }
+
+    #[test]
+    fun test_revenue_event_handles_are_per_hub_and_type() {
+        genesis::init_for_test();
+
+        let addr1 = @0x42;
+        let addr2 = @0x43;
+
+        let hub1 = borrow_or_create_revenue_hub(addr1);
+        let hub2 = borrow_or_create_revenue_hub(addr2);
+
+        let hub1_id = object::id(hub1);
+        let hub2_id = object::id(hub2);
+
+        let hub1_deposit_handle = revenue_event_handle_id<RevenueDepositedEvent>(hub1_id);
+        let hub1_deposit_handle_again = revenue_event_handle_id<RevenueDepositedEvent>(hub1_id);
+        let hub1_withdraw_handle = revenue_event_handle_id<RevenueWithdrawnEvent>(hub1_id);
+        let hub2_deposit_handle = revenue_event_handle_id<RevenueDepositedEvent>(hub2_id);
+
+        // Same hub and event type -> same handle
+        assert!(hub1_deposit_handle == hub1_deposit_handle_again, 1);
+        // Different hubs -> different handle ids
+        assert!(hub1_deposit_handle != hub2_deposit_handle, 2);
+        // Different event types on same hub -> different handles
+        assert!(hub1_deposit_handle != hub1_withdraw_handle, 3);
     }
 }
