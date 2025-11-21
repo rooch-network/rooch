@@ -3634,7 +3634,7 @@ dependencies = [
  "k256",
  "log",
  "rand 0.8.5",
- "rlp",
+ "rlp 0.5.2",
  "serde 1.0.228",
  "sha3 0.10.8",
  "zeroize",
@@ -3853,7 +3853,7 @@ dependencies = [
  "hash-db",
  "hash256-std-hasher",
  "parity-scale-codec 3.6.12",
- "rlp",
+ "rlp 0.5.2",
  "scale-info",
  "serde 1.0.228",
  "sha3 0.10.8",
@@ -3996,7 +3996,7 @@ dependencies = [
  "once_cell",
  "open-fastrlp",
  "rand 0.8.5",
- "rlp",
+ "rlp 0.5.2",
  "serde 1.0.228",
  "serde_json",
  "strum",
@@ -4186,7 +4186,7 @@ dependencies = [
  "log",
  "parity-scale-codec 3.6.12",
  "primitive-types 0.12.2",
- "rlp",
+ "rlp 0.5.2",
  "scale-info",
  "serde 1.0.228",
  "sha3 0.10.8",
@@ -5759,7 +5759,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f28220f89297a075ddc7245cd538076ee98b01f2a9c23a53a4f1105d5a322808"
 dependencies = [
- "rlp",
+ "rlp 0.5.2",
 ]
 
 [[package]]
@@ -7847,7 +7847,7 @@ dependencies = [
  "revm-precompile",
  "revm-primitives",
  "ripemd",
- "rlp",
+ "rlp 0.6.1",
  "serde_json",
  "smallvec",
  "tracing",
@@ -10296,6 +10296,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rlp"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa24e92bb2a83198bb76d661a71df9f7076b8c420b8696e4d3d97d50d94479e3"
+dependencies = [
+ "bytes",
+ "rustc-hex",
+]
+
+[[package]]
 name = "rlp-derive"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11310,7 +11320,7 @@ dependencies = [
  "primitive-types 0.12.2",
  "proptest",
  "rand 0.8.5",
- "rlp",
+ "rlp 0.5.2",
  "ruint-macro",
  "serde 1.0.228",
  "valuable",

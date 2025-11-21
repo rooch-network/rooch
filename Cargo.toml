@@ -282,7 +282,7 @@ chacha20poly1305 = "0.10.1"
 argon2 = "0.5.2"
 rpassword = "7.2.0"
 uint = "0.9.5"
-rlp = "0.5.2"
+rlp = "0.6.1"
 diesel = { version = "2.2.12", features = [
     "chrono",
     "sqlite",
