@@ -12,45 +12,45 @@ use std::str::FromStr;
 #[serde(rename_all = "kebab-case")]
 pub struct PruneConfig {
     /// Enable or disable background pruner.
-    #[clap(long, default_value_t = false)]
+    #[clap(long = "pruner-enable", default_value_t = false)]
     pub enable: bool,
 
     /// Whether boot cleanup (v1 DFS) already finished.
     /// Normally maintained automatically – manual override only for debugging.
-    #[clap(long, default_value_t = false)]
+    #[clap(long = "pruner-boot-cleanup-done", default_value_t = false)]
     pub boot_cleanup_done: bool,
 
     /// Number of nodes to scan per DFS batch.
-    #[clap(long, default_value_t = 10000)]
+    #[clap(long = "pruner-scan-batch", default_value_t = 10000)]
     pub scan_batch: usize,
 
     /// Number of deletion operations per RocksDB write batch.
-    #[clap(long, default_value_t = 5000)]
+    #[clap(long = "pruner-delete-batch", default_value_t = 5000)]
     pub delete_batch: usize,
 
     /// Background tick interval (seconds).
-    #[clap(long, default_value_t = 60)]
+    #[clap(long = "pruner-interval-s", default_value_t = 60)]
     pub interval_s: u64,
 
     /// Bloom filter size in bits (must be power of two for fast modulo).
-    // #[clap(long, default_value_t = 4_194_304)]  // 2^22
-    #[clap(long, default_value_t = 8589934592)] // 2^33
+    // #[clap(long = "pruner-bloom-bits", default_value_t = 4_194_304)]  // 2^22
+    #[clap(long = "pruner-bloom-bits", default_value_t = 8589934592)] // 2^33
     pub bloom_bits: usize,
 
     /// Create and use optional cf_reach_seen column family for cold hash spill.
-    #[clap(long, default_value_t = false)]
+    #[clap(long = "pruner-enable-reach-seen-cf", default_value_t = false)]
     pub enable_reach_seen_cf: bool,
 
     /// Window size in days for reachable roots (default 30).
-    #[clap(long, default_value_t = 30)]
+    #[clap(long = "pruner-window-days", default_value_t = 30)]
     pub window_days: u64,
 
     /// Enable incremental sweep phase for continuous cleanup (default true).
-    #[clap(long, default_value_t = true)]
+    #[clap(long = "pruner-enable-incremental-sweep", default_value_t = true)]
     pub enable_incremental_sweep: bool,
 
     /// Batch size for incremental sweep operations (default 1000).
-    #[clap(long, default_value_t = 1000)]
+    #[clap(long = "pruner-incremental-sweep-batch", default_value_t = 1000)]
     pub incremental_sweep_batch: usize,
 }
 

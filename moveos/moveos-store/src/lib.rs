@@ -188,7 +188,16 @@ impl MoveOSStore {
         } = output;
 
         // node_store updates
-        let changed_nodes = self.state_store.change_set_to_nodes(&mut changeset)?;
+        let (changed_nodes, stale_indices) = self.state_store.change_set_to_nodes(&mut changeset)?;
+        
+        // Maintain refcount & stale indices
+        for (hash, _) in &changed_nodes {
+            let _ = self.prune_store.inc_node_refcount(*hash);
+        }
+        if !stale_indices.is_empty() {
+            let _ = self.prune_store.write_stale_indices(&stale_indices);
+        }
+        
         // transaction_store updates
         let new_state_root = changeset.state_root;
         let size = changeset.global_size;
