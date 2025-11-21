@@ -96,6 +96,7 @@
 <b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
 <b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
+<b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 <b>use</b> <a href="payment_revenue.md#0x3_payment_revenue">0x3::payment_revenue</a>;
 </code></pre>
 
@@ -402,6 +403,15 @@ The specified Verification Method was not found in the sender's DID.
 
 
 <pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorVerificationMethodNotFound">ErrorVerificationMethodNotFound</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_ErrorNotAdmin"></a>
+
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorNotAdmin">ErrorNotAdmin</a>: u64 = 26;
 </code></pre>
 
 
@@ -1274,7 +1284,7 @@ Get per-coin locked unit configuration
 
 ## Function `set_locked_unit`
 
-Admin API: set locked unit for a coin type
+Config API: set locked unit for a coin type
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_set_locked_unit">set_locked_unit</a>&lt;CoinType: store, key&gt;(<a href="">account</a>: &<a href="">signer</a>, locked_unit: <a href="">u256</a>)

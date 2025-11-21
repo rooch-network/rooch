@@ -32,8 +32,8 @@ module rooch_framework::payment_channel {
     use rooch_framework::account_coin_store;
     use rooch_framework::chain_id;
     use rooch_framework::payment_revenue;
-    use rooch_framework::core_addresses;
     use rooch_framework::onchain_config;
+    use rooch_framework::core_addresses;
 
     friend rooch_framework::transaction_gas;
 
@@ -88,6 +88,7 @@ module rooch_framework::payment_channel {
     const ErrorUnsupportedVersion: u64 = 24;
     /// Insufficient unlocked balance when active channels require reserve.
     const ErrorInsufficientUnlockedBalance: u64 = 25;
+    const ErrorNotAdmin: u64 = 26;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -1513,7 +1514,7 @@ module rooch_framework::payment_channel {
     /// Config API: set locked unit for a coin type
     public entry fun set_locked_unit<CoinType: key + store>(account: &signer, locked_unit: u256) {
         // Restrict to config account for now; can later swap to governance cap
-        onchain_config::ensure_admin(account);
+        assert!(core_addresses::is_rooch_genesis_address(signer::address_of(account)) || onchain_config::is_admin(account), ErrorNotAdmin);
 
         let config = borrow_or_create_payment_hub_config();
         let coin_type = type_info::type_name<CoinType>();

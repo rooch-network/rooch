@@ -12,7 +12,7 @@ module rooch_framework::payment_revenue_test {
     use rooch_framework::gas_coin::{Self, RGas};
     use rooch_framework::account_coin_store;
     use rooch_framework::coin;
-    use rooch_framework::payment_revenue::{Self, RevenueSource};
+    use rooch_framework::payment_revenue;
 
     #[test]
     fun test_revenue_hub_creation() {

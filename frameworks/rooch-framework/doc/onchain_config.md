@@ -11,6 +11,7 @@
 -  [Function `genesis_init`](#0x3_onchain_config_genesis_init)
 -  [Function `admin`](#0x3_onchain_config_admin)
 -  [Function `ensure_admin`](#0x3_onchain_config_ensure_admin)
+-  [Function `is_admin`](#0x3_onchain_config_is_admin)
 -  [Function `sequencer`](#0x3_onchain_config_sequencer)
 -  [Function `rooch_dao`](#0x3_onchain_config_rooch_dao)
 -  [Function `update_framework_version`](#0x3_onchain_config_update_framework_version)
@@ -98,6 +99,17 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_ensure_admin">ensure_admin</a>(<a href="">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_is_admin"></a>
+
+## Function `is_admin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_is_admin">is_admin</a>(<a href="">account</a>: &<a href="">signer</a>): bool
 </code></pre>
 
 

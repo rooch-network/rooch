@@ -7,6 +7,9 @@
 
 -  [Struct `GenesisContext`](#0x3_genesis_GenesisContext)
 -  [Constants](#@Constants_0)
+-  [Function `init_v23`](#0x3_genesis_init_v23)
+-  [Function `init_v25`](#0x3_genesis_init_v25)
+-  [Function `genesis_init_rgas_locked_unit`](#0x3_genesis_genesis_init_rgas_locked_unit)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -27,6 +30,7 @@
 <b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
 <b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
+<b>use</b> <a href="payment_channel.md#0x3_payment_channel">0x3::payment_channel</a>;
 <b>use</b> <a href="transaction_fee.md#0x3_transaction_fee">0x3::transaction_fee</a>;
 </code></pre>
 
@@ -63,4 +67,46 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 
 <pre><code><b>const</b> <a href="genesis.md#0x3_genesis_GENESIS_INIT_GAS_AMOUNT">GENESIS_INIT_GAS_AMOUNT</a>: <a href="">u256</a> = 50000000000000000;
+</code></pre>
+
+
+
+<a name="0x3_genesis_GENESIS_INIT_RGAS_LOCKED_UNIT"></a>
+
+
+
+<pre><code><b>const</b> <a href="genesis.md#0x3_genesis_GENESIS_INIT_RGAS_LOCKED_UNIT">GENESIS_INIT_RGAS_LOCKED_UNIT</a>: <a href="">u256</a> = 10000000000;
+</code></pre>
+
+
+
+<a name="0x3_genesis_init_v23"></a>
+
+## Function `init_v23`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="genesis.md#0x3_genesis_init_v23">init_v23</a>()
+</code></pre>
+
+
+
+<a name="0x3_genesis_init_v25"></a>
+
+## Function `init_v25`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="genesis.md#0x3_genesis_init_v25">init_v25</a>(sender: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<a name="0x3_genesis_genesis_init_rgas_locked_unit"></a>
+
+## Function `genesis_init_rgas_locked_unit`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="genesis.md#0x3_genesis_genesis_init_rgas_locked_unit">genesis_init_rgas_locked_unit</a>(): <a href="">u256</a>
 </code></pre>
