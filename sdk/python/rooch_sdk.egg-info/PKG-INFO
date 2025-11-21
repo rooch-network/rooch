@@ -1,0 +1,131 @@
+Metadata-Version: 2.1
+Name: rooch-sdk
+Version: 0.1.0
+Summary: The official Rooch Python SDK
+Home-page: https://github.com/rooch-network/rooch
+Author: Rooch Network
+Author-email: developer@rooch.network
+License: Apache-2.0
+Project-URL: Documentation, https://rooch.network/docs
+Project-URL: Source, https://github.com/rooch-network/rooch/tree/main/sdk/python
+Project-URL: Bug Tracker, https://github.com/rooch-network/rooch/issues
+Keywords: rooch,blockchain,move,python,sdk
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+
+# Rooch Python SDK
+
+The official Python SDK for Rooch Network.
+
+## Features
+
+- **Complete API Coverage**: Access the full suite of Rooch functionality through a simple Python interface
+- **Asynchronous Design**: Built with modern async/await pattern for high-performance applications
+- **Type-Safe**: Comprehensive typing for better IDE support and fewer runtime errors
+- **BCS Serialization**: Built-in support for Move's Binary Canonical Serialization format
+- **Transaction Building**: Utilities to easily create, sign, and submit transactions
+- **Address Management**: Support for Rooch addresses and Bitcoin addresses
+- **Key Management**: Secure key generation and management
+
+## Installation
+
+```bash
+pip install rooch
+```
+
+For development:
+
+```bash
+pip install -e ".[dev]"
+```
+
+## Quick Start
+
+```python
+import asyncio
+from rooch.client.client import RoochClient
+from rooch.transport import RoochEnvironment
+from rooch.crypto.keypair import KeyPair
+from rooch.crypto.signer import Signer
+
+async def main():
+    # Connect to Rooch testnet
+    async with RoochClient(RoochEnvironment.TESTNET) as client:
+        # Generate a new key pair
+        keypair = KeyPair.generate()
+        signer = Signer(keypair)
+        
+        # Get the address
+        address = signer.get_address()
+        print(f"Generated address: {address}")
+        
+        # Get account info
+        account_info = await client.account.get_account(address)
+        print(f"Account info: {account_info}")
+        
+        # Get account balance
+        balance = await client.account.get_balances(address)
+        print(f"Balances: {balance}")
+        
+        # Execute a Move call
+        result = await client.execute_move_call(
+            signer=signer,
+            function_id="0x1::coin::transfer",
+            type_args=["0x3::gas_coin::RGas"],
+            args=[["0x123...456", "100"]],
+            max_gas_amount=10_000_000
+        )
+        print(f"Transaction result: {result}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Documentation
+
+For detailed documentation, see [Rooch Documentation](https://rooch.network/docs).
+
+## Examples
+
+Check out the `examples` directory for more usage examples:
+
+- Basic usage
+- Account management
+- Transaction handling
+- Smart contract interaction
+- And more...
+
+## Development
+
+### Requirements
+
+- Python 3.8+
+- pip
+
+### Setting Up Development Environment
+
+1. Clone the repository
+2. Create and activate a virtual environment (recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install development dependencies: `pip install -e ".[dev]"`
+4. Run tests: `pytest`
+
+## License
+
+Apache License 2.0
+
+
