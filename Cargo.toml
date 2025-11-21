@@ -203,7 +203,7 @@ jsonrpsee = { version = "0.24.7", features = [
 jpst = "0.1.1"
 lazy_static = "1.5.0"
 more-asserts = "0.3.0"
-num-derive = "0.3.3"
+num-derive = "0.4.2"
 num-traits = "0.2.15"
 once_cell = "1.21.3"
 ordinals = "0.0.9"
