@@ -659,4 +659,47 @@ mod tests {
         let tmpdir = moveos_config::temp_dir();
         let _db = RocksDB::new(tmpdir.path(), vec![], RocksdbConfig::default()).unwrap();
     }
+
+    #[test]
+    fn test_version_rollback_compatibility() {
+        let tmpdir = moveos_config::temp_dir();
+        let db_path = tmpdir.path();
+
+        // Simulate new version with more CFs
+        let new_version_cfs = vec!["cf1", "cf2", "cf3", "cf4"];
+        {
+            let db =
+                RocksDB::new(db_path, new_version_cfs.clone(), RocksdbConfig::default()).unwrap();
+            // Write some data to verify DB is functional
+            db.put("cf1", b"key1".to_vec(), b"value1".to_vec()).unwrap();
+            drop(db);
+        }
+
+        // Simulate old version (rollback) with fewer CFs
+        // Old version only knows about cf1, cf2, cf3 (doesn't know about cf4)
+        let old_version_cfs = vec!["cf1", "cf2", "cf3"];
+        {
+            // This should succeed - old code can open new DB
+            let db =
+                RocksDB::new(db_path, old_version_cfs.clone(), RocksdbConfig::default()).unwrap();
+            // Should be able to read data from known CFs
+            let value = db.get("cf1", b"key1").unwrap();
+            assert_eq!(value, Some(b"value1".to_vec()));
+            drop(db);
+        }
+
+        // Simulate upgrading back to new version
+        {
+            let db =
+                RocksDB::new(db_path, new_version_cfs.clone(), RocksdbConfig::default()).unwrap();
+            // All CFs should still be accessible
+            let value = db.get("cf1", b"key1").unwrap();
+            assert_eq!(value, Some(b"value1".to_vec()));
+            // cf4 should still exist (was preserved during rollback)
+            db.put("cf4", b"key4".to_vec(), b"value4".to_vec()).unwrap();
+            let value = db.get("cf4", b"key4").unwrap();
+            assert_eq!(value, Some(b"value4".to_vec()));
+            drop(db);
+        }
+    }
 }
