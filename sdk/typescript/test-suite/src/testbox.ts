@@ -289,8 +289,9 @@ export class TestBox {
     }
 
     // Convert args to array format
-    const roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
+    let roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
 
+    
     return {
       cmd: roochBin,
       args: roochArgs,
