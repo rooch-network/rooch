@@ -297,7 +297,7 @@ diesel = { version = "2.2.12", features = [
     "64-column-tables",
 ] }
 diesel_migrations = { version = "2.2.0" }
-axum = { version = "0.7.9", default-features = false, features = [
+axum = { version = "0.8.7", default-features = false, features = [
     "tokio",
     "http1",
     "http2",
@@ -308,7 +308,7 @@ axum = { version = "0.7.9", default-features = false, features = [
     "query",
     "ws",
 ] }
-axum-server = { version = "0.6.0", default-features = false, features = [
+axum-server = { version = "0.7.3", default-features = false, features = [
     "tls-rustls",
 ] }
 serenity = { version = "0.12.4", default-features = false, features = [
@@ -327,9 +327,9 @@ criterion = { version = "0.5.1", features = [
 ] }
 xxhash-rust = { version = "0.8.15", features = ["std", "xxh3"] }
 base64 = "0.22.1"
-wasmer = "4.2.5"
-wasmer-types = "4.2.5"
-wasmer-compiler-singlepass = "4.2.2"
+wasmer = "4.3.3"
+wasmer-types = "4.3.3"
+wasmer-compiler-singlepass = "4.3.3"
 cosmwasm-vm = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
 cosmwasm-std = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
 ciborium = "0.2.1"
