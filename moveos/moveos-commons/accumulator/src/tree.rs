@@ -215,9 +215,7 @@ impl AccumulatorTree {
     pub fn flush(&mut self) -> Result<()> {
         let nodes = &mut self.update_nodes;
         if !nodes.is_empty() {
-            let nodes_vec = nodes
-                .values().cloned()
-                .collect::<Vec<AccumulatorNode>>();
+            let nodes_vec = nodes.values().cloned().collect::<Vec<AccumulatorNode>>();
 
             self.store.save_nodes(nodes_vec)?;
             nodes.clear();
@@ -229,9 +227,7 @@ impl AccumulatorTree {
     pub fn pop_unsaved_nodes(&mut self) -> Option<Vec<AccumulatorNode>> {
         let nodes = &mut self.update_nodes;
         if !nodes.is_empty() {
-            let nodes_vec = nodes
-                .values().cloned()
-                .collect::<Vec<AccumulatorNode>>();
+            let nodes_vec = nodes.values().cloned().collect::<Vec<AccumulatorNode>>();
             return Some(nodes_vec);
         }
 

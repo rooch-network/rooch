@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use rand;
 use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, OnceLock};
-use rand;
 use tracing::{debug, error, warn};
 use wasmer::Value::I32;
 use wasmer::*;
@@ -52,7 +52,9 @@ pub fn insert_wasm_instance(instance: WASMInstance) -> anyhow::Result<u64> {
     let instance_pool = GLOBAL_INSTANCE_POOL.get_or_init(|| Arc::new(Mutex::new(BTreeMap::new())));
     loop {
         let instance_id: u64 = rand::random();
-        let mut pool_guard = instance_pool.lock().map_err(|_| anyhow::Error::msg("get global instance pool failed"))?;
+        let mut pool_guard = instance_pool
+            .lock()
+            .map_err(|_| anyhow::Error::msg("get global instance pool failed"))?;
         if pool_guard.get(&instance_id).is_none() {
             pool_guard.insert(instance_id, instance);
             return Ok(instance_id);
@@ -61,12 +63,16 @@ pub fn insert_wasm_instance(instance: WASMInstance) -> anyhow::Result<u64> {
 }
 
 pub fn get_instance_pool() -> Arc<Mutex<BTreeMap<u64, WASMInstance>>> {
-    GLOBAL_INSTANCE_POOL.get_or_init(|| Arc::new(Mutex::new(BTreeMap::new()))).clone()
+    GLOBAL_INSTANCE_POOL
+        .get_or_init(|| Arc::new(Mutex::new(BTreeMap::new())))
+        .clone()
 }
 
 pub fn remove_instance(instance_id: u64) -> anyhow::Result<()> {
     let instance_pool = GLOBAL_INSTANCE_POOL.get_or_init(|| Arc::new(Mutex::new(BTreeMap::new())));
-    let mut pool_guard = instance_pool.lock().map_err(|_| anyhow::Error::msg("get global instance pool failed"))?;
+    let mut pool_guard = instance_pool
+        .lock()
+        .map_err(|_| anyhow::Error::msg("get global instance pool failed"))?;
     pool_guard.remove(&instance_id);
     Ok(())
 }

@@ -526,8 +526,7 @@ impl DBStore for RocksDB {
 
     fn multi_get(&self, cf_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         let cf_handle = self.get_cf_handle(cf_name);
-        let cf_handles = iter::repeat_n(&cf_handle, keys.len())
-            .collect::<Vec<_>>();
+        let cf_handles = iter::repeat_n(&cf_handle, keys.len()).collect::<Vec<_>>();
         let keys_multi = keys
             .iter()
             .zip(cf_handles)

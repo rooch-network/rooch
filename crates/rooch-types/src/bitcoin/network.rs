@@ -81,7 +81,6 @@ impl Network {
     }
 }
 
-
 impl From<bitcoin::Network> for Network {
     fn from(network: bitcoin::Network) -> Self {
         match network {

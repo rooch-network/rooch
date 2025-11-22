@@ -422,7 +422,6 @@ pub enum VerificationScope {
     None,
 }
 
-
 impl VerificationScope {
     /// Whether verification is exclusive to only one function or module. If set, this overrides
     /// all implicitly included verification targets via invariants and friends.

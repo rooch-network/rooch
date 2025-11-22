@@ -259,7 +259,11 @@ where
     /// Note: the key in the tree is sorted by the hash of the key, not origin key.
     /// So the iterator will return the key in the hash order, the starting_key is the first key to start scan.
     #[named]
-    pub fn iter(&self, state_root: H256, starting_key: Option<K>) -> Result<SMTIterator<'_, K, V, NR>> {
+    pub fn iter(
+        &self,
+        state_root: H256,
+        starting_key: Option<K>,
+    ) -> Result<SMTIterator<'_, K, V, NR>> {
         let fn_name = function_name!();
         let _timer = self
             .metrics
