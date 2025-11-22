@@ -986,4 +986,4 @@ module rooch_framework::payment_channel_test {
         assert!(last_amount == TEST_AMOUNT_15, 9041);
         assert!(last_nonce == TEST_NONCE_2, 9042);
     }
-} 
+}

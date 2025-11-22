@@ -615,6 +615,16 @@ The sub-channel has not been authorized yet.
 
 
 
+<a name="0x3_payment_channel_ErrorTooManyProofs"></a>
+
+Too many proofs in a batch operation
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorTooManyProofs">ErrorTooManyProofs</a>: u64 = 27;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ErrorUnsupportedVersion"></a>
 
 The SubRAV version is not supported.
@@ -631,6 +641,16 @@ Only the sender can authorize verification methods for the channel.
 
 
 <pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorVMAuthorizeOnlySender">ErrorVMAuthorizeOnlySender</a>: u64 = 16;
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_MAX_PROOFS_PER_BATCH"></a>
+
+Limits for batch operations
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_MAX_PROOFS_PER_BATCH">MAX_PROOFS_PER_BATCH</a>: u64 = 64;
 </code></pre>
 
 

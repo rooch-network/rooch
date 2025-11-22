@@ -97,10 +97,30 @@ module rooch_framework::did {
     const ErrorTooManyVerificationMethods: u64 = 35;
     /// Exceeded maximum number of verification methods allowed in a relationship
     const ErrorTooManyRelationshipMethods: u64 = 36;
+    /// Exceeded maximum number of services allowed in a DID document
+    const ErrorTooManyServices: u64 = 37;
+    /// Exceeded maximum number of properties allowed per service
+    const ErrorTooManyServiceProperties: u64 = 38;
+    /// Exceeded maximum number of also known as aliases
+    const ErrorTooManyAlsoKnownAs: u64 = 39;
+    /// Exceeded maximum number of controllers
+    const ErrorTooManyControllers: u64 = 40;
+    /// Fragment string is too long
+    const ErrorFragmentTooLong: u64 = 41;
+    /// String field is too long
+    const ErrorStringTooLong: u64 = 42;
 
     // Limits for verification methods
     const MAX_VERIFICATION_METHODS_PER_DOCUMENT: u64 = 64;
     const MAX_METHODS_PER_RELATIONSHIP: u64 = 64;
+
+    // Limits for other DID resources
+    const MAX_SERVICES_PER_DOCUMENT: u64 = 32;
+    const MAX_PROPERTIES_PER_SERVICE: u64 = 16;
+    const MAX_ALSO_KNOWN_AS_PER_DOCUMENT: u64 = 16;
+    const MAX_CONTROLLERS_PER_DOCUMENT: u64 = 8;
+    const MAX_FRAGMENT_LENGTH: u64 = 128;
+    const MAX_STRING_LENGTH: u64 = 512;  // for service_endpoint, service_type, etc.
 
     // Verification relationship types
     const VERIFICATION_RELATIONSHIP_AUTHENTICATION: u8 = 0;
@@ -910,8 +930,9 @@ module rooch_framework::did {
         fragment: String,
         method_type: String,
         public_key_multibase: String,
-        verification_relationships: vector<u8> 
+        verification_relationships: vector<u8>
     ) {
+        validate_fragment_length(&fragment);
         add_verification_method(
             did_signer,
             fragment,
@@ -1027,6 +1048,8 @@ module rooch_framework::did {
         did_signer: &signer,
         fragment: String
     ) {
+        validate_fragment_length(&fragment);
+
         // Use helper function to get authorized DID document
         let did_document_data = get_authorized_did_document_mut_for_delegation(did_signer);
 
@@ -1200,6 +1223,15 @@ module rooch_framework::did {
         service_endpoint: String,
         properties: SimpleMap<String, String>
     ) {
+        // Validate fragment length and service properties count
+        validate_fragment_length(&fragment);
+        validate_string_length(&service_type, MAX_STRING_LENGTH);
+        validate_string_length(&service_endpoint, MAX_STRING_LENGTH);
+        ensure_service_properties_limit(&properties);
+
+        // Check if we can add another service
+        ensure_can_add_service(did_document_data);
+
         assert!(!simple_map::contains_key(&did_document_data.services, &fragment),
             ErrorServiceAlreadyExists);
 
@@ -1236,6 +1268,10 @@ module rooch_framework::did {
         service_type: String,
         service_endpoint: String
     ) {
+        validate_fragment_length(&fragment);
+        validate_string_length(&service_type, MAX_STRING_LENGTH);
+        validate_string_length(&service_endpoint, MAX_STRING_LENGTH);
+
         // Use helper function to get authorized DID document
         let did_document_data = get_authorized_did_document_mut_for_invocation(did_signer);
 
@@ -1251,6 +1287,10 @@ module rooch_framework::did {
         property_keys: vector<String>,
         property_values: vector<String>
     ) {
+        validate_fragment_length(&fragment);
+        validate_string_length(&service_type, MAX_STRING_LENGTH);
+        validate_string_length(&service_endpoint, MAX_STRING_LENGTH);
+
         assert!(vector::length(&property_keys) == vector::length(&property_values),
             ErrorPropertyKeysValuesLengthMismatch);
 
@@ -1258,7 +1298,11 @@ module rooch_framework::did {
         let i = 0;
         let len = vector::length(&property_keys);
         while (i < len) {
-            simple_map::add(&mut properties, *vector::borrow(&property_keys, i), *vector::borrow(&property_values, i));
+            let key = vector::borrow(&property_keys, i);
+            let value = vector::borrow(&property_values, i);
+            validate_string_length(key, MAX_STRING_LENGTH);
+            validate_string_length(value, MAX_STRING_LENGTH);
+            simple_map::add(&mut properties, *key, *value);
             i = i + 1;
         };
 
@@ -1284,6 +1328,10 @@ module rooch_framework::did {
         new_property_keys: vector<String>,
         new_property_values: vector<String>
     ) {
+        validate_fragment_length(&fragment);
+        validate_string_length(&new_service_type, MAX_STRING_LENGTH);
+        validate_string_length(&new_service_endpoint, MAX_STRING_LENGTH);
+
         assert!(vector::length(&new_property_keys) == vector::length(&new_property_values),
             ErrorPropertyKeysValuesLengthMismatch);
 
@@ -1291,7 +1339,11 @@ module rooch_framework::did {
         let i = 0;
         let len = vector::length(&new_property_keys);
         while (i < len) {
-            simple_map::add(&mut new_properties, *vector::borrow(&new_property_keys, i), *vector::borrow(&new_property_values, i));
+            let key = vector::borrow(&new_property_keys, i);
+            let value = vector::borrow(&new_property_values, i);
+            validate_string_length(key, MAX_STRING_LENGTH);
+            validate_string_length(value, MAX_STRING_LENGTH);
+            simple_map::add(&mut new_properties, *key, *value);
             i = i + 1;
         };
 
@@ -1347,6 +1399,8 @@ module rooch_framework::did {
         did_signer: &signer,
         fragment: String
     ) {
+        validate_fragment_length(&fragment);
+
         // Use helper function to get authorized DID document
         let did_document_data = get_authorized_did_document_mut_for_invocation(did_signer);
 
@@ -1699,6 +1753,28 @@ module rooch_framework::did {
     fun ensure_can_add_relationship(relationship_vec: &vector<String>) {
         let count = vector::length(relationship_vec);
         assert!(count < MAX_METHODS_PER_RELATIONSHIP, ErrorTooManyRelationshipMethods);
+    }
+
+    /// Ensure the document can accept one more service
+    fun ensure_can_add_service(did_document_data: &DIDDocument) {
+        let count = simple_map::length(&did_document_data.services);
+        assert!(count < MAX_SERVICES_PER_DOCUMENT, ErrorTooManyServices);
+    }
+
+    /// Ensure service properties count is within limits
+    fun ensure_service_properties_limit(properties: &SimpleMap<String, String>) {
+        let count = simple_map::length(properties);
+        assert!(count <= MAX_PROPERTIES_PER_SERVICE, ErrorTooManyServiceProperties);
+    }
+
+    /// Validate fragment string length
+    fun validate_fragment_length(fragment: &String) {
+        assert!(string::length(fragment) <= MAX_FRAGMENT_LENGTH, ErrorFragmentTooLong);
+    }
+
+    /// Validate string length with custom limit
+    fun validate_string_length(s: &String, max_len: u64) {
+        assert!(string::length(s) <= max_len, ErrorStringTooLong);
     }
 
     /// Helper function to get a mutable reference to DIDDocument with capability delegation authorization

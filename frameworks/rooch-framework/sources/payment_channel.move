@@ -89,6 +89,8 @@ module rooch_framework::payment_channel {
     /// Insufficient unlocked balance when active channels require reserve.
     const ErrorInsufficientUnlockedBalance: u64 = 25;
     const ErrorNotAdmin: u64 = 26;
+    /// Too many proofs in a batch operation
+    const ErrorTooManyProofs: u64 = 27;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -99,6 +101,9 @@ module rooch_framework::payment_channel {
 
     /// Current supported SubRAV version
     const SUB_RAV_VERSION_V1: u8 = 1;
+
+    /// Limits for batch operations
+    const MAX_PROOFS_PER_BATCH: u64 = 64;  // maximum proofs in close/cancel operations
 
     // === Events ===
     
@@ -906,8 +911,10 @@ module rooch_framework::payment_channel {
         
         // Process each closure proof (if any)
         if (sub_channels_count > 0) {
-            let i = 0;
             let proofs_len = vector::length(&proofs);
+            assert!(proofs_len <= MAX_PROOFS_PER_BATCH, ErrorTooManyProofs);
+
+            let i = 0;
             
             while (i < proofs_len) {
             let proof = vector::borrow(&proofs, i);
@@ -1054,9 +1061,11 @@ module rooch_framework::payment_channel {
         
         // Process sub-channels that require challenge period
         let total_pending_amount = 0u256;
-        let i = 0;
         let proofs_len = vector::length(&proofs);
-        
+        assert!(proofs_len <= MAX_PROOFS_PER_BATCH, ErrorTooManyProofs);
+
+        let i = 0;
+
         while (i < proofs_len) {
             let proof = vector::borrow(&proofs, i);
             let vm_id_fragment = proof.vm_id_fragment;
