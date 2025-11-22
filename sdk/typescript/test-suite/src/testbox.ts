@@ -4,8 +4,7 @@
 import * as fs from 'fs'
 import * as net from 'net'
 import path from 'node:path'
-import { execSync } from 'child_process'
-import { spawn } from 'child_process'
+import { execSync, execFileSync, spawn } from 'child_process'
 import debug from 'debug'
 import tmp, { DirResult } from 'tmp'
 import { Network, StartedNetwork } from 'testcontainers'
@@ -104,8 +103,15 @@ export class TestBox {
 
     // The container test in the linux environment is incomplete, so use it first
     if (target === 'local') {
-      if (port === 0) {
+      // Use dynamic port allocation to avoid conflicts
+      // For fixed ports (6767/6768), prefer dynamic allocation since these are commonly used
+      if (port === 0 || port === 6767 || port === 6768) {
         port = await getUnusedPort()
+        log(`Using dynamically allocated port ${port} for Rooch server`)
+      } else {
+        // For other specific ports, trust the caller's choice
+        // If it fails, roochAsyncCommand will timeout with clear error
+        log(`Using caller-specified port ${port} for Rooch server`)
       }
 
       // Generate a random port for metrics
@@ -139,6 +145,8 @@ export class TestBox {
 
       this.roochContainer = parseInt(result.toString().trim(), 10)
       this.roochPort = port
+
+      log(`Rooch server started with PID ${this.roochContainer} on port ${port}`)
 
       return
     }
@@ -201,12 +209,47 @@ export class TestBox {
     this.ordContainer?.stop()
 
     if (typeof this.roochContainer === 'number') {
-      process.kill(this.roochContainer)
+      const pid = this.roochContainer
+      log(`Cleaning up Rooch server process with PID: ${pid}`)
+
+      try {
+        // Try graceful shutdown first with SIGTERM
+        process.kill(pid, 'SIGTERM')
+        log(`Sent SIGTERM to process ${pid}`)
+      } catch (e: any) {
+        // Process might already be dead
+        log(`Failed to send SIGTERM to process ${pid}: ${e.message}`)
+      }
+
+      // Fallback: kill any process listening on the port (synchronous cleanup)
+      if (this.roochPort) {
+        try {
+          log(`Cleaning up any process on port ${this.roochPort}`)
+          // Use platform-appropriate command
+          if (process.platform === 'win32') {
+            // Windows: Use double %% for batch execution
+            execSync(
+              `for /f "tokens=5" %%a in ('netstat -aon ^| findstr :${this.roochPort}') do taskkill /F /PID %%a`,
+              { stdio: 'ignore' },
+            )
+          } else {
+            // Unix-like: Use lsof + kill
+            execSync(`lsof -ti:${this.roochPort} | xargs kill -9 2>/dev/null || true`, {
+              stdio: 'ignore',
+            })
+          }
+          log(`Port ${this.roochPort} cleanup completed`)
+        } catch (e) {
+          // Ignore errors - port might already be free
+          log(`Port cleanup completed (or was already free)`)
+        }
+      }
     } else {
       this.roochContainer?.stop()
     }
 
     this.tmpDir.removeCallback()
+    log('Environment cleanup completed')
   }
 
   delay(second: number) {
@@ -224,16 +267,43 @@ export class TestBox {
     // Use ROOCH_BINARY_BUILD_PROFILE environment variable or default to 'debug'
     const profile = process.env.ROOCH_BINARY_BUILD_PROFILE || 'debug'
     const roochDir = path.join(root!, 'target', profile)
+    const roochBin = path.join(roochDir, 'rooch')
 
-    const envString = envs.length > 0 ? `${envs.join(' ')} ` : ''
-    return `${envString} ${roochDir}/./rooch ${typeof args === 'string' ? args : args.join(' ')}`
+    // Parse environment variables from array format ["FOO=bar", "BAR=baz"]
+    const extraEnv: { [key: string]: string } = {}
+    for (const e of envs) {
+      const [k, ...rest] = e.split('=')
+      if (k && rest.length) {
+        extraEnv[k] = rest.join('=')
+      }
+    }
+
+    // Convert args to array format
+    const roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
+
+    return {
+      cmd: roochBin,
+      args: roochArgs,
+      env: Object.keys(extraEnv).length ? { ...process.env, ...extraEnv } : process.env,
+    }
   }
 
   // TODO: support container
   roochCommand(args: string[] | string, envs: string[] = []): string {
-    return execSync(this.buildRoochCommand(args, envs), {
-      encoding: 'utf-8',
-    })
+    try {
+      const { cmd, args: cmdArgs, env } = this.buildRoochCommand(args, envs)
+      return execFileSync(cmd, cmdArgs, {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Capture stdout and stderr
+        env,
+      })
+    } catch (error: any) {
+      // Log the error for debugging
+      log('roochCommand failed:', error.message)
+      if (error.stdout) log('stdout:', error.stdout)
+      if (error.stderr) log('stderr:', error.stderr)
+      throw error
+    }
   }
 
   // TODO: support container
@@ -241,41 +311,72 @@ export class TestBox {
     args: string[] | string,
     waitFor: string,
     envs: string[] = [],
+    timeoutMs: number = 30000, // 30 seconds default timeout
   ): Promise<string> {
     return new Promise((resolve, reject) => {
-      const command = this.buildRoochCommand(args, envs)
-      const child = spawn(command, { shell: true })
+      const { cmd, args: cmdArgs, env } = this.buildRoochCommand(args, envs)
+      const child = spawn(cmd, cmdArgs, { env })
 
       let output = ''
       let pidOutput = ''
 
+      // Set up timeout
+      const timeout = setTimeout(() => {
+        child.kill('SIGTERM')
+        // Force kill after 2 seconds if SIGTERM doesn't work
+        setTimeout(() => {
+          try {
+            child.kill('SIGKILL')
+          } catch (e) {
+            // Process already dead, ignore
+          }
+        }, 2000)
+        reject(
+          new Error(`Timeout (${timeoutMs}ms) waiting for: ${waitFor}\nOutput so far: ${output}`),
+        )
+      }, timeoutMs)
+
       child.on('spawn', () => {
         if (child.pid) {
           pidOutput = child.pid.toString()
+          log(`Spawned rooch process with PID: ${pidOutput}`)
         } else {
+          clearTimeout(timeout)
           reject(new Error('Failed to obtain PID of the process'))
         }
       })
 
       child.stdout.on('data', (data) => {
         output += data.toString()
+        log(`[rooch stdout]: ${data.toString().trim()}`)
 
         if (output.includes(waitFor)) {
+          clearTimeout(timeout)
+          log(`Found expected output: ${waitFor}`)
           resolve(pidOutput.trim())
         }
       })
 
       child.stderr.on('data', (data) => {
+        const errStr = data.toString()
+        log(`[rooch stderr]: ${errStr.trim()}`)
         process.stderr.write(data)
       })
 
       child.on('error', (error) => {
+        clearTimeout(timeout)
+        log(`Process error: ${error.message}`)
         reject(error)
       })
 
-      child.on('close', () => {
+      child.on('close', (code) => {
+        clearTimeout(timeout)
         if (!output.includes(waitFor)) {
-          reject(new Error('Expected output not found'))
+          reject(
+            new Error(
+              `Process exited with code ${code}. Expected output not found: ${waitFor}\nFull output: ${output}`,
+            ),
+          )
         }
       })
     })
@@ -289,16 +390,41 @@ export class TestBox {
       namedAddresses: 'rooch_examples=default',
     },
   ) {
-    // let addr = await this.defaultCmdAddress()
-    // let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
-    log('publish package:', packagePath, 'rooch Dir:', this.roochDir)
+    // The rooch CLI supports 'default' keyword in named addresses
+    // Example: --named-addresses alice=0x1234,bob=default
+    // 'default' will be automatically resolved to the active account address
+    log(
+      'publish package:',
+      packagePath,
+      'rooch Dir:',
+      this.roochDir,
+      'named addresses:',
+      options.namedAddresses,
+    )
 
     const result = this.roochCommand(
       `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
     )
-    const { execution_info } = JSON.parse(result)
 
-    return execution_info?.status?.type === 'executed'
+    // The output contains both compilation logs and JSON result
+    // Find the JSON object in the output (starts with '{' and ends with '}')
+    const startIndex = result.indexOf('{')
+    if (startIndex === -1) {
+      log('Failed to find JSON in output:', result)
+      return false
+    }
+
+    // Extract from first '{' to the end, it should be the JSON response
+    const jsonPart = result.substring(startIndex)
+
+    try {
+      const { execution_info } = JSON.parse(jsonPart)
+      return execution_info?.status?.type === 'executed'
+    } catch (e) {
+      log('Failed to parse JSON:', jsonPart.substring(0, 200), '...')
+      log('Full result length:', result.length)
+      return false
+    }
   }
 
   /**
@@ -421,6 +547,13 @@ export class TestBox {
   }
 }
 
+/**
+ * Get an unused port by binding to port 0 (OS will assign a free port)
+ * This ensures the port is available at the moment, though there's still
+ * a small TOCTOU window. For critical applications, the server should
+ * handle bind failures and retry with a new port.
+ * @returns Promise that resolves to an available port number
+ */
 export async function getUnusedPort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer()

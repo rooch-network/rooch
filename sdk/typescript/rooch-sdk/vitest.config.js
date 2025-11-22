@@ -15,6 +15,8 @@ export default defineConfig({
     maxThreads: 8,
     hookTimeout: 1000000,
     testTimeout: 1000000,
+    // Global setup for e2e tests - starts shared Rooch server with dynamic port
+    globalSetup: ['./test-e2e/globalSetup.ts'],
     // debug
     // poolOptions: {
     //   threads: {

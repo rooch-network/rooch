@@ -26,6 +26,23 @@ export class TestBox extends TestBoxA {
         WebSocketConstructor: Websocket as any,
       }),
     })
+
+    // Configure rooch CLI to use the same RPC endpoint
+    // This is needed for commands like 'rooch move publish'
+    if (url || DEFAULT_NODE_URL) {
+      const rpcUrl = url || DEFAULT_NODE_URL
+      this.roochCommand([
+        'env',
+        'add',
+        '--config-dir',
+        this.roochDir,
+        '--alias',
+        'local',
+        '--rpc',
+        rpcUrl,
+      ])
+      this.roochCommand(['env', 'switch', '--config-dir', this.roochDir, '--alias', 'local'])
+    }
   }
 
   static setup(url?: string): TestBox {
@@ -35,7 +52,7 @@ export class TestBox extends TestBoxA {
 
   async loadRoochEnv(
     target: RoochContainer | 'local' | 'container' = 'local',
-    port: number = 6768,
+    port: number = 0, // Use 0 to auto-assign available port
   ): Promise<void> {
     await super.loadRoochEnv(target, port)
     const roochServerAddress = super.getRoochServerAddress()
