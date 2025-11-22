@@ -77,6 +77,12 @@ default-members = [
 
 exclude = ["generator/rust"]
 
+[workspace.lints.rust]
+non_local_impls = "allow"
+
+[workspace.lints.clippy]
+# Add clippy lints here if needed
+
 # All workspace members should inherit these keys
 # for package declarations.
 [workspace.package]
