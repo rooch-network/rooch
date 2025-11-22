@@ -115,7 +115,6 @@ export class TestBox {
         log(`Using caller-specified port ${port} for Rooch server`)
       }
 
-
       // Generate a random port for metrics
       const metricsPort = await getUnusedPort()
 
@@ -315,7 +314,9 @@ export class TestBox {
             // Process already dead, ignore
           }
         }, 2000)
-        reject(new Error(`Timeout (${timeoutMs}ms) waiting for: ${waitFor}\nOutput so far: ${output}`))
+        reject(
+          new Error(`Timeout (${timeoutMs}ms) waiting for: ${waitFor}\nOutput so far: ${output}`),
+        )
       }, timeoutMs)
 
       child.on('spawn', () => {
@@ -354,7 +355,11 @@ export class TestBox {
       child.on('close', (code) => {
         clearTimeout(timeout)
         if (!output.includes(waitFor)) {
-          reject(new Error(`Process exited with code ${code}. Expected output not found: ${waitFor}\nFull output: ${output}`))
+          reject(
+            new Error(
+              `Process exited with code ${code}. Expected output not found: ${waitFor}\nFull output: ${output}`,
+            ),
+          )
         }
       })
     })
@@ -368,15 +373,22 @@ export class TestBox {
       namedAddresses: 'rooch_examples=default',
     },
   ) {
-    // Replace 'default' with actual address
-    let addr = await this.defaultCmdAddress()
-    let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
-    log('publish package:', packagePath, 'rooch Dir:', this.roochDir, 'named addresses:', fixedNamedAddresses)
+    // The rooch CLI supports 'default' keyword in named addresses
+    // Example: --named-addresses alice=0x1234,bob=default
+    // 'default' will be automatically resolved to the active account address
+    log(
+      'publish package:',
+      packagePath,
+      'rooch Dir:',
+      this.roochDir,
+      'named addresses:',
+      options.namedAddresses,
+    )
 
     const result = this.roochCommand(
-      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${fixedNamedAddresses} --json`,
+      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
     )
-    
+
     // The output contains both compilation logs and JSON result
     // Find the JSON object in the output (starts with '{' and ends with '}')
     const startIndex = result.indexOf('{')
@@ -384,10 +396,10 @@ export class TestBox {
       log('Failed to find JSON in output:', result)
       return false
     }
-    
+
     // Extract from first '{' to the end, it should be the JSON response
     const jsonPart = result.substring(startIndex)
-    
+
     try {
       const { execution_info } = JSON.parse(jsonPart)
       return execution_info?.status?.type === 'executed'
