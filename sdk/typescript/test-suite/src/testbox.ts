@@ -222,41 +222,29 @@ export class TestBox {
         // Try graceful shutdown first with SIGTERM
         process.kill(pid, 'SIGTERM')
         log(`Sent SIGTERM to process ${pid}`)
-
-        // Wait a bit, then force kill if process still exists
-        setTimeout(() => {
-          try {
-            // Check if process still exists (will throw if not)
-            process.kill(pid, 0)
-            // Process still exists, force kill
-            log(`Process ${pid} still running, sending SIGKILL`)
-            process.kill(pid, 'SIGKILL')
-          } catch (e) {
-            // Process already dead, this is expected
-            log(`Process ${pid} already terminated`)
-          }
-        }, 2000)
       } catch (e: any) {
         // Process might already be dead
-        log(`Failed to kill process ${pid}: ${e.message}`)
+        log(`Failed to send SIGTERM to process ${pid}: ${e.message}`)
       }
 
-      // Fallback: kill any process listening on the port
+      // Fallback: kill any process listening on the port (synchronous cleanup)
       if (this.roochPort) {
         try {
           log(`Cleaning up any process on port ${this.roochPort}`)
-          const { execSync } = require('child_process')
           // Use platform-appropriate command
           if (process.platform === 'win32') {
+            // Windows: Use double %% for batch execution
             execSync(
-              `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${this.roochPort}') do taskkill /F /PID %a`,
+              `for /f "tokens=5" %%a in ('netstat -aon ^| findstr :${this.roochPort}') do taskkill /F /PID %%a`,
               { stdio: 'ignore' },
             )
           } else {
+            // Unix-like: Use lsof + kill
             execSync(`lsof -ti:${this.roochPort} | xargs kill -9 2>/dev/null || true`, {
               stdio: 'ignore',
             })
           }
+          log(`Port ${this.roochPort} cleanup completed`)
         } catch (e) {
           // Ignore errors - port might already be free
           log(`Port cleanup completed (or was already free)`)
