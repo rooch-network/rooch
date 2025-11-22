@@ -38,6 +38,7 @@ use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
+use rooch_pruner::metrics::PrunerMetrics;
 use rooch_pruner::pruner::StatePruner;
 use rooch_relayer::actor::messages::RelayTick;
 use rooch_relayer::actor::relayer::RelayerActor;
@@ -217,13 +218,16 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         rooch_db.indexer_reader.clone(),
     );
 
+    // Init pruner metrics
+    let pruner_metrics = Arc::new(PrunerMetrics::new(&prometheus_registry));
+
     // start pruner
     let pruner = StatePruner::start(
         Arc::new(opt.pruner.clone()),
         Arc::new(moveos_store.clone()),
         Arc::new(rooch_store.clone()),
         shutdown_tx.subscribe(),
-        None, // No metrics for now - will need rooch-pruner dependency to add PrunerMetrics
+        Some(pruner_metrics),
     )?;
 
     // Check for key pairs

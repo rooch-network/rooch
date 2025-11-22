@@ -68,7 +68,7 @@ impl StatePruner {
                 let bloom_size_bytes = cfg.bloom_bits / 8 + (cfg.bloom_bits % 8 != 0) as usize;
                 metrics
                     .pruner_bloom_filter_size_bytes
-                    .with_label_values(&[])
+                    .with_label_values(&["Init"])
                     .set(bloom_size_bytes as f64);
             }
             thread::sleep(Duration::from_secs(60));
