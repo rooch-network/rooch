@@ -134,3 +134,4 @@ mimalloc = { workspace = true }
 [build-dependencies]
 anyhow = { workspace = true }
 vergen-git2 = { workspace = true }
+cc = "1.2"

@@ -184,14 +184,14 @@ pub fn execute_tx_locally_with_gas_profile(
     result
 }
 
-pub fn prepare_execute_env(
+pub fn prepare_execute_env<'a>(
     state_root: ObjectMeta,
-    client_resolver: &ClientResolver,
+    client_resolver: &'a ClientResolver,
     tx: RoochTransactionData,
 ) -> (
     MoveOSVM,
     Rc<RwLock<ObjectRuntime>>,
-    &ClientResolver,
+    &'a ClientResolver,
     VerifiedMoveAction,
     CostTable,
 ) {

@@ -27,11 +27,11 @@ impl<'a> Drop for GaugeGuard<'a> {
 
 pub trait GaugeGuardFutureExt: Future + Sized {
     /// Count number of in flight futures running
-    fn count_in_flight(self, g: &IntGauge) -> GaugeGuardFuture<Self>;
+    fn count_in_flight(self, g: &IntGauge) -> GaugeGuardFuture<'_, Self>;
 }
 
 impl<F: Future> GaugeGuardFutureExt for F {
-    fn count_in_flight(self, g: &IntGauge) -> GaugeGuardFuture<Self> {
+    fn count_in_flight(self, g: &IntGauge) -> GaugeGuardFuture<'_, Self> {
         GaugeGuardFuture {
             f: Box::pin(self),
             _guard: GaugeGuard::acquire(g),

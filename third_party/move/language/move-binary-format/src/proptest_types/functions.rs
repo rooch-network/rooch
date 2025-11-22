@@ -100,7 +100,6 @@ where
 }
 
 #[allow(clippy::legacy_numeric_constants)]
-
 impl<T> InstantiationState<T>
 where
     T: Eq + Clone + Hash,

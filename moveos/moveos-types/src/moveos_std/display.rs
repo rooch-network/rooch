@@ -60,7 +60,6 @@ fn display_move_string(move_struct: &AnnotatedMoveStruct) -> Result<String> {
 //         unreachable!("Invalid object_id type")
 //     }
 // }
-
 fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Result<String> {
     let move_std_string = StructTag {
         address: MOVE_STD_ADDRESS,
@@ -152,8 +151,8 @@ fn parse_template(
             '}' if !escaped => {
                 in_braces = false;
                 let value = get_value_from_move_struct(move_value, &var_name, metadata);
-                if value.is_ok() {
-                    output = output.replace(&format!("{{{}}}", var_name), &value.unwrap());
+                if let Ok(ref val) = value {
+                    output = output.replace(&format!("{{{}}}", var_name), val);
                 }
             }
             _ if !escaped => {

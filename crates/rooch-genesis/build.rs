@@ -1,10 +1,6 @@
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
+// Build script to link probestack fix for Rust 1.91 + wasmer compatibility
 
-use anyhow::Result;
-use vergen_git2::{BuildBuilder, CargoBuilder, Emitter, Git2Builder, RustcBuilder};
-
-fn main() -> Result<()> {
+fn main() {
     // Fix for wasmer VM __rust_probestack undefined symbol with Rust 1.91
     println!("cargo:rustc-link-arg=-Wl,--allow-multiple-definition");
 
@@ -19,12 +15,4 @@ fn main() -> Result<()> {
 
         println!("cargo:rustc-link-lib=static=probestack_fix");
     }
-
-    Emitter::default()
-        .add_instructions(&BuildBuilder::all_build()?)?
-        .add_instructions(&CargoBuilder::all_cargo()?)?
-        .add_instructions(&Git2Builder::all_git()?)?
-        .add_instructions(&RustcBuilder::all_rustc()?)?
-        .emit()?;
-    Ok(())
 }

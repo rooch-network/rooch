@@ -42,7 +42,7 @@
 //! left child and the new root. We should
 //!   1) create a new version for `key1` child.
 //!   2) update `root1'` directly instead of making another version.
-//!         The resulting tree should look like:
+//!      The resulting tree should look like:
 //!
 //! ```text
 //!                   (on disk)                                     (in memory)

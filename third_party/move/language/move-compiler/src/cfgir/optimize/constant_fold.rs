@@ -90,12 +90,9 @@ fn optimize_exp(e: &mut Exp) -> bool {
         E::ModuleCall(mcall) => optimize_exp(&mut mcall.arguments),
         E::Builtin(_, e) | E::Freeze(e) | E::Dereference(e) | E::Borrow(_, e, _) => optimize_exp(e),
 
-        E::Pack(_, _, fields) => fields
-            .iter_mut()
-            .map(|(_, _, e)| optimize_exp(e))
-            .any(|changed| changed),
+        E::Pack(_, _, fields) => fields.iter_mut().any(|(_, _, e)| optimize_exp(e)),
 
-        E::ExpList(es) => es.iter_mut().map(optimize_exp_item).any(|changed| changed),
+        E::ExpList(es) => es.iter_mut().any(optimize_exp_item),
 
         //************************************
         // Foldable cases

@@ -514,9 +514,9 @@ fn block_(context: &mut Context, cur_label: &mut Label, blocks: H::Block) -> Bas
     macro_rules! loop_block {
         (begin: $begin:expr,end: $end:expr,body: $body:expr, $block:expr) => {{
             let begin = $begin;
-            let old_begin = mem::replace(&mut context.loop_begin, Some(begin));
-            let old_end = mem::replace(&mut context.loop_end, Some($end));
-            let old_next = mem::replace(&mut context.next_label, Some(begin));
+            let old_begin = context.loop_begin.replace(begin);
+            let old_end = context.loop_end.replace($end);
+            let old_next = context.next_label.replace(begin);
             block(context, $body, $block);
             context.next_label = old_next;
             context.loop_end = old_end;
@@ -553,7 +553,7 @@ fn block_(context: &mut Context, cur_label: &mut Label, blocks: H::Block) -> Bas
                 finish_block!(next_label: next_label);
 
                 // If branches
-                let old_next = mem::replace(&mut context.next_label, Some(next_label));
+                let old_next = context.next_label.replace(next_label);
                 block(context, if_true, if_block);
                 block(context, if_false, else_block);
                 context.next_label = old_next;

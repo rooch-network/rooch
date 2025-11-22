@@ -13,10 +13,11 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("network");
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[repr(u8)]
 pub enum Network {
+    #[default]
     Bitcoin = 1,
     Testnet = 2,
     Signet = 3,
@@ -77,13 +78,6 @@ impl Network {
 
     pub fn is_mainnet(&self) -> bool {
         *self == Network::Bitcoin
-    }
-}
-
-impl Default for Network {
-    // default bitcoin main network
-    fn default() -> Self {
-        Self::Bitcoin
     }
 }
 

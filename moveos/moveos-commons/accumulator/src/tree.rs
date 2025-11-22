@@ -4,6 +4,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0s
 
+#![allow(unexpected_cfgs)]
+
 use crate::node_index::FrozenSubTreeIterator;
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
@@ -213,10 +215,7 @@ impl AccumulatorTree {
     pub fn flush(&mut self) -> Result<()> {
         let nodes = &mut self.update_nodes;
         if !nodes.is_empty() {
-            let nodes_vec = nodes
-                .iter()
-                .map(|(_, node)| node.clone())
-                .collect::<Vec<AccumulatorNode>>();
+            let nodes_vec = nodes.values().cloned().collect::<Vec<AccumulatorNode>>();
 
             self.store.save_nodes(nodes_vec)?;
             nodes.clear();
@@ -228,10 +227,7 @@ impl AccumulatorTree {
     pub fn pop_unsaved_nodes(&mut self) -> Option<Vec<AccumulatorNode>> {
         let nodes = &mut self.update_nodes;
         if !nodes.is_empty() {
-            let nodes_vec = nodes
-                .iter()
-                .map(|(_, node)| node.clone())
-                .collect::<Vec<AccumulatorNode>>();
+            let nodes_vec = nodes.values().cloned().collect::<Vec<AccumulatorNode>>();
             return Some(nodes_vec);
         }
 

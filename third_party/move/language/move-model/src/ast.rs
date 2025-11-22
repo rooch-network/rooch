@@ -30,8 +30,6 @@ use std::{
 };
 
 // =================================================================================================
-/// # Declarations
-
 #[derive(Debug)]
 pub struct SpecVarDecl {
     pub loc: Loc,
@@ -59,8 +57,6 @@ pub struct SpecFunDecl {
 }
 
 // =================================================================================================
-/// # Attributes
-
 #[derive(Debug, Clone)]
 pub enum AttributeValue {
     Value(NodeId, Value),
@@ -74,8 +70,6 @@ pub enum Attribute {
 }
 
 // =================================================================================================
-/// # Conditions
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ConditionKind {
     LetPost(Symbol),
@@ -256,7 +250,6 @@ impl Condition {
 
 // =================================================================================================
 /// # Specifications
-
 /// A set of properties stemming from pragmas.
 pub type PropertyBag = BTreeMap<Symbol, PropertyValue>;
 
@@ -353,7 +346,6 @@ pub struct GlobalInvariant {
 
 // =================================================================================================
 /// # Expressions
-
 /// A type alias for temporaries. Those are locals used in bytecode.
 pub type TempIndex = usize;
 
@@ -1158,7 +1150,6 @@ impl<'a> fmt::Display for EnvDisplay<'a, Value> {
 
 // =================================================================================================
 /// # Purity of Expressions
-
 impl Operation {
     /// Determines whether this operation depends on global memory
     pub fn uses_memory<F>(&self, check_pure: &F) -> bool
@@ -1268,7 +1259,6 @@ impl ExpData {
 
 // =================================================================================================
 /// # Names
-
 /// Represents an account address, which can be either numerical or a symbol
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub enum Address {

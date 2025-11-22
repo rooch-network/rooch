@@ -153,7 +153,7 @@ impl EventDBStore {
         let last_seq = event_handle.count;
         let ids = if descending_order {
             let start = cursor.unwrap_or(last_seq);
-            let end = if start >= limit { start - limit } else { 0 };
+            let end = start.saturating_sub(limit);
 
             (end..start).rev().collect::<Vec<_>>()
         } else {
@@ -179,7 +179,7 @@ impl EventDBStore {
 
         let event_ids = ids
             .into_iter()
-            .map(|v| (EventID::new(event_handle_id.clone(), v)))
+            .map(|v| EventID::new(event_handle_id.clone(), v))
             .collect::<Vec<_>>();
         Ok(self
             .multi_get_events(event_ids)?

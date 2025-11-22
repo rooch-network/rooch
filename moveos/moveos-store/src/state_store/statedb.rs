@@ -211,7 +211,7 @@ impl StateDBStore {
         &self,
         state_root: H256,
         starting_key: Option<FieldKey>,
-    ) -> Result<SMTIterator<FieldKey, ObjectState, NodeDBStore>> {
+    ) -> Result<SMTIterator<'_, FieldKey, ObjectState, NodeDBStore>> {
         let fn_name = function_name!();
         let _timer = self
             .metrics

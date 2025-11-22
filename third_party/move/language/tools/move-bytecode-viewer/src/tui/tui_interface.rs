@@ -22,7 +22,7 @@ pub struct TUIOutput<'a> {
     pub right_screen: Vec<Spans<'a>>,
 }
 
-pub trait TUIInterface {
+pub trait TUIInterface<'a> {
     /// The title to be used for the left screen
     const LEFT_TITLE: &'static str;
 
@@ -31,7 +31,7 @@ pub trait TUIInterface {
 
     /// Function called on each redraw. The `TUIOutput` contains that updated data to display on
     /// each pane.
-    fn on_redraw(&mut self, line_number: u16, column_number: u16) -> TUIOutput;
+    fn on_redraw(&mut self, line_number: u16, column_number: u16) -> TUIOutput<'a>;
 
     /// Bounds the line number so that it does not run past the text.
     fn bound_line(&self, line_number: u16) -> u16;
@@ -54,11 +54,11 @@ impl DebugInterface {
     }
 }
 
-impl TUIInterface for DebugInterface {
+impl<'a> TUIInterface<'a> for DebugInterface {
     const LEFT_TITLE: &'static str = "Left pane";
     const RIGHT_TITLE: &'static str = "Right pane";
 
-    fn on_redraw(&mut self, line_number: u16, column_number: u16) -> TUIOutput {
+    fn on_redraw(&mut self, line_number: u16, column_number: u16) -> TUIOutput<'a> {
         TUIOutput {
             left_screen: self.text.iter().map(|x| Spans::from(x.clone())).collect(),
             right_screen: vec![Spans::from(format!(
@@ -82,7 +82,7 @@ impl TUIInterface for DebugInterface {
 
 /// Starts a two-pane TUI using the provided `Interface` to update the screen according to cursor
 /// movements.
-pub fn start_tui_with_interface<Interface: TUIInterface>(
+pub fn start_tui_with_interface<'a, Interface: TUIInterface<'a>>(
     interface: Interface,
 ) -> Result<(), Box<dyn Error>> {
     enable_raw_mode()?;
