@@ -29,6 +29,7 @@ export class TestBox {
   roochDir: string
 
   roochPort?: number
+  metricsPort?: number
   private miningIntervalId: NodeJS.Timeout | null = null
   _defaultCmdAddress = ''
 
@@ -95,6 +96,7 @@ export class TestBox {
   async loadRoochEnv(
     target: RoochContainer | 'local' | 'container' = 'local',
     port: number = 6767,
+    serverArgs: string[] = [],
   ) {
     if (target && typeof target !== 'string') {
       await target.start()
@@ -118,6 +120,9 @@ export class TestBox {
       const metricsPort = await getUnusedPort()
 
       const cmds = ['server', 'start', '-n', 'local', '-d', 'TMP', '--port', port.toString()]
+      if (serverArgs.length > 0) {
+        cmds.push(...serverArgs)
+      }
 
       if (this.bitcoinContainer) {
         cmds.push(
@@ -145,6 +150,7 @@ export class TestBox {
 
       this.roochContainer = parseInt(result.toString().trim(), 10)
       this.roochPort = port
+      this.metricsPort = metricsPort
 
       log(`Rooch server started with PID ${this.roochContainer} on port ${port}`)
 
@@ -254,6 +260,10 @@ export class TestBox {
 
   delay(second: number) {
     return new Promise((resolve) => setTimeout(resolve, second * 1000))
+  }
+
+  stop() {
+    this.cleanEnv()
   }
 
   shell(args: string[] | string): string {
@@ -477,6 +487,10 @@ export class TestBox {
     }
 
     return `127.0.0.1:6767`
+  }
+
+  getMetricsPort(): number | undefined {
+    return this.metricsPort
   }
 
   async getFaucetBTC(address: string, amount: number = 0.001): Promise<string> {
