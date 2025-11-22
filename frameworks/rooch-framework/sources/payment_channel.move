@@ -370,7 +370,8 @@ module rooch_framework::payment_channel {
         
         // Emit withdrawal event
         let hub_id = object::id(hub_obj);
-        event::emit(PaymentHubWithdrawEvent {
+        let event_handle_id = hub_event_handle_id<PaymentHubWithdrawEvent>(hub_id);
+        event::emit_with_handle(event_handle_id, PaymentHubWithdrawEvent {
             hub_id,
             owner: owner_addr,
             coin_type: coin_type_name,
@@ -584,7 +585,8 @@ module rooch_framework::payment_channel {
         };
         
         // Emit claim event
-        event::emit(ChannelClaimedEvent {
+        let event_handle_id = channel_event_handle_id<ChannelClaimedEvent>(channel_id);
+        event::emit_with_handle(event_handle_id, ChannelClaimedEvent {
             channel_id,
             receiver: channel.receiver,
             vm_id_fragment: sender_vm_id_fragment,
@@ -746,7 +748,8 @@ module rooch_framework::payment_channel {
         });
  
         // Emit sub-channel authorized event
-        event::emit(SubChannelAuthorizedEvent {
+        let event_handle_id = channel_event_handle_id<SubChannelAuthorizedEvent>(channel_id);
+        event::emit_with_handle(event_handle_id, SubChannelAuthorizedEvent {
             channel_id,
             sender: did_address,
             vm_id_fragment,
@@ -980,7 +983,8 @@ module rooch_framework::payment_channel {
         decrease_active_channel_count(channel.sender, channel.coin_type);
         
         // Emit channel closed event
-        event::emit(ChannelClosedEvent {
+        let event_handle_id = channel_event_handle_id<ChannelClosedEvent>(channel_id);
+        event::emit_with_handle(event_handle_id, ChannelClosedEvent {
             channel_id,
             sender: channel.sender,
             receiver: receiver_addr,
@@ -1038,7 +1042,8 @@ module rooch_framework::payment_channel {
             decrease_active_channel_count(sender_addr, channel.coin_type);
             
             // Emit immediate closure event (no funds to transfer)
-            event::emit(ChannelCancellationFinalizedEvent {
+            let event_handle_id = channel_event_handle_id<ChannelCancellationFinalizedEvent>(channel_id);
+            event::emit_with_handle(event_handle_id, ChannelCancellationFinalizedEvent {
                 channel_id,
                 sender: sender_addr,
                 final_amount: 0u256,
@@ -1084,7 +1089,8 @@ module rooch_framework::payment_channel {
         });
         
         // Emit cancellation event
-        event::emit(ChannelCancellationInitiatedEvent {
+        let event_handle_id = channel_event_handle_id<ChannelCancellationInitiatedEvent>(channel_id);
+        event::emit_with_handle(event_handle_id, ChannelCancellationInitiatedEvent {
             channel_id,
             sender: sender_addr,
             initiated_time: current_time,
@@ -1188,7 +1194,8 @@ module rooch_framework::payment_channel {
         };
         
         // Emit dispute event
-        event::emit(ChannelDisputeEvent {
+        let event_handle_id = channel_event_handle_id<ChannelDisputeEvent>(channel_id);
+        event::emit_with_handle(event_handle_id, ChannelDisputeEvent {
             channel_id,
             receiver,
             dispute_amount: dispute_accumulated_amount,
@@ -1267,7 +1274,8 @@ module rooch_framework::payment_channel {
         decrease_active_channel_count(channel.sender, channel.coin_type);
         
         // Emit finalization event
-        event::emit(ChannelCancellationFinalizedEvent {
+        let event_handle_id = channel_event_handle_id<ChannelCancellationFinalizedEvent>(channel_id);
+        event::emit_with_handle(event_handle_id, ChannelCancellationFinalizedEvent {
             channel_id,
             sender: channel.sender,
             final_amount,
@@ -1411,6 +1419,16 @@ module rooch_framework::payment_channel {
     }
 
     // === Internal Helper Functions ===
+
+    /// Derive per-hub event handle for hub modification events
+    fun hub_event_handle_id<T>(hub_id: ObjectID): ObjectID {
+        event::custom_event_handle_id<ObjectID, T>(hub_id)
+    }
+
+    /// Derive per-channel event handle for channel modification events
+    fun channel_event_handle_id<T>(channel_id: ObjectID): ObjectID {
+        event::custom_event_handle_id<ObjectID, T>(channel_id)
+    }
 
     /// Decrease active channel count for a specific coin type
     fun decrease_active_channel_count(sender_addr: address, coin_type_name: String) {

@@ -355,6 +355,11 @@ module rooch_framework::did {
         resolve_did_object_id(&did_identifier_str)
     }
 
+    /// Derive per-DID event handle for DID modification events
+    fun did_event_handle_id<T>(object_id: ObjectID): ObjectID {
+        event::custom_event_handle_id<ObjectID, T>(object_id)
+    }
+
 
     /// Internal function for creating DID objects. Not exposed as public entry.
     /// This function contains the core logic for DID creation and is called by
@@ -1007,7 +1012,9 @@ module rooch_framework::did {
         };
         
         // Emit verification method added event
-        event::emit(VerificationMethodAddedEvent {
+        let did_object_id = resolve_did_object_id(&did_document_data.id.identifier);
+        let event_handle_id = did_event_handle_id<VerificationMethodAddedEvent>(did_object_id);
+        event::emit_with_handle(event_handle_id, VerificationMethodAddedEvent {
             did: format_did(&did_document_data.id),
             fragment: fragment,
             method_type: method_type,
@@ -1043,7 +1050,9 @@ module rooch_framework::did {
         simple_map::remove(&mut did_document_data.verification_methods, &fragment);
         
         // Emit verification method removed event
-        event::emit(VerificationMethodRemovedEvent {
+        let did_object_id = resolve_did_object_id(&did_document_data.id.identifier);
+        let event_handle_id = did_event_handle_id<VerificationMethodRemovedEvent>(did_object_id);
+        event::emit_with_handle(event_handle_id, VerificationMethodRemovedEvent {
             did: format_did(&did_document_data.id),
             fragment: fragment,
             method_type: removed_method_type,
@@ -1128,7 +1137,9 @@ module rooch_framework::did {
         };
 
         // Emit relationship modified event
-        event::emit(VerificationRelationshipModifiedEvent {
+        let did_object_id = resolve_did_object_id(&did_document_data.id.identifier);
+        let event_handle_id = did_event_handle_id<VerificationRelationshipModifiedEvent>(did_object_id);
+        event::emit_with_handle(event_handle_id, VerificationRelationshipModifiedEvent {
             did: format_did(&did_document_data.id),
             fragment: fragment,
             relationship_type: relationship_type,
@@ -1171,7 +1182,9 @@ module rooch_framework::did {
         remove_from_verification_relationship_internal(target_relationship_vec_mut, &fragment);
         if (vector::length(target_relationship_vec_mut) < original_len) {
             // Emit verification relationship modified event only if removal was successful
-            event::emit(VerificationRelationshipModifiedEvent {
+            let did_object_id = resolve_did_object_id(&did_document_data.id.identifier);
+            let event_handle_id = did_event_handle_id<VerificationRelationshipModifiedEvent>(did_object_id);
+            event::emit_with_handle(event_handle_id, VerificationRelationshipModifiedEvent {
                 did: format_did(&did_document_data.id),
                 fragment: fragment,
                 relationship_type: relationship_type,
@@ -1206,7 +1219,9 @@ module rooch_framework::did {
         simple_map::add(&mut did_document_data.services, fragment, service);
         
         // Emit service added event
-        event::emit(ServiceAddedEvent {
+        let did_object_id = resolve_did_object_id(&did_document_data.id.identifier);
+        let event_handle_id = did_event_handle_id<ServiceAddedEvent>(did_object_id);
+        event::emit_with_handle(event_handle_id, ServiceAddedEvent {
             did: format_did(&did_document_data.id),
             fragment: fragment,
             service_type: service_type,
@@ -1315,7 +1330,9 @@ module rooch_framework::did {
         let (_,_old_service) = simple_map::upsert(&mut did_document_data.services, fragment, updated_service);
         
         // Emit service updated event
-        event::emit(ServiceUpdatedEvent {
+        let did_object_id = resolve_did_object_id(&did_document_data.id.identifier);
+        let event_handle_id = did_event_handle_id<ServiceUpdatedEvent>(did_object_id);
+        event::emit_with_handle(event_handle_id, ServiceUpdatedEvent {
             did: format_did(&did_document_data.id),
             fragment: fragment,
             old_service_type,
@@ -1343,7 +1360,9 @@ module rooch_framework::did {
         simple_map::remove(&mut did_document_data.services, &fragment);
         
         // Emit service removed event
-        event::emit(ServiceRemovedEvent {
+        let did_object_id = resolve_did_object_id(&did_document_data.id.identifier);
+        let event_handle_id = did_event_handle_id<ServiceRemovedEvent>(did_object_id);
+        event::emit_with_handle(event_handle_id, ServiceRemovedEvent {
             did: format_did(&did_document_data.id),
             fragment: fragment,
             service_type: removed_service_type,
