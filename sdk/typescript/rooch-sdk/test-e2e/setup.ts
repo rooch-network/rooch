@@ -26,7 +26,7 @@ export class TestBox extends TestBoxA {
         WebSocketConstructor: Websocket as any,
       }),
     })
-    
+
     // Configure rooch CLI to use the same RPC endpoint
     // This is needed for commands like 'rooch move publish'
     if (url || DEFAULT_NODE_URL) {

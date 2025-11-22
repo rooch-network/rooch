@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { TestBox as TestBoxBase } from '@roochnetwork/test-suite'
-import { Secp256k1Keypair } from '../src/keypairs/index.js'
 
 let globalTestBox: TestBoxBase | null = null
 
@@ -33,4 +32,3 @@ export async function setup() {
     console.log('✅ Global cleanup completed')
   }
 }
-
