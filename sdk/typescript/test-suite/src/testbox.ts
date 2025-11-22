@@ -280,9 +280,18 @@ export class TestBox {
 
   // TODO: support container
   roochCommand(args: string[] | string, envs: string[] = []): string {
-    return execSync(this.buildRoochCommand(args, envs), {
-      encoding: 'utf-8',
-    })
+    try {
+      return execSync(this.buildRoochCommand(args, envs), {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Capture stdout and stderr
+      })
+    } catch (error: any) {
+      // Log the error for debugging
+      log('roochCommand failed:', error.message)
+      if (error.stdout) log('stdout:', error.stdout)
+      if (error.stderr) log('stderr:', error.stderr)
+      throw error
+    }
   }
 
   // TODO: support container
@@ -363,16 +372,34 @@ export class TestBox {
       namedAddresses: 'rooch_examples=default',
     },
   ) {
-    // let addr = await this.defaultCmdAddress()
-    // let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
-    log('publish package:', packagePath, 'rooch Dir:', this.roochDir)
+    // Replace 'default' with actual address
+    let addr = await this.defaultCmdAddress()
+    let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
+    log('publish package:', packagePath, 'rooch Dir:', this.roochDir, 'named addresses:', fixedNamedAddresses)
 
     const result = this.roochCommand(
-      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
+      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${fixedNamedAddresses} --json`,
     )
-    const { execution_info } = JSON.parse(result)
-
-    return execution_info?.status?.type === 'executed'
+    
+    // The output contains both compilation logs and JSON result
+    // Find the JSON object in the output (starts with '{' and ends with '}')
+    const startIndex = result.indexOf('{')
+    if (startIndex === -1) {
+      log('Failed to find JSON in output:', result)
+      return false
+    }
+    
+    // Extract from first '{' to the end, it should be the JSON response
+    const jsonPart = result.substring(startIndex)
+    
+    try {
+      const { execution_info } = JSON.parse(jsonPart)
+      return execution_info?.status?.type === 'executed'
+    } catch (e) {
+      log('Failed to parse JSON:', jsonPart.substring(0, 200), '...')
+      log('Full result length:', result.length)
+      return false
+    }
   }
 
   /**
