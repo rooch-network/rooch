@@ -104,21 +104,17 @@ export class TestBox {
 
     // The container test in the linux environment is incomplete, so use it first
     if (target === 'local') {
-      // Always use dynamic port in local mode to avoid conflicts
-      // Check if the requested port is available, if not, get a random one
-      if (port !== 0) {
-        const available = await isPortAvailable(port)
-        if (!available) {
-          log(`Port ${port} is not available, getting a random port instead`)
-          port = await getUnusedPort()
-        } else {
-          log(`Port ${port} is available`)
-        }
-      } else {
+      // Use dynamic port allocation to avoid conflicts
+      // For fixed ports (6767/6768), prefer dynamic allocation since these are commonly used
+      if (port === 0 || port === 6767 || port === 6768) {
         port = await getUnusedPort()
+        log(`Using dynamically allocated port ${port} for Rooch server`)
+      } else {
+        // For other specific ports, trust the caller's choice
+        // If it fails, roochAsyncCommand will timeout with clear error
+        log(`Using caller-specified port ${port} for Rooch server`)
       }
 
-      log(`Using port ${port} for Rooch server`)
 
       // Generate a random port for metrics
       const metricsPort = await getUnusedPort()
@@ -523,26 +519,10 @@ export class TestBox {
 }
 
 /**
- * Check if a port is available for binding
- * @param port Port number to check
- * @returns Promise that resolves to true if port is available, false otherwise
- */
-export async function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const server = net.createServer()
-    server.once('error', () => {
-      resolve(false)
-    })
-    server.once('listening', () => {
-      server.close()
-      resolve(true)
-    })
-    server.listen(port)
-  })
-}
-
-/**
  * Get an unused port by binding to port 0 (OS will assign a free port)
+ * This ensures the port is available at the moment, though there's still
+ * a small TOCTOU window. For critical applications, the server should
+ * handle bind failures and retry with a new port.
  * @returns Promise that resolves to an available port number
  */
 export async function getUnusedPort(): Promise<number> {
