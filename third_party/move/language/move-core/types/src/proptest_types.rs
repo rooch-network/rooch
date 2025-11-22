@@ -5,7 +5,7 @@
 use crate::{
     account_address::AccountAddress,
     identifier::Identifier,
-    language_storage::{StructTag, TypeTag},
+    language_storage::{ModuleId, StructTag, TypeTag},
     transaction_argument::TransactionArgument,
 };
 use proptest::{collection::vec, prelude::*};
@@ -63,5 +63,16 @@ impl Arbitrary for TransactionArgument {
             vec(any::<u8>(), 0..10).prop_map(TransactionArgument::U8Vector),
         ]
         .boxed()
+    }
+}
+
+impl Arbitrary for ModuleId {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        (any::<AccountAddress>(), any::<Identifier>())
+            .prop_map(|(address, name)| ModuleId::new(address, name))
+            .boxed()
     }
 }

@@ -32,7 +32,7 @@ pub fn is_vm_or_system_reserved_address(addr: AccountAddress) -> bool {
 
 pub fn to_bech32(addr: &AccountAddress) -> Result<String> {
     bech32::encode::<Bech32m>(ROOCH_HRP, addr.into_bytes().as_slice())
-        .map_err(|e| anyhow!(format!("bech32 encode error: {}", e.to_string())))
+        .map_err(|e| anyhow!(format!("bech32 encode error: {}", e)))
 }
 
 pub fn from_str(s: &str) -> Result<AccountAddress> {
@@ -50,12 +50,8 @@ pub fn from_bech32(bech32: &str) -> Result<AccountAddress> {
         data.len() == AccountAddress::LENGTH,
         "invalid account address length"
     );
-    AccountAddress::from_bytes(data.as_slice()).map_err(|e| {
-        anyhow!(format!(
-            "account address from bytes error: {}",
-            e.to_string()
-        ))
-    })
+    AccountAddress::from_bytes(data.as_slice())
+        .map_err(|e| anyhow!(format!("account address from bytes error: {}", e)))
 }
 
 #[cfg(test)]

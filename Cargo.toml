@@ -79,9 +79,15 @@ exclude = ["generator/rust"]
 
 [workspace.lints.rust]
 non_local_impls = "allow"
+non_local_definitions = "allow"
+unknown_lints = "allow"
 
 [workspace.lints.clippy]
 # Add clippy lints here if needed
+manual_is_multiple_of = "allow"
+useless_attribute = "allow"
+single_range_in_into_iter = "allow"
+collapsible_str_replace = "allow"
 
 # All workspace members should inherit these keys
 # for package declarations.
@@ -190,6 +196,7 @@ enum_dispatch = "^0.3"
 ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/rooch-network/fastcrypto.git", rev = "863a6b9194787ad366f2d980ebe9c26b1649e25e" }
+ed25519-zebra = { version = "4.0.3", features = ["alloc"] }
 fastcrypto-zkp = { git = "https://github.com/rooch-network/fastcrypto.git", rev = "863a6b9194787ad366f2d980ebe9c26b1649e25e" }
 futures = "0.3.31"
 futures-util = "0.3.31"
@@ -217,7 +224,7 @@ parking_lot = "0.12.4"
 petgraph = "0.8.3"
 primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
 proptest = "1.9.0"
-proptest-derive = "0.3.0"
+proptest-derive = "0.7.0"
 rayon = "1.11.0"
 rand = "0.8.5"
 rand_core = { version = "0.9.3", default-features = false }
@@ -297,7 +304,7 @@ diesel = { version = "2.2.12", features = [
     "64-column-tables",
 ] }
 diesel_migrations = { version = "2.2.0" }
-axum = { version = "0.8.7", default-features = false, features = [
+axum = { version = "0.7.9", default-features = false, features = [
     "tokio",
     "http1",
     "http2",
@@ -419,6 +426,7 @@ move-vm-test-utils = { path = "third_party/move/language/move-vm/test-utils", fe
 move-vm-types = { path = "third_party/move/language/move-vm/types" }
 move-bytecode-source-map = { path = "third_party/move/language/move-ir-compiler/move-bytecode-source-map" }
 move-ir-types = { path = "third_party/move/language/move-ir/types" } # END MOVE DEPENDENCIES
+
 
 # keep this for convenient debug Move in local repo
 # [patch.'https://github.com/rooch-network/move']

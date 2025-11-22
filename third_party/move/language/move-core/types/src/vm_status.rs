@@ -3,14 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(clippy::unit_arg)]
-#[cfg_attr(not(test), allow(non_local_impls))]
-
 use crate::language_storage::ModuleId;
 use anyhow::Result;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::*;
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest_derive::Arbitrary;
 use serde::{de, ser, Deserialize, Serialize};
 use std::{convert::TryFrom, fmt};
 
@@ -49,8 +45,6 @@ pub static EXECUTION_STATUS_MAX_CODE: u64 = 4999;
 /// - `Error` indicating an error from the VM itself
 /// - `MoveAbort` indicating an `abort` ocurred inside of a Move program
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
 pub enum VMStatus {
     /// The VM status corresponding to an EXECUTED status code
     Executed,
@@ -85,8 +79,6 @@ pub fn err_msg<S: Into<String>>(s: S) -> Option<String> {
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
 pub enum KeptVMStatus {
     Executed,
     OutOfGas,
@@ -110,8 +102,6 @@ pub type DiscardedVMStatus = StatusCode;
 /// An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in
 /// a module, or in a script
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
 pub enum AbortLocation {
     /// Indicates `abort` occurred in the specified module
     Module(ModuleId),

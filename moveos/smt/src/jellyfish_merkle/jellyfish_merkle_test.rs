@@ -25,7 +25,7 @@ use test_helper::{init_mock_db, plus_one};
 fn update_nibble(original_key: &TestKey, n: usize, nibble: u8) -> TestKey {
     assert!(nibble < 16);
     let mut key = original_key.to_vec();
-    key[n / 2] = if n % 2 == 0 {
+    key[n / 2] = if n.is_multiple_of(2) {
         key[n / 2] & 0x0f | nibble << 4
     } else {
         key[n / 2] & 0xf0 | nibble

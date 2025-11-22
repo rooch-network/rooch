@@ -26,7 +26,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.5",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.7.0",
  "rand 0.8.5",
  "rand_core 0.9.3",
  "rocksdb",
@@ -986,7 +986,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edca88bc138befd0323b20752846e6587272d3b03b0343c8ea28a6f819e6e71f"
 dependencies = [
  "async-trait",
- "axum-core 0.4.5",
+ "axum-core",
+ "base64 0.22.1",
  "bytes",
  "futures-util",
  "http 1.3.1",
@@ -995,7 +996,7 @@ dependencies = [
  "hyper 1.8.1",
  "hyper-util",
  "itoa",
- "matchit 0.7.3",
+ "matchit",
  "memchr",
  "mime",
  "percent-encoding",
@@ -1005,47 +1006,14 @@ dependencies = [
  "serde_json",
  "serde_path_to_error",
  "serde_urlencoded",
+ "sha1",
  "sync_wrapper 1.0.2",
  "tokio",
+ "tokio-tungstenite 0.24.0",
  "tower 0.5.2",
  "tower-layer",
  "tower-service",
  "tracing",
-]
-
-[[package]]
-name = "axum"
-version = "0.8.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b098575ebe77cb6d14fc7f32749631a6e44edbef6b796f89b020e99ba20d425"
-dependencies = [
- "axum-core 0.5.5",
- "base64 0.22.1",
- "bytes",
- "form_urlencoded",
- "futures-util",
- "http 1.3.1",
- "http-body 1.0.1",
- "http-body-util",
- "hyper 1.8.1",
- "hyper-util",
- "itoa",
- "matchit 0.8.4",
- "memchr",
- "mime",
- "percent-encoding",
- "pin-project-lite",
- "serde_core",
- "serde_json",
- "serde_path_to_error",
- "serde_urlencoded",
- "sha1",
- "sync_wrapper 1.0.2",
- "tokio",
- "tokio-tungstenite 0.28.0",
- "tower 0.5.2",
- "tower-layer",
- "tower-service",
 ]
 
 [[package]]
@@ -1067,24 +1035,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
-]
-
-[[package]]
-name = "axum-core"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59446ce19cd142f8833f856eb31f3eb097812d1479ab224f54d72428ca21ea22"
-dependencies = [
- "bytes",
- "futures-core",
- "http 1.3.1",
- "http-body 1.0.1",
- "http-body-util",
- "mime",
- "pin-project-lite",
- "sync_wrapper 1.0.2",
- "tower-layer",
- "tower-service",
 ]
 
 [[package]]
@@ -1429,7 +1379,7 @@ name = "bitcoin-move"
 version = "0.11.0"
 dependencies = [
  "anyhow 1.0.100",
- "axum 0.8.7",
+ "axum",
  "bitcoin 0.32.7",
  "brotli 3.5.0",
  "hex",
@@ -3250,7 +3200,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d162beedaa69905488a8da94f5ac3edb4dd4788b732fadb7bd120b2625c1976"
 dependencies = [
  "data-encoding",
- "syn 1.0.109",
+ "syn 2.0.110",
 ]
 
 [[package]]
@@ -3648,7 +3598,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.2",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3796,16 +3746,15 @@ dependencies = [
 
 [[package]]
 name = "ed25519-zebra"
-version = "4.0.3"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d9ce6874da5d4415896cd45ffbc4d1cfc0c4f9c079427bd870742c30f2f65a9"
+checksum = "0017d969298eec91e3db7a2985a8cab4df6341d86e6f3a6f5878b13fb7846bc9"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
- "hashbrown 0.14.5",
- "hex",
  "rand_core 0.6.4",
  "sha2 0.10.9",
+ "subtle",
  "zeroize",
 ]
 
@@ -4024,7 +3973,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6201,7 +6150,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi 0.5.2",
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7068,12 +7017,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 
 [[package]]
-name = "matchit"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
-
-[[package]]
 name = "md-5"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7131,7 +7074,7 @@ version = "0.11.0"
 dependencies = [
  "anyhow 1.0.100",
  "async-trait",
- "axum 0.8.7",
+ "axum",
  "axum-server",
  "dashmap 6.1.0",
  "futures",
@@ -7290,7 +7233,7 @@ dependencies = [
  "indexmap 1.9.3",
  "move-core-types",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.7.0",
  "ref-cast",
  "serde 1.0.228",
  "serde_json",
@@ -7466,7 +7409,8 @@ dependencies = [
  "once_cell",
  "primitive-types 0.10.1",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
+ "proptest-derive 0.7.0",
  "rand 0.8.5",
  "ref-cast",
  "regex",
@@ -8160,7 +8104,7 @@ dependencies = [
  "once_cell",
  "primitive-types 0.12.2",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.7.0",
  "rand 0.8.5",
  "schemars 0.8.22",
  "serde 1.0.228",
@@ -8390,7 +8334,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -9715,6 +9659,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "proptest-derive"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb6dc647500e84a25a85b100e76c85b8ace114c209432dc174f20aac11d4ed6c"
+dependencies = [
+ "proc-macro2 1.0.103",
+ "quote 1.0.42",
+ "syn 2.0.110",
+]
+
+[[package]]
 name = "prost"
 version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9731,7 +9686,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22505a5c94da8e3b7c2996394d1c933236c4d743e81a410bcca4e6989fc066a4"
 dependencies = [
  "bytes",
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools 0.12.1",
  "log",
  "multimap",
@@ -9953,7 +9908,7 @@ dependencies = [
  "once_cell",
  "socket2 0.6.1",
  "tracing",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -10616,6 +10571,7 @@ dependencies = [
  "bcs",
  "bitcoin 0.32.7",
  "bitcoin-client",
+ "cc",
  "ciborium",
  "clap 4.5.53",
  "codespan-reporting",
@@ -10891,7 +10847,7 @@ version = "0.11.0"
 dependencies = [
  "anyhow 1.0.100",
  "async-trait",
- "axum 0.8.7",
+ "axum",
  "axum-server",
  "bcs",
  "clap 4.5.53",
@@ -10979,6 +10935,7 @@ dependencies = [
  "anyhow 1.0.100",
  "bcs",
  "bitcoin-move",
+ "cc",
  "clap 4.5.53",
  "framework-builder",
  "framework-release",
@@ -11075,7 +11032,7 @@ dependencies = [
  "enum_dispatch",
  "fastcrypto",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.7.0",
  "rooch-types",
  "serde 1.0.228",
  "serde_json",
@@ -11366,7 +11323,7 @@ name = "rooch-rpc-server"
 version = "0.11.0"
 dependencies = [
  "anyhow 1.0.100",
- "axum 0.8.7",
+ "axum",
  "bcs",
  "bitcoin-client",
  "bitcoincore-rpc",
@@ -11502,7 +11459,7 @@ dependencies = [
  "multibase",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.7.0",
  "rand 0.8.5",
  "schemars 0.8.22",
  "serde 1.0.228",
@@ -11678,7 +11635,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -12804,7 +12761,7 @@ dependencies = [
  "primitive-types 0.12.2",
  "prometheus",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.7.0",
  "rand 0.8.5",
  "serde 1.0.228",
  "thiserror 1.0.69",
@@ -13284,7 +13241,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -13762,18 +13719,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-tungstenite"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d25a406cddcc431a75d3d9afc6a7c0f7428d4891dd973e4d54c56b46127bf857"
-dependencies = [
- "futures-util",
- "log",
- "tokio",
- "tungstenite 0.28.0",
-]
-
-[[package]]
 name = "tokio-util"
 version = "0.7.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13998,7 +13943,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aea939ea6cfa7c4880f3e7422616624f97a567c16df67b53b11f0d03917a8e46"
 dependencies = [
- "axum 0.7.9",
+ "axum",
  "forwarded-header-value",
  "governor",
  "http 1.3.1",
@@ -14172,23 +14117,6 @@ dependencies = [
  "rand 0.8.5",
  "sha1",
  "thiserror 1.0.69",
- "utf-8",
-]
-
-[[package]]
-name = "tungstenite"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8628dcc84e5a09eb3d8423d6cb682965dea9133204e8fb3efee74c2a0c259442"
-dependencies = [
- "bytes",
- "data-encoding",
- "http 1.3.1",
- "httparse",
- "log",
- "rand 0.9.2",
- "sha1",
- "thiserror 2.0.17",
  "utf-8",
 ]
 
@@ -15030,7 +14958,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
