@@ -10,16 +10,16 @@ use crate::{
 use anyhow::Error;
 
 /// Traits for resolving Move modules and resources from persistent storage
-
+///
 /// A persistent storage backend that can resolve modules by address + name.
 /// Storage backends should return
 ///   - Ok(Some(..)) if the data exists
 ///   - Ok(None)     if the data does not exist
 ///   - Err(..)      only when something really wrong happens, for example
-///                    - invariants are broken and observable from the storage side
-///                      (this is not currently possible as ModuleId and StructTag
-///                       are always structurally valid)
-///                    - storage encounters internal error
+///     - invariants are broken and observable from the storage side
+///       (this is not currently possible as ModuleId and StructTag
+///       are always structurally valid)
+///     - storage encounters internal error
 pub trait ModuleResolver {
     fn get_module_metadata(&self, module_id: &ModuleId) -> Vec<Metadata>;
 
@@ -35,10 +35,10 @@ pub fn resource_size(resource: &Option<Vec<u8>>) -> usize {
 ///   - Ok(Some(..)) if the data exists
 ///   - Ok(None)     if the data does not exist
 ///   - Err(..)      only when something really wrong happens, for example
-///                    - invariants are broken and observable from the storage side
-///                      (this is not currently possible as ModuleId and StructTag
-///                       are always structurally valid)
-///                    - storage encounters internal error
+///     - invariants are broken and observable from the storage side
+///       (this is not currently possible as ModuleId and StructTag
+///       are always structurally valid)
+///     - storage encounters internal error
 pub trait ResourceResolver {
     fn get_resource_with_metadata(
         &self,

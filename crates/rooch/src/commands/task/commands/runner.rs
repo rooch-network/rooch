@@ -51,7 +51,7 @@ impl FunctionRunnerArgs {
         sender: RoochAddress,
         max_gas_amount: Option<u64>,
         context: &WalletContext,
-    ) -> Result<FunctionRunner> {
+    ) -> Result<FunctionRunner<'_>> {
         let address_mapping = context.address_mapping();
 
         let args = self

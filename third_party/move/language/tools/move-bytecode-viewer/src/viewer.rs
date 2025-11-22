@@ -38,13 +38,13 @@ impl<BytecodeViewer: LeftScreen, SourceViewer: RightScreen<BytecodeViewer>>
     }
 }
 
-impl<BytecodeViewer: LeftScreen, SourceViewer: RightScreen<BytecodeViewer>> TUIInterface
+impl<'a, BytecodeViewer: LeftScreen, SourceViewer: RightScreen<BytecodeViewer>> TUIInterface<'a>
     for Viewer<BytecodeViewer, SourceViewer>
 {
     const LEFT_TITLE: &'static str = "Bytecode";
     const RIGHT_TITLE: &'static str = "Source Code";
 
-    fn on_redraw(&mut self, line_number: u16, column_number: u16) -> TUIOutput {
+    fn on_redraw(&mut self, line_number: u16, column_number: u16) -> TUIOutput<'a> {
         // Highlight style
         let style: Style = Style::default().bg(Color::Red);
         let report = match self

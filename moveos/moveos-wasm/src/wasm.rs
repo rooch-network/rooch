@@ -3,9 +3,7 @@
 
 use std::collections::BTreeMap;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex};
-
-use once_cell::sync::Lazy;
+use std::sync::{Arc, Mutex, OnceLock};
 use rand;
 use tracing::{debug, error, warn};
 use wasmer::Value::I32;
@@ -48,42 +46,29 @@ The WASMInstance must be protected by the locker which owned by the signer
     while we enable the parallel tx execution.
 The way we're doing it now is by using this big global lock, but it's too broad.
  */
-static mut GLOBAL_INSTANCE_POOL: Lazy<Arc<Mutex<BTreeMap<u64, WASMInstance>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(BTreeMap::new())));
+static GLOBAL_INSTANCE_POOL: OnceLock<Arc<Mutex<BTreeMap<u64, WASMInstance>>>> = OnceLock::new();
 
 pub fn insert_wasm_instance(instance: WASMInstance) -> anyhow::Result<u64> {
+    let instance_pool = GLOBAL_INSTANCE_POOL.get_or_init(|| Arc::new(Mutex::new(BTreeMap::new())));
     loop {
-        unsafe {
-            let instance_id: u64 = rand::random();
-            let mut instance_pool = match GLOBAL_INSTANCE_POOL.lock() {
-                Ok(pool_guard) => pool_guard,
-                Err(_) => {
-                    return Err(anyhow::Error::msg("get global instance pool failed"));
-                }
-            };
-            if instance_pool.get(&instance_id).is_none() {
-                instance_pool.insert(instance_id, instance);
-                return Ok(instance_id);
-            }
+        let instance_id: u64 = rand::random();
+        let mut pool_guard = instance_pool.lock().map_err(|_| anyhow::Error::msg("get global instance pool failed"))?;
+        if pool_guard.get(&instance_id).is_none() {
+            pool_guard.insert(instance_id, instance);
+            return Ok(instance_id);
         }
     }
 }
 
 pub fn get_instance_pool() -> Arc<Mutex<BTreeMap<u64, WASMInstance>>> {
-    unsafe { GLOBAL_INSTANCE_POOL.clone() }
+    GLOBAL_INSTANCE_POOL.get_or_init(|| Arc::new(Mutex::new(BTreeMap::new()))).clone()
 }
 
 pub fn remove_instance(instance_id: u64) -> anyhow::Result<()> {
-    unsafe {
-        let mut instance_pool = match GLOBAL_INSTANCE_POOL.lock() {
-            Ok(pool_guard) => pool_guard,
-            Err(_) => {
-                return Err(anyhow::Error::msg("get global instance pool failed"));
-            }
-        };
-        instance_pool.remove(&instance_id);
-        Ok(())
-    }
+    let instance_pool = GLOBAL_INSTANCE_POOL.get_or_init(|| Arc::new(Mutex::new(BTreeMap::new())));
+    let mut pool_guard = instance_pool.lock().map_err(|_| anyhow::Error::msg("get global instance pool failed"))?;
+    pool_guard.remove(&instance_id);
+    Ok(())
 }
 
 #[allow(dead_code)]

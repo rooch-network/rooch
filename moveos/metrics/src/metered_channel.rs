@@ -252,7 +252,7 @@ impl<T> Sender<T> {
 }
 
 ////////////////////////////////
-/// Stream API Wrappers!
+// /// Stream API Wrappers!
 ////////////////////////////////
 
 /// A wrapper around [`crate::metered_channel::Receiver`] that implements [`Stream`].
@@ -312,7 +312,7 @@ impl<T> From<Receiver<T>> for ReceiverStream<T> {
 // TODO: add prom metrics reporting for gauge and migrate all existing use cases.
 
 ////////////////////////////////////////////////////////////////
-/// Constructor
+// /// Constructor
 ////////////////////////////////////////////////////////////////
 
 /// Similar to `mpsc::channel`, `channel` creates a pair of `Sender` and `Receiver`

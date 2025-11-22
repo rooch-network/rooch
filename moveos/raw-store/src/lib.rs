@@ -546,7 +546,7 @@ where
 
     fn get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
-    fn iter(&self) -> Result<SchemaIterator<K, V>>;
+    fn iter(&self) -> Result<SchemaIterator<'_, K, V>>;
 
     fn multiple_get_raw(&self, keys: Vec<K>) -> Result<Vec<Option<Vec<u8>>>>;
 }
@@ -631,7 +631,7 @@ where
         KVStore::get(self.get_store(), key)
     }
 
-    fn iter(&self) -> Result<SchemaIterator<K, V>> {
+    fn iter(&self) -> Result<SchemaIterator<'_, K, V>> {
         let db = self
             .get_store()
             .store()

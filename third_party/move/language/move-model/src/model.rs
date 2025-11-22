@@ -73,8 +73,6 @@ use std::{
 };
 
 // =================================================================================================
-/// # Constants
-
 /// A name we use to represent a script as a module.
 pub const SCRIPT_MODULE_NAME: &str = "<SELF>";
 
@@ -85,8 +83,6 @@ pub const SCRIPT_BYTECODE_FUN_NAME: &str = "<SELF>";
 pub const GHOST_MEMORY_PREFIX: &str = "Ghost$";
 
 // =================================================================================================
-/// # Locations
-
 /// A location, consisting of a FileId and a span in this file.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Loc {
@@ -173,7 +169,6 @@ pub type MoveIrLoc = move_ir_types::location::Loc;
 ///
 /// In any case, ids are opaque in the sense that if someone has a StructId or similar in hand,
 /// it is known to be defined in the environment, as it has been obtained also from the environment.
-
 /// Raw index type used in ids. 16 bits are sufficient currently.
 pub type RawIndex = u16;
 
@@ -411,12 +406,11 @@ impl QualifiedInstId<StructId> {
 }
 
 // =================================================================================================
-/// # Verification Scope
-
 /// Defines what functions to verify.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum VerificationScope {
     /// Verify only public functions.
+    #[default]
     Public,
     /// Verify all functions.
     All,
@@ -428,11 +422,6 @@ pub enum VerificationScope {
     None,
 }
 
-impl Default for VerificationScope {
-    fn default() -> Self {
-        Self::Public
-    }
-}
 
 impl VerificationScope {
     /// Whether verification is exclusive to only one function or module. If set, this overrides
@@ -454,8 +443,6 @@ impl VerificationScope {
 }
 
 // =================================================================================================
-/// # Global Environment
-
 /// Global environment for a set of modules.
 #[derive(Debug)]
 pub struct GlobalEnv {
@@ -719,7 +706,7 @@ impl GlobalEnv {
     }
 
     /// Find all target modules and return in a vector
-    pub fn get_target_modules(&self) -> Vec<ModuleEnv> {
+    pub fn get_target_modules(&self) -> Vec<ModuleEnv<'_>> {
         let mut target_modules: Vec<ModuleEnv> = vec![];
         for module_env in self.get_modules() {
             if module_env.is_target() {
@@ -1730,7 +1717,7 @@ impl GlobalEnv {
     }
 
     /// Produce a TypeDisplayContext to print types within the scope of this env
-    pub fn get_type_display_ctx(&self) -> TypeDisplayContext {
+    pub fn get_type_display_ctx(&self) -> TypeDisplayContext<'_> {
         TypeDisplayContext::new(self)
     }
 
@@ -1800,8 +1787,6 @@ impl GlobalEnv {
 }
 
 // =================================================================================================
-/// # Module Environment
-
 /// Represents data for a module.
 #[derive(Debug)]
 pub struct ModuleData {
@@ -2473,8 +2458,6 @@ impl<'env> ModuleEnv<'env> {
 }
 
 // =================================================================================================
-/// # Struct Environment
-
 #[derive(Debug)]
 pub struct StructData {
     /// The name of this struct.
@@ -2709,8 +2692,6 @@ impl<'env> StructEnv<'env> {
 }
 
 // =================================================================================================
-/// # Field Environment
-
 #[derive(Debug)]
 pub struct FieldData {
     /// The name of this field.
@@ -2776,8 +2757,6 @@ impl<'env> FieldEnv<'env> {
 }
 
 // =================================================================================================
-/// # Named Constant Environment
-
 #[derive(Debug)]
 pub struct NamedConstantData {
     /// The name of this constant
@@ -2834,8 +2813,6 @@ impl<'env> NamedConstantEnv<'env> {
 }
 
 // =================================================================================================
-/// # Function Environment
-
 /// Represents a type parameter.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TypeParameter(pub Symbol, pub TypeParameterKind);
@@ -3640,8 +3617,6 @@ impl<'env> FunctionEnv<'env> {
 }
 
 // =================================================================================================
-/// # Expression Environment
-
 /// Represents context for an expression.
 #[derive(Debug, Clone)]
 pub struct ExpInfo {
@@ -3664,8 +3639,6 @@ impl ExpInfo {
 }
 
 // =================================================================================================
-/// # Formatting
-
 pub struct LocDisplay<'env> {
     loc: &'env Loc,
     env: &'env GlobalEnv,

@@ -301,7 +301,7 @@ impl RocksDB {
         &self,
         cf_name: &str,
         direction: ScanDirection,
-    ) -> Result<SchemaIterator<K, V>>
+    ) -> Result<SchemaIterator<'_, K, V>>
     where
         K: Serialize + DeserializeOwned,
         V: Serialize + DeserializeOwned,
@@ -315,7 +315,7 @@ impl RocksDB {
     }
 
     /// Returns a forward [`SchemaIterator`] on a certain schema.
-    pub fn iter<K, V>(&self, cf_name: &str) -> Result<SchemaIterator<K, V>>
+    pub fn iter<K, V>(&self, cf_name: &str) -> Result<SchemaIterator<'_, K, V>>
     where
         K: Serialize + DeserializeOwned,
         V: Serialize + DeserializeOwned,
@@ -324,7 +324,7 @@ impl RocksDB {
     }
 
     /// Returns a backward [`SchemaIterator`] on a certain schema.
-    pub fn rev_iter<K, V>(&self, cf_name: &str) -> Result<SchemaIterator<K, V>>
+    pub fn rev_iter<K, V>(&self, cf_name: &str) -> Result<SchemaIterator<'_, K, V>>
     where
         K: Serialize + DeserializeOwned,
         V: Serialize + DeserializeOwned,
@@ -526,8 +526,7 @@ impl DBStore for RocksDB {
 
     fn multi_get(&self, cf_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         let cf_handle = self.get_cf_handle(cf_name);
-        let cf_handles = iter::repeat(&cf_handle)
-            .take(keys.len())
+        let cf_handles = iter::repeat_n(&cf_handle, keys.len())
             .collect::<Vec<_>>();
         let keys_multi = keys
             .iter()

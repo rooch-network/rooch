@@ -9,7 +9,7 @@ pub mod tui_interface;
 
 use crate::tui::tui_interface::TUIInterface;
 use crossterm::event::{self, Event, KeyCode as Key, KeyEvent};
-use std::{error::Error, io::Write};
+use std::{error::Error, io::Write, marker::PhantomData};
 use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
@@ -18,18 +18,20 @@ use tui::{
     Frame,
 };
 
-pub struct TUI<Interface: TUIInterface> {
+pub struct TUI<'a, Interface: TUIInterface<'a>> {
     current_line_number: u16,
     current_column: u16,
     interface: Interface,
+    _phantom: PhantomData<&'a ()>,
 }
 
-impl<Interface: TUIInterface> TUI<Interface> {
+impl<'a, Interface: TUIInterface<'a>> TUI<'a, Interface> {
     pub fn new(interface: Interface) -> Self {
         Self {
             current_line_number: 0,
             current_column: 0,
             interface,
+            _phantom: PhantomData,
         }
     }
 

@@ -858,6 +858,7 @@ fn subtype_no_report(
     })
 }
 
+#[allow(clippy::result_large_err)]
 fn subtype_impl<T: ToString, F: FnOnce() -> T>(
     context: &mut Context,
     loc: Loc,
@@ -889,10 +890,7 @@ fn subtype_opt<T: ToString, F: FnOnce() -> T>(
     pre_lhs: Type,
     pre_rhs: Type,
 ) -> Option<Type> {
-    match subtype_impl(context, loc, msg, pre_lhs, pre_rhs) {
-        Err(_rhs) => None,
-        Ok(t) => Some(t),
-    }
+    subtype_impl(context, loc, msg, pre_lhs, pre_rhs).ok()
 }
 
 fn subtype<T: ToString, F: FnOnce() -> T>(
@@ -1552,7 +1550,7 @@ fn exp_inner(context: &mut Context, sp!(eloc, ne_): N::Exp) -> T::Exp {
             for v in used_func_ptrs {
                 let conflicting = used_locals
                     .get(&v)
-                    .map_or(false, |(ty, _)| !ty.value.is_fun());
+                    .is_some_and(|(ty, _)| !ty.value.is_fun());
                 if conflicting {
                     let msg = format!(
                         "Conflicting name '{}' is used as both a variable and a function pointer \

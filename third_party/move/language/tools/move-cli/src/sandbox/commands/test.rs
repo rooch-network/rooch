@@ -32,7 +32,6 @@ use tempfile::tempdir;
 /// of arguments per line). The testing framework runs the commands, compares the
 /// result to the expected output, and runs `move clean` to discard resources,
 /// modules, and event data created by running the test.
-
 /// If this env var is set, `move clean` will not be run after each test.
 /// this is useful if you want to look at the `storage` or `move_events`
 /// produced by a test. However, you'll have to manually run `move clean`

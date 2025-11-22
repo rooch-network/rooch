@@ -74,7 +74,6 @@ fn modify_check_fails_message(
 
 //  ================================================================================================
 /// # Spec Instrumenter
-
 pub struct SpecInstrumentationProcessor {}
 
 impl SpecInstrumentationProcessor {
@@ -1086,7 +1085,6 @@ impl<'a> Instrumenter<'a> {
 
 //  ================================================================================================
 /// # Modifies Checker
-
 /// Check modifies annotations. This is depending on usage analysis and is therefore
 /// invoked here from the initialize trait function of this processor.
 fn check_modifies(env: &GlobalEnv, targets: &FunctionTargetsHolder) {

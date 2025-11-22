@@ -22,7 +22,7 @@ impl BloomFilter {
     pub fn new(bits: usize, k: u8) -> Self {
         info!("BloomFilter new bits: {}, k: {}", bits, k);
         assert!(bits.is_power_of_two(), "bits must be power of two");
-        let bytes = (bits + 7) / 8;
+        let bytes = bits.div_ceil(8);
         Self {
             bits: vec![0u8; bytes],
             mask: bits - 1,

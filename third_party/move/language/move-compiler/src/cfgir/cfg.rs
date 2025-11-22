@@ -224,7 +224,7 @@ impl<'a> CFG for BlockCFG<'a> {
     fn is_back_edge(&self, cur: Label, next: Label) -> bool {
         self.loop_heads
             .get(&next)
-            .map_or(false, |back_edge_predecessors| {
+            .is_some_and(|back_edge_predecessors| {
                 back_edge_predecessors.contains(&cur)
             })
     }
@@ -649,7 +649,7 @@ impl<'a> CFG for ReverseBlockCFG<'a> {
     fn is_back_edge(&self, cur: Label, next: Label) -> bool {
         self.loop_heads
             .get(&next)
-            .map_or(false, |back_edge_predecessors| {
+            .is_some_and(|back_edge_predecessors| {
                 back_edge_predecessors.contains(&cur)
             })
     }
