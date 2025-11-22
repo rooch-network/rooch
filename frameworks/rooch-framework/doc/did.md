@@ -439,6 +439,16 @@ DIDRegistry is already initialized
 
 
 
+<a name="0x3_did_ErrorFragmentTooLong"></a>
+
+Fragment string is too long
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorFragmentTooLong">ErrorFragmentTooLong</a>: u64 = 41;
+</code></pre>
+
+
+
 <a name="0x3_did_ErrorInsufficientPermission"></a>
 
 Verification method has insufficient permission for the requested operation
@@ -579,12 +589,62 @@ The signer is not the DID's associated account
 
 
 
+<a name="0x3_did_ErrorStringTooLong"></a>
+
+String field is too long
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorStringTooLong">ErrorStringTooLong</a>: u64 = 42;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorTooManyAlsoKnownAs"></a>
+
+Exceeded maximum number of also known as aliases
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorTooManyAlsoKnownAs">ErrorTooManyAlsoKnownAs</a>: u64 = 39;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorTooManyControllers"></a>
+
+Exceeded maximum number of controllers
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorTooManyControllers">ErrorTooManyControllers</a>: u64 = 40;
+</code></pre>
+
+
+
 <a name="0x3_did_ErrorTooManyRelationshipMethods"></a>
 
 Exceeded maximum number of verification methods allowed in a relationship
 
 
 <pre><code><b>const</b> <a href="did.md#0x3_did_ErrorTooManyRelationshipMethods">ErrorTooManyRelationshipMethods</a>: u64 = 36;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorTooManyServiceProperties"></a>
+
+Exceeded maximum number of properties allowed per service
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorTooManyServiceProperties">ErrorTooManyServiceProperties</a>: u64 = 38;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorTooManyServices"></a>
+
+Exceeded maximum number of services allowed in a DID document
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorTooManyServices">ErrorTooManyServices</a>: u64 = 37;
 </code></pre>
 
 
@@ -659,11 +719,65 @@ Verification method not in the relationship
 
 
 
+<a name="0x3_did_MAX_ALSO_KNOWN_AS_PER_DOCUMENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_MAX_ALSO_KNOWN_AS_PER_DOCUMENT">MAX_ALSO_KNOWN_AS_PER_DOCUMENT</a>: u64 = 16;
+</code></pre>
+
+
+
+<a name="0x3_did_MAX_CONTROLLERS_PER_DOCUMENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_MAX_CONTROLLERS_PER_DOCUMENT">MAX_CONTROLLERS_PER_DOCUMENT</a>: u64 = 8;
+</code></pre>
+
+
+
+<a name="0x3_did_MAX_FRAGMENT_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_MAX_FRAGMENT_LENGTH">MAX_FRAGMENT_LENGTH</a>: u64 = 128;
+</code></pre>
+
+
+
 <a name="0x3_did_MAX_METHODS_PER_RELATIONSHIP"></a>
 
 
 
 <pre><code><b>const</b> <a href="did.md#0x3_did_MAX_METHODS_PER_RELATIONSHIP">MAX_METHODS_PER_RELATIONSHIP</a>: u64 = 64;
+</code></pre>
+
+
+
+<a name="0x3_did_MAX_PROPERTIES_PER_SERVICE"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_MAX_PROPERTIES_PER_SERVICE">MAX_PROPERTIES_PER_SERVICE</a>: u64 = 16;
+</code></pre>
+
+
+
+<a name="0x3_did_MAX_SERVICES_PER_DOCUMENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_MAX_SERVICES_PER_DOCUMENT">MAX_SERVICES_PER_DOCUMENT</a>: u64 = 32;
+</code></pre>
+
+
+
+<a name="0x3_did_MAX_STRING_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_MAX_STRING_LENGTH">MAX_STRING_LENGTH</a>: u64 = 512;
 </code></pre>
 
 
