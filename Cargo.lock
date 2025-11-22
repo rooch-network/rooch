@@ -10989,6 +10989,7 @@ name = "rooch-pruner"
 version = "0.11.0"
 dependencies = [
  "anyhow 1.0.95",
+ "criterion",
  "moveos-common",
  "moveos-store",
  "moveos-types",
@@ -10996,10 +10997,12 @@ dependencies = [
  "parking_lot 0.12.4",
  "primitive-types 0.12.2",
  "prometheus",
+ "rand 0.8.5",
  "rayon",
  "rooch-config",
  "rooch-store",
  "smt",
+ "tempfile",
  "tokio",
  "tracing",
 ]

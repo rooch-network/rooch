@@ -10,7 +10,7 @@ use std::iter;
 use std::marker::PhantomData;
 use std::path::Path;
 
-use anyhow::{ensure, format_err, Error, Result};
+use anyhow::{ensure, Error, Result};
 use rocksdb::{
     statistics, AsColumnFamilyRef, BlockBasedIndexType, BlockBasedOptions, CStrLike, Cache,
     ColumnFamily, ColumnFamilyDescriptor, DBCompressionType, DBRawIterator, DBRecoveryMode,
@@ -22,7 +22,6 @@ use serde::Serialize;
 use moveos_common::utils::{check_open_fds_limit, from_bytes};
 use moveos_config::store_config::RocksdbConfig;
 
-use crate::errors::RawStoreError;
 use crate::rocks::batch::{WriteBatch, WriteBatchCF};
 use crate::traits::DBStore;
 use crate::{ColumnFamilyName, WriteOp};
@@ -66,57 +65,67 @@ impl RocksDB {
         let path = root_path.as_ref();
 
         let cfs_set: HashSet<_> = column_families.iter().collect();
-        {
-            ensure!(
-                cfs_set.len() == column_families.len(),
-                "Duplicate column family name found.",
-            );
-        }
+        ensure!(
+            cfs_set.len() == column_families.len(),
+            "Duplicate column family name found.",
+        );
+
         #[allow(clippy::unnecessary_to_owned)]
-        if Self::db_exists(path) {
+        let final_column_families: Vec<ColumnFamilyName> = if Self::db_exists(path) {
             let cf_vec = Self::list_cf(path)?;
-            let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
-            db_cfs_set.remove(&DEFAULT_COLUMN_FAMILY_NAME.to_string());
-            ensure!(
-                db_cfs_set.len() <= cfs_set.len(),
-                RawStoreError::StoreCheckError(format_err!(
-                    "ColumnFamily in db ({:?}) not same as ColumnFamily in code {:?}.",
-                    column_families,
-                    cf_vec
-                ))
-            );
-            let mut remove_cf_vec = Vec::new();
-            db_cfs_set.iter().for_each(|k| {
-                if !cfs_set.contains(&k.as_str()) {
-                    remove_cf_vec.push(<&String>::clone(k));
+            let mut db_cfs_set: HashSet<String> = cf_vec.into_iter().collect();
+            db_cfs_set.remove(DEFAULT_COLUMN_FAMILY_NAME);
+
+            // Merge DB CFs with code CFs to support version rollback:
+            // - DB may have newer CFs (from newer version) that code doesn't know about
+            // - Code may have newer CFs (from newer version) that DB doesn't have yet
+            // - We open with the union of both sets to satisfy RocksDB's requirement
+            //   that all existing CFs must be opened
+            let code_cfs_set: HashSet<String> =
+                column_families.iter().map(|s| s.to_string()).collect();
+
+            // Convert back to Vec<&'static str>
+            let mut result: Vec<ColumnFamilyName> = Vec::new();
+            for cf in &column_families {
+                result.push(*cf);
+            }
+            // Add any DB CFs that are not in code
+            for db_cf in &db_cfs_set {
+                if !code_cfs_set.contains(db_cf) {
+                    // For CFs that exist in DB but not in code, we need to leak the string
+                    // to get a 'static lifetime. This is acceptable because:
+                    // 1. The number of CFs is small
+                    // 2. This only happens during version rollback scenarios
+                    let leaked: &'static str = Box::leak(db_cf.clone().into_boxed_str());
+                    result.push(leaked);
                 }
-            });
-            ensure!(
-                remove_cf_vec.is_empty(),
-                RawStoreError::StoreCheckError(format_err!(
-                    "Can not remove ColumnFamily, ColumnFamily in db ({:?}) not in code {:?}.",
-                    remove_cf_vec,
-                    cf_vec
-                ))
-            );
-        }
+            }
+            result
+        } else {
+            column_families.clone()
+        };
 
         let mut rocksdb_opts = Self::gen_rocksdb_options(&rocksdb_config);
 
         let table_opts = Self::generate_table_opts(&rocksdb_config);
         let db = if readonly {
             rocksdb_opts.set_error_if_exists(false);
-            Self::open_readonly_inner_db(&rocksdb_opts, path, column_families.clone())?
+            Self::open_readonly_inner_db(&rocksdb_opts, path, final_column_families.clone())?
         } else {
             rocksdb_opts.create_if_missing(true);
             rocksdb_opts.create_missing_column_families(true);
-            Self::open_inner_db(&table_opts, &rocksdb_opts, path, column_families.clone())?
+            Self::open_inner_db(
+                &table_opts,
+                &rocksdb_opts,
+                path,
+                final_column_families.clone(),
+            )?
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(RocksDB {
             db,
             table_opts,
-            cfs: column_families,
+            cfs: final_column_families,
         })
     }
 

@@ -57,4 +57,5 @@ pub fn start_basic_prometheus_server() -> Registry {
 pub fn init_metrics(prometheus_registry: &Registry) {
     DBMetrics::init(prometheus_registry);
     IndexerDBMetrics::init(prometheus_registry);
+    // StateDBMetrics::init(prometheus_registry); // Removed - StateDBMetrics is not available in this crate
 }

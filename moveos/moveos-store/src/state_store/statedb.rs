@@ -138,10 +138,11 @@ impl StateDBStore {
     }
 
     #[named]
+    #[allow(clippy::type_complexity)]
     pub fn change_set_to_nodes(
         &self,
         state_change_set: &mut StateChangeSet,
-    ) -> Result<BTreeMap<H256, Vec<u8>>> {
+    ) -> Result<(BTreeMap<H256, Vec<u8>>, Vec<(H256, H256)>)> {
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -196,17 +197,11 @@ impl StateDBStore {
             .with_label_values(&[fn_name])
             .observe(size as f64);
 
-        // // Maintain refcount & stale indices
-        // for (hash, _) in &nodes {
-        //     let _ = NodeRefcountStore::new(self.node_store.get_store().store().clone()).inc(*hash);
-        // }
-        // self.node_store.write_stale_indices(&stale_indices_acc)?;
-
-        Ok(nodes)
+        Ok((nodes, stale_indices_acc))
     }
 
     pub fn apply_change_set(&self, state_change_set: &mut StateChangeSet) -> Result<()> {
-        let nodes = self.change_set_to_nodes(state_change_set)?;
+        let (nodes, _stale_indices) = self.change_set_to_nodes(state_change_set)?;
         self.node_store.write_nodes(nodes)?;
         Ok(())
     }
