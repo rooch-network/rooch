@@ -4,8 +4,7 @@
 import * as fs from 'fs'
 import * as net from 'net'
 import path from 'node:path'
-import { execSync } from 'child_process'
-import { spawn } from 'child_process'
+import { execSync, execFileSync, spawn } from 'child_process'
 import debug from 'debug'
 import tmp, { DirResult } from 'tmp'
 import { Network, StartedNetwork } from 'testcontainers'
@@ -268,17 +267,35 @@ export class TestBox {
     // Use ROOCH_BINARY_BUILD_PROFILE environment variable or default to 'debug'
     const profile = process.env.ROOCH_BINARY_BUILD_PROFILE || 'debug'
     const roochDir = path.join(root!, 'target', profile)
+    const roochBin = path.join(roochDir, 'rooch')
 
-    const envString = envs.length > 0 ? `${envs.join(' ')} ` : ''
-    return `${envString} ${roochDir}/./rooch ${typeof args === 'string' ? args : args.join(' ')}`
+    // Parse environment variables from array format ["FOO=bar", "BAR=baz"]
+    const extraEnv: { [key: string]: string } = {}
+    for (const e of envs) {
+      const [k, ...rest] = e.split('=')
+      if (k && rest.length) {
+        extraEnv[k] = rest.join('=')
+      }
+    }
+
+    // Convert args to array format
+    const roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
+
+    return {
+      cmd: roochBin,
+      args: roochArgs,
+      env: Object.keys(extraEnv).length ? { ...process.env, ...extraEnv } : process.env,
+    }
   }
 
   // TODO: support container
   roochCommand(args: string[] | string, envs: string[] = []): string {
     try {
-      return execSync(this.buildRoochCommand(args, envs), {
+      const { cmd, args: cmdArgs, env } = this.buildRoochCommand(args, envs)
+      return execFileSync(cmd, cmdArgs, {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'], // Capture stdout and stderr
+        env,
       })
     } catch (error: any) {
       // Log the error for debugging
@@ -297,8 +314,8 @@ export class TestBox {
     timeoutMs: number = 30000, // 30 seconds default timeout
   ): Promise<string> {
     return new Promise((resolve, reject) => {
-      const command = this.buildRoochCommand(args, envs)
-      const child = spawn(command, { shell: true })
+      const { cmd, args: cmdArgs, env } = this.buildRoochCommand(args, envs)
+      const child = spawn(cmd, cmdArgs, { env })
 
       let output = ''
       let pidOutput = ''
