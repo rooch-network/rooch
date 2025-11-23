@@ -1,0 +1,12 @@
+[package]
+name = "test_data_generator"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/move-stdlib", rev = "main" }
+MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/moveos-stdlib", rev = "main" }
+RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
+
+[addresses]
+test_data_generator = "_"
+

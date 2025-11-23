@@ -192,8 +192,8 @@ impl StatePruner {
 
                         // Stream process expired roots
                         let latest_order = snapshot.latest_order;
-                        let mut order_cursor = if latest_order > 30000 {
-                            latest_order - 30000
+                        let mut order_cursor = if latest_order > 100 {
+                            latest_order - 100
                         } else if latest_order >= 1 {
                             latest_order - 1
                         } else {
