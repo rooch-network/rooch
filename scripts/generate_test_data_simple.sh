@@ -94,8 +94,7 @@ deploy_test_module() {
     echo ""
     
     # Get default account address first
-#    MODULE_ADDRESS=$(rooch account list --json 2>/dev/null | jq -r '.[0].hex_address // empty' 2>/dev/null)
-    MODULE_ADDRESS="0x285529d7fd13ffcda9d89cd250b4025ba9226c0e2e57f5ca3d739cb236dc259d"
+    MODULE_ADDRESS=$(rooch account list --json 2>/dev/null | jq -r '.[0].hex_address // empty' 2>/dev/null)
     
     if [ -z "$MODULE_ADDRESS" ]; then
         # Fallback to grep if jq is not available
