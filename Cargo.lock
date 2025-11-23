@@ -7737,7 +7737,7 @@ dependencies = [
  "regex",
  "serde 1.0.228",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tracing",
  "tracing-subscriber",
 ]
@@ -7783,7 +7783,7 @@ dependencies = [
  "anyhow 1.0.95",
  "coerce",
  "crossbeam-channel",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tracing",
 ]
 
@@ -7928,7 +7928,7 @@ dependencies = [
  "once_cell",
  "serde 1.0.228",
  "termcolor",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tracing",
 ]
 
@@ -9859,7 +9859,7 @@ dependencies = [
  "rocksdb",
  "serde 1.0.228",
  "tap",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tracing",
 ]
 
@@ -10556,7 +10556,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.228",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tokio",
  "tracing",
 ]
@@ -10626,7 +10626,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.228",
  "serenity",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tokio",
  "tower 0.5.2",
  "tower-http",
@@ -10747,7 +10747,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.228",
  "tap",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tokio",
  "tracing",
 ]
@@ -11056,7 +11056,7 @@ dependencies = [
  "serde 1.0.228",
  "serde_json",
  "tabled",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -11232,7 +11232,7 @@ dependencies = [
  "sha3 0.10.8",
  "strum",
  "strum_macros 0.27.2",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tracing",
  "xxhash-rust",
 ]
@@ -12509,7 +12509,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "serde 1.0.228",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
  "tracing",
 ]
 
@@ -13260,7 +13260,7 @@ name = "timeout-join-handler"
 version = "0.11.0"
 dependencies = [
  "anyhow 1.0.95",
- "thiserror 1.0.69",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
