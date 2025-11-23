@@ -336,7 +336,7 @@ pprof = { version = "0.13.0", features = [
 ] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
-opendal = { version = "0.50.2", features = ["services-fs", "services-gcs"] }
+opendal = { version = "0.54.0", features = ["services-fs", "services-gcs"] }
 toml = "0.9.8"
 tabled = "0.16.0"
 csv = "1.4.0"
