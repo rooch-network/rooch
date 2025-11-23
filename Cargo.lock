@@ -19,7 +19,7 @@ dependencies = [
  "anyhow 1.0.95",
  "bcs",
  "bcs-ext",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "lru",
  "mirai-annotations",
  "moveos-types",
@@ -4574,7 +4574,7 @@ dependencies = [
  "bcs",
  "codespan-reporting",
  "framework-types",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "move-binary-format",
  "move-cli",
  "move-core-types",
@@ -6020,6 +6020,15 @@ name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
 dependencies = [
  "either",
 ]
@@ -7711,7 +7720,7 @@ dependencies = [
  "clap 4.5.17",
  "codespan",
  "codespan-reporting",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-command-line-common",
@@ -7748,7 +7757,7 @@ version = "0.11.0"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "libc",
  "move-binary-format",
  "move-core-types",
@@ -7832,7 +7841,7 @@ dependencies = [
  "ciborium",
  "fastcrypto",
  "fastcrypto-zkp",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
@@ -7914,7 +7923,7 @@ dependencies = [
  "anyhow 1.0.95",
  "bcs",
  "codespan-reporting",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "move-binary-format",
  "move-command-line-common",
  "move-compiler",
@@ -10349,7 +10358,7 @@ dependencies = [
  "hdrhistogram",
  "heed",
  "hex",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "lazy_static 1.5.0",
  "libsqlite3-sys",
  "metrics",
@@ -10871,7 +10880,7 @@ name = "rooch-open-rpc-macros"
 version = "0.11.0"
 dependencies = [
  "derive-syn-parse",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "proc-macro2 1.0.101",
  "quote 1.0.41",
  "syn 1.0.109",
