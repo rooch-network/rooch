@@ -210,7 +210,7 @@ impl AtomicSnapshotManager {
         );
 
         // Record metrics
-        if let Some(ref metrics) = self.metrics {
+        if let Some(ref _metrics) = self.metrics {
             // TODO: Add snapshot creation metrics to PrunerMetrics
             // metrics
             //     .pruner_snapshot_creation_duration_seconds
@@ -232,63 +232,58 @@ impl AtomicSnapshotManager {
 
         // Check if snapshot is already locked by a different phase
         {
-            let lock_snapshot_id: u64;
-            {
-                let mut lock_guard = self.snapshot_lock.lock();
-                if let Some(ref lock) = *lock_guard {
-                    // Check if lock is still valid
-                    let now = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .map_err(|e| anyhow!("System time error: {}", e))?
-                        .as_millis() as u64;
+            let mut lock_guard = self.snapshot_lock.lock();
+            if let Some(ref lock) = *lock_guard {
+                // Check if lock is still valid
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map_err(|e| anyhow!("System time error: {}", e))?
+                    .as_millis() as u64;
 
-                    if lock.is_valid && (now - lock.locked_at) < self.config.lock_timeout_ms {
-                        if lock.locked_by_phase != phase {
-                            return Err(anyhow!(
-                                "Snapshot {} is already locked by phase {:?}. Current phase: {:?}",
-                                lock.snapshot_id,
-                                lock.locked_by_phase,
-                                phase
-                            ));
-                        }
-                        // Same phase, return the snapshot without extending lock (immutable)
-                        lock_snapshot_id = lock.snapshot_id;
-                        return Ok(snapshot);
-                    } else {
-                        // Lock expired, clear it
-                        lock_snapshot_id = lock.snapshot_id;
-                        *lock_guard = None;
-                        warn!("Previous snapshot lock {} expired", lock_snapshot_id);
+                if lock.is_valid && (now - lock.locked_at) < self.config.lock_timeout_ms {
+                    if lock.locked_by_phase != phase {
+                        return Err(anyhow!(
+                            "Snapshot {} is already locked by phase {:?}. Current phase: {:?}",
+                            lock.snapshot_id,
+                            lock.locked_by_phase,
+                            phase
+                        ));
                     }
+                    // Same phase, return the snapshot without extending lock (immutable)
+                    let _lock_snapshot_id = lock.snapshot_id;
+                    return Ok(snapshot);
                 } else {
-                    lock_snapshot_id = 0;
+                    // Lock expired, clear it
+                    let _lock_snapshot_id = lock.snapshot_id;
+                    *lock_guard = None;
+                    warn!("Previous snapshot lock {} expired", _lock_snapshot_id);
                 }
             }
-
-            // Acquire new lock
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(|e| anyhow!("System time error: {}", e))?
-                .as_millis() as u64;
-
-            {
-                let mut lock_guard = self.snapshot_lock.lock();
-                *lock_guard = Some(SnapshotLock {
-                    snapshot_id: snapshot.snapshot_id,
-                    locked_by_phase: phase,
-                    locked_at: now,
-                    timeout_ms: self.config.lock_timeout_ms,
-                    is_valid: true,
-                });
-            }
-
-            info!("Phase {:?} locked snapshot {}", phase, snapshot.snapshot_id);
-
-            // Validate snapshot integrity before returning
-            self.validate_snapshot_integrity(&snapshot)?;
-
-            Ok(snapshot)
         }
+
+        // Acquire new lock
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| anyhow!("System time error: {}", e))?
+            .as_millis() as u64;
+
+        {
+            let mut lock_guard = self.snapshot_lock.lock();
+            *lock_guard = Some(SnapshotLock {
+                snapshot_id: snapshot.snapshot_id,
+                locked_by_phase: phase,
+                locked_at: now,
+                timeout_ms: self.config.lock_timeout_ms,
+                is_valid: true,
+            });
+        }
+
+        info!("Phase {:?} locked snapshot {}", phase, snapshot.snapshot_id);
+
+        // Validate snapshot integrity before returning
+        self.validate_snapshot_integrity(&snapshot)?;
+
+        Ok(snapshot)
     }
 
     /// Release snapshot lock
@@ -298,7 +293,7 @@ impl AtomicSnapshotManager {
             let mut lock_guard = self.snapshot_lock.lock();
             if let Some(ref lock) = *lock_guard {
                 if lock.locked_by_phase == phase {
-                    snapshot_id_to_release = lock.snapshot_id.clone();
+                    snapshot_id_to_release = lock.snapshot_id;
                     *lock_guard = None;
                 } else {
                     return Err(anyhow!(

@@ -3,9 +3,9 @@
 
 #[cfg(test)]
 mod simple_atomic_snapshot_tests {
-    use moveos_types::prune::PrunePhase;
+    use moveos_types::prune::{PrunePhase, PruneSnapshot};
     use primitive_types::H256;
-    use rooch_pruner::atomic_snapshot::{AtomicSnapshotManager, SnapshotManagerConfig};
+    use rooch_pruner::atomic_snapshot::SnapshotManagerConfig;
     use std::time::Duration;
     use tempfile::TempDir;
 
@@ -63,7 +63,7 @@ mod simple_atomic_snapshot_tests {
         println!("🧪 Created temporary directory: {}", temp_path.display());
 
         // 创建 SnapshotManagerConfig
-        let config = SnapshotManagerConfig {
+        let _config = SnapshotManagerConfig {
             lock_timeout_ms: 5000,
             max_snapshot_age_ms: 30000,
             enable_validation: true,
@@ -139,7 +139,6 @@ mod simple_atomic_snapshot_tests {
             let snapshot = PruneSnapshot {
                 latest_order: i,
                 state_root: H256::random(),
-                created_at: chrono::Utc::now().timestamp_millis() as u64,
             };
 
             // 模拟一些处理
@@ -147,7 +146,7 @@ mod simple_atomic_snapshot_tests {
         }
 
         let elapsed = start_time.elapsed();
-        let avg_time = elapsed / iterations;
+        let avg_time = elapsed / iterations as u32;
 
         println!("📊 Performance benchmark results:");
         println!("  - Iterations: {}", iterations);

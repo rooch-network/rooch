@@ -21,39 +21,56 @@ type MetricSample = {
 }
 
 export class PrometheusClient {
-  constructor(private readonly port: number = 9184) {}
+  constructor(private readonly port?: number) {}
 
   async fetchMetrics(): Promise<PrunerMetrics> {
-    const response = await fetch(`http://localhost:${this.port}/metrics`)
-    const text = await response.text()
-    const samples = this.parseMetrics(text)
+    if (!this.port) {
+      throw new Error('Metrics port not specified. Provide port to constructor or ensure TestBox metrics port is available.')
+    }
 
-    const phaseSamples = samples.filter((s) => s.name === 'pruner_current_phase')
-    const currentPhase = phaseSamples.reduce((acc, sample) => Math.max(acc, sample.value), 0)
+    try {
+      const response = await fetch(`http://localhost:${this.port}/metrics`)
 
-    const sweepExpiredDeleted = this.histogram(samples, 'pruner_sweep_nodes_deleted', {
-      phase: 'SweepExpired',
-    })
-    const incrementalSweepDeleted = this.histogram(samples, 'pruner_sweep_nodes_deleted', {
-      phase: 'incremental',
-    })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
 
-    return {
-      currentPhase,
-      sweepExpiredDeleted,
-      incrementalSweepDeleted,
-      reachableNodesScanned: this.histogram(samples, 'pruner_reachable_nodes_scanned', {
-        phase: 'BuildReach',
-      }),
-      bloomFilterSizeBytes: this.gauge(samples, 'pruner_bloom_filter_size_bytes'),
-      diskSpaceReclaimedBytes: this.counter(samples, 'pruner_disk_space_reclaimed_bytes'),
-      processingSpeedNodesPerSec: this.histogram(
-        samples,
-        'pruner_processing_speed_nodes_per_sec',
-      ),
-      errorCount: samples
-        .filter((s) => s.name === 'pruner_error_count' || s.name === 'pruner_error_count_total')
-        .reduce((acc, sample) => acc + sample.value, 0),
+      const text = await response.text()
+      const samples = this.parseMetrics(text)
+
+      const phaseSamples = samples.filter((s) => s.name === 'pruner_current_phase')
+      const currentPhase = phaseSamples.reduce((acc, sample) => Math.max(acc, sample.value), 0)
+
+      const sweepExpiredDeleted = this.histogram(samples, 'pruner_sweep_nodes_deleted', {
+        phase: 'SweepExpired',
+      })
+      const incrementalSweepDeleted = this.histogram(samples, 'pruner_sweep_nodes_deleted', {
+        phase: 'incremental',
+      })
+
+      return {
+        currentPhase,
+        sweepExpiredDeleted,
+        incrementalSweepDeleted,
+        reachableNodesScanned: this.histogram(samples, 'pruner_reachable_nodes_scanned', {
+          phase: 'BuildReach',
+        }),
+        bloomFilterSizeBytes: this.gauge(samples, 'pruner_bloom_filter_size_bytes'),
+        diskSpaceReclaimedBytes: this.counter(samples, 'pruner_disk_space_reclaimed_bytes'),
+        processingSpeedNodesPerSec: this.histogram(
+          samples,
+          'pruner_processing_speed_nodes_per_sec',
+        ),
+        errorCount: samples
+          .filter((s) => s.name === 'pruner_error_count' || s.name === 'pruner_error_count_total')
+          .reduce((acc, sample) => acc + sample.value, 0),
+      }
+    } catch (error) {
+      // Handle network errors, timeouts, etc.
+      if (error instanceof Error) {
+        throw new Error(`Failed to fetch metrics from port ${this.port}: ${error.message}`)
+      }
+      throw new Error(`Unknown error fetching metrics from port ${this.port}`)
     }
   }
 
@@ -71,10 +88,10 @@ export class PrometheusClient {
   }
 
   private gauge(samples: MetricSample[], name: string, labelMatch?: Record<string, string>): number {
+    // Try exact match first, then _total suffix (common pattern)
     const sample =
       this.findSample(samples, name, labelMatch) ||
-      this.findSample(samples, `${name}_total`, labelMatch) ||
-      samples.find((s) => s.name === name || s.name === `${name}_total`)
+      this.findSample(samples, `${name}_total`, labelMatch)
     return sample?.value ?? 0
   }
 
@@ -117,6 +134,7 @@ export class PrometheusClient {
       if (!line || line.startsWith('#')) {
         continue
       }
+      // Improved regex to handle escaped quotes in label values
       const match =
         line.match(
           /^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{([^}]*)\})?\s+([+-]?(?:\d+\.?\d*|\d*\.\d+)(?:[eE][+-]?\d+)?)/,
@@ -134,7 +152,14 @@ export class PrometheusClient {
         for (const part of labelStr.split(',')) {
           const [k, v] = part.split('=')
           if (k && v) {
-            labels[k.trim()] = v.replace(/^"|"$/g, '').trim()
+            // Handle escaped quotes properly: unescape the value and remove surrounding quotes
+            const unescapedValue = v
+              .replace(/^"/, '') // Remove leading quote
+              .replace(/"$/, '') // Remove trailing quote
+              .replace(/\\"/g, '"') // Unescape escaped quotes
+              .replace(/\\\\/g, '\\') // Unescape escaped backslashes
+              .trim()
+            labels[k.trim()] = unescapedValue
           }
         }
       }

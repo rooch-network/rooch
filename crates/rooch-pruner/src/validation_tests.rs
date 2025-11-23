@@ -1,15 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::atomic_snapshot::{AtomicSnapshot, AtomicSnapshotManager, ChainMetadata, SnapshotLock};
+use crate::atomic_snapshot::{AtomicSnapshot, AtomicSnapshotManager};
 use crate::error_recovery::ErrorRecoveryManager;
 use anyhow::{anyhow, Result};
-use moveos_store::MoveOSStore;
 use moveos_types::prune::PrunePhase;
 use primitive_types::H256;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info};
 
 /// Comprehensive validation utilities for atomic snapshot mechanism
 pub struct SnapshotValidator {
@@ -391,7 +389,10 @@ impl SnapshotValidator {
         corrupted_snapshot.integrity_hash = H256::random();
 
         // Test validation failure
-        if let Ok(_) = self.validate_snapshot_integrity(&corrupted_snapshot) {
+        if self
+            .validate_snapshot_integrity(&corrupted_snapshot)
+            .is_ok()
+        {
             return ValidationResult::Failed(
                 test_name.to_string(),
                 "Corrupted snapshot should fail integrity validation".to_string(),
@@ -602,19 +603,17 @@ impl ValidationResult {
 }
 
 /// Comprehensive validation report
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ValidationReport {
     results: Vec<ValidationResult>,
 }
 
 impl ValidationReport {
     pub fn new() -> Self {
-        Self {
-            results: Vec::new(),
-        }
+        Self::default()
     }
 
-    pub fn add_result(&mut self, test_name: &str, result: ValidationResult) {
+    pub fn add_result(&mut self, _test_name: &str, result: ValidationResult) {
         self.results.push(result);
     }
 
@@ -658,7 +657,7 @@ impl ValidationReport {
 
     pub fn detailed_report(&self) -> String {
         let mut report = String::new();
-        report.push_str(&format!("=== Validation Report ===\n"));
+        report.push_str("=== Validation Report ===\n");
         report.push_str(&format!("{}\n\n", self.summary()));
 
         for result in &self.results {

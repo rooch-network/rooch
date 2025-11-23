@@ -85,6 +85,7 @@ impl Clone for RecoveryStats {
 pub struct ErrorRecoveryManager {
     atomic_snapshot_manager: Arc<AtomicSnapshotManager>,
     moveos_store: Arc<MoveOSStore>,
+    #[allow(dead_code)]
     metrics: Option<Arc<PrunerMetrics>>,
     config: RecoveryConfig,
     stats: Arc<RecoveryStats>,

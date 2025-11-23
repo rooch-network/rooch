@@ -33,6 +33,7 @@ use tracing::{error, info, warn};
 pub struct StatePruner {
     handle: Option<JoinHandle<()>>,
     running: Arc<AtomicBool>,
+    #[allow(dead_code)]
     atomic_snapshot_manager: Arc<AtomicSnapshotManager>,
 }
 
@@ -334,7 +335,7 @@ impl StatePruner {
                                 };
                                 info!("Starting scan from order {}", order_cursor);
 
-                                let sweeper = SweepExpired::new(
+                                let _sweeper = SweepExpired::new(
                                     moveos_store.clone(),
                                     bloom.clone(),
                                     cfg.bloom_bits,
@@ -377,7 +378,7 @@ impl StatePruner {
                                         let _ = atomic_snapshot_manager_clone
                                             .release_snapshot(PrunePhase::SweepExpired);
                                         // Continue to use refreshed_snapshot from above
-                                        let atomic_snapshot = refreshed_snapshot;
+                                        let _atomic_snapshot = refreshed_snapshot;
                                     }
                                     Err(e) => {
                                         error!("Failed to refresh snapshot: {}", e);
