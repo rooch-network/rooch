@@ -264,7 +264,7 @@ tower = { version = "0.5.2", features = [
     "load-shed",
     "limit",
 ] }
-tower-http = { version = "0.6.6", features = [
+tower-http = { version = "0.6.7", features = [
     "cors",
     "full",
     "trace",
