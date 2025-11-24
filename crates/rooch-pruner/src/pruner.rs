@@ -32,7 +32,7 @@ use tracing::{error, info, warn};
 
 pub struct StatePruner {
     handle: Option<JoinHandle<()>>,
-    stop_signal: Arc<AtomicBool>, // true = running, false = request stop
+    is_running: Arc<AtomicBool>, // true = running, false = stopped
     #[allow(dead_code)]
     atomic_snapshot_manager: Arc<AtomicSnapshotManager>,
 }
@@ -48,7 +48,7 @@ impl StatePruner {
         if !cfg.enable {
             return Ok(Self {
                 handle: None,
-                stop_signal: Arc::new(AtomicBool::new(false)),
+                is_running: Arc::new(AtomicBool::new(false)),
                 atomic_snapshot_manager: Arc::new(AtomicSnapshotManager::new(
                     moveos_store.clone(),
                     rooch_store.clone(),
@@ -60,8 +60,8 @@ impl StatePruner {
         info!("Starting pruner");
 
         info!("Starting pruner with config: {:?}", cfg);
-        let stop_signal = Arc::new(AtomicBool::new(true));
-        let stop_signal_for_thread = stop_signal.clone();
+        let is_running = Arc::new(AtomicBool::new(true));
+        let is_running_for_thread = is_running.clone();
 
         // Initialize atomic snapshot manager
         let snapshot_config = SnapshotManagerConfig {
@@ -105,7 +105,7 @@ impl StatePruner {
             // only for test
             // let mut phase = PrunePhase::BuildReach;
             loop {
-                if !stop_signal_for_thread.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok()
+                if !is_running_for_thread.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok()
                 {
                     info!("Pruner thread stopping");
                     break;
@@ -340,7 +340,7 @@ impl StatePruner {
                                     moveos_store.clone(),
                                     bloom.clone(),
                                     cfg.bloom_bits,
-                                    stop_signal_for_thread.clone(),
+                                    is_running_for_thread.clone(),
                                 );
 
                                 // Process using fallback logic (original implementation)
@@ -420,7 +420,7 @@ impl StatePruner {
                             moveos_store.clone(),
                             bloom.clone(),
                             cfg.bloom_bits,
-                            stop_signal_for_thread.clone(),
+                            is_running_for_thread.clone(),
                         );
                         let sweep_start_time = std::time::Instant::now();
                         let mut processed_count = 0;
@@ -430,7 +430,7 @@ impl StatePruner {
                         // while processed_count < cfg.scan_batch && order_cursor > 0 {
                         while order_cursor > 0 {
                             // Check exit signal frequently
-                            if !stop_signal_for_thread.load(Ordering::Relaxed)
+                            if !is_running_for_thread.load(Ordering::Relaxed)
                                 || shutdown_rx.try_recv().is_ok()
                             {
                                 info!("Pruner thread stopping during sweep");
@@ -447,7 +447,7 @@ impl StatePruner {
 
                                 // Process in smaller batches to avoid memory pressure
                                 if batch_roots.len() >= 1000 {
-                                    if !stop_signal_for_thread.load(Ordering::Relaxed)
+                                    if !is_running_for_thread.load(Ordering::Relaxed)
                                         || shutdown_rx.try_recv().is_ok()
                                     {
                                         info!("Pruner thread stopping before batch sweep");
@@ -752,7 +752,7 @@ impl StatePruner {
                         }
 
                         // Check exit signal frequently
-                        if !stop_signal_for_thread.load(Ordering::Relaxed)
+                        if !is_running_for_thread.load(Ordering::Relaxed)
                             || shutdown_rx.try_recv().is_ok()
                         {
                             info!("Pruner thread stopping during incremental sweep");
@@ -765,7 +765,7 @@ impl StatePruner {
                 // Sleep in small intervals to respond to exit signal quickly
                 let mut slept = 0;
                 while slept < cfg.interval_s {
-                    if !stop_signal_for_thread.load(Ordering::Relaxed)
+                    if !is_running_for_thread.load(Ordering::Relaxed)
                         || shutdown_rx.try_recv().is_ok()
                     {
                         info!("Pruner thread stopping during sleep");
@@ -779,7 +779,7 @@ impl StatePruner {
 
         Ok(Self {
             handle: Some(handle),
-            stop_signal,
+            is_running,
             atomic_snapshot_manager,
         })
     }
@@ -787,7 +787,7 @@ impl StatePruner {
     pub fn stop(self) {
         if let Some(h) = self.handle {
             info!("Stopping pruner thread");
-            self.stop_signal.store(false, Ordering::Relaxed);
+            self.is_running.store(false, Ordering::Relaxed);
             let _ = h.join();
             info!("Pruner thread stopped");
         }

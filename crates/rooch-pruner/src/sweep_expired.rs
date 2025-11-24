@@ -22,7 +22,7 @@ pub struct SweepExpired {
     bloom: Arc<Mutex<BloomFilter>>, // same Bloom used by ReachableBuilder
     deleted_state_root_bloom: Arc<Mutex<BloomFilter>>, // BloomFilter tracking deleted state roots
     processed_roots_count: Arc<std::sync::atomic::AtomicU64>, // Counter for aggressive compaction
-    stop_signal: Arc<std::sync::atomic::AtomicBool>, // Signal to stop processing
+    is_running: Arc<std::sync::atomic::AtomicBool>, // true = running, false = stopped
     debug_refcount_guard: bool,     // Enable debug-only refcount guard for Bloom misses
                                     // metrics: Arc<StateDBMetrics>,
 }
@@ -32,7 +32,7 @@ impl SweepExpired {
         moveos_store: Arc<MoveOSStore>,
         bloom: Arc<Mutex<BloomFilter>>, // pass the same bloom instance
         bloom_bits: usize,              // configurable bloom filter size
-        stop_signal: Arc<std::sync::atomic::AtomicBool>, // signal to stop
+        is_running: Arc<std::sync::atomic::AtomicBool>, // true = running, false = stopped
                                         // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         // Load or create deleted roots bloom filter
@@ -51,7 +51,7 @@ impl SweepExpired {
             bloom,
             deleted_state_root_bloom: Arc::new(Mutex::new(deleted_state_root_bloom)),
             processed_roots_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
-            stop_signal,
+            is_running,
             debug_refcount_guard: std::env::var("PRUNER_DEBUG_REFCOUNT")
                 .ok()
                 .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
@@ -121,8 +121,8 @@ impl SweepExpired {
 
         // ✅ Step 3: Process batches sequentially (largest tx_order first)
         for (batch_idx, mini_batch) in roots_to_process.chunks(mini_batch_size).enumerate() {
-            // Check if we should stop early
-            if !self.stop_signal.load(std::sync::atomic::Ordering::Relaxed) {
+            // Check if we should stop early (is_running = false means stop requested)
+            if !self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
                 info!("Sweep stopping: received shutdown signal");
                 return Ok(deleted.load(std::sync::atomic::Ordering::Relaxed));
             }
@@ -174,7 +174,7 @@ impl SweepExpired {
             );
 
             // If shutdown is requested, skip compaction to exit quickly
-            if !self.stop_signal.load(std::sync::atomic::Ordering::Relaxed) {
+            if !self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
                 info!("Skipping compaction due to shutdown request");
                 // Persist bloom progress before exit
                 {
@@ -300,7 +300,7 @@ impl SweepExpired {
         while let Some(node_hash) = stack.pop_back() {
             // Check shutdown signal periodically (every 1000 nodes)
             if total_deleted % 1000 == 0
-                && !self.stop_signal.load(std::sync::atomic::Ordering::Relaxed)
+                && !self.is_running.load(std::sync::atomic::Ordering::Relaxed)
             {
                 info!(
                     "sweep_root stopping: received shutdown signal at {} nodes",

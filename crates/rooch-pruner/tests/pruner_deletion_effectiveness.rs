@@ -89,8 +89,8 @@ fn test_pruner_deletion_effectiveness_basic() {
     let sweeper = SweepExpired::new(
         moveos_store.clone(),
         bloom.clone(),
-        8_388_608, // 1MB
-        Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        8_388_608,                                          // 1MB
+        Arc::new(std::sync::atomic::AtomicBool::new(true)), // true = running
     );
 
     // Create expired roots (state_root, tx_order)
@@ -201,7 +201,7 @@ fn test_pruner_effectiveness_different_scenarios() {
             moveos_store.clone(),
             bloom.clone(),
             bloom_bits,
-            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            Arc::new(std::sync::atomic::AtomicBool::new(true)), // true = running
         );
 
         let expired_roots: Vec<(H256, u64)> = expired_nodes
@@ -372,7 +372,7 @@ fn test_pruner_config_impact_on_deletion() {
             moveos_store.clone(),
             bloom.clone(),
             config.bloom_bits,
-            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            Arc::new(std::sync::atomic::AtomicBool::new(true)), // true = running
         );
 
         let expired_roots: Vec<(H256, u64)> = expired_nodes
