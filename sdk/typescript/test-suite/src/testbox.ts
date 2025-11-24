@@ -37,10 +37,16 @@ export class TestBox {
     tmp.setGracefulCleanup()
     this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
     this.roochDir = path.join(this.tmpDir.name, '.rooch_test')
-    log('New TestBox rooch dir:', this.roochDir)
+    console.error('🔧 New TestBox rooch dir:', this.roochDir)
     fs.mkdirSync(this.roochDir, { recursive: true })
+
+    console.error('🔧 Running rooch init with config-dir:', this.roochDir)
     this.roochCommand(['init', '--config-dir', this.roochDir, '--skip-password'])
+
+    console.error('🔧 Running rooch env switch with config-dir:', this.roochDir)
     this.roochCommand(['env', 'switch', '--config-dir', this.roochDir, '--alias', 'local'])
+
+    console.error('🔧 TestBox constructor completed')
   }
 
   async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {
@@ -105,32 +111,25 @@ export class TestBox {
 
     // The container test in the linux environment is incomplete, so use it first
     if (target === 'local') {
+      console.error('🔄 Entered local target branch, port param:', port)
       // Use dynamic port allocation to avoid conflicts
       // For fixed ports (6767/6768), prefer dynamic allocation since these are commonly used
       if (port === 0 || port === 6767 || port === 6768) {
+        console.error('🔄 Getting unused port...')
         port = await getUnusedPort()
-        log(`Using dynamically allocated port ${port} for Rooch server`)
+        console.error(`🔄 Using dynamically allocated port ${port} for Rooch server`)
       } else {
         // For other specific ports, trust the caller's choice
         // If it fails, roochAsyncCommand will timeout with clear error
-        log(`Using caller-specified port ${port} for Rooch server`)
+        console.error(`🔄 Using caller-specified port ${port} for Rooch server`)
       }
 
       // Generate a random port for metrics
+      console.error('🔄 Getting metrics port...')
       const metricsPort = await getUnusedPort()
+      console.error(`🔄 Metrics port: ${metricsPort}`)
 
-      const cmds = [
-        'server',
-        'start',
-        '--config-dir',
-        this.roochDir,
-        '-n',
-        'local',
-        '-d',
-        'TMP',
-        '--port',
-        port.toString(),
-      ]
+      const cmds = ['server', 'start', '-n', 'local', '-d', 'TMP', '--port', port.toString()]
       if (serverArgs.length > 0) {
         cmds.push(...serverArgs)
       }
@@ -153,11 +152,18 @@ export class TestBox {
       cmds.push('--traffic-per-second', '1')
       cmds.push('--traffic-burst-size', '5000')
 
+      console.error('🚀 About to call roochAsyncCommand with cmds:', JSON.stringify(cmds, null, 2))
+      console.error(
+        '🚀 Waiting for output:',
+        `JSON-RPC HTTP Server start listening 0.0.0.0:${port}`,
+      )
+      console.error('🚀 Using ROOCH_CONFIG_DIR:', this.roochDir)
       const result: string = await this.roochAsyncCommand(
         cmds,
         `JSON-RPC HTTP Server start listening 0.0.0.0:${port}`,
-        [`METRICS_HOST_PORT=${metricsPort}`],
+        [`METRICS_HOST_PORT=${metricsPort}`, `ROOCH_CONFIG_DIR=${this.roochDir}`],
       )
+      console.error('✅ roochAsyncCommand returned:', result)
 
       this.roochContainer = parseInt(result.toString().trim(), 10)
       this.roochPort = port
@@ -284,7 +290,6 @@ export class TestBox {
     })
   }
 
-
   private buildRoochCommand(args: string[] | string, envs: string[] = []) {
     const root = this.findRootDir('pnpm-workspace.yaml')
     // Use ROOCH_BINARY_BUILD_PROFILE environment variable or default to 'debug'
@@ -338,6 +343,8 @@ export class TestBox {
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       const { cmd, args: cmdArgs, env } = this.buildRoochCommand(args, envs)
+      console.log('🔍 Executing command:', cmd, cmdArgs.join(' '))
+      console.log('🔍 Full command string:', `${cmd} ${cmdArgs.join(' ')}`)
       const child = spawn(cmd, cmdArgs, { env })
 
       let output = ''
@@ -425,15 +432,25 @@ export class TestBox {
       options.namedAddresses,
     )
 
-    const result = this.roochCommand(
-      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
-    )
+    const result = this.roochCommand([
+      'move',
+      'publish',
+      '-p',
+      packagePath,
+      '--config-dir',
+      this.roochDir,
+      '--named-addresses',
+      options.namedAddresses,
+      '--json',
+    ])
+
+    console.log('publish result (full):', result)
 
     // The output contains both compilation logs and JSON result
     // Find the JSON object in the output (starts with '{' and ends with '}')
     const startIndex = result.indexOf('{')
     if (startIndex === -1) {
-      log('Failed to find JSON in output:', result)
+      console.log('Failed to find JSON in output:', result)
       return false
     }
 
@@ -442,10 +459,14 @@ export class TestBox {
 
     try {
       const { execution_info } = JSON.parse(jsonPart)
-      return execution_info?.status?.type === 'executed'
+      console.log('execution_info:', JSON.stringify(execution_info, null, 2))
+      const isExecuted = execution_info?.status?.type === 'executed'
+      console.log('is executed:', isExecuted)
+      return isExecuted
     } catch (e) {
-      log('Failed to parse JSON:', jsonPart.substring(0, 200), '...')
-      log('Full result length:', result.length)
+      console.log('Failed to parse JSON:', jsonPart.substring(0, 200), '...')
+      console.log('Full result length:', result.length)
+      console.log('Error:', e)
       return false
     }
   }

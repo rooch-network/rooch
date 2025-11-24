@@ -30,10 +30,12 @@ function runMoveFunction(testbox: TestBox, functionId: string, args: string[]) {
 }
 
 async function publishPackage(testbox: TestBox, packagePath: string, namedAddresses: string) {
+  console.log(`Publishing package at ${packagePath} with named addresses: ${namedAddresses}`)
   const ok = await testbox.cmdPublishPackage(packagePath, { namedAddresses })
   if (!ok) {
     throw new Error(`Failed to publish package at ${packagePath}`)
   }
+  console.log(`Successfully published package at ${packagePath}`)
 }
 
 describe('Rooch pruner end-to-end', () => {
@@ -43,7 +45,9 @@ describe('Rooch pruner end-to-end', () => {
 
   beforeAll(async () => {
     console.log('### pruner e2e: init testbox')
+    console.error('🔧 About to create TestBox')
     testbox = new TestBox()
+    console.error('🔧 TestBox created, roochDir:', testbox.roochDir)
     console.log('### pruner e2e: start rooch server')
 
     // Check if this is a long-term test
@@ -85,7 +89,10 @@ describe('Rooch pruner end-to-end', () => {
     }
 
     // Use port 0 to get dynamic port allocation
-    await testbox.loadRoochEnv('local', 0, prunerArgs)
+    console.error('🔄 About to call testbox.loadRoochEnv with args:', prunerArgs.length, 'items')
+    console.error('🔄 TestBox roochDir:', testbox.roochDir)
+    const loadResult = await testbox.loadRoochEnv('local', 0, prunerArgs)
+    console.error('🔄 loadRoochEnv returned:', loadResult)
 
     // Configure RPC URL for rooch CLI after server starts
     const serverAddress = testbox.getRoochServerAddress()
@@ -400,6 +407,33 @@ describe('Rooch pruner end-to-end', () => {
         const prunerMetrics = await prometheus.fetchMetrics()
         const report = generateReport(startTime, txCounts, prunerMetrics)
         printReport(report)
+
+        // Save detailed report for CI/CD pipeline
+        if (process.env.LONG_TERM_TEST === 'true') {
+          const fs = await import('fs')
+          const reportPath = process.env.CI ? '../../test-report.json' : 'test-report.json'
+          fs.writeFileSync(
+            reportPath,
+            JSON.stringify(
+              {
+                report,
+                testConfig: {
+                  duration: testTimeout,
+                  settleMs,
+                  workload: {
+                    counterIters,
+                    createIters,
+                    updateIters,
+                    deleteIters,
+                  },
+                },
+              },
+              null,
+              2,
+            ),
+          )
+          console.log(`### pruner e2e: saved detailed report to ${reportPath}`)
+        }
 
         expect(prunerMetrics.bloomFilterSizeBytes).toBeGreaterThan(0)
         expect(prunerMetrics.currentPhase).toBeGreaterThanOrEqual(0)

@@ -203,7 +203,7 @@ jobs:
                 
                 # Calculate reclaim percentage
                 if [ $PEAK_USAGE -gt 0 ]; then
-                  RECLAIM_PCT=$(echo "scale=2; $RECLAIMED * 100 / $PEAK_USAGE" | bc)
+                  RECLAIM_PCT=$(awk "BEGIN {printf \"%.2f\", $RECLAIMED * 100 / $PEAK_USAGE}")
                   echo "reclaim_percentage=$RECLAIM_PCT" >> $GITHUB_OUTPUT
                   echo "Reclaim percentage: $RECLAIM_PCT%"
                 fi
@@ -220,29 +220,50 @@ jobs:
         id: metrics
         if: always()
         run: |
-          # Find the metrics port from test logs
+          # Find the metrics port from test logs and save metrics snapshot
           METRICS_PORT=$(grep -oP 'metrics.*port.*\K\d+' sdk/typescript/rooch-pruner-e2e/test-output.log || echo "9184")
           echo "metrics_port=$METRICS_PORT" >> $GITHUB_OUTPUT
 
-          # Try to fetch metrics if server is still running
+          # Try to fetch metrics snapshot if server is still running
           if curl -s "http://localhost:$METRICS_PORT/metrics" > metrics-snapshot.txt; then
-            echo "Metrics fetched successfully"
-            
-            # Extract key metrics
-            NODES_DELETED_SWEEP=$(grep -oP 'pruner_sweep_nodes_deleted_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
-            NODES_DELETED_INCR=$(grep -oP 'pruner_sweep_nodes_deleted.*incremental.*_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
-            REACHABLE_NODES=$(grep -oP 'pruner_reachable_nodes_scanned_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
-            DISK_RECLAIMED=$(grep -oP 'pruner_disk_space_reclaimed_bytes_total.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
-            BLOOM_SIZE=$(grep -oP 'pruner_bloom_filter_size_bytes[^{]*?\K[\d.]+' metrics-snapshot.txt | head -1 || echo "0")
-            
-            echo "nodes_deleted_sweep=$NODES_DELETED_SWEEP" >> $GITHUB_OUTPUT
-            echo "nodes_deleted_incr=$NODES_DELETED_INCR" >> $GITHUB_OUTPUT
-            echo "reachable_nodes=$REACHABLE_NODES" >> $GITHUB_OUTPUT
-            echo "disk_reclaimed_estimated=$DISK_RECLAIMED" >> $GITHUB_OUTPUT
-            echo "bloom_filter_size=$BLOOM_SIZE" >> $GITHUB_OUTPUT
+            echo "Metrics snapshot saved successfully"
           else
-            echo "Could not fetch metrics (server may be stopped)"
+            echo "Could not fetch metrics snapshot (server may be stopped)"
           fi
+
+          # Extract metrics from test report JSON if available
+          if [ -f sdk/typescript/rooch-pruner-e2e/test-report.json ]; then
+            echo "Using metrics from test report JSON"
+
+            # Extract values using jq if available, otherwise use grep
+            if command -v jq >/dev/null 2>&1; then
+              NODES_DELETED_SWEEP=$(jq -r '.report.prunerMetrics.sweepExpiredDeleted.sum' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+              NODES_DELETED_INCR=$(jq -r '.report.prunerMetrics.incrementalSweepDeleted.sum' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+              REACHABLE_NODES=$(jq -r '.report.prunerMetrics.reachableNodesScanned.sum' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+              DISK_RECLAIMED=$(jq -r '.report.prunerMetrics.diskSpaceReclaimedBytes' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+              BLOOM_SIZE=$(jq -r '.report.prunerMetrics.bloomFilterSizeBytes' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+            else
+              # Fallback to grep-based extraction
+              NODES_DELETED_SWEEP=$(grep -oP '"sweepExpiredDeleted":{"sum":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+              NODES_DELETED_INCR=$(grep -oP '"incrementalSweepDeleted":{"sum":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+              REACHABLE_NODES=$(grep -oP '"reachableNodesScanned":{"sum":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+              DISK_RECLAIMED=$(grep -oP '"diskSpaceReclaimedBytes":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+              BLOOM_SIZE=$(grep -oP '"bloomFilterSizeBytes":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+            fi
+          else
+            echo "Test report JSON not found, using default values"
+            NODES_DELETED_SWEEP=0
+            NODES_DELETED_INCR=0
+            REACHABLE_NODES=0
+            DISK_RECLAIMED=0
+            BLOOM_SIZE=0
+          fi
+
+          echo "nodes_deleted_sweep=$NODES_DELETED_SWEEP" >> $GITHUB_OUTPUT
+          echo "nodes_deleted_incr=$NODES_DELETED_INCR" >> $GITHUB_OUTPUT
+          echo "reachable_nodes=$REACHABLE_NODES" >> $GITHUB_OUTPUT
+          echo "disk_reclaimed_estimated=$DISK_RECLAIMED" >> $GITHUB_OUTPUT
+          echo "bloom_filter_size=$BLOOM_SIZE" >> $GITHUB_OUTPUT
 
       - name: Generate test report
         if: always()
@@ -274,8 +295,8 @@ jobs:
           - **Reachable Nodes Scanned**: ${{ steps.metrics.outputs.reachable_nodes }}
 
           ### Disk Space
-          - **Estimated Reclaimed (from metrics)**: $(echo "scale=2; ${{ steps.metrics.outputs.disk_reclaimed_estimated }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Bloom Filter Size**: $(echo "scale=2; ${{ steps.metrics.outputs.bloom_filter_size }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Estimated Reclaimed (from metrics)**: $(awk "BEGIN {printf \"%.2f\", ${{ steps.metrics.outputs.disk_reclaimed_estimated }} / 1024 / 1024}" 2>/dev/null || echo "N/A") MB
+          - **Bloom Filter Size**: $(awk "BEGIN {printf \"%.2f\", ${{ steps.metrics.outputs.bloom_filter_size }} / 1024 / 1024}" 2>/dev/null || echo "N/A") MB
 
           EOF
 
@@ -288,15 +309,15 @@ jobs:
           > Since the test continuously writes data while pruner deletes old data, the final size 
           > will be larger than initial. The key metric is: Peak - Final = Reclaimed by Pruner.
 
-          - **Peak Usage (during test)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.peak_usage }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Final Usage (after pruner)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.final_usage }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Space Reclaimed**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.reclaimed }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Peak Usage (during test)**: $(awk "BEGIN {printf \"%.2f\", ${{ steps.disk-analysis.outputs.peak_usage }} / 1024 / 1024}" 2>/dev/null || echo "N/A") MB
+          - **Final Usage (after pruner)**: $(awk "BEGIN {printf \"%.2f\", ${{ steps.disk-analysis.outputs.final_usage }} / 1024 / 1024}" 2>/dev/null || echo "N/A") MB
+          - **Space Reclaimed**: $(awk "BEGIN {printf \"%.2f\", ${{ steps.disk-analysis.outputs.reclaimed }} / 1024 / 1024}" 2>/dev/null || echo "N/A") MB
           - **Reclaim Percentage**: ${{ steps.disk-analysis.outputs.reclaim_percentage }}% of peak usage
 
           #### Comparison
-          - **Estimated (from metrics)**: $(echo "scale=2; ${{ steps.metrics.outputs.disk_reclaimed_estimated }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Actual (from monitoring)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.reclaimed }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Accuracy**: $(echo "scale=1; ${{ steps.disk-analysis.outputs.reclaimed }} * 100 / ${{ steps.metrics.outputs.disk_reclaimed_estimated }}" | bc 2>/dev/null || echo "N/A")% (actual/estimated)
+          - **Estimated (from metrics)**: $(awk "BEGIN {printf \"%.2f\", ${{ steps.metrics.outputs.disk_reclaimed_estimated }} / 1024 / 1024}" 2>/dev/null || echo "N/A") MB
+          - **Actual (from monitoring)**: $(awk "BEGIN {printf \"%.2f\", ${{ steps.disk-analysis.outputs.reclaimed }} / 1024 / 1024}" 2>/dev/null || echo "N/A") MB
+          - **Accuracy**: $(awk "BEGIN {if(${steps.metrics.outputs.disk_reclaimed_estimated}>0) printf \"%.1f\", ${{ steps.disk-analysis.outputs.reclaimed }} * 100 / ${{ steps.metrics.outputs.disk_reclaimed_estimated }}; else print \"N/A\"}" 2>/dev/null || echo "N/A")% (actual/estimated)
 
           EOF
           fi
@@ -318,6 +339,7 @@ jobs:
           name: pruner-test-report-${{ github.run_number }}
           path: |
             sdk/typescript/rooch-pruner-e2e/test-output.log
+            sdk/typescript/rooch-pruner-e2e/test-report.json
             test-report.md
             metrics-snapshot.txt
             disk-usage-timeline.csv
