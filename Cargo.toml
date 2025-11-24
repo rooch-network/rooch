@@ -190,7 +190,7 @@ futures-util = "0.3.31"
 futures-core = "0.3.21"
 hdrhistogram = "7.5.4"
 hex = "0.4.3"
-heed = "0.21.0"
+heed = "0.22.0"
 itertools = "0.14.0"
 #jsonrpsee = { version = "0.23.2", features = ["full"] }
 jsonrpsee = { version = "0.24.7", features = [
