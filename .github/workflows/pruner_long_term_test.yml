@@ -65,7 +65,7 @@ jobs:
 
       - name: Setup pnpm
         run: |
-          npm install pnpm@10.23.0 -g
+          npm install pnpm@9.10.0 -g
           pnpm install
 
       - name: Build test dependencies
