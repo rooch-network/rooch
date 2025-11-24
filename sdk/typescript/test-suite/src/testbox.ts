@@ -39,8 +39,8 @@ export class TestBox {
     this.roochDir = path.join(this.tmpDir.name, '.rooch_test')
     log('New TestBox rooch dir:', this.roochDir)
     fs.mkdirSync(this.roochDir, { recursive: true })
-    this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
-    this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
+    this.roochCommand(['init', '--config-dir', this.roochDir, '--skip-password'])
+    this.roochCommand(['env', 'switch', '--config-dir', this.roochDir, '--alias', 'local'])
   }
 
   async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {
@@ -157,7 +157,7 @@ export class TestBox {
       return
     }
 
-    this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
+    this.roochCommand(['init', '--config-dir', this.roochDir, '--skip-password'])
     const container = new RoochContainer()
 
     // Find local Rooch binary path as in the 'local' mode
@@ -202,7 +202,7 @@ export class TestBox {
       '--rpc',
       'http://' + rpcURL,
     ])
-    this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
+    this.roochCommand(['env', 'switch', '--config-dir', this.roochDir, '--alias', 'local'])
   }
 
   cleanEnv() {
@@ -273,6 +273,7 @@ export class TestBox {
     })
   }
 
+
   private buildRoochCommand(args: string[] | string, envs: string[] = []) {
     const root = this.findRootDir('pnpm-workspace.yaml')
     // Use ROOCH_BINARY_BUILD_PROFILE environment variable or default to 'debug'
@@ -290,18 +291,7 @@ export class TestBox {
     }
 
     // Convert args to array format
-    let roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
-
-    // Automatically add --config-dir for all rooch commands
-    // Skip adding --config-dir if it's already present in the arguments
-    const hasConfigDir = roochArgs.some((arg, index) =>
-      arg === '--config-dir' ||
-      (arg === '-c' && index < roochArgs.length - 1)
-    )
-
-    if (!hasConfigDir && this.roochDir) {
-      roochArgs = ['--config-dir', this.roochDir, ...roochArgs]
-    }
+    const roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
 
     return {
       cmd: roochBin,
