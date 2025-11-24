@@ -2334,9 +2334,9 @@ checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "convert_case"
-version = "0.6.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -14350,12 +14350,12 @@ dependencies = [
 
 [[package]]
 name = "vergen-pretty"
-version = "0.3.9"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b6dba3d634a79e4a7af9eb2eb75d3629f81e3bbb8ae55d3ec2821acdeaac618"
+checksum = "86fce764d393d83eb2125f0e86bee124001f4a19d23061eb4d12e8954f91eb15"
 dependencies = [
  "anyhow 1.0.95",
- "convert_case 0.6.0",
+ "convert_case 0.8.0",
  "derive_builder 0.20.2",
  "rustversion",
 ]
