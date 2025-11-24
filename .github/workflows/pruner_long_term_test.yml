@@ -70,8 +70,8 @@ jobs:
 
       - name: Build test dependencies
         run: |
-          pnpm test-suite build
-          pnpm rooch-pruner-e2e vitest --version
+          pnpm --filter @roochnetwork/test-suite build
+          pnpm --filter @roochnetwork/rooch-pruner-e2e exec vitest --version
 
       - name: Setup disk monitoring
         id: disk-setup
