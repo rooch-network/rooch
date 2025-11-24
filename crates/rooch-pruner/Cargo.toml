@@ -33,7 +33,7 @@ moveos-store = { workspace = true }
 moveos-types = { workspace = true }
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 tempfile = { workspace = true }
 rand = { workspace = true }
 
