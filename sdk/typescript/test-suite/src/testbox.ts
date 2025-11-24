@@ -119,7 +119,18 @@ export class TestBox {
       // Generate a random port for metrics
       const metricsPort = await getUnusedPort()
 
-      const cmds = ['server', 'start', '-n', 'local', '-d', 'TMP', '--port', port.toString()]
+      const cmds = [
+        'server',
+        'start',
+        '--config-dir',
+        this.roochDir,
+        '-n',
+        'local',
+        '-d',
+        'TMP',
+        '--port',
+        port.toString(),
+      ]
       if (serverArgs.length > 0) {
         cmds.push(...serverArgs)
       }
