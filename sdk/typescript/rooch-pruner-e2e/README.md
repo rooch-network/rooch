@@ -73,7 +73,7 @@ You can customize test behavior using environment variables:
 - `LONG_TERM_DELETE_ITERS`: Delete operations per cycle (default: 20)
 - `LONG_TERM_CYCLE_COUNT`: Number of workload cycles (default: 10)
 - `LONG_TERM_INTERVAL_S`: Pruner interval in seconds (default: 30)
-- `LONG_TERM_WINDOW_DAYS`: Pruner window in days (default: 0)
+- `LONG_TERM_PROTECTION_ORDERS`: Number of recent tx_orders to protect (default: 0, aggressive mode)
 - `LONG_TERM_BLOOM_BITS`: Bloom filter size in bits (default: 67108864)
 - `LONG_TERM_SCAN_BATCH`: Scan batch size (default: 50000)
 - `LONG_TERM_DELETE_BATCH`: Delete batch size (default: 25000)

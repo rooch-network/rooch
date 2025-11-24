@@ -48,8 +48,8 @@ pub struct PruneConfig {
     /// Create and use cf_reach_seen column family for cold hash spill
     pub enable_reach_seen_cf: bool,           // default: false
 
-    /// Window size in days for reachable roots
-    pub window_days: u64,                     // default: 30
+    /// Number of recent tx_orders to protect from pruning
+    pub protection_orders: u64,                // default: 30000
 
     /// Enable incremental sweep phase for continuous cleanup
     pub enable_incremental_sweep: bool,       // default: true

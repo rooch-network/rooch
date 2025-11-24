@@ -61,8 +61,8 @@ describe('Rooch pruner end-to-end', () => {
       prunerArgs.push(
         '--pruner-interval-s',
         process.env.LONG_TERM_INTERVAL_S || '30',
-        '--pruner-window-days',
-        process.env.LONG_TERM_WINDOW_DAYS || '0', // 0 days for immediate cleanup in testing
+        '--pruner-protection-orders',
+        process.env.LONG_TERM_PROTECTION_ORDERS || '0', // 0 = aggressive mode (only protect latest root)
         '--pruner-bloom-bits',
         process.env.LONG_TERM_BLOOM_BITS || '67108864', // 64MB bloom filter
         '--pruner-scan-batch',
@@ -76,8 +76,8 @@ describe('Rooch pruner end-to-end', () => {
       prunerArgs.push(
         '--pruner-interval-s',
         '15', // More frequent interval for faster testing
-        '--pruner-window-days',
-        '0', // 0 days window - atomic snapshot should protect recent state
+        '--pruner-protection-orders',
+        '0', // Aggressive mode: only protect latest root - atomic snapshot protects reachable nodes
         '--pruner-bloom-bits',
         '16777216', // 16MB bloom filter for reasonable accuracy
         '--pruner-scan-batch',
@@ -96,20 +96,21 @@ describe('Rooch pruner end-to-end', () => {
 
     // Configure RPC URL for rooch CLI after server starts
     const serverAddress = testbox.getRoochServerAddress()
-    if (serverAddress) {
-      console.log('### pruner e2e: configuring RPC URL:', serverAddress)
-      testbox.roochCommand([
-        'env',
-        'add',
-        '--config-dir',
-        testbox.roochDir,
-        '--alias',
-        'local',
-        '--rpc',
-        `http://${serverAddress}`,
-      ])
-      testbox.roochCommand(['env', 'switch', '--config-dir', testbox.roochDir, '--alias', 'local'])
-    }
+    console.error('### pruner e2e: serverAddress:', serverAddress)
+    // if (serverAddress) {
+    //   console.log('### pruner e2e: configuring RPC URL:', serverAddress)
+    //   testbox.roochCommand([
+    //     'env',
+    //     'add',
+    //     '--config-dir',
+    //     testbox.roochDir,
+    //     '--alias',
+    //     'local',
+    //     '--rpc',
+    //     `http://${serverAddress}`,
+    //   ])
+    //   testbox.roochCommand(['env', 'switch', '--config-dir', testbox.roochDir, '--alias', 'local'])
+    // }
 
     console.log('### pruner e2e: fetch default address')
     defaultAddress = await testbox.defaultCmdAddress()
@@ -134,7 +135,6 @@ describe('Rooch pruner end-to-end', () => {
 
     // Wait extra time for server to be fully ready
     console.log('### pruner e2e: waiting for server to be fully ready')
-    await delay(10000)
 
     prometheus = new PrometheusClient(testbox.getMetricsPort() ?? 9184)
     console.log('### pruner e2e: beforeAll done')
@@ -195,6 +195,9 @@ describe('Rooch pruner end-to-end', () => {
           objectDeleted: 0,
         }
 
+        // Use deterministic seeds so object IDs are known without querying on-chain state
+        const seedBase = Date.now() % 1_000_000
+
         const phaseHistory = []
 
         console.log(`📊 Long-term test configuration:`)
@@ -224,10 +227,13 @@ describe('Rooch pruner end-to-end', () => {
           }
 
           // Large-scale object creation
-          console.log(`### pruner e2e: creating ${createIters} objects (cycle ${cycle + 1})`)
+          console.log(`### pruner e2e: creating ${createIters} deterministic objects (cycle ${cycle + 1})`)
+          const seeds: number[] = []
           for (let i = 0; i < createIters; i++) {
-            runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_object`, [
-              `u64:${cycle * 1000 + i}`,
+            const seed = seedBase + cycle * 10_000 + i
+            seeds.push(seed)
+            runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_named`, [
+              `u64:${seed}`,
               `u64:${cycle * 1000 + i}`,
             ])
             txCounts.objectCreated += 1
@@ -238,13 +244,22 @@ describe('Rooch pruner end-to-end', () => {
           console.log(
             `### pruner e2e: simulating ${updateIters} update operations (cycle ${cycle + 1})`,
           )
-          for (let i = 0; i < updateIters; i++) {
-            runMoveFunction(
-              testbox,
-              `${defaultAddress}::quick_start_counter::increase`,
-              [], // no args - this creates new state versions
-            )
+          for (let i = 0; i < updateIters && i < seeds.length; i++) {
+            runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::update_named`, [
+              `u64:${seeds[i]}`,
+              `u64:${cycle * 2000 + i}`,
+            ])
             txCounts.objectUpdated += 1
+            if (i % 15 === 0) await delay(5)
+          }
+
+          // Delete a subset of objects deterministically
+          console.log(`### pruner e2e: deleting ${deleteIters} deterministic objects (cycle ${cycle + 1})`)
+          for (let i = 0; i < deleteIters && i < seeds.length; i++) {
+            runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::remove_named`, [
+              `u64:${seeds[seeds.length - 1 - i]}`,
+            ])
+            txCounts.objectDeleted += 1
             if (i % 15 === 0) await delay(5)
           }
 
@@ -365,39 +380,43 @@ describe('Rooch pruner end-to-end', () => {
             [], // no args
           )
           txCounts.counter += 1
-          await delay(50)
+          await delay(10)
         }
 
-        // Object lifecycle workload
-        console.log(`### pruner e2e: creating ${createIters} objects`)
+        // Object lifecycle workload with deterministic seeds
+        console.log(`### pruner e2e: creating ${createIters} deterministic objects`)
+        const seeds: number[] = []
+        const seedBase = Date.now() % 1_000_000
         for (let i = 0; i < createIters; i++) {
-          runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_object`, [
-            `u64:${i}`,
+          const seed = seedBase + i
+          seeds.push(seed)
+          runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_named`, [
+            `u64:${seed}`,
             `u64:${i}`,
           ])
           txCounts.objectCreated += 1
-          await delay(30)
+          await delay(10)
         }
 
         // Update operations - simulate with additional counter operations
         console.log(`### pruner e2e: simulating ${updateIters} update operations`)
-        for (let i = 0; i < updateIters; i++) {
-          runMoveFunction(
-            testbox,
-            `${defaultAddress}::quick_start_counter::increase`,
-            [], // no args - this creates new state versions
-          )
+        for (let i = 0; i < updateIters && i < seeds.length; i++) {
+          runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::update_named`, [
+            `u64:${seeds[i]}`,
+            `u64:${1000 + i}`,
+          ])
           txCounts.objectUpdated += 1
-          await delay(30)
+          await delay(10)
         }
 
-        // Delete operations (would also require object IDs)
-        console.log(`### pruner e2e: simulating delete operations`)
-        for (let i = 0; i < deleteIters; i++) {
-          // Additional counter operations to simulate state churn
-          runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+        // Delete operations using deterministic object IDs
+        console.log(`### pruner e2e: deleting ${deleteIters} deterministic objects`)
+        for (let i = 0; i < deleteIters && i < seeds.length; i++) {
+          runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::remove_named`, [
+            `u64:${seeds[seeds.length - 1 - i]}`,
+          ])
           txCounts.objectDeleted += 1
-          await delay(30)
+          await delay(10)
         }
 
         // Allow pruner cycles to complete - use PRUNER_SETTLE_MS if provided, otherwise default to 60s

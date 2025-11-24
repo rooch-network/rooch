@@ -313,10 +313,17 @@ where
         let mut node_map: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
         let mut stale_indices: Vec<(H256, H256)> = Vec::new();
 
+        // Process new nodes - these should NOT be marked as stale
         for (nk, n) in change_set.node_batch.into_iter() {
             node_map.insert(nk.into(), n.encode()?);
-            if nk != *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE {
-                stale_indices.push((state_root, nk.into()));
+        }
+
+        // Process stale nodes - only these should be marked as stale
+        for stale_index in change_set.stale_node_index_batch.into_iter() {
+            let node_hash: H256 = stale_index.node_key.into();
+            let placeholder: H256 = (*SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE).into();
+            if node_hash != placeholder {
+                stale_indices.push((state_root, node_hash));
             }
         }
 
