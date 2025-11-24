@@ -249,7 +249,7 @@ unescape = "0.1.0"
 tempfile = "3.23.0"
 regex = "1.12.2"
 walkdir = "2.3.3"
-prometheus = "0.13.3"
+prometheus = "0.14.0"
 hyper = { version = "1.0.0", features = ["full"] }
 libc = "^0.2"
 include_dir = { version = "0.6.2" }
