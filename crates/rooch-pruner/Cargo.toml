@@ -15,12 +15,15 @@ smt = { workspace = true }
 prometheus = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
 
 rayon = { workspace = true }
 
 num_cpus = { workspace = true }
 parking_lot = { workspace = true }
 primitive-types = { workspace = true }
+rand = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-store = { workspace = true }

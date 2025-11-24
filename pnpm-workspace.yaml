@@ -9,4 +9,5 @@ packages:
   - 'sdk/typescript/rooch-create'
 # - 'sdk/typescript/bitseed-sdk'
   - 'sdk/typescript/test-suite'
+  - 'sdk/typescript/rooch-pruner-e2e'
   - 'docs/**'

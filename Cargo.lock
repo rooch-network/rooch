@@ -11001,8 +11001,10 @@ dependencies = [
  "rayon",
  "rooch-config",
  "rooch-store",
+ "serde 1.0.228",
  "smt",
  "tempfile",
+ "thiserror 1.0.69",
  "tokio",
  "tracing",
 ]

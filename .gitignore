@@ -43,3 +43,6 @@ rooch-book
 sdk-examples
 
 __pycache__
+
+# Claude Code temporary files and configuration
+.claude/

@@ -50,17 +50,16 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Cache Rust dependencies
-        uses: actions/cache@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git/db
-            target
-          key: ${{ runner.os }}-cargo-debug-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-debug-${{ matrix.target }}-
-            ${{ runner.os }}-cargo-debug-
+          target: ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cross-platform-${{ matrix.target }}
+          cache-on-failure: true
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -112,11 +111,6 @@ jobs:
           echo "$env:USERPROFILE\scoop\apps\llvm\current\bin" >> $env:GITHUB_PATH
           echo "$env:USERPROFILE\scoop\apps\mingw\current\bin" >> $env:GITHUB_PATH
           echo "$env:USERPROFILE\scoop\apps\cmake\current\bin" >> $env:GITHUB_PATH
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          target: ${{ matrix.target }}
 
       - name: Set Rust environment variables (Linux)
         if: matrix.os == 'ubuntu-latest'
