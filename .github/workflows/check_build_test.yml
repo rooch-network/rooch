@@ -2,7 +2,7 @@ name: Check-Build-Test
 
 on:
   push:
-    branches: [ 'main' ]
+    branches: ['main']
     paths-ignore:
       - 'docs/**'
       - 'fixtures/**'
@@ -10,7 +10,7 @@ on:
       - '**.md'
       - 'crates/rooch-anomalies/static/**'
   pull_request:
-    branches: [ 'main' ]
+    branches: ['main']
     paths-ignore:
       - 'docs/**'
       - 'fixtures/**'
@@ -80,7 +80,7 @@ jobs:
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: "ci-build"
+          shared-key: 'ci-build'
           cache-on-failure: true
 
       - name: Install cargo tools
@@ -155,13 +155,13 @@ jobs:
           # . $NVM_DIR/nvm.sh
           # nvm install 20.3.1
           # nvm use 20.3.1
-          npm install pnpm@9.4.0 -g
+          npm install pnpm@10.23.0 -g
           pnpm install
           # pnpm bitseed-sdk playwright-deps
           # Run web/SDK tasks in parallel
-          
+
           pnpm rooch-sdk lint
-          
+
           pnpm test-suite build &
           PID_TEST_SUITE=$!
           pnpm rooch-sdk build &
@@ -170,7 +170,7 @@ jobs:
           PID_SDK_KIT=$!
           # pnpm bitseed-sdk lint
           # pnpm bitseed-sdk build
-          
+
           EXIT_CODE_LINT=$?
           wait $PID_TEST_SUITE
           EXIT_CODE_TEST_SUITE=$?
@@ -220,5 +220,5 @@ jobs:
         if: ${{ steps.changes.outputs.scripts == 'true' }}
         uses: Azbagheri/shell-linter@v0.8.0
         with:
-          path: "scripts/*.sh"
-          severity: "error"
+          path: 'scripts/*.sh'
+          severity: 'error'

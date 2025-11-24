@@ -1,0 +1,350 @@
+name: Pruner Long-term Integration Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_duration_minutes:
+        description: 'Test duration in minutes'
+        required: false
+        default: '120'
+        type: choice
+        options:
+          - '60'
+          - '120'
+          - '240'
+          - '480'
+      workload_intensity:
+        description: 'Workload intensity level'
+        required: false
+        default: 'medium'
+        type: choice
+        options:
+          - 'light'
+          - 'medium'
+          - 'heavy'
+      enable_disk_monitoring:
+        description: 'Enable real disk usage monitoring'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  pruner-long-term-test:
+    name: Pruner Long-term Test
+    runs-on: self-hosted
+    timeout-minutes: 600 # 10 hours max
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'pruner-test'
+          cache-on-failure: true
+
+      - name: Build Rooch binary (optci profile)
+        run: |
+          echo "Building Rooch binary with optci profile..."
+          cargo build --profile optci --bin rooch
+          ls -lh target/optci/rooch
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.3.1'
+
+      - name: Setup pnpm
+        run: |
+          npm install pnpm@10.23.0 -g
+          pnpm install
+
+      - name: Build test dependencies
+        run: |
+          pnpm test-suite build
+          pnpm rooch-pruner-e2e vitest --version
+
+      - name: Setup disk monitoring
+        id: disk-setup
+        if: ${{ inputs.enable_disk_monitoring }}
+        run: |
+          # Create dedicated directory for test data
+          TEST_DATA_DIR="/tmp/rooch_pruner_test_$(date +%s)"
+          mkdir -p "$TEST_DATA_DIR"
+          echo "test_data_dir=$TEST_DATA_DIR" >> $GITHUB_OUTPUT
+          echo "Test data directory: $TEST_DATA_DIR"
+
+          # Create monitoring script
+          cat > /tmp/disk_monitor.sh << 'MONITOR_EOF'
+          #!/bin/bash
+          DATA_DIR="$1"
+          OUTPUT_FILE="$2"
+          PEAK_SIZE=0
+
+          while true; do
+            if [ -d "$DATA_DIR" ]; then
+              CURRENT_SIZE=$(du -sb "$DATA_DIR" 2>/dev/null | awk '{print $1}')
+              if [ -n "$CURRENT_SIZE" ] && [ $CURRENT_SIZE -gt $PEAK_SIZE ]; then
+                PEAK_SIZE=$CURRENT_SIZE
+                echo "$(date +%s),$CURRENT_SIZE,$PEAK_SIZE" >> "$OUTPUT_FILE"
+              fi
+            fi
+            sleep 5
+          done
+          MONITOR_EOF
+
+          chmod +x /tmp/disk_monitor.sh
+
+          # Start monitoring in background
+          /tmp/disk_monitor.sh "$TEST_DATA_DIR" "/tmp/disk_usage.log" &
+          MONITOR_PID=$!
+          echo "monitor_pid=$MONITOR_PID" >> $GITHUB_OUTPUT
+          echo "Started disk monitor (PID: $MONITOR_PID)"
+
+      - name: Determine test parameters
+        id: test-params
+        run: |
+          # Determine workload parameters based on intensity
+          case "${{ inputs.workload_intensity }}" in
+            light)
+              echo "counter_iters=50" >> $GITHUB_OUTPUT
+              echo "create_iters=25" >> $GITHUB_OUTPUT
+              echo "update_iters=15" >> $GITHUB_OUTPUT
+              echo "delete_iters=10" >> $GITHUB_OUTPUT
+              echo "cycle_count=5" >> $GITHUB_OUTPUT
+              ;;
+            medium)
+              echo "counter_iters=100" >> $GITHUB_OUTPUT
+              echo "create_iters=50" >> $GITHUB_OUTPUT
+              echo "update_iters=25" >> $GITHUB_OUTPUT
+              echo "delete_iters=20" >> $GITHUB_OUTPUT
+              echo "cycle_count=10" >> $GITHUB_OUTPUT
+              ;;
+            heavy)
+              echo "counter_iters=200" >> $GITHUB_OUTPUT
+              echo "create_iters=100" >> $GITHUB_OUTPUT
+              echo "update_iters=50" >> $GITHUB_OUTPUT
+              echo "delete_iters=40" >> $GITHUB_OUTPUT
+              echo "cycle_count=15" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Run pruner long-term test
+        id: pruner-test
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
+          ROOCH_DATA_DIR: ${{ steps.disk-setup.outputs.test_data_dir }}
+          LONG_TERM_TEST: true
+          LONG_TERM_DURATION_MINUTES: ${{ inputs.test_duration_minutes }}
+          LONG_TERM_COUNTER_ITERS: ${{ steps.test-params.outputs.counter_iters }}
+          LONG_TERM_CREATE_ITERS: ${{ steps.test-params.outputs.create_iters }}
+          LONG_TERM_UPDATE_ITERS: ${{ steps.test-params.outputs.update_iters }}
+          LONG_TERM_DELETE_ITERS: ${{ steps.test-params.outputs.delete_iters }}
+          LONG_TERM_CYCLE_COUNT: ${{ steps.test-params.outputs.cycle_count }}
+        run: |
+          echo "Starting pruner long-term test..."
+          echo "Duration: ${{ inputs.test_duration_minutes }} minutes"
+          echo "Intensity: ${{ inputs.workload_intensity }}"
+          echo "Data directory: ${{ steps.disk-setup.outputs.test_data_dir }}"
+
+          # Record start time
+          START_TIME=$(date +%s)
+          echo "start_time=$START_TIME" >> $GITHUB_OUTPUT
+
+          # Run the test and capture output
+          cd sdk/typescript/rooch-pruner-e2e
+          pnpm exec vitest run src/case/pruner-e2e.spec.ts --reporter=verbose 2>&1 | tee test-output.log
+
+          # Record end time
+          END_TIME=$(date +%s)
+          echo "end_time=$END_TIME" >> $GITHUB_OUTPUT
+          DURATION=$((END_TIME - START_TIME))
+          echo "duration=$DURATION" >> $GITHUB_OUTPUT
+          echo "Test completed in $DURATION seconds"
+
+      - name: Analyze disk usage
+        id: disk-analysis
+        if: ${{ inputs.enable_disk_monitoring && always() }}
+        run: |
+          # Stop monitoring
+          if [ -n "${{ steps.disk-setup.outputs.monitor_pid }}" ]; then
+            kill ${{ steps.disk-setup.outputs.monitor_pid }} 2>/dev/null || true
+          fi
+
+          # Analyze disk usage from monitoring log
+          if [ -f /tmp/disk_usage.log ]; then
+            # Get peak usage
+            PEAK_USAGE=$(awk -F',' '{print $3}' /tmp/disk_usage.log | sort -n | tail -1)
+            echo "peak_usage=$PEAK_USAGE" >> $GITHUB_OUTPUT
+            
+            # Get final usage
+            TEST_DATA_DIR="${{ steps.disk-setup.outputs.test_data_dir }}"
+            if [ -d "$TEST_DATA_DIR" ]; then
+              FINAL_USAGE=$(du -sb "$TEST_DATA_DIR" 2>/dev/null | awk '{print $1}')
+              echo "final_usage=$FINAL_USAGE" >> $GITHUB_OUTPUT
+              
+              # Calculate reclaimed space (peak - final)
+              if [ -n "$PEAK_USAGE" ] && [ -n "$FINAL_USAGE" ]; then
+                RECLAIMED=$((PEAK_USAGE - FINAL_USAGE))
+                echo "reclaimed=$RECLAIMED" >> $GITHUB_OUTPUT
+                
+                echo "Peak disk usage: $PEAK_USAGE bytes"
+                echo "Final disk usage: $FINAL_USAGE bytes"
+                echo "Space reclaimed by pruner: $RECLAIMED bytes"
+                
+                # Calculate reclaim percentage
+                if [ $PEAK_USAGE -gt 0 ]; then
+                  RECLAIM_PCT=$(echo "scale=2; $RECLAIMED * 100 / $PEAK_USAGE" | bc)
+                  echo "reclaim_percentage=$RECLAIM_PCT" >> $GITHUB_OUTPUT
+                  echo "Reclaim percentage: $RECLAIM_PCT%"
+                fi
+              fi
+            fi
+            
+            # Save monitoring log as artifact
+            cp /tmp/disk_usage.log disk-usage-timeline.csv
+          else
+            echo "Disk monitoring log not found"
+          fi
+
+      - name: Fetch and analyze Prometheus metrics
+        id: metrics
+        if: always()
+        run: |
+          # Find the metrics port from test logs
+          METRICS_PORT=$(grep -oP 'metrics.*port.*\K\d+' sdk/typescript/rooch-pruner-e2e/test-output.log || echo "9184")
+          echo "metrics_port=$METRICS_PORT" >> $GITHUB_OUTPUT
+
+          # Try to fetch metrics if server is still running
+          if curl -s "http://localhost:$METRICS_PORT/metrics" > metrics-snapshot.txt; then
+            echo "Metrics fetched successfully"
+            
+            # Extract key metrics
+            NODES_DELETED_SWEEP=$(grep -oP 'pruner_sweep_nodes_deleted_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
+            NODES_DELETED_INCR=$(grep -oP 'pruner_sweep_nodes_deleted.*incremental.*_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
+            REACHABLE_NODES=$(grep -oP 'pruner_reachable_nodes_scanned_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
+            DISK_RECLAIMED=$(grep -oP 'pruner_disk_space_reclaimed_bytes_total.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
+            BLOOM_SIZE=$(grep -oP 'pruner_bloom_filter_size_bytes[^{]*?\K[\d.]+' metrics-snapshot.txt | head -1 || echo "0")
+            
+            echo "nodes_deleted_sweep=$NODES_DELETED_SWEEP" >> $GITHUB_OUTPUT
+            echo "nodes_deleted_incr=$NODES_DELETED_INCR" >> $GITHUB_OUTPUT
+            echo "reachable_nodes=$REACHABLE_NODES" >> $GITHUB_OUTPUT
+            echo "disk_reclaimed_estimated=$DISK_RECLAIMED" >> $GITHUB_OUTPUT
+            echo "bloom_filter_size=$BLOOM_SIZE" >> $GITHUB_OUTPUT
+          else
+            echo "Could not fetch metrics (server may be stopped)"
+          fi
+
+      - name: Generate test report
+        if: always()
+        run: |
+          cat > test-report.md << 'EOF'
+          # Pruner Long-term Integration Test Report
+
+          ## Test Configuration
+
+          - **Duration**: ${{ inputs.test_duration_minutes }} minutes
+          - **Workload Intensity**: ${{ inputs.workload_intensity }}
+          - **Start Time**: $(date -d @${{ steps.pruner-test.outputs.start_time }} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r ${{ steps.pruner-test.outputs.start_time }} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "N/A")
+          - **End Time**: $(date -d @${{ steps.pruner-test.outputs.end_time }} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r ${{ steps.pruner-test.outputs.end_time }} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "N/A")
+          - **Actual Duration**: ${{ steps.pruner-test.outputs.duration }} seconds
+
+          ## Workload Parameters
+
+          - **Counter Iterations**: ${{ steps.test-params.outputs.counter_iters }}
+          - **Create Iterations**: ${{ steps.test-params.outputs.create_iters }}
+          - **Update Iterations**: ${{ steps.test-params.outputs.update_iters }}
+          - **Delete Iterations**: ${{ steps.test-params.outputs.delete_iters }}
+          - **Cycle Count**: ${{ steps.test-params.outputs.cycle_count }}
+
+          ## Pruner Metrics
+
+          ### Node Statistics
+          - **Nodes Deleted (Sweep)**: ${{ steps.metrics.outputs.nodes_deleted_sweep }}
+          - **Nodes Deleted (Incremental)**: ${{ steps.metrics.outputs.nodes_deleted_incr }}
+          - **Reachable Nodes Scanned**: ${{ steps.metrics.outputs.reachable_nodes }}
+
+          ### Disk Space
+          - **Estimated Reclaimed (from metrics)**: $(echo "scale=2; ${{ steps.metrics.outputs.disk_reclaimed_estimated }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Bloom Filter Size**: $(echo "scale=2; ${{ steps.metrics.outputs.bloom_filter_size }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+
+          EOF
+
+          # Add real disk monitoring results if available
+          if [ "${{ inputs.enable_disk_monitoring }}" = "true" ]; then
+            cat >> test-report.md << 'EOF'
+          ### Real Disk Usage Analysis
+
+          > **Note**: Disk usage monitoring uses peak-to-final difference to measure pruner effectiveness.
+          > Since the test continuously writes data while pruner deletes old data, the final size 
+          > will be larger than initial. The key metric is: Peak - Final = Reclaimed by Pruner.
+
+          - **Peak Usage (during test)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.peak_usage }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Final Usage (after pruner)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.final_usage }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Space Reclaimed**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.reclaimed }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Reclaim Percentage**: ${{ steps.disk-analysis.outputs.reclaim_percentage }}% of peak usage
+
+          #### Comparison
+          - **Estimated (from metrics)**: $(echo "scale=2; ${{ steps.metrics.outputs.disk_reclaimed_estimated }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Actual (from monitoring)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.reclaimed }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Accuracy**: $(echo "scale=1; ${{ steps.disk-analysis.outputs.reclaimed }} * 100 / ${{ steps.metrics.outputs.disk_reclaimed_estimated }}" | bc 2>/dev/null || echo "N/A")% (actual/estimated)
+
+          EOF
+          fi
+
+          cat >> test-report.md << 'EOF'
+          ## Test Output Summary
+
+          See attached artifacts for full test logs and metrics snapshot.
+
+          EOF
+
+          cat test-report.md
+          echo "Test report generated"
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruner-test-report-${{ github.run_number }}
+          path: |
+            sdk/typescript/rooch-pruner-e2e/test-output.log
+            test-report.md
+            metrics-snapshot.txt
+            disk-usage-timeline.csv
+          retention-days: 30
+
+      - name: Post report summary
+        if: always()
+        run: |
+          if [ -f test-report.md ]; then
+            cat test-report.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Cleanup test environment
+        if: always()
+        run: |
+          # Kill any remaining rooch processes
+          pkill -f "rooch server" || true
+
+          # Stop disk monitor if still running
+          if [ -n "${{ steps.disk-setup.outputs.monitor_pid }}" ]; then
+            kill ${{ steps.disk-setup.outputs.monitor_pid }} 2>/dev/null || true
+          fi
+
+          # Clean up test data directory
+          if [ -n "${{ steps.disk-setup.outputs.test_data_dir }}" ]; then
+            rm -rf "${{ steps.disk-setup.outputs.test_data_dir }}" || true
+          fi
+
+          # Clean up monitoring files
+          rm -f /tmp/disk_monitor.sh /tmp/disk_usage.log
