@@ -322,7 +322,7 @@ criterion = { version = "0.5.1", features = [
 xxhash-rust = { version = "0.8.15", features = ["std", "xxh3"] }
 base64 = "0.22.1"
 wasmer = "4.2.5"
-wasmer-types = "4.2.5"
+wasmer-types = "6.1.0"
 wasmer-compiler-singlepass = "4.2.2"
 cosmwasm-vm = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
 cosmwasm-std = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
