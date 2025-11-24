@@ -3,7 +3,6 @@
 
 module pruner_test::object_lifecycle {
     use std::signer;
-    use moveos_std::account;
     use moveos_std::object::{Self, Object};
 
     struct TestObject has key, store {

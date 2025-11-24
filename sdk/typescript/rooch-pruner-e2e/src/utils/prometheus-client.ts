@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 export interface HistogramStat {
   sum: number
   count: number
@@ -25,7 +27,9 @@ export class PrometheusClient {
 
   async fetchMetrics(): Promise<PrunerMetrics> {
     if (!this.port) {
-      throw new Error('Metrics port not specified. Provide port to constructor or ensure TestBox metrics port is available.')
+      throw new Error(
+        'Metrics port not specified. Provide port to constructor or ensure TestBox metrics port is available.',
+      )
     }
 
     try {
@@ -87,7 +91,11 @@ export class PrometheusClient {
     }
   }
 
-  private gauge(samples: MetricSample[], name: string, labelMatch?: Record<string, string>): number {
+  private gauge(
+    samples: MetricSample[],
+    name: string,
+    labelMatch?: Record<string, string>,
+  ): number {
     // Try exact match first, then _total suffix (common pattern)
     const sample =
       this.findSample(samples, name, labelMatch) ||

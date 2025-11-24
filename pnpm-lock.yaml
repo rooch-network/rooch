@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       pnpm:
-        specifier: ^9.4.0
-        version: 9.10.0
+        specifier: ^9.15.4
+        version: 9.15.9
     devDependencies:
       '@changesets/cli':
         specifier: ^2.26.2
@@ -445,6 +445,24 @@ importers:
       '@types/node':
         specifier: ^20.14.10
         version: 20.16.5
+
+  sdk/typescript/rooch-pruner-e2e:
+    devDependencies:
+      '@roochnetwork/test-suite':
+        specifier: workspace:*
+        version: link:../test-suite
+      '@types/node':
+        specifier: ^20.14.10
+        version: 20.16.5
+      typescript:
+        specifier: ^5.3.3
+        version: 5.6.2
+      vite:
+        specifier: ^4.4.4
+        version: 4.5.3(@types/node@20.16.5)(terser@5.32.0)
+      vitest:
+        specifier: ^1.6.0
+        version: 1.6.0(@types/node@20.16.5)(happy-dom@15.7.4)(jsdom@25.0.0)(terser@5.32.0)
 
   sdk/typescript/rooch-sdk:
     dependencies:
@@ -8464,8 +8482,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  pnpm@9.10.0:
-    resolution: {integrity: sha512-c6Ka+jag0JLs5Scd5Rd+y/gxjUVOzXATQxMbjrwMGpHEh9pGq3fI5ZbWrPFGHjWUztS+zt+JIbB0+9hlPtcFHA==}
+  pnpm@9.15.9:
+    resolution: {integrity: sha512-aARhQYk8ZvrQHAeSMRKOmvuJ74fiaR1p5NQO7iKJiClf1GghgbrlW1hBjDolO95lpQXsfF+UA+zlzDzTfc8lMQ==}
     engines: {node: '>=18.12'}
     hasBin: true
 
@@ -19638,7 +19656,7 @@ snapshots:
       fsevents: 2.3.2
     optional: true
 
-  pnpm@9.10.0: {}
+  pnpm@9.15.9: {}
 
   possible-typed-array-names@1.0.0: {}
 

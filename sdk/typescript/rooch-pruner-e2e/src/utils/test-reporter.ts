@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { PrunerMetrics } from './prometheus-client.js'
 
 export interface TestReport {
@@ -18,7 +20,12 @@ export interface TestReport {
 
 export function generateReport(
   startTime: number,
-  txCounts: { counter: number; objectCreated: number; objectUpdated: number; objectDeleted: number },
+  txCounts: {
+    counter: number
+    objectCreated: number
+    objectUpdated: number
+    objectDeleted: number
+  },
   metrics: PrunerMetrics,
 ): TestReport {
   const checks = {
@@ -28,8 +35,7 @@ export function generateReport(
       metrics.sweepExpiredDeleted.count > 0 ||
       metrics.incrementalSweepDeleted.count > 0,
     // With conservative 7-day window, 0 deletions is correct and safe behavior
-    safeOperation:
-      metrics.sweepExpiredDeleted.sum >= 0 && metrics.incrementalSweepDeleted.sum >= 0,
+    safeOperation: metrics.sweepExpiredDeleted.sum >= 0 && metrics.incrementalSweepDeleted.sum >= 0,
     noErrors: metrics.errorCount === 0,
   }
 
@@ -80,7 +86,9 @@ export function printReport(report: TestReport): void {
   for (const [check, passed] of Object.entries(report.validation.checks)) {
     let description = check
     if (check === 'safeOperation') {
-      const totalDeletions = report.prunerMetrics.sweepExpiredDeleted.sum + report.prunerMetrics.incrementalSweepDeleted.sum
+      const totalDeletions =
+        report.prunerMetrics.sweepExpiredDeleted.sum +
+        report.prunerMetrics.incrementalSweepDeleted.sum
       const reachableNodes = report.prunerMetrics.reachableNodesScanned.sum
       description += ` (deleted ${totalDeletions} nodes, protected ${reachableNodes} reachable nodes - atomic snapshot enabled)`
     }

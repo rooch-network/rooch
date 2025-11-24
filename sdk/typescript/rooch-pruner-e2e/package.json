@@ -1,0 +1,42 @@
+{
+  "name": "@roochnetwork/rooch-pruner-e2e",
+  "author": "Rooch.network <opensource@rooch.network>",
+  "version": "0.1.0",
+  "description": "Rooch Pruner End-to-End Tests",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "scripts": {
+    "clean": "rimraf tsconfig.tsbuildinfo rimraf dist",
+    "vitest": "vitest",
+    "test": "vitest run src",
+    "test:pruner": "vitest run src/case/pruner-e2e.spec.ts",
+    "test:pruner:heavy": "PRUNER_COUNTER_ITERS=100 PRUNER_CREATE_ITERS=50 PRUNER_UPDATE_ITERS=25 PRUNER_DELETE_ITERS=20 PRUNER_SETTLE_MS=90000 vitest run src/case/pruner-e2e.spec.ts",
+    "test:pruner:long-term": "LONG_TERM_TEST=true LONG_TERM_DURATION_MINUTES=60 LONG_TERM_COUNTER_ITERS=100 LONG_TERM_CREATE_ITERS=50 LONG_TERM_UPDATE_ITERS=25 LONG_TERM_DELETE_ITERS=20 LONG_TERM_CYCLE_COUNT=10 vitest run src/case/pruner-e2e.spec.ts --reporter=verbose",
+    "test:pruner:long-term:heavy": "LONG_TERM_TEST=true LONG_TERM_DURATION_MINUTES=120 LONG_TERM_COUNTER_ITERS=200 LONG_TERM_CREATE_ITERS=100 LONG_TERM_UPDATE_ITERS=50 LONG_TERM_DELETE_ITERS=40 LONG_TERM_CYCLE_COUNT=15 vitest run src/case/pruner-e2e.spec.ts --reporter=verbose",
+    "eslint:check": "eslint --max-warnings=0 .",
+    "eslint:fix": "pnpm eslint:check --fix",
+    "prettier:check": "prettier -c --ignore-unknown .",
+    "prettier:fix": "prettier -w --ignore-unknown .",
+    "lint": "pnpm eslint:check && pnpm prettier:check",
+    "lint:fix": "pnpm eslint:fix && pnpm prettier:fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rooch-network/rooch.git"
+  },
+  "homepage": "https://github.com/rooch-network/rooch",
+  "bugs": {
+    "url": "https://github.com/rooch-network/rooch/issues"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@roochnetwork/test-suite": "workspace:*",
+    "@types/node": "^20.14.10",
+    "typescript": "^5.3.3",
+    "vite": "^4.4.4",
+    "vitest": "^1.6.0"
+  }
+}

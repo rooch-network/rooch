@@ -162,7 +162,8 @@ export class TestBox {
 
     // Find local Rooch binary path as in the 'local' mode
     const root = this.findRootDir('pnpm-workspace.yaml')
-    const localRoochPath = path.join(root!, 'target', 'debug', 'rooch')
+    const buildProfile = process.env.ROOCH_BINARY_BUILD_PROFILE || 'debug'
+    const localRoochPath = path.join(root!, 'target', buildProfile, 'rooch')
 
     // Verify local binary exists
     if (!fs.existsSync(localRoochPath)) {
