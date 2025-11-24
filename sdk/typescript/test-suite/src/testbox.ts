@@ -292,6 +292,17 @@ export class TestBox {
     // Convert args to array format
     let roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
 
+    // Automatically add --config-dir for all rooch commands
+    // Skip adding --config-dir if it's already present in the arguments
+    const hasConfigDir = roochArgs.some((arg, index) =>
+      arg === '--config-dir' ||
+      (arg === '-c' && index < roochArgs.length - 1)
+    )
+
+    if (!hasConfigDir && this.roochDir) {
+      roochArgs = ['--config-dir', this.roochDir, ...roochArgs]
+    }
+
     return {
       cmd: roochBin,
       args: roochArgs,
