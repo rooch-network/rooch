@@ -103,9 +103,17 @@ async function runMoveFunction(
     } catch (error: any) {
       const errorMessage = error?.message?.toLowerCase() || ''
       const errorCode = error?.code?.toLowerCase() || ''
-      const stderr = error?.stderr?.toLowerCase() || ''
+      const stdout = String(error?.stdout || '').toLowerCase()
+      const stderr = String(error?.stderr || '').toLowerCase()
+      // execFileSync errors may also have output array: [stdin, stdout, stderr]
+      const outputArray = error?.output || []
+      const outputText = outputArray
+        .map((item: any) => String(item || ''))
+        .join(' ')
+        .toLowerCase()
 
       // Check if it's a timeout-related error
+      // Note: execFileSync errors may have timeout info in stdout, stderr, message, code, or output array
       const isTimeoutError =
         errorMessage.includes('timeout') ||
         errorMessage.includes('etimedout') ||
@@ -114,8 +122,13 @@ async function runMoveFunction(
         errorCode === 'etimedout' ||
         errorCode === 'econnreset' ||
         errorCode === 'econnrefused' ||
+        stdout.includes('timeout') ||
+        stdout.includes('request timeout') ||
         stderr.includes('timeout') ||
-        stderr.includes('connection')
+        outputText.includes('timeout') ||
+        stdout.includes('connection') ||
+        stderr.includes('connection') ||
+        outputText.includes('connection')
 
       // If not a timeout error, throw immediately
       if (!isTimeoutError) {
