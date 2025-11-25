@@ -3,16 +3,16 @@ name: Pruner Long-term Integration Test
 on:
   workflow_dispatch:
     inputs:
-      test_duration_minutes:
-        description: 'Test duration in minutes'
+      inter_cycle_wait_s:
+        description: 'Wait time between cycles (seconds) for pruner to work'
         required: false
         default: '120'
         type: choice
         options:
           - '60'
           - '120'
-          - '240'
-          - '480'
+          - '180'
+          - '300'
       workload_intensity:
         description: 'Workload intensity level'
         required: false
@@ -143,13 +143,15 @@ jobs:
         env:
           ROOCH_BINARY_BUILD_PROFILE: optci
           ROOCH_DATA_DIR: ${{ steps.disk-setup.outputs.test_data_dir }}
-          # Unified test configuration (no more LONG_TERM_TEST flag needed)
+          # Unified test configuration
           COUNTER_ITERS: ${{ steps.test-params.outputs.counter_iters }}
           CREATE_ITERS: ${{ steps.test-params.outputs.create_iters }}
           UPDATE_ITERS: ${{ steps.test-params.outputs.update_iters }}
           DELETE_ITERS: ${{ steps.test-params.outputs.delete_iters }}
           CYCLE_COUNT: ${{ steps.test-params.outputs.cycle_count }}
-          MONITORING_MINUTES: ${{ inputs.test_duration_minutes }}
+          # Inter-cycle wait: pruner works during this time (monitoring integrated into cycles)
+          INTER_CYCLE_WAIT_S: ${{ inputs.inter_cycle_wait_s }}
+          SETTLE_MS: '120000'
           # Pruner server config for long-term tests
           BLOOM_BITS: '67108864'
           PRUNER_INTERVAL_S: '30'
@@ -168,19 +170,19 @@ jobs:
           echo "  UPDATE_ITERS=$UPDATE_ITERS"
           echo "  DELETE_ITERS=$DELETE_ITERS"
           echo "  CYCLE_COUNT=$CYCLE_COUNT"
-          echo "  MONITORING_MINUTES=$MONITORING_MINUTES"
+          echo "  INTER_CYCLE_WAIT_S=$INTER_CYCLE_WAIT_S"
           echo "=========================================="
-          echo "Duration: ${{ inputs.test_duration_minutes }} minutes"
+          echo "Inter-cycle wait: ${{ inputs.inter_cycle_wait_s }} seconds"
           echo "Intensity: ${{ inputs.workload_intensity }}"
           echo "Data directory: ${{ steps.disk-setup.outputs.test_data_dir }}"
           
-          # Estimate expected time based on actual measurements (~50ms per op)
+          # Estimate expected time based on actual measurements (~100ms per op)
           TOTAL_OPS=$((COUNTER_ITERS + CREATE_ITERS + UPDATE_ITERS + DELETE_ITERS))
-          OPS_TIME_SEC=$((TOTAL_OPS * 50 / 1000))  # ~50ms per op
-          CYCLE_TIME_SEC=$((OPS_TIME_SEC + 30))     # + 30s inter-cycle wait
+          OPS_TIME_SEC=$((TOTAL_OPS * 100 / 1000))  # ~100ms per op (conservative)
+          CYCLE_TIME_SEC=$((OPS_TIME_SEC + INTER_CYCLE_WAIT_S))
           CYCLES_TIME_MIN=$((CYCLE_COUNT * CYCLE_TIME_SEC / 60))
-          EXPECTED_MIN=$((CYCLES_TIME_MIN + MONITORING_MINUTES + 5))  # + 5min setup buffer
-          echo "Expected test time: approximately $EXPECTED_MIN minutes (${CYCLES_TIME_MIN}min cycles + ${MONITORING_MINUTES}min monitoring)"
+          EXPECTED_MIN=$((CYCLES_TIME_MIN + 12))  # + 12min setup/settle buffer
+          echo "Expected test time: approximately $EXPECTED_MIN minutes"
           echo "=========================================="
 
           # Record start time
