@@ -208,8 +208,9 @@ impl PruneDBStore {
     }
 
     /// Get current refcount, 0 if not present.
-    pub fn get_node_refcount(&self, key: H256) -> Result<u32> {
-        Ok(self.node_refcount_store.kv_get(key)?.unwrap_or(0))
+    /// Return Some(refcount) if present, None if missing.
+    pub fn get_node_refcount(&self, key: H256) -> Result<Option<u32>> {
+        self.node_refcount_store.kv_get(key)
     }
 
     pub fn remove_node_refcount(&self, key: H256) -> Result<()> {

@@ -136,6 +136,12 @@ impl StatePruner {
                     PrunePhase::BuildReach => {
                         info!("Starting BuildReach phase");
 
+                        // Reset bloom each BuildReach to avoid short-circuiting traversal across cycles.
+                        {
+                            let mut guard = bloom.lock();
+                            *guard = BloomFilter::new(cfg.bloom_bits, 4);
+                        }
+
                         // Create atomic snapshot for this pruning cycle
                         let atomic_snapshot = match atomic_snapshot_manager_clone
                             .create_snapshot(PrunePhase::BuildReach)

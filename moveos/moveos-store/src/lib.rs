@@ -194,12 +194,11 @@ impl MoveOSStore {
 
         // Maintain refcount & stale indices
         for hash in changed_nodes.keys() {
-            let _ = self.prune_store.inc_node_refcount(*hash);
+            self.prune_store.inc_node_refcount(*hash)?;
         }
         if !stale_indices.is_empty() {
-            let _ = self
-                .prune_store
-                .write_stale_indices(tx_order, &stale_indices);
+            self.prune_store
+                .write_stale_indices(tx_order, &stale_indices)?;
         }
 
         // transaction_store updates

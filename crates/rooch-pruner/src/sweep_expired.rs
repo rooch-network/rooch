@@ -325,17 +325,20 @@ impl SweepExpired {
 
             // Optional debug guard: double-check refcount to catch Bloom misses in testing.
             if self.debug_refcount_guard {
-                let refcount = self.moveos_store.prune_store.get_node_refcount(node_hash)?;
-                if refcount > 0 {
-                    debug_protected += 1;
-                    tracing::warn!(
-                        ?node_hash,
-                        refcount,
-                        tx_order,
-                        ?root_hash,
-                        "PRUNER_DEBUG_REFCOUNT: protecting node not in bloom"
-                    );
-                    continue;
+                if let Some(refcount) =
+                    self.moveos_store.prune_store.get_node_refcount(node_hash)?
+                {
+                    if refcount > 0 {
+                        debug_protected += 1;
+                        tracing::warn!(
+                            ?node_hash,
+                            refcount,
+                            tx_order,
+                            ?root_hash,
+                            "PRUNER_DEBUG_REFCOUNT: protecting node not in bloom"
+                        );
+                        continue;
+                    }
                 }
             }
 

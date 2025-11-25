@@ -67,7 +67,7 @@ async fn test_write_stale_indices_and_refcount() {
             .get_prune_store()
             .get_node_refcount(node_hash)
             .unwrap(),
-        0
+        Some(0)
     );
     // stale index present (tx_order key internally generated)
     let cutoff_order = u64::MAX;
