@@ -10490,7 +10490,7 @@ dependencies = [
  "rustc-hash 2.1.1",
  "schemars",
  "serde 1.0.228",
- "serde-reflection 0.5.0",
+ "serde-reflection 0.5.1",
  "serde_json",
  "serde_with 2.3.3",
  "serde_yaml 0.9.34+deprecated",
@@ -12007,13 +12007,14 @@ dependencies = [
 
 [[package]]
 name = "serde-reflection"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5bef77b40d103fda6c10d29c21f5c78c980e8570e1a290a648a9ff5011f96e1"
+checksum = "bfe23e63efbe7af1bc1859ead4a05014bdd5478be550762a40f6fcf91ad5473c"
 dependencies = [
  "erased-discriminant",
  "once_cell",
  "serde 1.0.228",
+ "serde_json",
  "thiserror 1.0.69",
  "typeid",
 ]
