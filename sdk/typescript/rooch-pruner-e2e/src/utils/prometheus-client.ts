@@ -23,7 +23,14 @@ type MetricSample = {
 }
 
 export class PrometheusClient {
-  constructor(private readonly port?: number) {}
+  private readonly fetchTimeoutMs: number
+
+  constructor(
+    private readonly port?: number,
+    fetchTimeoutMs: number = 30000,
+  ) {
+    this.fetchTimeoutMs = fetchTimeoutMs
+  }
 
   async fetchMetrics(): Promise<PrunerMetrics> {
     if (!this.port) {
@@ -33,45 +40,61 @@ export class PrometheusClient {
     }
 
     try {
-      const response = await fetch(`http://localhost:${this.port}/metrics`)
+      // Use AbortController to implement fetch timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), this.fetchTimeoutMs)
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
+      try {
+        const response = await fetch(`http://localhost:${this.port}/metrics`, {
+          signal: controller.signal,
+        })
 
-      const text = await response.text()
-      const samples = this.parseMetrics(text)
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
 
-      const phaseSamples = samples.filter((s) => s.name === 'pruner_current_phase')
-      const currentPhase = phaseSamples.reduce((acc, sample) => Math.max(acc, sample.value), 0)
+        const text = await response.text()
+        const samples = this.parseMetrics(text)
 
-      const sweepExpiredDeleted = this.histogram(samples, 'pruner_sweep_nodes_deleted', {
-        phase: 'SweepExpired',
-      })
-      const incrementalSweepDeleted = this.histogram(samples, 'pruner_sweep_nodes_deleted', {
-        phase: 'incremental',
-      })
+        const phaseSamples = samples.filter((s) => s.name === 'pruner_current_phase')
+        const currentPhase = phaseSamples.reduce((acc, sample) => Math.max(acc, sample.value), 0)
 
-      return {
-        currentPhase,
-        sweepExpiredDeleted,
-        incrementalSweepDeleted,
-        reachableNodesScanned: this.histogram(samples, 'pruner_reachable_nodes_scanned', {
-          phase: 'BuildReach',
-        }),
-        bloomFilterSizeBytes: this.gauge(samples, 'pruner_bloom_filter_size_bytes'),
-        diskSpaceReclaimedBytes: this.counter(samples, 'pruner_disk_space_reclaimed_bytes'),
-        processingSpeedNodesPerSec: this.histogram(
-          samples,
-          'pruner_processing_speed_nodes_per_sec',
-        ),
-        errorCount: samples
-          .filter((s) => s.name === 'pruner_error_count' || s.name === 'pruner_error_count_total')
-          .reduce((acc, sample) => acc + sample.value, 0),
+        const sweepExpiredDeleted = this.histogram(samples, 'pruner_sweep_nodes_deleted', {
+          phase: 'SweepExpired',
+        })
+        const incrementalSweepDeleted = this.histogram(samples, 'pruner_sweep_nodes_deleted', {
+          phase: 'incremental',
+        })
+
+        return {
+          currentPhase,
+          sweepExpiredDeleted,
+          incrementalSweepDeleted,
+          reachableNodesScanned: this.histogram(samples, 'pruner_reachable_nodes_scanned', {
+            phase: 'BuildReach',
+          }),
+          bloomFilterSizeBytes: this.gauge(samples, 'pruner_bloom_filter_size_bytes'),
+          diskSpaceReclaimedBytes: this.counter(samples, 'pruner_disk_space_reclaimed_bytes'),
+          processingSpeedNodesPerSec: this.histogram(
+            samples,
+            'pruner_processing_speed_nodes_per_sec',
+          ),
+          errorCount: samples
+            .filter((s) => s.name === 'pruner_error_count' || s.name === 'pruner_error_count_total')
+            .reduce((acc, sample) => acc + sample.value, 0),
+        }
+      } finally {
+        clearTimeout(timeoutId)
       }
     } catch (error) {
       // Handle network errors, timeouts, etc.
       if (error instanceof Error) {
+        // Check for abort errors (timeout)
+        if (error.name === 'AbortError') {
+          throw new Error(
+            `Timeout (${this.fetchTimeoutMs}ms) fetching metrics from port ${this.port}`,
+          )
+        }
         throw new Error(`Failed to fetch metrics from port ${this.port}: ${error.message}`)
       }
       throw new Error(`Unknown error fetching metrics from port ${this.port}`)

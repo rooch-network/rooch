@@ -202,11 +202,13 @@ export class TestBox {
       }
 
       // Only add default rate limit config if not already specified in serverArgs
+      // Note: traffic-per-second is the interval (in seconds) to replenish one quota element
+      // e.g., 0.1 means replenish 1 quota every 0.1s = 10 requests/second
       const hasTrafficPerSecond = serverArgs.includes('--traffic-per-second')
       const hasTrafficBurstSize = serverArgs.includes('--traffic-burst-size')
 
       if (!hasTrafficPerSecond) {
-        cmds.push('--traffic-per-second', '10')
+        cmds.push('--traffic-per-second', '0.01')
       }
       if (!hasTrafficBurstSize) {
         cmds.push('--traffic-burst-size', '5000')
@@ -312,10 +314,26 @@ export class TestBox {
         log(`Failed to send SIGTERM to process ${pid}: ${e.message}`)
       }
 
-      // Fallback: kill any process listening on the port (synchronous cleanup)
+      // Wait for process to exit gracefully (up to 5 seconds)
+      const startTime = Date.now()
+      const maxWaitMs = 5000
+      while (Date.now() - startTime < maxWaitMs) {
+        try {
+          // Check if process is still alive (signal 0 doesn't kill, just checks)
+          process.kill(pid, 0)
+          // Process still alive, wait a bit
+          execSync('sleep 0.5', { stdio: 'ignore' })
+        } catch (e) {
+          // Process is dead, we can proceed
+          log(`Process ${pid} has exited`)
+          break
+        }
+      }
+
+      // Fallback: force kill any process listening on the port
       if (this.roochPort) {
         try {
-          log(`Cleaning up any process on port ${this.roochPort}`)
+          log(`Force killing any process on port ${this.roochPort}`)
           // Use platform-appropriate command
           if (process.platform === 'win32') {
             // Windows: Use double %% for batch execution
@@ -324,7 +342,7 @@ export class TestBox {
               { stdio: 'ignore' },
             )
           } else {
-            // Unix-like: Use lsof + kill
+            // Unix-like: Use lsof + kill -9 (SIGKILL)
             execSync(`lsof -ti:${this.roochPort} | xargs kill -9 2>/dev/null || true`, {
               stdio: 'ignore',
             })
@@ -334,12 +352,32 @@ export class TestBox {
           // Ignore errors - port might already be free
           log(`Port cleanup completed (or was already free)`)
         }
+
+        // Wait a bit more after force kill for file handles to be released
+        try {
+          execSync('sleep 1', { stdio: 'ignore' })
+        } catch (e) {
+          // Ignore
+        }
       }
     } else {
       this.roochContainer?.stop()
     }
 
-    this.tmpDir.removeCallback()
+    // Try to remove temp directory, but don't fail if it can't be removed
+    try {
+      this.tmpDir.removeCallback()
+      log('Temp directory cleanup completed')
+    } catch (e: any) {
+      log(`Warning: Failed to remove temp directory: ${e.message}`)
+      // Try force removal as fallback
+      try {
+        execSync(`rm -rf "${this.tmpDir.name}" 2>/dev/null || true`, { stdio: 'ignore' })
+        log('Temp directory force removed')
+      } catch (e2) {
+        log('Warning: Force removal also failed, temp directory may remain')
+      }
+    }
     log('Environment cleanup completed')
   }
 

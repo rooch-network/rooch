@@ -16,7 +16,7 @@ const prunerPackagePath = path.join(repoRoot, 'examples', 'pruner_test')
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-// Unified test configuration - no more LONG_TERM_TEST flag needed
+// Unified test configuration
 interface TestConfig {
   // Workload parameters
   counterIters: number
@@ -25,8 +25,8 @@ interface TestConfig {
   deleteIters: number
   cycleCount: number
   // Timing parameters
-  monitoringMinutes: number // 0 = no monitoring phase, just settle and verify
-  settleMs: number // Wait time after workload before collecting metrics
+  interCycleWaitS: number // Wait time between cycles for pruner to work (default 60s)
+  settleMs: number // Final wait time after all cycles before collecting final metrics
   // Pruner server parameters
   prunerIntervalS: number
   protectionOrders: number // Number of recent tx_orders to protect (0 = aggressive, only protect latest root)
@@ -43,8 +43,8 @@ function loadTestConfig(): TestConfig {
     updateIters: parseInt(process.env.UPDATE_ITERS || '1', 10),
     deleteIters: parseInt(process.env.DELETE_ITERS || '1', 10),
     cycleCount: parseInt(process.env.CYCLE_COUNT || '1', 10),
-    // Timing
-    monitoringMinutes: parseInt(process.env.MONITORING_MINUTES || '0', 10),
+    // Timing - monitoring is now integrated into cycles via interCycleWaitS
+    interCycleWaitS: parseInt(process.env.INTER_CYCLE_WAIT_S || '60', 10),
     settleMs: parseInt(process.env.SETTLE_MS || '60000', 10),
     // Pruner server
     prunerIntervalS: parseInt(process.env.PRUNER_INTERVAL_S || '15', 10),
@@ -62,22 +62,21 @@ function loadTestConfig(): TestConfig {
 function estimateCycleTimeMs(config: TestConfig): number {
   const totalOps =
     config.counterIters + config.createIters + config.updateIters + config.deleteIters
-  // Based on actual measurements: ~25-50ms per Move call via roochCommand (execFileSync)
-  // Using 50ms as conservative estimate
-  const opsTimeMs = totalOps * 50
-  // Plus 30 seconds inter-cycle wait
-  const waitTimeMs = 30000
+  // Based on actual measurements: ~100ms per Move call via roochCommand (execFileSync)
+  // Using conservative estimate to avoid timeout
+  const opsTimeMs = totalOps * 100
+  // Plus inter-cycle wait time for pruner to work
+  const waitTimeMs = config.interCycleWaitS * 1000
   return opsTimeMs + waitTimeMs
 }
 
-// Calculate total expected test time
+// Calculate total expected test time with buffer
 function estimateTotalTimeMs(config: TestConfig): number {
   const cycleTimeMs = estimateCycleTimeMs(config)
   const allCyclesMs = cycleTimeMs * config.cycleCount
-  const monitoringMs = config.monitoringMinutes * 60 * 1000
   const settleMs = config.settleMs
-  const setupBufferMs = 5 * 60 * 1000 // 5 minutes for setup/teardown
-  return allCyclesMs + monitoringMs + settleMs + setupBufferMs
+  const setupBufferMs = 10 * 60 * 1000 // 10 minutes for setup/teardown/buffer
+  return allCyclesMs + settleMs + setupBufferMs
 }
 
 async function runMoveFunction(
@@ -208,10 +207,11 @@ describe('Rooch pruner end-to-end', () => {
       config.scanBatch.toString(),
       '--pruner-delete-batch',
       config.deleteBatch.toString(),
-      // Increase rate limit for e2e tests to avoid 429 errors
-      // Allow up to 100 requests per second with burst size of 10000
+      // Configure rate limit for e2e tests to avoid 429 errors
+      // traffic-per-second: interval in seconds to replenish one quota element
+      // 0.01 means replenish 1 quota every 0.01s = 100 requests/second
       '--traffic-per-second',
-      '100',
+      '0.001',
       '--traffic-burst-size',
       '10000',
     ]
@@ -282,10 +282,12 @@ describe('Rooch pruner end-to-end', () => {
       console.log(`    - Delete operations: ${config.deleteIters}`)
       console.log(`  Timing:`)
       console.log(`    - Number of cycles: ${config.cycleCount}`)
-      console.log(`    - Monitoring phase: ${config.monitoringMinutes} minutes`)
-      console.log(`    - Settle time: ${config.settleMs}ms`)
+      console.log(
+        `    - Inter-cycle wait: ${config.interCycleWaitS}s (pruner works during this time)`,
+      )
+      console.log(`    - Final settle time: ${config.settleMs}ms`)
       console.log(`  Estimated time:`)
-      console.log(`    - Per cycle: ~${Math.ceil(estimateCycleTimeMs(config) / 60000)} minutes`)
+      console.log(`    - Per cycle: ~${Math.ceil(estimateCycleTimeMs(config) / 1000)}s`)
       console.log(`    - Total: ~${expectedTimeMinutes} minutes`)
       console.log(`    - Timeout: ${Math.ceil(testTimeout / 60000)} minutes`)
       console.log('==========================================')
@@ -350,11 +352,11 @@ describe('Rooch pruner end-to-end', () => {
           if (i % 15 === 0) await delay(5)
         }
 
-        // Inter-cycle wait for pruner to work
-        console.log(`  ⏳ Waiting 30s for pruner...`)
-        await delay(30000)
+        // Inter-cycle wait for pruner to work (monitoring integrated into cycles)
+        console.log(`  ⏳ Waiting ${config.interCycleWaitS}s for pruner...`)
+        await delay(config.interCycleWaitS * 1000)
 
-        // Collect metrics after cycle
+        // Collect and display metrics after cycle (integrated monitoring)
         try {
           const currentMetrics = await prometheus.fetchMetrics()
           phaseHistory.push({
@@ -363,60 +365,29 @@ describe('Rooch pruner end-to-end', () => {
             metrics: currentMetrics,
           })
           const cycleTimeS = Math.round((Date.now() - cycleStartTime) / 1000)
+          const totalDeleted =
+            currentMetrics.sweepExpiredDeleted.count + currentMetrics.incrementalSweepDeleted.count
+          console.log(`  ✅ Cycle ${cycle + 1} completed in ${cycleTimeS}s`)
+          console.log(`     📊 Phase: ${currentMetrics.currentPhase}`)
           console.log(
-            `  ✅ Cycle completed in ${cycleTimeS}s, deleted: ${currentMetrics.sweepExpiredDeleted.count + currentMetrics.incrementalSweepDeleted.count} nodes`,
+            `     📊 Deleted: Sweep=${currentMetrics.sweepExpiredDeleted.count}, Incr=${currentMetrics.incrementalSweepDeleted.count}, Total=${totalDeleted}`,
           )
+          console.log(`     📊 Reachable: ${currentMetrics.reachableNodesScanned.count}`)
+          console.log(
+            `     📊 Disk Reclaimed: ${(currentMetrics.diskSpaceReclaimedBytes / (1024 * 1024)).toFixed(2)} MB`,
+          )
+          if (currentMetrics.errorCount > 0) {
+            console.log(`     ⚠️ Errors: ${currentMetrics.errorCount}`)
+          }
         } catch (error) {
           console.warn(`  ⚠️ Metrics fetch failed:`, error)
         }
       }
 
-      // Monitoring phase (if configured)
-      if (config.monitoringMinutes > 0) {
-        console.log('')
-        console.log('⏰ Starting monitoring phase...')
-        console.log(`   Duration: ${config.monitoringMinutes} minutes`)
-
-        const monitoringStartTime = Date.now()
-        const monitoringEndTime = monitoringStartTime + config.monitoringMinutes * 60 * 1000
-
-        while (Date.now() < monitoringEndTime) {
-          try {
-            const currentMetrics = await prometheus.fetchMetrics()
-            phaseHistory.push({
-              phase: currentMetrics.currentPhase,
-              timestamp: new Date().toISOString(),
-              metrics: currentMetrics,
-            })
-
-            const elapsedMinutes = Math.floor((Date.now() - monitoringStartTime) / 60000)
-            const remainingMinutes = config.monitoringMinutes - elapsedMinutes
-
-            console.log(
-              `📊 [${elapsedMinutes}/${config.monitoringMinutes}min] (${remainingMinutes}min remaining)`,
-            )
-            console.log(`   Phase: ${currentMetrics.currentPhase}`)
-            console.log(
-              `   Deleted: Sweep=${currentMetrics.sweepExpiredDeleted.count}, Incr=${currentMetrics.incrementalSweepDeleted.count}`,
-            )
-            console.log(`   Reachable: ${currentMetrics.reachableNodesScanned.count}`)
-            console.log(
-              `   Disk Reclaimed: ${(currentMetrics.diskSpaceReclaimedBytes / (1024 * 1024)).toFixed(2)} MB`,
-            )
-            console.log(`   Errors: ${currentMetrics.errorCount}`)
-
-            // Wait 2 minutes before next check
-            await delay(120000)
-          } catch (error) {
-            console.warn(`⚠️ Metrics fetch failed:`, error)
-            await delay(60000)
-          }
-        }
-      } else {
-        // No monitoring phase - just settle
-        console.log(`### pruner e2e: waiting ${config.settleMs}ms for pruner cycles`)
-        await delay(config.settleMs)
-      }
+      // Final settle - give pruner a bit more time to finish any pending work
+      console.log('')
+      console.log(`⏳ Final settle: waiting ${config.settleMs}ms for pruner to finish...`)
+      await delay(config.settleMs)
 
       // Final metrics collection
       const finalMetrics = await prometheus.fetchMetrics()
