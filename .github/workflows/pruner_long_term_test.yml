@@ -77,38 +77,29 @@ jobs:
         id: disk-setup
         if: ${{ inputs.enable_disk_monitoring }}
         run: |
-          # Create dedicated directory for test data
-          TEST_DATA_DIR="/tmp/rooch_pruner_test_$(date +%s)"
-          mkdir -p "$TEST_DATA_DIR"
-          echo "test_data_dir=$TEST_DATA_DIR" >> $GITHUB_OUTPUT
-          echo "Test data directory: $TEST_DATA_DIR"
+          # Create dedicated base directory for test data
+          # TestBox will create subdirectories under this base directory
+          TEST_BASE_DIR="/tmp/rooch_pruner_test_$(date +%s)"
+          mkdir -p "$TEST_BASE_DIR"
+          echo "test_base_dir=$TEST_BASE_DIR" >> $GITHUB_OUTPUT
+          echo "Test base directory: $TEST_BASE_DIR"
 
-          # Create monitoring script
-          cat > /tmp/disk_monitor.sh << 'MONITOR_EOF'
-          #!/bin/bash
-          DATA_DIR="$1"
-          OUTPUT_FILE="$2"
-          PEAK_SIZE=0
+          # Use the monitoring script from scripts directory
+          MONITOR_SCRIPT="${{ github.workspace }}/scripts/monitor_disk_usage.sh"
+          if [ ! -f "$MONITOR_SCRIPT" ]; then
+            echo "ERROR: Monitoring script not found at $MONITOR_SCRIPT" >&2
+            exit 1
+          fi
 
-          while true; do
-            if [ -d "$DATA_DIR" ]; then
-              CURRENT_SIZE=$(du -sb "$DATA_DIR" 2>/dev/null | awk '{print $1}')
-              if [ -n "$CURRENT_SIZE" ] && [ $CURRENT_SIZE -gt $PEAK_SIZE ]; then
-                PEAK_SIZE=$CURRENT_SIZE
-                echo "$(date +%s),$CURRENT_SIZE,$PEAK_SIZE" >> "$OUTPUT_FILE"
-              fi
-            fi
-            sleep 5
-          done
-          MONITOR_EOF
-
-          chmod +x /tmp/disk_monitor.sh
+          # Ensure script is executable
+          chmod +x "$MONITOR_SCRIPT"
 
           # Start monitoring in background
-          /tmp/disk_monitor.sh "$TEST_DATA_DIR" "/tmp/disk_usage.log" &
+          "$MONITOR_SCRIPT" "$TEST_BASE_DIR" "/tmp/disk_usage.log" &
           MONITOR_PID=$!
           echo "monitor_pid=$MONITOR_PID" >> $GITHUB_OUTPUT
-          echo "Started disk monitor (PID: $MONITOR_PID)"
+          echo "Started disk monitor (PID: $MONITOR_PID) for base directory: $TEST_BASE_DIR"
+          echo "Using monitoring script: $MONITOR_SCRIPT"
 
       - name: Determine test parameters
         id: test-params
@@ -142,7 +133,7 @@ jobs:
         id: pruner-test
         env:
           ROOCH_BINARY_BUILD_PROFILE: optci
-          ROOCH_DATA_DIR: ${{ steps.disk-setup.outputs.test_data_dir }}
+          TESTBOX_BASE_DIR: ${{ steps.disk-setup.outputs.test_base_dir }}
           # Unified test configuration
           COUNTER_ITERS: ${{ steps.test-params.outputs.counter_iters }}
           CREATE_ITERS: ${{ steps.test-params.outputs.create_iters }}
@@ -174,7 +165,7 @@ jobs:
           echo "=========================================="
           echo "Inter-cycle wait: ${{ inputs.inter_cycle_wait_s }} seconds"
           echo "Intensity: ${{ inputs.workload_intensity }}"
-          echo "Data directory: ${{ steps.disk-setup.outputs.test_data_dir }}"
+          echo "Test base directory: ${{ steps.disk-setup.outputs.test_base_dir }}"
           
           # Estimate expected time based on actual measurements (~100ms per op)
           TOTAL_OPS=$((COUNTER_ITERS + CREATE_ITERS + UPDATE_ITERS + DELETE_ITERS))
@@ -237,14 +228,27 @@ jobs:
             PEAK_USAGE=$(awk -F',' '{print $3}' /tmp/disk_usage.log | sort -n | tail -1)
             echo "peak_usage=$PEAK_USAGE" >> $GITHUB_OUTPUT
             
-            # Get final usage
-            TEST_DATA_DIR="${{ steps.disk-setup.outputs.test_data_dir }}"
-            if [ -d "$TEST_DATA_DIR" ]; then
-              FINAL_USAGE=$(du -sb "$TEST_DATA_DIR" 2>/dev/null | awk '{print $1}')
+            # Get final usage from all testbox directories
+            TEST_BASE_DIR="${{ steps.disk-setup.outputs.test_base_dir }}"
+            FINAL_USAGE=0
+            if [ -d "$TEST_BASE_DIR" ]; then
+              # Calculate total size of all testbox directories using same logic as monitor
+              while IFS= read -r dir; do
+                # Skip .rooch_test if .rooch_test/data exists (avoid double counting)
+                if [[ "$dir" == */.rooch_test ]] && [ -d "${dir}/data" ]; then
+                  continue
+                fi
+                if [ -d "$dir" ]; then
+                  DIR_SIZE=$(du -sb "$dir" 2>/dev/null | awk '{print $1}')
+                  if [ -n "$DIR_SIZE" ] && [ "$DIR_SIZE" -gt 0 ] 2>/dev/null; then
+                    FINAL_USAGE=$((FINAL_USAGE + DIR_SIZE))
+                  fi
+                fi
+              done < <(find "$TEST_BASE_DIR" -type d \( -path "*/testbox-*/.rooch_test/data" -o -path "*/testbox-*/.rooch_test" \) 2>/dev/null)
               echo "final_usage=$FINAL_USAGE" >> $GITHUB_OUTPUT
               
               # Calculate reclaimed space (peak - final)
-              if [ -n "$PEAK_USAGE" ] && [ -n "$FINAL_USAGE" ]; then
+              if [ -n "$PEAK_USAGE" ] && [ "$PEAK_USAGE" -gt 0 ] && [ -n "$FINAL_USAGE" ]; then
                 RECLAIMED=$((PEAK_USAGE - FINAL_USAGE))
                 echo "reclaimed=$RECLAIMED" >> $GITHUB_OUTPUT
                 
@@ -258,7 +262,13 @@ jobs:
                   echo "reclaim_percentage=$RECLAIM_PCT" >> $GITHUB_OUTPUT
                   echo "Reclaim percentage: $RECLAIM_PCT%"
                 fi
+              else
+                echo "WARNING: Could not calculate final usage or peak usage is 0"
+                echo "Peak usage: $PEAK_USAGE"
+                echo "Final usage: $FINAL_USAGE"
               fi
+            else
+              echo "WARNING: Test base directory not found: $TEST_BASE_DIR"
             fi
             
             # Save monitoring log as artifact
@@ -372,8 +382,8 @@ jobs:
 
           ## Test Configuration
 
-          - **Duration**: ${{ inputs.test_duration_minutes }} minutes (configured)
           - **Workload Intensity**: ${{ inputs.workload_intensity }}
+          - **Inter-cycle Wait**: ${{ inputs.inter_cycle_wait_s }} seconds
           - **Start Time**: ${START_TIME_FMT}
           - **End Time**: ${END_TIME_FMT}
           - **Actual Duration**: ${DURATION_FMT}
@@ -463,8 +473,8 @@ jobs:
           fi
 
           # Clean up test data directory
-          if [ -n "${{ steps.disk-setup.outputs.test_data_dir }}" ]; then
-            rm -rf "${{ steps.disk-setup.outputs.test_data_dir }}" || true
+          if [ -n "${{ steps.disk-setup.outputs.test_base_dir }}" ]; then
+            rm -rf "${{ steps.disk-setup.outputs.test_base_dir }}" || true
           fi
 
           # Clean up monitoring files
