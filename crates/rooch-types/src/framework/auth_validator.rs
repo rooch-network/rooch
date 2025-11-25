@@ -48,7 +48,9 @@ pub enum BuiltinAuthValidator {
     Session,
     Bitcoin,
     BitcoinMultisign,
-    #[deprecated(note = "Use DID validator (ID=4) with WebAuthnV0 envelope instead. Migration: Authenticator.did(txHash, signer, vmFragment, SigningEnvelope.WebAuthnV0)")]
+    #[deprecated(
+        note = "Use DID validator (ID=4) with WebAuthnV0 envelope instead. Migration: Authenticator.did(txHash, signer, vmFragment, SigningEnvelope.WebAuthnV0)"
+    )]
     WEBAUTHN,
     DID,
 }
