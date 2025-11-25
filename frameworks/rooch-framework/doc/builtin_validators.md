@@ -74,6 +74,7 @@ Bitcoin multisign validator is defined in bitcoin_move framework.
 
 <a name="0x3_builtin_validators_WEBAUTHN_VALIDATOR_ID"></a>
 
+WebAuthn validator ID (DEPRECATED). Use DID validator (ID=4) with WebAuthnV0 envelope instead.
 
 
 <pre><code><b>const</b> <a href="builtin_validators.md#0x3_builtin_validators_WEBAUTHN_VALIDATOR_ID">WEBAUTHN_VALIDATOR_ID</a>: u64 = 3;
@@ -97,6 +98,7 @@ Bitcoin multisign validator is defined in bitcoin_move framework.
 ## Function `init_webauthn_validator`
 
 This function is for init webauthn validator when framework is upgraded.
+DEPRECATED: This validator is deprecated. Use did_validator (ID=4) with WebAuthnV0 envelope instead.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="builtin_validators.md#0x3_builtin_validators_init_webauthn_validator">init_webauthn_validator</a>()

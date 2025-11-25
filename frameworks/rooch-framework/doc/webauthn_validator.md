@@ -3,24 +3,10 @@
 
 # Module `0x3::webauthn_validator`
 
-WebAuthn validator implementation (P-256 / secp256r1)
+WebAuthn validator implementation (DEPRECATED)
 
-Payload layout (see docs/dev-guide/webauthn_validator.md Section 3.1):
-```
-???????????????????????????????????????????????????????????????????????????
-? 1 B    ? 64 B       ? 33 B      ? 4 B + *           ? *                 ?
-? scheme ? signature  ? publicKey ? authenticatorData ? clientDataJSON    ?
-???????????????????????????????????????????????????????????????????????????
-
-After the fixed-length fields we encode <code>authenticatorData</code> length as a
-4-byte big-endian unsigned integer so that the boundary between
-<code>authenticatorData</code> and <code>clientDataJSON</code> can be determined on-chain.
-
-The validator reconstructs the message as
-authenticatorData || SHA-256(clientDataJSON)
-and verifies it with the provided signature and compressed P-256 public key.
-
-On success the corresponding session authentication key is returned.
+This validator has been deprecated. Please use did_validator (ID=4) with WebAuthnV0 envelope instead.
+Migration: Use Authenticator.did(txHash, signer, vmFragment, SigningEnvelope.WebAuthnV0)
 
 
 -  [Struct `WebauthnValidator`](#0x3_webauthn_validator_WebauthnValidator)
@@ -28,23 +14,12 @@ On success the corresponding session authentication key is returned.
 -  [Struct `ClientData`](#0x3_webauthn_validator_ClientData)
 -  [Constants](#@Constants_0)
 -  [Function `auth_validator_id`](#0x3_webauthn_validator_auth_validator_id)
+-  [Function `validate`](#0x3_webauthn_validator_validate)
 -  [Function `unwrap_webauthn_auth_payload`](#0x3_webauthn_validator_unwrap_webauthn_auth_payload)
 -  [Function `unwrap_client_data`](#0x3_webauthn_validator_unwrap_client_data)
--  [Function `validate`](#0x3_webauthn_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::base64</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::hash</a>;
-<b>use</b> <a href="">0x2::json</a>;
-<b>use</b> <a href="">0x2::tx_context</a>;
-<b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
-<b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
-<b>use</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1">0x3::ecdsa_r1</a>;
-<b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 </code></pre>
 
 
@@ -64,8 +39,8 @@ On success the corresponding session authentication key is returned.
 
 ## Struct `WebauthnAuthPayload`
 
-BCS-serialised payload sent by the browser / SDK. This avoids manual
-offset parsing on-chain.
+BCS-serialised payload sent by the browser / SDK (DEPRECATED)
+This struct is kept for compatibility but should not be used.
 
 
 <pre><code>#[data_struct]
@@ -78,6 +53,8 @@ offset parsing on-chain.
 
 ## Struct `ClientData`
 
+Client data struct (DEPRECATED)
+This struct is kept for compatibility but should not be used.
 
 
 <pre><code>#[data_struct]
@@ -89,6 +66,16 @@ offset parsing on-chain.
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x3_webauthn_validator_ErrorValidatorDeprecated"></a>
+
+Error code indicating this validator has been deprecated
+
+
+<pre><code><b>const</b> <a href="webauthn_validator.md#0x3_webauthn_validator_ErrorValidatorDeprecated">ErrorValidatorDeprecated</a>: u64 = 2001;
+</code></pre>
+
 
 
 <a name="0x3_webauthn_validator_WEBAUTHN_AUTH_VALIDATOR_ID"></a>
@@ -113,10 +100,26 @@ Identifier reserved for the WebAuthn validator. Must stay in sync with
 
 
 
+<a name="0x3_webauthn_validator_validate"></a>
+
+## Function `validate`
+
+Validate the incoming authenticator payload (DEPRECATED)
+This function always aborts with ErrorValidatorDeprecated.
+Please migrate to did_validator (ID=4) with WebAuthnV0 envelope.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="webauthn_validator.md#0x3_webauthn_validator_validate">validate</a>(_authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
 <a name="0x3_webauthn_validator_unwrap_webauthn_auth_payload"></a>
 
 ## Function `unwrap_webauthn_auth_payload`
 
+Unwrap WebAuthn auth payload (DEPRECATED)
+This function is kept for compatibility but should not be used.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="webauthn_validator.md#0x3_webauthn_validator_unwrap_webauthn_auth_payload">unwrap_webauthn_auth_payload</a>(payload: <a href="webauthn_validator.md#0x3_webauthn_validator_WebauthnAuthPayload">webauthn_validator::WebauthnAuthPayload</a>): (u8, <a href="">vector</a>&lt;u8&gt;, <a href="">vector</a>&lt;u8&gt;, <a href="">vector</a>&lt;u8&gt;, <a href="">vector</a>&lt;u8&gt;)
@@ -128,19 +131,9 @@ Identifier reserved for the WebAuthn validator. Must stay in sync with
 
 ## Function `unwrap_client_data`
 
+Unwrap client data (DEPRECATED)
+This function is kept for compatibility but should not be used.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="webauthn_validator.md#0x3_webauthn_validator_unwrap_client_data">unwrap_client_data</a>(client_data: <a href="webauthn_validator.md#0x3_webauthn_validator_ClientData">webauthn_validator::ClientData</a>): (<a href="_String">string::String</a>, <a href="_String">string::String</a>, <a href="_String">string::String</a>)
-</code></pre>
-
-
-
-<a name="0x3_webauthn_validator_validate"></a>
-
-## Function `validate`
-
-Validate the incoming authenticator payload and return the derived authentication key
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="webauthn_validator.md#0x3_webauthn_validator_validate">validate</a>(authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>

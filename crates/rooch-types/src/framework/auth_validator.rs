@@ -48,6 +48,7 @@ pub enum BuiltinAuthValidator {
     Session,
     Bitcoin,
     BitcoinMultisign,
+    #[deprecated(note = "Use DID validator (ID=4) with WebAuthnV0 envelope instead. Migration: Authenticator.did(txHash, signer, vmFragment, SigningEnvelope.WebAuthnV0)")]
     WEBAUTHN,
     DID,
 }
@@ -107,10 +108,11 @@ impl BuiltinAuthValidator {
                 module_name: MoveString::from_str("bitcoin_multisign_validator")
                     .expect("Should be valid"),
             },
+            #[allow(deprecated)]
             BuiltinAuthValidator::WEBAUTHN => AuthValidator {
                 id: self.flag().into(),
-                module_address: ROOCH_NURSERY_ADDRESS,
-                module_name: MoveString::from_str("ethereum_validator").expect("Should be valid"),
+                module_address: ROOCH_FRAMEWORK_ADDRESS,
+                module_name: MoveString::from_str("webauthn_validator").expect("Should be valid"),
             },
             BuiltinAuthValidator::DID => AuthValidator {
                 id: self.flag().into(),
