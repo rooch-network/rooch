@@ -201,8 +201,16 @@ export class TestBox {
         )
       }
 
-      cmds.push('--traffic-per-second', '1')
-      cmds.push('--traffic-burst-size', '5000')
+      // Only add default rate limit config if not already specified in serverArgs
+      const hasTrafficPerSecond = serverArgs.includes('--traffic-per-second')
+      const hasTrafficBurstSize = serverArgs.includes('--traffic-burst-size')
+
+      if (!hasTrafficPerSecond) {
+        cmds.push('--traffic-per-second', '10')
+      }
+      if (!hasTrafficBurstSize) {
+        cmds.push('--traffic-burst-size', '5000')
+      }
 
       console.error('🚀 About to call roochAsyncCommand with cmds:', JSON.stringify(cmds, null, 2))
       console.error(

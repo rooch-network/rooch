@@ -130,16 +130,36 @@ async function runMoveFunction(
         stderr.includes('connection') ||
         outputText.includes('connection')
 
-      // If not a timeout error, throw immediately
-      if (!isTimeoutError) {
+      // Check if it's a rate limit error (429)
+      const isRateLimitError =
+        stdout.includes('429') ||
+        stdout.includes('rate limit') ||
+        stdout.includes('ratelimit') ||
+        stdout.includes('request rejected') ||
+        stderr.includes('429') ||
+        stderr.includes('rate limit') ||
+        stderr.includes('ratelimit') ||
+        outputText.includes('429') ||
+        outputText.includes('rate limit') ||
+        errorMessage.includes('429') ||
+        errorMessage.includes('rate limit')
+
+      // If it's a retryable error (timeout or rate limit), retry with backoff
+      const isRetryableError = isTimeoutError || isRateLimitError
+
+      if (!isRetryableError) {
+        // If not a retryable error, throw immediately
         throw error
       }
 
-      // If timeout error and we have retries left, retry
+      // If retryable error and we have retries left, retry with exponential backoff
       if (attempt < maxRetries) {
-        const retryDelay = (attempt + 1) * 1000 // Exponential backoff: 1s, 2s, 3s
+        // Rate limit errors need longer delays, timeout errors can retry faster
+        const baseDelay = isRateLimitError ? 2000 : 1000 // 2s for rate limit, 1s for timeout
+        const retryDelay = baseDelay * (attempt + 1) // Exponential backoff
+        const errorType = isRateLimitError ? 'rate limit (429)' : 'timeout'
         console.warn(
-          `⚠️ Move function call timeout (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`,
+          `⚠️ Move function call ${errorType} error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`,
         )
         await delay(retryDelay)
         continue
@@ -188,6 +208,12 @@ describe('Rooch pruner end-to-end', () => {
       config.scanBatch.toString(),
       '--pruner-delete-batch',
       config.deleteBatch.toString(),
+      // Increase rate limit for e2e tests to avoid 429 errors
+      // Allow up to 100 requests per second with burst size of 10000
+      '--traffic-per-second',
+      '100',
+      '--traffic-burst-size',
+      '10000',
     ]
 
     console.log('### pruner e2e: pruner config:', {
