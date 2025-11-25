@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { TestBox } from '@roochnetwork/test-suite'
-import { PrometheusClient } from '../utils/prometheus-client.js'
+import { PrometheusClient, PrunerMetrics } from '../utils/prometheus-client.js'
 import { generateReport, printReport } from '../utils/test-reporter.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -16,8 +16,77 @@ const prunerPackagePath = path.join(repoRoot, 'examples', 'pruner_test')
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function runMoveFunction(testbox: TestBox, functionId: string, args: string[]) {
-  testbox.roochCommand([
+// Unified test configuration - no more LONG_TERM_TEST flag needed
+interface TestConfig {
+  // Workload parameters
+  counterIters: number
+  createIters: number
+  updateIters: number
+  deleteIters: number
+  cycleCount: number
+  // Timing parameters
+  monitoringMinutes: number // 0 = no monitoring phase, just settle and verify
+  settleMs: number // Wait time after workload before collecting metrics
+  // Pruner server parameters
+  prunerIntervalS: number
+  protectionOrders: number // Number of recent tx_orders to protect (0 = aggressive, only protect latest root)
+  bloomBits: number
+  scanBatch: number
+  deleteBatch: number
+}
+
+function loadTestConfig(): TestConfig {
+  return {
+    // Workload - unified env var names
+    counterIters: parseInt(process.env.COUNTER_ITERS || '1', 10),
+    createIters: parseInt(process.env.CREATE_ITERS || '1', 10),
+    updateIters: parseInt(process.env.UPDATE_ITERS || '1', 10),
+    deleteIters: parseInt(process.env.DELETE_ITERS || '1', 10),
+    cycleCount: parseInt(process.env.CYCLE_COUNT || '1', 10),
+    // Timing
+    monitoringMinutes: parseInt(process.env.MONITORING_MINUTES || '0', 10),
+    settleMs: parseInt(process.env.SETTLE_MS || '60000', 10),
+    // Pruner server
+    prunerIntervalS: parseInt(process.env.PRUNER_INTERVAL_S || '15', 10),
+    // protection_orders: 0 = aggressive (only protect latest root)
+    // Higher values protect more historical states, reducing risk of deleting active data
+    // Default to 0 for aggressive mode
+    protectionOrders: parseInt(process.env.PROTECTION_ORDERS || '0', 10),
+    bloomBits: parseInt(process.env.BLOOM_BITS || '16777216', 10), // 16MB default
+    scanBatch: parseInt(process.env.SCAN_BATCH || '10000', 10),
+    deleteBatch: parseInt(process.env.DELETE_BATCH || '5000', 10),
+  }
+}
+
+// Estimate time for one cycle based on operation counts
+function estimateCycleTimeMs(config: TestConfig): number {
+  const totalOps =
+    config.counterIters + config.createIters + config.updateIters + config.deleteIters
+  // Based on actual measurements: ~25-50ms per Move call via roochCommand (execFileSync)
+  // Using 50ms as conservative estimate
+  const opsTimeMs = totalOps * 50
+  // Plus 30 seconds inter-cycle wait
+  const waitTimeMs = 30000
+  return opsTimeMs + waitTimeMs
+}
+
+// Calculate total expected test time
+function estimateTotalTimeMs(config: TestConfig): number {
+  const cycleTimeMs = estimateCycleTimeMs(config)
+  const allCyclesMs = cycleTimeMs * config.cycleCount
+  const monitoringMs = config.monitoringMinutes * 60 * 1000
+  const settleMs = config.settleMs
+  const setupBufferMs = 5 * 60 * 1000 // 5 minutes for setup/teardown
+  return allCyclesMs + monitoringMs + settleMs + setupBufferMs
+}
+
+async function runMoveFunction(
+  testbox: TestBox,
+  functionId: string,
+  args: string[],
+  maxRetries = 3,
+) {
+  const commandArgs = [
     'move',
     'run',
     '--function',
@@ -26,83 +95,141 @@ function runMoveFunction(testbox: TestBox, functionId: string, args: string[]) {
     '--config-dir',
     testbox.roochDir,
     '--json',
-  ])
+  ]
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return testbox.roochCommand(commandArgs)
+    } catch (error: any) {
+      const errorMessage = error?.message?.toLowerCase() || ''
+      const errorCode = error?.code?.toLowerCase() || ''
+      const stdout = String(error?.stdout || '').toLowerCase()
+      const stderr = String(error?.stderr || '').toLowerCase()
+      // execFileSync errors may also have output array: [stdin, stdout, stderr]
+      const outputArray = error?.output || []
+      const outputText = outputArray
+        .map((item: any) => String(item || ''))
+        .join(' ')
+        .toLowerCase()
+
+      // Check if it's a timeout-related error
+      // Note: execFileSync errors may have timeout info in stdout, stderr, message, code, or output array
+      const isTimeoutError =
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('etimedout') ||
+        errorMessage.includes('econnreset') ||
+        errorMessage.includes('econnrefused') ||
+        errorCode === 'etimedout' ||
+        errorCode === 'econnreset' ||
+        errorCode === 'econnrefused' ||
+        stdout.includes('timeout') ||
+        stdout.includes('request timeout') ||
+        stderr.includes('timeout') ||
+        outputText.includes('timeout') ||
+        stdout.includes('connection') ||
+        stderr.includes('connection') ||
+        outputText.includes('connection')
+
+      // Check if it's a rate limit error (429)
+      const isRateLimitError =
+        stdout.includes('429') ||
+        stdout.includes('rate limit') ||
+        stdout.includes('ratelimit') ||
+        stdout.includes('request rejected') ||
+        stderr.includes('429') ||
+        stderr.includes('rate limit') ||
+        stderr.includes('ratelimit') ||
+        outputText.includes('429') ||
+        outputText.includes('rate limit') ||
+        errorMessage.includes('429') ||
+        errorMessage.includes('rate limit')
+
+      // If it's a retryable error (timeout or rate limit), retry with backoff
+      const isRetryableError = isTimeoutError || isRateLimitError
+
+      if (!isRetryableError) {
+        // If not a retryable error, throw immediately
+        throw error
+      }
+
+      // If retryable error and we have retries left, retry with exponential backoff
+      if (attempt < maxRetries) {
+        // Rate limit errors need longer delays, timeout errors can retry faster
+        const baseDelay = isRateLimitError ? 2000 : 1000 // 2s for rate limit, 1s for timeout
+        const retryDelay = baseDelay * (attempt + 1) // Exponential backoff
+        const errorType = isRateLimitError ? 'rate limit (429)' : 'timeout'
+        console.warn(
+          `⚠️ Move function call ${errorType} error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`,
+        )
+        await delay(retryDelay)
+        continue
+      }
+
+      // Last attempt failed, throw the error
+      throw error
+    }
+  }
+
+  // This should never be reached, but TypeScript needs it for type checking
+  throw new Error('Unexpected: retry loop completed without returning or throwing')
 }
 
 async function publishPackage(testbox: TestBox, packagePath: string, namedAddresses: string) {
+  console.log(`Publishing package at ${packagePath} with named addresses: ${namedAddresses}`)
   const ok = await testbox.cmdPublishPackage(packagePath, { namedAddresses })
   if (!ok) {
     throw new Error(`Failed to publish package at ${packagePath}`)
   }
+  console.log(`Successfully published package at ${packagePath}`)
 }
 
 describe('Rooch pruner end-to-end', () => {
   let testbox: TestBox
   let prometheus: PrometheusClient
   let defaultAddress: string
+  const config = loadTestConfig()
 
   beforeAll(async () => {
     console.log('### pruner e2e: init testbox')
     testbox = new TestBox()
     console.log('### pruner e2e: start rooch server')
 
-    // Check if this is a long-term test
-    const isLongTermTest = process.env.LONG_TERM_TEST === 'true'
+    // Configure pruner parameters from unified config
+    const prunerArgs = [
+      '--pruner-enable',
+      '--pruner-enable-incremental-sweep',
+      '--pruner-interval-s',
+      config.prunerIntervalS.toString(),
+      '--pruner-protection-orders',
+      config.protectionOrders.toString(),
+      '--pruner-bloom-bits',
+      config.bloomBits.toString(),
+      '--pruner-scan-batch',
+      config.scanBatch.toString(),
+      '--pruner-delete-batch',
+      config.deleteBatch.toString(),
+      // Increase rate limit for e2e tests to avoid 429 errors
+      // Allow up to 100 requests per second with burst size of 10000
+      '--traffic-per-second',
+      '100',
+      '--traffic-burst-size',
+      '10000',
+    ]
 
-    // Configure pruner parameters based on test type
-    const prunerArgs = ['--pruner-enable', '--pruner-enable-incremental-sweep']
-
-    if (isLongTermTest) {
-      // Long-term test configuration - more aggressive for extended monitoring
-      prunerArgs.push(
-        '--pruner-interval-s',
-        process.env.LONG_TERM_INTERVAL_S || '30',
-        '--pruner-window-days',
-        process.env.LONG_TERM_WINDOW_DAYS || '0', // 0 days for immediate cleanup in testing
-        '--pruner-bloom-bits',
-        process.env.LONG_TERM_BLOOM_BITS || '67108864', // 64MB bloom filter
-        '--pruner-scan-batch',
-        process.env.LONG_TERM_SCAN_BATCH || '50000',
-        '--pruner-delete-batch',
-        process.env.LONG_TERM_DELETE_BATCH || '25000',
-      )
-      console.log('### pruner e2e: using long-term test configuration')
-    } else {
-      // Standard test configuration - faster for CI/quick testing
-      prunerArgs.push(
-        '--pruner-interval-s',
-        '15', // More frequent interval for faster testing
-        '--pruner-window-days',
-        '0', // 0 days window - atomic snapshot should protect recent state
-        '--pruner-bloom-bits',
-        '16777216', // 16MB bloom filter for reasonable accuracy
-        '--pruner-scan-batch',
-        '10000', // Larger batch size for more aggressive cleaning
-        '--pruner-delete-batch',
-        '5000', // Larger delete batch for more aggressive cleaning
-      )
-      console.log('### pruner e2e: using standard test configuration')
-    }
+    console.log('### pruner e2e: pruner config:', {
+      intervalS: config.prunerIntervalS,
+      protectionOrders: config.protectionOrders,
+      bloomBits: `${(config.bloomBits / 1024 / 1024).toFixed(0)}MB`,
+      scanBatch: config.scanBatch,
+      deleteBatch: config.deleteBatch,
+    })
 
     // Use port 0 to get dynamic port allocation
-    await testbox.loadRoochEnv('local', 0, prunerArgs)
+    const loadResult = await testbox.loadRoochEnv('local', 0, prunerArgs)
+    console.log('### pruner e2e: loadRoochEnv returned:', loadResult)
 
-    // Configure RPC URL for rooch CLI after server starts
     const serverAddress = testbox.getRoochServerAddress()
-    if (serverAddress) {
-      console.log('### pruner e2e: configuring RPC URL:', serverAddress)
-      testbox.roochCommand([
-        'env',
-        'add',
-        '--config-dir',
-        testbox.roochDir,
-        '--alias',
-        'local',
-        '--rpc',
-        `http://${serverAddress}`,
-      ])
-      testbox.roochCommand(['env', 'switch', '--config-dir', testbox.roochDir, '--alias', 'local'])
-    }
+    console.log('### pruner e2e: serverAddress:', serverAddress)
 
     console.log('### pruner e2e: fetch default address')
     defaultAddress = await testbox.defaultCmdAddress()
@@ -125,10 +252,6 @@ describe('Rooch pruner end-to-end', () => {
       'pruner_test=default,std=0x1,moveos_std=0x2,rooch_framework=0x3',
     )
 
-    // Wait extra time for server to be fully ready
-    console.log('### pruner e2e: waiting for server to be fully ready')
-    await delay(10000)
-
     prometheus = new PrometheusClient(testbox.getMetricsPort() ?? 9184)
     console.log('### pruner e2e: beforeAll done')
   }, 180000)
@@ -139,135 +262,127 @@ describe('Rooch pruner end-to-end', () => {
     }
   })
 
-  // Calculate timeout dynamically based on test type
-  const isLongTermTest = process.env.LONG_TERM_TEST === 'true'
-  let testTimeout: number
-  if (isLongTermTest) {
-    const testDurationMinutes = parseInt(process.env.LONG_TERM_DURATION_MINUTES || '60', 10)
-    const cycleCount = parseInt(process.env.LONG_TERM_CYCLE_COUNT || '10', 10)
-    // Timeout = test duration + cycles overhead (30s per cycle) + setup/teardown buffer (30min)
-    const cyclesOverheadMs = cycleCount * 30 * 1000 // 30 seconds per cycle
-    const setupTeardownBufferMs = 30 * 60 * 1000 // 30 minutes buffer for setup, cycles, and teardown
-    const testDurationMs = testDurationMinutes * 60 * 1000
-    testTimeout = testDurationMs + cyclesOverheadMs + setupTeardownBufferMs
-    console.log(
-      `### pruner e2e: calculated timeout for long-term test: ${(testTimeout / 60000).toFixed(2)} minutes`,
-    )
-  } else {
-    const settleMs = parseInt(process.env.PRUNER_SETTLE_MS || '60000', 10) // Default 60 seconds to allow pruner cycles
-    // Timeout = settle time + workload execution + buffer (5 minutes)
-    testTimeout = settleMs + 5 * 60 * 1000
-    console.log(
-      `### pruner e2e: calculated timeout for standard test: ${(testTimeout / 1000).toFixed(0)} seconds`,
-    )
-  }
-  // Ensure minimum timeout of 5 minutes
-  testTimeout = Math.max(testTimeout, 5 * 60 * 1000)
+  // Calculate timeout using accurate estimation
+  const testTimeout = Math.max(estimateTotalTimeMs(config), 5 * 60 * 1000)
+  const expectedTimeMinutes = Math.ceil(estimateTotalTimeMs(config) / 60000)
 
   it(
     'collects pruning metrics after workload churn',
     async () => {
       const startTime = Date.now()
-      const isLongTermTest = process.env.LONG_TERM_TEST === 'true'
 
-      if (isLongTermTest) {
-        console.log('🚀 Starting long-term pruner integration test (1+ hours duration)')
+      // Print test configuration
+      console.log('🚀 Starting pruner integration test')
+      console.log('==========================================')
+      console.log('📊 Test Configuration:')
+      console.log(`  Workload per cycle:`)
+      console.log(`    - Counter iterations: ${config.counterIters}`)
+      console.log(`    - Create operations: ${config.createIters}`)
+      console.log(`    - Update operations: ${config.updateIters}`)
+      console.log(`    - Delete operations: ${config.deleteIters}`)
+      console.log(`  Timing:`)
+      console.log(`    - Number of cycles: ${config.cycleCount}`)
+      console.log(`    - Monitoring phase: ${config.monitoringMinutes} minutes`)
+      console.log(`    - Settle time: ${config.settleMs}ms`)
+      console.log(`  Estimated time:`)
+      console.log(`    - Per cycle: ~${Math.ceil(estimateCycleTimeMs(config) / 60000)} minutes`)
+      console.log(`    - Total: ~${expectedTimeMinutes} minutes`)
+      console.log(`    - Timeout: ${Math.ceil(testTimeout / 60000)} minutes`)
+      console.log('==========================================')
+      console.log('')
 
-        // Long-term test configuration - larger workload
-        const counterIters = parseInt(process.env.LONG_TERM_COUNTER_ITERS || '100', 10)
-        const createIters = parseInt(process.env.LONG_TERM_CREATE_ITERS || '50', 10)
-        const updateIters = parseInt(process.env.LONG_TERM_UPDATE_ITERS || '25', 10)
-        const deleteIters = parseInt(process.env.LONG_TERM_DELETE_ITERS || '20', 10)
-        const testDurationMinutes = parseInt(process.env.LONG_TERM_DURATION_MINUTES || '60', 10) // Default 1 hour
-        const cycleCount = parseInt(process.env.LONG_TERM_CYCLE_COUNT || '10', 10)
+      const txCounts = {
+        counter: 0,
+        objectCreated: 0,
+        objectUpdated: 0,
+        objectDeleted: 0,
+      }
 
-        const txCounts = {
-          counter: 0,
-          objectCreated: 0,
-          objectUpdated: 0,
-          objectDeleted: 0,
+      // Use deterministic seeds so object IDs are known without querying on-chain state
+      const seedBase = Date.now() % 1_000_000
+      const phaseHistory: Array<{ phase: number; timestamp: string; metrics: PrunerMetrics }> = []
+
+      // Execute workload cycles
+      for (let cycle = 0; cycle < config.cycleCount; cycle++) {
+        const cycleStartTime = Date.now()
+        console.log(`🔄 Cycle ${cycle + 1}/${config.cycleCount}`)
+
+        // Counter operations - create more versions
+        console.log(`  📝 Counter operations: ${config.counterIters}`)
+        for (let i = 0; i < config.counterIters; i++) {
+          await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+          txCounts.counter += 1
+          if (i % 10 === 0) await delay(10)
         }
 
-        const phaseHistory = []
-
-        console.log(`📊 Long-term test configuration:`)
-        console.log(`  - Counter iterations per cycle: ${counterIters}`)
-        console.log(`  - Create operations per cycle: ${createIters}`)
-        console.log(`  - Update operations per cycle: ${updateIters}`)
-        console.log(`  - Delete operations per cycle: ${deleteIters}`)
-        console.log(`  - Number of cycles: ${cycleCount}`)
-        console.log(`  - Test duration: ${testDurationMinutes} minutes`)
-
-        // Execute multiple cycles of data creation and updates
-        for (let cycle = 0; cycle < cycleCount; cycle++) {
-          console.log(`🔄 Cycle ${cycle + 1}/${cycleCount}`)
-
-          // Counter operations - create more versions
-          console.log(
-            `### pruner e2e: creating ${counterIters} counter operations (cycle ${cycle + 1})`,
-          )
-          for (let i = 0; i < counterIters; i++) {
-            runMoveFunction(
-              testbox,
-              `${defaultAddress}::quick_start_counter::increase`,
-              [], // no args
-            )
-            txCounts.counter += 1
-            if (i % 10 === 0) await delay(10) // Occasional pause
-          }
-
-          // Large-scale object creation
-          console.log(`### pruner e2e: creating ${createIters} objects (cycle ${cycle + 1})`)
-          for (let i = 0; i < createIters; i++) {
-            runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_object`, [
-              `u64:${cycle * 1000 + i}`,
-              `u64:${cycle * 1000 + i}`,
-            ])
-            txCounts.objectCreated += 1
-            if (i % 20 === 0) await delay(5)
-          }
-
-          // Update operations - use additional counter operations to simulate state updates
-          console.log(
-            `### pruner e2e: simulating ${updateIters} update operations (cycle ${cycle + 1})`,
-          )
-          for (let i = 0; i < updateIters; i++) {
-            runMoveFunction(
-              testbox,
-              `${defaultAddress}::quick_start_counter::increase`,
-              [], // no args - this creates new state versions
-            )
-            txCounts.objectUpdated += 1
-            if (i % 15 === 0) await delay(5)
-          }
-
-          // Brief wait for pruner to work
-          await delay(30000) // 30 seconds
-
-          // Collect current metrics
-          try {
-            const currentMetrics = await prometheus.fetchMetrics()
-            phaseHistory.push({
-              phase: currentMetrics.currentPhase,
-              timestamp: new Date().toISOString(),
-              metrics: currentMetrics,
-            })
-          } catch (error) {
-            console.warn(`⚠️ Metrics fetch failed at cycle ${cycle + 1}:`, error)
-          }
+        // Object creation
+        console.log(`  ➕ Create operations: ${config.createIters}`)
+        const seeds: number[] = []
+        for (let i = 0; i < config.createIters; i++) {
+          const seed = seedBase + cycle * 10_000 + i
+          seeds.push(seed)
+          await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_named`, [
+            `u64:${seed}`,
+            `u64:${cycle * 1000 + i}`,
+          ])
+          txCounts.objectCreated += 1
+          if (i % 20 === 0) await delay(5)
         }
 
-        console.log('⏰ Starting long-term monitoring phase...')
-        console.log(`### pruner e2e: monitoring for ${testDurationMinutes} minutes`)
+        // Update operations
+        console.log(`  ✏️  Update operations: ${config.updateIters}`)
+        for (let i = 0; i < config.updateIters && i < seeds.length; i++) {
+          await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::update_named`, [
+            `u64:${seeds[i]}`,
+            `u64:${cycle * 2000 + i}`,
+          ])
+          txCounts.objectUpdated += 1
+          if (i % 15 === 0) await delay(5)
+        }
+
+        // Delete operations
+        console.log(`  🗑️  Delete operations: ${config.deleteIters}`)
+        for (let i = 0; i < config.deleteIters && i < seeds.length; i++) {
+          await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::remove_named`, [
+            `u64:${seeds[seeds.length - 1 - i]}`,
+          ])
+          txCounts.objectDeleted += 1
+          if (i % 15 === 0) await delay(5)
+        }
+
+        // Inter-cycle wait for pruner to work
+        console.log(`  ⏳ Waiting 30s for pruner...`)
+        await delay(30000)
+
+        // Collect metrics after cycle
+        try {
+          const currentMetrics = await prometheus.fetchMetrics()
+          phaseHistory.push({
+            phase: currentMetrics.currentPhase,
+            timestamp: new Date().toISOString(),
+            metrics: currentMetrics,
+          })
+          const cycleTimeS = Math.round((Date.now() - cycleStartTime) / 1000)
+          console.log(
+            `  ✅ Cycle completed in ${cycleTimeS}s, deleted: ${currentMetrics.sweepExpiredDeleted.count + currentMetrics.incrementalSweepDeleted.count} nodes`,
+          )
+        } catch (error) {
+          console.warn(`  ⚠️ Metrics fetch failed:`, error)
+        }
+      }
+
+      // Monitoring phase (if configured)
+      if (config.monitoringMinutes > 0) {
+        console.log('')
+        console.log('⏰ Starting monitoring phase...')
+        console.log(`   Duration: ${config.monitoringMinutes} minutes`)
 
         const monitoringStartTime = Date.now()
-        const monitoringEndTime = monitoringStartTime + testDurationMinutes * 60 * 1000
+        const monitoringEndTime = monitoringStartTime + config.monitoringMinutes * 60 * 1000
 
-        // Long-term monitoring loop
         while (Date.now() < monitoringEndTime) {
           try {
             const currentMetrics = await prometheus.fetchMetrics()
-
             phaseHistory.push({
               phase: currentMetrics.currentPhase,
               timestamp: new Date().toISOString(),
@@ -275,160 +390,89 @@ describe('Rooch pruner end-to-end', () => {
             })
 
             const elapsedMinutes = Math.floor((Date.now() - monitoringStartTime) / 60000)
+            const remainingMinutes = config.monitoringMinutes - elapsedMinutes
 
             console.log(
-              `📊 [${elapsedMinutes}/${testDurationMinutes}min] Phase: ${currentMetrics.currentPhase}`,
+              `📊 [${elapsedMinutes}/${config.monitoringMinutes}min] (${remainingMinutes}min remaining)`,
             )
+            console.log(`   Phase: ${currentMetrics.currentPhase}`)
             console.log(
-              `  🗑️  Nodes Deleted: Sweep=${currentMetrics.sweepExpiredDeleted.count}, Incremental=${currentMetrics.incrementalSweepDeleted.count}`,
+              `   Deleted: Sweep=${currentMetrics.sweepExpiredDeleted.count}, Incr=${currentMetrics.incrementalSweepDeleted.count}`,
             )
-            console.log(`  🔍 Reachable Nodes: ${currentMetrics.reachableNodesScanned.count}`)
+            console.log(`   Reachable: ${currentMetrics.reachableNodesScanned.count}`)
             console.log(
-              `  💾 Disk Reclaimed: ${(currentMetrics.diskSpaceReclaimedBytes / (1024 * 1024)).toFixed(2)} MB`,
+              `   Disk Reclaimed: ${(currentMetrics.diskSpaceReclaimedBytes / (1024 * 1024)).toFixed(2)} MB`,
             )
-            console.log(
-              `  🌸 Bloom Filter: ${(currentMetrics.bloomFilterSizeBytes / (1024 * 1024)).toFixed(2)} MB`,
-            )
-            console.log(`  ⚠️  Errors: ${currentMetrics.errorCount}`)
+            console.log(`   Errors: ${currentMetrics.errorCount}`)
 
-            // Report detailed status every 5 minutes
-            if (elapsedMinutes > 0 && elapsedMinutes % 5 === 0) {
-              const avgNodesPerPhase =
-                phaseHistory.length > 0
-                  ? phaseHistory.reduce(
-                      (sum, p) =>
-                        sum +
-                        p.metrics.sweepExpiredDeleted.count +
-                        p.metrics.incrementalSweepDeleted.count,
-                      0,
-                    ) / phaseHistory.length
-                  : 0
-
-              console.log(`\n📈 [${elapsedMinutes}min] Detailed Report:`)
-              console.log(`  - Average nodes deleted per check: ${avgNodesPerPhase.toFixed(2)}`)
-              console.log(`  - Total phase transitions: ${phaseHistory.length}`)
-            }
-
-            // Wait 2 minutes before checking again
+            // Wait 2 minutes before next check
             await delay(120000)
           } catch (error) {
             console.warn(`⚠️ Metrics fetch failed:`, error)
-            await delay(60000) // Wait 1 minute on error
+            await delay(60000)
           }
         }
-
-        // Final metrics collection
-        const finalMetrics = await prometheus.fetchMetrics()
-        const testDuration = Date.now() - startTime
-
-        // Verify key metrics
-        expect(finalMetrics.currentPhase).toBeGreaterThanOrEqual(0)
-        expect(finalMetrics.reachableNodesScanned.count).toBeGreaterThan(0)
-        expect(finalMetrics.errorCount).toBe(0)
-
-        console.log(`\n🎯 Long-term Integration Test Results:`)
-        console.log(`  ✅ Test Duration: ${(testDuration / 60000).toFixed(2)} minutes`)
-        console.log(`  ✅ Total Transactions Created: ${txCounts.counter + txCounts.objectCreated}`)
-        console.log(
-          `  ✅ Nodes Deleted: Sweep=${finalMetrics.sweepExpiredDeleted.count}, Incremental=${finalMetrics.incrementalSweepDeleted.count}`,
-        )
-        console.log(
-          `  ✅ Disk Space Reclaimed: ${(finalMetrics.diskSpaceReclaimedBytes / (1024 * 1024)).toFixed(2)} MB`,
-        )
-        console.log(`  ✅ Phase Transitions: ${phaseHistory.length}`)
       } else {
-        // Standard test mode - fast CI testing
-        const counterIters = parseInt(process.env.PRUNER_COUNTER_ITERS || '1', 10)
-        const createIters = parseInt(process.env.PRUNER_CREATE_ITERS || '1', 10)
-        const updateIters = parseInt(process.env.PRUNER_UPDATE_ITERS || '1', 10)
-        const deleteIters = parseInt(process.env.PRUNER_DELETE_ITERS || '1', 10)
-        const settleMs = parseInt(process.env.PRUNER_SETTLE_MS || '60000', 10) // Default 60 seconds to allow pruner cycles
-        const txCounts = {
-          counter: 0,
-          objectCreated: 0,
-          objectUpdated: 0,
-          objectDeleted: 0,
-        }
-
-        // Counter churn to generate stale versions
-        for (let i = 0; i < counterIters; i++) {
-          runMoveFunction(
-            testbox,
-            `${defaultAddress}::quick_start_counter::increase`,
-            [], // no args
-          )
-          txCounts.counter += 1
-          await delay(50)
-        }
-
-        // Object lifecycle workload
-        console.log(`### pruner e2e: creating ${createIters} objects`)
-        for (let i = 0; i < createIters; i++) {
-          runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_object`, [
-            `u64:${i}`,
-            `u64:${i}`,
-          ])
-          txCounts.objectCreated += 1
-          await delay(30)
-        }
-
-        // Update operations - simulate with additional counter operations
-        console.log(`### pruner e2e: simulating ${updateIters} update operations`)
-        for (let i = 0; i < updateIters; i++) {
-          runMoveFunction(
-            testbox,
-            `${defaultAddress}::quick_start_counter::increase`,
-            [], // no args - this creates new state versions
-          )
-          txCounts.objectUpdated += 1
-          await delay(30)
-        }
-
-        // Delete operations (would also require object IDs)
-        console.log(`### pruner e2e: simulating delete operations`)
-        for (let i = 0; i < deleteIters; i++) {
-          // Additional counter operations to simulate state churn
-          runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
-          txCounts.objectDeleted += 1
-          await delay(30)
-        }
-
-        // Allow pruner cycles to complete - use PRUNER_SETTLE_MS if provided, otherwise default to 60s
-        console.log(`### pruner e2e: waiting ${settleMs}ms for pruner cycles`)
-        await delay(settleMs)
-
-        const prunerMetrics = await prometheus.fetchMetrics()
-        const report = generateReport(startTime, txCounts, prunerMetrics)
-        printReport(report)
-
-        expect(prunerMetrics.bloomFilterSizeBytes).toBeGreaterThan(0)
-        expect(prunerMetrics.currentPhase).toBeGreaterThanOrEqual(0)
-        expect(prunerMetrics.errorCount).toBe(0)
-        // With atomic snapshot enabled and 0-day window, expect selective deletions
-        // The key is that atomic snapshot protects reachable nodes while allowing cleanup of unreferenced nodes
-        const totalDeletions =
-          prunerMetrics.sweepExpiredDeleted.sum + prunerMetrics.incrementalSweepDeleted.sum
-        const reachableNodes = prunerMetrics.reachableNodesScanned.sum
-        console.log(`### pruner e2e: total nodes deleted: ${totalDeletions}`)
-        console.log(`### pruner e2e: reachable nodes protected: ${reachableNodes}`)
-        console.log(`### pruner e2e: (atomic snapshot enabled - selective cleaning expected)`)
-
-        // With atomic snapshot, we should see:
-        // 1. Some deletions (unreferenced nodes)
-        // 2. Zero errors (atomic snapshot prevents mistakes)
-        // 3. Protected reachable nodes
-        expect(totalDeletions).toBeGreaterThanOrEqual(0)
-        expect(prunerMetrics.errorCount).toBe(0)
-        expect(reachableNodes).toBeGreaterThan(0)
-        expect(report.validation.passed).toBe(true)
-
-        // Verify atomic snapshot is working: if we have reachable nodes, no errors should occur
-        if (reachableNodes > 0) {
-          console.log(
-            `### pruner e2e: ✅ Atomic snapshot protecting ${reachableNodes} reachable nodes successfully`,
-          )
-        }
+        // No monitoring phase - just settle
+        console.log(`### pruner e2e: waiting ${config.settleMs}ms for pruner cycles`)
+        await delay(config.settleMs)
       }
+
+      // Final metrics collection
+      const finalMetrics = await prometheus.fetchMetrics()
+      const testDuration = Date.now() - startTime
+
+      // Generate and save report
+      const report = generateReport(startTime, txCounts, finalMetrics)
+      printReport(report)
+
+      // Save detailed report for CI/CD pipeline
+      const fs = await import('fs')
+      const reportPath = 'test-report.json'
+      fs.writeFileSync(
+        reportPath,
+        JSON.stringify(
+          {
+            report,
+            testConfig: {
+              ...config,
+              actualDurationMs: testDuration,
+              expectedDurationMs: estimateTotalTimeMs(config),
+            },
+            phaseHistory: phaseHistory.slice(-20), // Last 20 phase snapshots
+          },
+          null,
+          2,
+        ),
+      )
+      console.log(`### pruner e2e: saved detailed report to ${reportPath}`)
+
+      // Verify key metrics
+      expect(finalMetrics.bloomFilterSizeBytes).toBeGreaterThan(0)
+      expect(finalMetrics.currentPhase).toBeGreaterThanOrEqual(0)
+      expect(finalMetrics.errorCount).toBe(0)
+      expect(finalMetrics.reachableNodesScanned.count).toBeGreaterThan(0)
+
+      const totalDeletions =
+        finalMetrics.sweepExpiredDeleted.sum + finalMetrics.incrementalSweepDeleted.sum
+      const reachableNodes = finalMetrics.reachableNodesScanned.sum
+
+      console.log('')
+      console.log('🎯 Test Results:')
+      const durationMinutes = (testDuration / 60000).toFixed(2)
+      console.log(`  ✅ Duration: ${durationMinutes} minutes (expected: ~${expectedTimeMinutes})`)
+      const totalTxs =
+        txCounts.counter + txCounts.objectCreated + txCounts.objectUpdated + txCounts.objectDeleted
+      console.log(`  ✅ Total Transactions: ${totalTxs}`)
+      console.log(`  ✅ Nodes Deleted: ${totalDeletions}`)
+      console.log(`  ✅ Reachable Nodes Protected: ${reachableNodes}`)
+      console.log(
+        `  ✅ Disk Reclaimed: ${(finalMetrics.diskSpaceReclaimedBytes / (1024 * 1024)).toFixed(2)} MB`,
+      )
+      console.log(`  ✅ Errors: ${finalMetrics.errorCount}`)
+
+      expect(totalDeletions).toBeGreaterThanOrEqual(0)
+      expect(report.validation.passed).toBe(true)
     },
     { timeout: testTimeout },
   )

@@ -22,7 +22,8 @@ pub struct SweepExpired {
     bloom: Arc<Mutex<BloomFilter>>, // same Bloom used by ReachableBuilder
     deleted_state_root_bloom: Arc<Mutex<BloomFilter>>, // BloomFilter tracking deleted state roots
     processed_roots_count: Arc<std::sync::atomic::AtomicU64>, // Counter for aggressive compaction
-    should_stop: Arc<std::sync::atomic::AtomicBool>, // Signal to stop processing
+    is_running: Arc<std::sync::atomic::AtomicBool>, // true = running, false = stopped
+    debug_refcount_guard: bool,     // Enable debug-only refcount guard for Bloom misses
                                     // metrics: Arc<StateDBMetrics>,
 }
 
@@ -31,7 +32,7 @@ impl SweepExpired {
         moveos_store: Arc<MoveOSStore>,
         bloom: Arc<Mutex<BloomFilter>>, // pass the same bloom instance
         bloom_bits: usize,              // configurable bloom filter size
-        should_stop: Arc<std::sync::atomic::AtomicBool>, // signal to stop
+        is_running: Arc<std::sync::atomic::AtomicBool>, // true = running, false = stopped
                                         // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         // Load or create deleted roots bloom filter
@@ -50,7 +51,11 @@ impl SweepExpired {
             bloom,
             deleted_state_root_bloom: Arc::new(Mutex::new(deleted_state_root_bloom)),
             processed_roots_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
-            should_stop,
+            is_running,
+            debug_refcount_guard: std::env::var("PRUNER_DEBUG_REFCOUNT")
+                .ok()
+                .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+                .unwrap_or(false),
         }
     }
 
@@ -116,8 +121,8 @@ impl SweepExpired {
 
         // ✅ Step 3: Process batches sequentially (largest tx_order first)
         for (batch_idx, mini_batch) in roots_to_process.chunks(mini_batch_size).enumerate() {
-            // Check if we should stop early
-            if self.should_stop.load(std::sync::atomic::Ordering::Relaxed) {
+            // Check if we should stop early (is_running = false means stop requested)
+            if !self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
                 info!("Sweep stopping: received shutdown signal");
                 return Ok(deleted.load(std::sync::atomic::Ordering::Relaxed));
             }
@@ -169,7 +174,7 @@ impl SweepExpired {
             );
 
             // If shutdown is requested, skip compaction to exit quickly
-            if self.should_stop.load(std::sync::atomic::Ordering::Relaxed) {
+            if !self.is_running.load(std::sync::atomic::Ordering::Relaxed) {
                 info!("Skipping compaction due to shutdown request");
                 // Persist bloom progress before exit
                 {
@@ -290,11 +295,12 @@ impl SweepExpired {
         let mut total_deleted: u64 = 0;
         let mut since_last_flush: u64 = 0;
         let flush_interval: u64 = 500000; // Reduced flush frequency for better performance
+        let mut debug_protected: u64 = 0;
 
         while let Some(node_hash) = stack.pop_back() {
             // Check shutdown signal periodically (every 1000 nodes)
             if total_deleted % 1000 == 0
-                && self.should_stop.load(std::sync::atomic::Ordering::Relaxed)
+                && !self.is_running.load(std::sync::atomic::Ordering::Relaxed)
             {
                 info!(
                     "sweep_root stopping: received shutdown signal at {} nodes",
@@ -315,6 +321,22 @@ impl SweepExpired {
             // Only read node content if it's actually going to be deleted
             if self.is_reachable(&node_hash) {
                 continue;
+            }
+
+            // Optional debug guard: double-check refcount to catch Bloom misses in testing.
+            if self.debug_refcount_guard {
+                let refcount = self.moveos_store.prune_store.get_node_refcount(node_hash)?;
+                if refcount > 0 {
+                    debug_protected += 1;
+                    tracing::warn!(
+                        ?node_hash,
+                        refcount,
+                        tx_order,
+                        ?root_hash,
+                        "PRUNER_DEBUG_REFCOUNT: protecting node not in bloom"
+                    );
+                    continue;
+                }
             }
 
             // Step 2: Read node content and extract children
@@ -385,6 +407,14 @@ impl SweepExpired {
             "Completed sweeping tx_order {}, state root {:?}, total deleted nodes: {}",
             tx_order, root_hash, total_deleted
         );
+        if self.debug_refcount_guard && debug_protected > 0 {
+            info!(
+                tx_order,
+                ?root_hash,
+                debug_protected,
+                "PRUNER_DEBUG_REFCOUNT: protected nodes due to refcount>0"
+            );
+        }
         Ok(())
     }
 }

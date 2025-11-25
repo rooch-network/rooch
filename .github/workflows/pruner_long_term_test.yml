@@ -70,8 +70,8 @@ jobs:
 
       - name: Build test dependencies
         run: |
-          pnpm test-suite build
-          pnpm rooch-pruner-e2e vitest --version
+          pnpm --filter @roochnetwork/test-suite build
+          pnpm --filter @roochnetwork/rooch-pruner-e2e exec vitest --version
 
       - name: Setup disk monitoring
         id: disk-setup
@@ -143,18 +143,45 @@ jobs:
         env:
           ROOCH_BINARY_BUILD_PROFILE: optci
           ROOCH_DATA_DIR: ${{ steps.disk-setup.outputs.test_data_dir }}
-          LONG_TERM_TEST: true
-          LONG_TERM_DURATION_MINUTES: ${{ inputs.test_duration_minutes }}
-          LONG_TERM_COUNTER_ITERS: ${{ steps.test-params.outputs.counter_iters }}
-          LONG_TERM_CREATE_ITERS: ${{ steps.test-params.outputs.create_iters }}
-          LONG_TERM_UPDATE_ITERS: ${{ steps.test-params.outputs.update_iters }}
-          LONG_TERM_DELETE_ITERS: ${{ steps.test-params.outputs.delete_iters }}
-          LONG_TERM_CYCLE_COUNT: ${{ steps.test-params.outputs.cycle_count }}
+          # Unified test configuration (no more LONG_TERM_TEST flag needed)
+          COUNTER_ITERS: ${{ steps.test-params.outputs.counter_iters }}
+          CREATE_ITERS: ${{ steps.test-params.outputs.create_iters }}
+          UPDATE_ITERS: ${{ steps.test-params.outputs.update_iters }}
+          DELETE_ITERS: ${{ steps.test-params.outputs.delete_iters }}
+          CYCLE_COUNT: ${{ steps.test-params.outputs.cycle_count }}
+          MONITORING_MINUTES: ${{ inputs.test_duration_minutes }}
+          # Pruner server config for long-term tests
+          BLOOM_BITS: '67108864'
+          PRUNER_INTERVAL_S: '30'
+          SCAN_BATCH: '50000'
+          DELETE_BATCH: '25000'
+          # protection_orders: protect N most recent tx_orders
+          # Higher values = safer (less aggressive pruning)
+          # Use 1 to protect recent states during concurrent workload
+          PROTECTION_ORDERS: '1'
         run: |
           echo "Starting pruner long-term test..."
+          echo "=========================================="
+          echo "Environment Variables Check:"
+          echo "  COUNTER_ITERS=$COUNTER_ITERS"
+          echo "  CREATE_ITERS=$CREATE_ITERS"
+          echo "  UPDATE_ITERS=$UPDATE_ITERS"
+          echo "  DELETE_ITERS=$DELETE_ITERS"
+          echo "  CYCLE_COUNT=$CYCLE_COUNT"
+          echo "  MONITORING_MINUTES=$MONITORING_MINUTES"
+          echo "=========================================="
           echo "Duration: ${{ inputs.test_duration_minutes }} minutes"
           echo "Intensity: ${{ inputs.workload_intensity }}"
           echo "Data directory: ${{ steps.disk-setup.outputs.test_data_dir }}"
+          
+          # Estimate expected time based on actual measurements (~50ms per op)
+          TOTAL_OPS=$((COUNTER_ITERS + CREATE_ITERS + UPDATE_ITERS + DELETE_ITERS))
+          OPS_TIME_SEC=$((TOTAL_OPS * 50 / 1000))  # ~50ms per op
+          CYCLE_TIME_SEC=$((OPS_TIME_SEC + 30))     # + 30s inter-cycle wait
+          CYCLES_TIME_MIN=$((CYCLE_COUNT * CYCLE_TIME_SEC / 60))
+          EXPECTED_MIN=$((CYCLES_TIME_MIN + MONITORING_MINUTES + 5))  # + 5min setup buffer
+          echo "Expected test time: approximately $EXPECTED_MIN minutes (${CYCLES_TIME_MIN}min cycles + ${MONITORING_MINUTES}min monitoring)"
+          echo "=========================================="
 
           # Record start time
           START_TIME=$(date +%s)
@@ -162,14 +189,36 @@ jobs:
 
           # Run the test and capture output
           cd sdk/typescript/rooch-pruner-e2e
+          
+          # Run test and capture exit code
+          set +e
           pnpm exec vitest run src/case/pruner-e2e.spec.ts --reporter=verbose 2>&1 | tee test-output.log
-
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          
           # Record end time
           END_TIME=$(date +%s)
           echo "end_time=$END_TIME" >> $GITHUB_OUTPUT
           DURATION=$((END_TIME - START_TIME))
           echo "duration=$DURATION" >> $GITHUB_OUTPUT
-          echo "Test completed in $DURATION seconds"
+          echo "test_exit_code=$TEST_EXIT_CODE" >> $GITHUB_OUTPUT
+          
+          # Summary
+          echo "=========================================="
+          echo "Test completed in $DURATION seconds ($((DURATION / 60)) minutes)"
+          echo "Test exit code: $TEST_EXIT_CODE"
+          
+          # Check if test report was generated
+          if [ -f test-report.json ]; then
+            echo "Test report generated successfully"
+            echo "Report size: $(wc -c < test-report.json) bytes"
+          else
+            echo "WARNING: test-report.json was not generated!"
+          fi
+          echo "=========================================="
+          
+          # Exit with test exit code
+          exit $TEST_EXIT_CODE
 
       - name: Analyze disk usage
         id: disk-analysis
@@ -203,7 +252,7 @@ jobs:
                 
                 # Calculate reclaim percentage
                 if [ $PEAK_USAGE -gt 0 ]; then
-                  RECLAIM_PCT=$(echo "scale=2; $RECLAIMED * 100 / $PEAK_USAGE" | bc)
+                  RECLAIM_PCT=$(awk "BEGIN {printf \"%.2f\", $RECLAIMED * 100 / $PEAK_USAGE}")
                   echo "reclaim_percentage=$RECLAIM_PCT" >> $GITHUB_OUTPUT
                   echo "Reclaim percentage: $RECLAIM_PCT%"
                 fi
@@ -220,43 +269,112 @@ jobs:
         id: metrics
         if: always()
         run: |
-          # Find the metrics port from test logs
+          # Find the metrics port from test logs and save metrics snapshot
           METRICS_PORT=$(grep -oP 'metrics.*port.*\K\d+' sdk/typescript/rooch-pruner-e2e/test-output.log || echo "9184")
           echo "metrics_port=$METRICS_PORT" >> $GITHUB_OUTPUT
 
-          # Try to fetch metrics if server is still running
+          # Try to fetch metrics snapshot if server is still running
           if curl -s "http://localhost:$METRICS_PORT/metrics" > metrics-snapshot.txt; then
-            echo "Metrics fetched successfully"
-            
-            # Extract key metrics
-            NODES_DELETED_SWEEP=$(grep -oP 'pruner_sweep_nodes_deleted_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
-            NODES_DELETED_INCR=$(grep -oP 'pruner_sweep_nodes_deleted.*incremental.*_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
-            REACHABLE_NODES=$(grep -oP 'pruner_reachable_nodes_scanned_sum.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
-            DISK_RECLAIMED=$(grep -oP 'pruner_disk_space_reclaimed_bytes_total.*?\K[\d.]+' metrics-snapshot.txt || echo "0")
-            BLOOM_SIZE=$(grep -oP 'pruner_bloom_filter_size_bytes[^{]*?\K[\d.]+' metrics-snapshot.txt | head -1 || echo "0")
-            
-            echo "nodes_deleted_sweep=$NODES_DELETED_SWEEP" >> $GITHUB_OUTPUT
-            echo "nodes_deleted_incr=$NODES_DELETED_INCR" >> $GITHUB_OUTPUT
-            echo "reachable_nodes=$REACHABLE_NODES" >> $GITHUB_OUTPUT
-            echo "disk_reclaimed_estimated=$DISK_RECLAIMED" >> $GITHUB_OUTPUT
-            echo "bloom_filter_size=$BLOOM_SIZE" >> $GITHUB_OUTPUT
+            echo "Metrics snapshot saved successfully"
           else
-            echo "Could not fetch metrics (server may be stopped)"
+            echo "Could not fetch metrics snapshot (server may be stopped)"
           fi
+
+          # Extract metrics from test report JSON if available
+          if [ -f sdk/typescript/rooch-pruner-e2e/test-report.json ]; then
+            echo "Using metrics from test report JSON"
+
+            # Extract values using jq if available, otherwise use grep
+            if command -v jq >/dev/null 2>&1; then
+              NODES_DELETED_SWEEP=$(jq -r '.report.prunerMetrics.sweepExpiredDeleted.sum' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+              NODES_DELETED_INCR=$(jq -r '.report.prunerMetrics.incrementalSweepDeleted.sum' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+              REACHABLE_NODES=$(jq -r '.report.prunerMetrics.reachableNodesScanned.sum' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+              DISK_RECLAIMED=$(jq -r '.report.prunerMetrics.diskSpaceReclaimedBytes' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+              BLOOM_SIZE=$(jq -r '.report.prunerMetrics.bloomFilterSizeBytes' sdk/typescript/rooch-pruner-e2e/test-report.json 2>/dev/null || echo "0")
+            else
+              # Fallback to grep-based extraction
+              NODES_DELETED_SWEEP=$(grep -oP '"sweepExpiredDeleted":{"sum":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+              NODES_DELETED_INCR=$(grep -oP '"incrementalSweepDeleted":{"sum":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+              REACHABLE_NODES=$(grep -oP '"reachableNodesScanned":{"sum":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+              DISK_RECLAIMED=$(grep -oP '"diskSpaceReclaimedBytes":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+              BLOOM_SIZE=$(grep -oP '"bloomFilterSizeBytes":\K[\d.]+' sdk/typescript/rooch-pruner-e2e/test-report.json | head -1 || echo "0")
+            fi
+          else
+            echo "Test report JSON not found, using default values"
+            NODES_DELETED_SWEEP=0
+            NODES_DELETED_INCR=0
+            REACHABLE_NODES=0
+            DISK_RECLAIMED=0
+            BLOOM_SIZE=0
+          fi
+
+          echo "nodes_deleted_sweep=$NODES_DELETED_SWEEP" >> $GITHUB_OUTPUT
+          echo "nodes_deleted_incr=$NODES_DELETED_INCR" >> $GITHUB_OUTPUT
+          echo "reachable_nodes=$REACHABLE_NODES" >> $GITHUB_OUTPUT
+          echo "disk_reclaimed_estimated=$DISK_RECLAIMED" >> $GITHUB_OUTPUT
+          echo "bloom_filter_size=$BLOOM_SIZE" >> $GITHUB_OUTPUT
 
       - name: Generate test report
         if: always()
         run: |
-          cat > test-report.md << 'EOF'
+          # Pre-calculate all values before generating report
+          START_TIME="${{ steps.pruner-test.outputs.start_time }}"
+          END_TIME="${{ steps.pruner-test.outputs.end_time }}"
+          DURATION="${{ steps.pruner-test.outputs.duration }}"
+          
+          # Format timestamps (handle both GNU and BSD date)
+          if [ -n "$START_TIME" ] && [ "$START_TIME" != "" ]; then
+            START_TIME_FMT=$(date -d "@$START_TIME" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "$START_TIME" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "N/A")
+          else
+            START_TIME_FMT="N/A"
+          fi
+          
+          if [ -n "$END_TIME" ] && [ "$END_TIME" != "" ]; then
+            END_TIME_FMT=$(date -d "@$END_TIME" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "$END_TIME" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "N/A")
+          else
+            END_TIME_FMT="N/A"
+          fi
+          
+          # Format duration in human readable form
+          if [ -n "$DURATION" ] && [ "$DURATION" -gt 0 ] 2>/dev/null; then
+            DURATION_MIN=$((DURATION / 60))
+            DURATION_SEC=$((DURATION % 60))
+            DURATION_FMT="${DURATION_MIN}m ${DURATION_SEC}s ($DURATION seconds)"
+          else
+            DURATION_FMT="N/A"
+          fi
+          
+          # Calculate disk space values in MB
+          DISK_RECLAIMED_ESTIMATED="${{ steps.metrics.outputs.disk_reclaimed_estimated }}"
+          BLOOM_FILTER_SIZE="${{ steps.metrics.outputs.bloom_filter_size }}"
+          PEAK_USAGE="${{ steps.disk-analysis.outputs.peak_usage }}"
+          FINAL_USAGE="${{ steps.disk-analysis.outputs.final_usage }}"
+          RECLAIMED="${{ steps.disk-analysis.outputs.reclaimed }}"
+          
+          DISK_RECLAIMED_MB=$(awk "BEGIN {printf \"%.2f\", ${DISK_RECLAIMED_ESTIMATED:-0} / 1024 / 1024}" 2>/dev/null || echo "N/A")
+          BLOOM_FILTER_MB=$(awk "BEGIN {printf \"%.2f\", ${BLOOM_FILTER_SIZE:-0} / 1024 / 1024}" 2>/dev/null || echo "N/A")
+          PEAK_USAGE_MB=$(awk "BEGIN {printf \"%.2f\", ${PEAK_USAGE:-0} / 1024 / 1024}" 2>/dev/null || echo "N/A")
+          FINAL_USAGE_MB=$(awk "BEGIN {printf \"%.2f\", ${FINAL_USAGE:-0} / 1024 / 1024}" 2>/dev/null || echo "N/A")
+          RECLAIMED_MB=$(awk "BEGIN {printf \"%.2f\", ${RECLAIMED:-0} / 1024 / 1024}" 2>/dev/null || echo "N/A")
+          
+          # Calculate accuracy percentage
+          if [ -n "$DISK_RECLAIMED_ESTIMATED" ] && [ "$DISK_RECLAIMED_ESTIMATED" != "0" ] && [ "$DISK_RECLAIMED_ESTIMATED" != "" ]; then
+            ACCURACY=$(awk "BEGIN {printf \"%.1f\", ${RECLAIMED:-0} * 100 / $DISK_RECLAIMED_ESTIMATED}" 2>/dev/null || echo "N/A")
+          else
+            ACCURACY="N/A"
+          fi
+          
+          # Generate report using variables (no command substitution needed in heredoc)
+          cat > test-report.md << REPORT_EOF
           # Pruner Long-term Integration Test Report
 
           ## Test Configuration
 
-          - **Duration**: ${{ inputs.test_duration_minutes }} minutes
+          - **Duration**: ${{ inputs.test_duration_minutes }} minutes (configured)
           - **Workload Intensity**: ${{ inputs.workload_intensity }}
-          - **Start Time**: $(date -d @${{ steps.pruner-test.outputs.start_time }} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r ${{ steps.pruner-test.outputs.start_time }} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "N/A")
-          - **End Time**: $(date -d @${{ steps.pruner-test.outputs.end_time }} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r ${{ steps.pruner-test.outputs.end_time }} '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "N/A")
-          - **Actual Duration**: ${{ steps.pruner-test.outputs.duration }} seconds
+          - **Start Time**: ${START_TIME_FMT}
+          - **End Time**: ${END_TIME_FMT}
+          - **Actual Duration**: ${DURATION_FMT}
 
           ## Workload Parameters
 
@@ -274,39 +392,39 @@ jobs:
           - **Reachable Nodes Scanned**: ${{ steps.metrics.outputs.reachable_nodes }}
 
           ### Disk Space
-          - **Estimated Reclaimed (from metrics)**: $(echo "scale=2; ${{ steps.metrics.outputs.disk_reclaimed_estimated }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Bloom Filter Size**: $(echo "scale=2; ${{ steps.metrics.outputs.bloom_filter_size }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Estimated Reclaimed (from metrics)**: ${DISK_RECLAIMED_MB} MB
+          - **Bloom Filter Size**: ${BLOOM_FILTER_MB} MB
 
-          EOF
+          REPORT_EOF
 
           # Add real disk monitoring results if available
           if [ "${{ inputs.enable_disk_monitoring }}" = "true" ]; then
-            cat >> test-report.md << 'EOF'
+            cat >> test-report.md << DISK_EOF
           ### Real Disk Usage Analysis
 
           > **Note**: Disk usage monitoring uses peak-to-final difference to measure pruner effectiveness.
           > Since the test continuously writes data while pruner deletes old data, the final size 
           > will be larger than initial. The key metric is: Peak - Final = Reclaimed by Pruner.
 
-          - **Peak Usage (during test)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.peak_usage }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Final Usage (after pruner)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.final_usage }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Space Reclaimed**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.reclaimed }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
+          - **Peak Usage (during test)**: ${PEAK_USAGE_MB} MB
+          - **Final Usage (after pruner)**: ${FINAL_USAGE_MB} MB
+          - **Space Reclaimed**: ${RECLAIMED_MB} MB
           - **Reclaim Percentage**: ${{ steps.disk-analysis.outputs.reclaim_percentage }}% of peak usage
 
           #### Comparison
-          - **Estimated (from metrics)**: $(echo "scale=2; ${{ steps.metrics.outputs.disk_reclaimed_estimated }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Actual (from monitoring)**: $(echo "scale=2; ${{ steps.disk-analysis.outputs.reclaimed }} / 1024 / 1024" | bc 2>/dev/null || echo "N/A") MB
-          - **Accuracy**: $(echo "scale=1; ${{ steps.disk-analysis.outputs.reclaimed }} * 100 / ${{ steps.metrics.outputs.disk_reclaimed_estimated }}" | bc 2>/dev/null || echo "N/A")% (actual/estimated)
+          - **Estimated (from metrics)**: ${DISK_RECLAIMED_MB} MB
+          - **Actual (from monitoring)**: ${RECLAIMED_MB} MB
+          - **Accuracy**: ${ACCURACY}% (actual/estimated)
 
-          EOF
+          DISK_EOF
           fi
 
-          cat >> test-report.md << 'EOF'
+          cat >> test-report.md << SUMMARY_EOF
           ## Test Output Summary
 
           See attached artifacts for full test logs and metrics snapshot.
 
-          EOF
+          SUMMARY_EOF
 
           cat test-report.md
           echo "Test report generated"
@@ -318,6 +436,7 @@ jobs:
           name: pruner-test-report-${{ github.run_number }}
           path: |
             sdk/typescript/rooch-pruner-e2e/test-output.log
+            sdk/typescript/rooch-pruner-e2e/test-report.json
             test-report.md
             metrics-snapshot.txt
             disk-usage-timeline.csv

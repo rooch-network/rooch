@@ -4,6 +4,11 @@
 
 This guide provides a comprehensive overview of the Rooch state pruner, a critical component that manages storage space reclamation by cleaning up unused state data. The pruner operates as a hybrid system combining batch cleanup (V1) with incremental sweeping (V2) capabilities.
 
+## Related Documents
+
+- `docs/dev-guide/statedb_prune.md`: Low-level SMT / refcount design and data-flow.
+- `docs/dev-guide/pruner_e2e_testing_guide.md`: How to run and monitor end-to-end pruner workloads.
+
 ## Architecture
 
 ### Three-Phase Pruning Cycle
@@ -48,8 +53,8 @@ pub struct PruneConfig {
     /// Create and use cf_reach_seen column family for cold hash spill
     pub enable_reach_seen_cf: bool,           // default: false
 
-    /// Window size in days for reachable roots
-    pub window_days: u64,                     // default: 30
+    /// Number of recent tx_orders to protect from pruning
+    pub protection_orders: u64,                // default: 30000
 
     /// Enable incremental sweep phase for continuous cleanup
     pub enable_incremental_sweep: bool,       // default: true
@@ -203,6 +208,24 @@ rate(pruner_error_count[5m])
 3. **Configuration Extension**: Added `enable_incremental_sweep` and `incremental_sweep_batch` parameters
 4. **Error Resilience**: Improved error handling that continues processing individual node failures
 
+## Safety & Diagnostics
+
+### Operational Guardrails
+
+- **Snapshot sanity**: Before SweepExpired, compare `snapshot.latest_order` with the sequencer tip. Abort the phase (and request a fresh snapshot) if the lag is above the tolerated delta to avoid pruning future roots.
+- **Bloom-miss protection**: Instrument SweepExpired with a `pruner_bloom_miss_protected_total` counter. Increment it whenever `!bloom.contains(node_hash)` but `refcount > 0`. In debug builds we can check every node; in production we only need to sample a small percentage to detect regressions.
+- **Optional refcount guard**: Keep a debug feature flag (`PRUNER_DEBUG_REFCOUNT`) that double-checks refcount before deletion and skips nodes whose refcount remains >0. When it fires, emit a warning log and metric so operators can react.
+- **Store gap metrics**: Record unexpected `node_store.get == None` events during BuildReach. Any spike indicates DFS coverage gaps (for example, `try_extract_child_root` could not parse a new leaf layout) or data corruption.
+
+### Diagnostics Checklist
+
+1. **Bloom completeness verifier** – Offline tool/test that replays DFS for a captured snapshot and asserts every visited node exists in the Bloom filter. Run whenever Bloom-miss counters are non-zero.
+2. **Leaf layout audit** – Instrument `try_extract_child_root` to log/metric unknown serialized layouts so new table/object encodings cannot silently skip DFS.
+3. **Snapshot lag metric** – Export `pruner_snapshot_lag = sequencer_last_order - snapshot.latest_order` and alert when it exceeds a threshold (for example, 1000 orders).
+4. **Refcount sampled telemetry** – Record how often the sampled guard prevents deletion. Any number >0 requires immediate investigation because BuildReach should have inserted that node.
+
+These guardrails provide better coverage than the legacy `window_days` knob and avoid paying the cost of refcount checks on every deletion.
+
 ## Performance Characteristics
 
 ### Memory Usage
@@ -255,6 +278,21 @@ Enable detailed logging to diagnose issues:
 // Set RUST_LOG=debug for detailed pruner logging
 export RUST_LOG=debug
 ```
+
+## Known Incidents & Fixes
+
+### Stale Indices Bug (Nov 2025)
+
+- **Symptom**: IncrementalSweep deleted freshly written nodes and transactions failed with `VM_EXTENSION_ERROR … Missing node …`.
+- **Root cause**: `moveos/smt/src/lib.rs::updates` mistakenly pushed newly created nodes (`change_set.node_batch`) into `stale_indices` while ignoring `change_set.stale_node_index_batch`. `write_stale_indices` immediately decremented their refcount to zero.
+- **Fix**: Process `node_batch` only for storage writes and populate `stale_indices` exclusively from `stale_node_index_batch` (skipping placeholder hashes). References: commit *stale_indices_fix*.
+- **Regression tests**:
+  - `moveos/smt/src/tests.rs::test_stale_indices_correctness`
+  - `moveos/smt/src/tests.rs::test_stale_indices_with_refcount_simulation`
+  - `moveos/moveos-store/src/tests/test_incremental_sweep.rs`
+  - `sdk/typescript/rooch-pruner-e2e` suite with `--pruner-protection-orders 0`
+
+Keep these tests in CI to ensure future SMT or pruner changes cannot reintroduce the issue.
 
 ## Testing
 

@@ -89,8 +89,8 @@ fn test_pruner_deletion_effectiveness_basic() {
     let sweeper = SweepExpired::new(
         moveos_store.clone(),
         bloom.clone(),
-        8_388_608, // 1MB
-        Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        8_388_608,                                          // 1MB
+        Arc::new(std::sync::atomic::AtomicBool::new(true)), // true = running
     );
 
     // Create expired roots (state_root, tx_order)
@@ -201,7 +201,7 @@ fn test_pruner_effectiveness_different_scenarios() {
             moveos_store.clone(),
             bloom.clone(),
             bloom_bits,
-            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            Arc::new(std::sync::atomic::AtomicBool::new(true)), // true = running
         );
 
         let expired_roots: Vec<(H256, u64)> = expired_nodes
@@ -277,7 +277,7 @@ fn test_pruner_config_impact_on_deletion() {
                 interval_s: 120,
                 bloom_bits: 1_048_576, // 1MB
                 enable_reach_seen_cf: false,
-                window_days: 30,
+                protection_orders: 30000,
                 enable_incremental_sweep: true,
                 incremental_sweep_batch: 500,
             },
@@ -292,7 +292,7 @@ fn test_pruner_config_impact_on_deletion() {
                 interval_s: 60,
                 bloom_bits: 8_388_608, // 1MB
                 enable_reach_seen_cf: false,
-                window_days: 30,
+                protection_orders: 30000,
                 enable_incremental_sweep: true,
                 incremental_sweep_batch: 1000,
             },
@@ -307,7 +307,7 @@ fn test_pruner_config_impact_on_deletion() {
                 interval_s: 30,
                 bloom_bits: 67_108_864, // 8MB
                 enable_reach_seen_cf: true,
-                window_days: 30,
+                protection_orders: 30000,
                 enable_incremental_sweep: true,
                 incremental_sweep_batch: 2000,
             },
@@ -372,7 +372,7 @@ fn test_pruner_config_impact_on_deletion() {
             moveos_store.clone(),
             bloom.clone(),
             config.bloom_bits,
-            Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            Arc::new(std::sync::atomic::AtomicBool::new(true)), // true = running
         );
 
         let expired_roots: Vec<(H256, u64)> = expired_nodes

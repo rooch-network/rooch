@@ -186,7 +186,7 @@ then delete node_hash (cf_smt_nodes) & 相关 cache 键
 
 **复杂度**
 * Mark 已并入正常写路径，Δ成本 ≈ `touch_nodes`。
-* Sweep 只遍历 *待删除日志*，上限 `touch_nodes × WINDOW_DAYS`，远小于全量 DFS。
+* Sweep 只遍历 *待删除日志*，上限 `touch_nodes × PROTECTION_ORDERS`，远小于全量 DFS。
 
 ---
 

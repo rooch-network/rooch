@@ -32,7 +32,7 @@ use tracing::{error, info, warn};
 
 pub struct StatePruner {
     handle: Option<JoinHandle<()>>,
-    running: Arc<AtomicBool>,
+    is_running: Arc<AtomicBool>, // true = running, false = stopped
     #[allow(dead_code)]
     atomic_snapshot_manager: Arc<AtomicSnapshotManager>,
 }
@@ -48,7 +48,7 @@ impl StatePruner {
         if !cfg.enable {
             return Ok(Self {
                 handle: None,
-                running: Arc::new(AtomicBool::new(false)),
+                is_running: Arc::new(AtomicBool::new(false)),
                 atomic_snapshot_manager: Arc::new(AtomicSnapshotManager::new(
                     moveos_store.clone(),
                     rooch_store.clone(),
@@ -60,8 +60,8 @@ impl StatePruner {
         info!("Starting pruner");
 
         info!("Starting pruner with config: {:?}", cfg);
-        let running = Arc::new(AtomicBool::new(true));
-        let thread_running = running.clone();
+        let is_running = Arc::new(AtomicBool::new(true));
+        let is_running_for_thread = is_running.clone();
 
         // Initialize atomic snapshot manager
         let snapshot_config = SnapshotManagerConfig {
@@ -105,7 +105,8 @@ impl StatePruner {
             // only for test
             // let mut phase = PrunePhase::BuildReach;
             loop {
-                if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {
+                if !is_running_for_thread.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok()
+                {
                     info!("Pruner thread stopping");
                     break;
                 }
@@ -326,20 +327,20 @@ impl StatePruner {
 
                                 // Continue with normal processing using fallback snapshot
                                 let latest_order = snapshot.latest_order;
-                                let order_cursor = if latest_order > 30000 {
-                                    latest_order - 30000
-                                } else if latest_order >= 1 {
-                                    latest_order - 1
-                                } else {
-                                    latest_order
-                                };
-                                info!("Starting scan from order {}", order_cursor);
+                                let order_cursor = Self::calculate_sweep_start_order(
+                                    latest_order,
+                                    cfg.protection_orders,
+                                );
+                                info!(
+                                    "Starting scan from order {} (protection_orders: {}, latest_order: {})",
+                                    order_cursor, cfg.protection_orders, latest_order
+                                );
 
                                 let _sweeper = SweepExpired::new(
                                     moveos_store.clone(),
                                     bloom.clone(),
                                     cfg.bloom_bits,
-                                    thread_running.clone(),
+                                    is_running_for_thread.clone(),
                                 );
 
                                 // Process using fallback logic (original implementation)
@@ -408,20 +409,18 @@ impl StatePruner {
 
                         // Stream process expired roots using atomic snapshot
                         let latest_order = atomic_snapshot.snapshot.latest_order;
-                        let mut order_cursor = if latest_order > 30000 {
-                            latest_order - 30000
-                        } else if latest_order >= 1 {
-                            latest_order - 1
-                        } else {
-                            latest_order
-                        };
-                        info!("Starting scan from order {}", order_cursor);
+                        let mut order_cursor =
+                            Self::calculate_sweep_start_order(latest_order, cfg.protection_orders);
+                        info!(
+                            "Starting scan from order {} (protection_orders: {}, latest_order: {})",
+                            order_cursor, cfg.protection_orders, latest_order
+                        );
 
                         let sweeper = SweepExpired::new(
                             moveos_store.clone(),
                             bloom.clone(),
                             cfg.bloom_bits,
-                            thread_running.clone(),
+                            is_running_for_thread.clone(),
                         );
                         let sweep_start_time = std::time::Instant::now();
                         let mut processed_count = 0;
@@ -431,7 +430,7 @@ impl StatePruner {
                         // while processed_count < cfg.scan_batch && order_cursor > 0 {
                         while order_cursor > 0 {
                             // Check exit signal frequently
-                            if !thread_running.load(Ordering::Relaxed)
+                            if !is_running_for_thread.load(Ordering::Relaxed)
                                 || shutdown_rx.try_recv().is_ok()
                             {
                                 info!("Pruner thread stopping during sweep");
@@ -448,7 +447,7 @@ impl StatePruner {
 
                                 // Process in smaller batches to avoid memory pressure
                                 if batch_roots.len() >= 1000 {
-                                    if !thread_running.load(Ordering::Relaxed)
+                                    if !is_running_for_thread.load(Ordering::Relaxed)
                                         || shutdown_rx.try_recv().is_ok()
                                     {
                                         info!("Pruner thread stopping before batch sweep");
@@ -753,7 +752,8 @@ impl StatePruner {
                         }
 
                         // Check exit signal frequently
-                        if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok()
+                        if !is_running_for_thread.load(Ordering::Relaxed)
+                            || shutdown_rx.try_recv().is_ok()
                         {
                             info!("Pruner thread stopping during incremental sweep");
                             return;
@@ -765,7 +765,9 @@ impl StatePruner {
                 // Sleep in small intervals to respond to exit signal quickly
                 let mut slept = 0;
                 while slept < cfg.interval_s {
-                    if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {
+                    if !is_running_for_thread.load(Ordering::Relaxed)
+                        || shutdown_rx.try_recv().is_ok()
+                    {
                         info!("Pruner thread stopping during sleep");
                         return;
                     }
@@ -777,7 +779,7 @@ impl StatePruner {
 
         Ok(Self {
             handle: Some(handle),
-            running,
+            is_running,
             atomic_snapshot_manager,
         })
     }
@@ -785,9 +787,36 @@ impl StatePruner {
     pub fn stop(self) {
         if let Some(h) = self.handle {
             info!("Stopping pruner thread");
-            self.running.store(false, Ordering::Relaxed);
+            self.is_running.store(false, Ordering::Relaxed);
             let _ = h.join();
             info!("Pruner thread stopped");
+        }
+    }
+
+    /// Calculate the starting tx_order for SweepExpired phase.
+    ///
+    /// # Arguments
+    /// * `latest_order` - The latest tx_order in the chain
+    /// * `protection_orders` - Number of recent tx_orders to protect from pruning
+    ///
+    /// # Returns
+    /// The tx_order from which to start sweeping (inclusive).
+    ///
+    /// # Behavior
+    /// - If `protection_orders == 0`: Only protect the latest root (aggressive mode for testing)
+    /// - Otherwise: Protect the configured number of recent orders
+    fn calculate_sweep_start_order(latest_order: u64, protection_orders: u64) -> u64 {
+        if protection_orders == 0 {
+            // Aggressive mode: only protect the latest root
+            // This is primarily for testing with --pruner-protection-orders 0
+            if latest_order >= 1 {
+                latest_order - 1
+            } else {
+                latest_order
+            }
+        } else {
+            // Normal mode: protect configured number of orders
+            latest_order.saturating_sub(protection_orders)
         }
     }
 }

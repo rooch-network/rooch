@@ -41,9 +41,10 @@ pub struct PruneConfig {
     #[clap(long = "pruner-enable-reach-seen-cf", default_value_t = false)]
     pub enable_reach_seen_cf: bool,
 
-    /// Window size in days for reachable roots (default 30).
-    #[clap(long = "pruner-window-days", default_value_t = 30)]
-    pub window_days: u64,
+    /// Number of recent tx_orders to protect from pruning (default 30000).
+    /// Set to 0 to allow aggressive pruning (only protects the latest root - for testing only).
+    #[clap(long = "pruner-protection-orders", default_value_t = 30000)]
+    pub protection_orders: u64,
 
     /// Enable incremental sweep phase for continuous cleanup (default true).
     #[clap(long = "pruner-enable-incremental-sweep", default_value_t = true)]
@@ -64,7 +65,7 @@ impl Default for PruneConfig {
             interval_s: 60,
             bloom_bits: 8589934592, // 2^33
             enable_reach_seen_cf: false,
-            window_days: 30,
+            protection_orders: 30000,
             enable_incremental_sweep: true,
             incremental_sweep_batch: 1000,
         }

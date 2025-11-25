@@ -97,6 +97,24 @@ Extended monitoring tests:
 - **Phase Monitoring**: Track pruner phase transitions
 - **Disk Monitoring**: Real disk usage tracking
 
+## Test Coverage Strategy
+
+End-to-end tests sit on top of a layered test plan. Each layer has a clear goal and should stay lightweight so failures point to the right component:
+
+1. **SMT unit tests** (`moveos/smt/src/tests.rs`)  
+   - Directly exercise `SMTree::puts/updates` and verify `stale_indices` contents.  
+   - Tests such as `test_stale_indices_correctness` and `test_stale_indices_with_refcount_simulation` ensure new nodes never show up in `stale_indices` and refcounts remain positive.
+
+2. **Store-level integration tests** (`moveos/moveos-store/src/tests`)  
+   - Use SMT APIs plus `prune_store` helpers to mimic `handle_tx_output`.  
+   - Verify refcount increments/decrements, `write_stale_indices`, and `IncrementalSweep` end-to-end without spinning up the full pruner loop.
+
+3. **Pruner E2E suite** (`sdk/typescript/rooch-pruner-e2e`)  
+   - Validates the full lifecycle (transactions + pruner phases + metrics).  
+   - Runs under aggressive settings (`--pruner-protection-orders 0`) to surface regressions quickly and reports both metrics and disk observations.
+
+Keeping all three layers green gives confidence that SMT logic, MoveOS store plumbing, and the long-running pruner daemon stay in sync.
+
 ## Disk Space Monitoring
 
 ### The Measurement Challenge

@@ -34,13 +34,59 @@ export class TestBox {
   _defaultCmdAddress = ''
 
   constructor() {
-    tmp.setGracefulCleanup()
-    this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
+    const baseDir = process.env.TESTBOX_BASE_DIR
+    const keepTmp =
+      process.env.TESTBOX_KEEP_TMP === '1' || process.env.TESTBOX_KEEP_TMP?.toLowerCase() === 'true'
+
+    let tmpDir: DirResult
+    if (baseDir) {
+      fs.mkdirSync(baseDir, { recursive: true })
+      const name = fs.mkdtempSync(path.join(baseDir, 'testbox-'))
+      tmpDir = {
+        name,
+        removeCallback: () => {
+          if (!keepTmp) {
+            fs.rmSync(name, { recursive: true, force: true })
+          }
+        },
+      } as DirResult
+    } else {
+      tmp.setGracefulCleanup()
+      tmpDir = tmp.dirSync({ unsafeCleanup: true })
+    }
+
+    this.tmpDir = tmpDir
     this.roochDir = path.join(this.tmpDir.name, '.rooch_test')
-    log('New TestBox rooch dir:', this.roochDir)
+    console.error('🔧 New TestBox rooch dir:', this.roochDir)
     fs.mkdirSync(this.roochDir, { recursive: true })
-    this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
-    this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
+
+    this.initRoochConfig()
+
+    console.error('🔧 TestBox constructor completed')
+  }
+
+  private initRoochConfig() {
+    console.error('🔧 Running rooch init with config-dir:', this.roochDir)
+    this.roochCommand(['init', '--config-dir', this.roochDir, '--skip-password'])
+
+    console.error('🔧 Running rooch env switch with config-dir:', this.roochDir)
+    this.roochCommand(['env', 'switch', '--config-dir', this.roochDir, '--alias', 'local'])
+  }
+
+  private ensureLocalEnv(rpcUrl: string) {
+    console.error('🔧 Updating rooch CLI env to server:', rpcUrl)
+    this.roochCommand([
+      'env',
+      'add',
+      '--config-dir',
+      this.roochDir,
+      '--alias',
+      'local',
+      '--rpc',
+      rpcUrl,
+    ])
+    this.roochCommand(['env', 'switch', '--config-dir', this.roochDir, '--alias', 'local'])
+    log(`Rooch CLI env "local" switched to ${rpcUrl}`)
   }
 
   async loadBitcoinEnv(customContainer?: BitcoinContainer, autoMining: boolean = false) {
@@ -105,21 +151,37 @@ export class TestBox {
 
     // The container test in the linux environment is incomplete, so use it first
     if (target === 'local') {
+      console.error('🔄 Entered local target branch, port param:', port)
       // Use dynamic port allocation to avoid conflicts
-      // For fixed ports (6767/6768), prefer dynamic allocation since these are commonly used
-      if (port === 0 || port === 6767 || port === 6768) {
+      if (port === 0 || port === undefined) {
+        console.error('🔄 Getting unused port...')
         port = await getUnusedPort()
-        log(`Using dynamically allocated port ${port} for Rooch server`)
+        console.error(`🔄 Using dynamically allocated port ${port} for Rooch server`)
       } else {
         // For other specific ports, trust the caller's choice
         // If it fails, roochAsyncCommand will timeout with clear error
-        log(`Using caller-specified port ${port} for Rooch server`)
+        console.error(`🔄 Using caller-specified port ${port} for Rooch server`)
       }
 
       // Generate a random port for metrics
+      console.error('🔄 Getting metrics port...')
       const metricsPort = await getUnusedPort()
+      console.error(`🔄 Metrics port: ${metricsPort}`)
 
-      const cmds = ['server', 'start', '-n', 'local', '-d', 'TMP', '--port', port.toString()]
+      const dataDir = path.join(this.roochDir, 'data')
+      fs.mkdirSync(dataDir, { recursive: true })
+      const cmds = [
+        'server',
+        'start',
+        '--config-dir',
+        this.roochDir,
+        '-n',
+        'local',
+        '-d',
+        dataDir,
+        '--port',
+        port.toString(),
+      ]
       if (serverArgs.length > 0) {
         cmds.push(...serverArgs)
       }
@@ -139,25 +201,47 @@ export class TestBox {
         )
       }
 
-      cmds.push('--traffic-per-second', '1')
-      cmds.push('--traffic-burst-size', '5000')
+      // Only add default rate limit config if not already specified in serverArgs
+      const hasTrafficPerSecond = serverArgs.includes('--traffic-per-second')
+      const hasTrafficBurstSize = serverArgs.includes('--traffic-burst-size')
 
+      if (!hasTrafficPerSecond) {
+        cmds.push('--traffic-per-second', '10')
+      }
+      if (!hasTrafficBurstSize) {
+        cmds.push('--traffic-burst-size', '5000')
+      }
+
+      console.error('🚀 About to call roochAsyncCommand with cmds:', JSON.stringify(cmds, null, 2))
+      console.error(
+        '🚀 Waiting for output:',
+        `JSON-RPC HTTP Server start listening 0.0.0.0:${port}`,
+      )
+      console.error('🚀 Using ROOCH_CONFIG_DIR:', this.roochDir)
       const result: string = await this.roochAsyncCommand(
         cmds,
         `JSON-RPC HTTP Server start listening 0.0.0.0:${port}`,
-        [`METRICS_HOST_PORT=${metricsPort}`],
+        [`METRICS_HOST_PORT=${metricsPort}`, `ROOCH_CONFIG_DIR=${this.roochDir}`],
       )
+      console.error('✅ roochAsyncCommand returned:', result)
 
       this.roochContainer = parseInt(result.toString().trim(), 10)
       this.roochPort = port
       this.metricsPort = metricsPort
+
+      // Ensure the CLI env points to the dynamically started local server
+      const rpcUrl = `http://127.0.0.1:${port}`
+      console.error('🔧 Updating rooch CLI env to dynamic local server:', rpcUrl)
+      this.ensureLocalEnv(rpcUrl)
+
+      log(`Rooch CLI env "local" switched to ${rpcUrl}`)
 
       log(`Rooch server started with PID ${this.roochContainer} on port ${port}`)
 
       return
     }
 
-    this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
+    this.roochCommand(['init', '--config-dir', this.roochDir, '--skip-password'])
     const container = new RoochContainer()
 
     // Find local Rooch binary path as in the 'local' mode
@@ -202,7 +286,7 @@ export class TestBox {
       '--rpc',
       'http://' + rpcURL,
     ])
-    this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
+    this.roochCommand(['env', 'switch', '--config-dir', this.roochDir, '--alias', 'local'])
   }
 
   cleanEnv() {
@@ -290,7 +374,7 @@ export class TestBox {
     }
 
     // Convert args to array format
-    let roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
+    const roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
 
     return {
       cmd: roochBin,
@@ -303,6 +387,7 @@ export class TestBox {
   roochCommand(args: string[] | string, envs: string[] = []): string {
     try {
       const { cmd, args: cmdArgs, env } = this.buildRoochCommand(args, envs)
+      console.info('🔍 Executing command:', cmd, cmdArgs.join(' '))
       return execFileSync(cmd, cmdArgs, {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'], // Capture stdout and stderr
@@ -326,7 +411,17 @@ export class TestBox {
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       const { cmd, args: cmdArgs, env } = this.buildRoochCommand(args, envs)
+      console.log('🔍 Executing command:', cmd, cmdArgs.join(' '))
+      console.log('🔍 Full command string:', `${cmd} ${cmdArgs.join(' ')}`)
+      const logDir = process.env.TESTBOX_LOG_DIR || this.roochDir
+      fs.mkdirSync(logDir, { recursive: true })
+      const stdoutPath = path.join(logDir, 'rooch-server.stdout.log')
+      const stderrPath = path.join(logDir, 'rooch-server.stderr.log')
+      console.log('📝 Rooch server logs at:', stdoutPath, stderrPath)
+
       const child = spawn(cmd, cmdArgs, { env })
+      const stdoutStream = fs.createWriteStream(stdoutPath, { flags: 'a' })
+      const stderrStream = fs.createWriteStream(stderrPath, { flags: 'a' })
 
       let output = ''
       let pidOutput = ''
@@ -341,7 +436,7 @@ export class TestBox {
           } catch (e) {
             // Process already dead, ignore
           }
-        }, 2000)
+        }, 10000)
         reject(
           new Error(`Timeout (${timeoutMs}ms) waiting for: ${waitFor}\nOutput so far: ${output}`),
         )
@@ -359,6 +454,7 @@ export class TestBox {
 
       child.stdout.on('data', (data) => {
         output += data.toString()
+        stdoutStream.write(data)
         log(`[rooch stdout]: ${data.toString().trim()}`)
 
         if (output.includes(waitFor)) {
@@ -370,6 +466,7 @@ export class TestBox {
 
       child.stderr.on('data', (data) => {
         const errStr = data.toString()
+        stderrStream.write(data)
         log(`[rooch stderr]: ${errStr.trim()}`)
         process.stderr.write(data)
       })
@@ -382,6 +479,8 @@ export class TestBox {
 
       child.on('close', (code) => {
         clearTimeout(timeout)
+        stdoutStream.end()
+        stderrStream.end()
         if (!output.includes(waitFor)) {
           reject(
             new Error(
@@ -413,15 +512,26 @@ export class TestBox {
       options.namedAddresses,
     )
 
-    const result = this.roochCommand(
-      `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
-    )
+    const result = this.roochCommand([
+      'move',
+      'publish',
+      '-p',
+      packagePath,
+      '--config-dir',
+      this.roochDir,
+      '--named-addresses',
+      options.namedAddresses,
+      '--skip-client-compat-check',
+      '--json',
+    ])
+
+    console.log('publish result:', result.substring(0, 400), '...')
 
     // The output contains both compilation logs and JSON result
     // Find the JSON object in the output (starts with '{' and ends with '}')
     const startIndex = result.indexOf('{')
     if (startIndex === -1) {
-      log('Failed to find JSON in output:', result)
+      console.log('Failed to find JSON in output:', result)
       return false
     }
 
@@ -430,10 +540,14 @@ export class TestBox {
 
     try {
       const { execution_info } = JSON.parse(jsonPart)
-      return execution_info?.status?.type === 'executed'
+      console.log('execution_info:', JSON.stringify(execution_info, null, 2))
+      const isExecuted = execution_info?.status?.type === 'executed'
+      console.log('is executed:', isExecuted)
+      return isExecuted
     } catch (e) {
-      log('Failed to parse JSON:', jsonPart.substring(0, 200), '...')
-      log('Full result length:', result.length)
+      console.log('Failed to parse JSON:', jsonPart.substring(0, 200), '...')
+      console.log('Full result length:', result.length)
+      console.log('Error:', e)
       return false
     }
   }
