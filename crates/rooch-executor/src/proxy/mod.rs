@@ -97,10 +97,11 @@ impl ExecutorProxy {
     pub async fn execute_transaction(
         &self,
         tx: VerifiedMoveOSTransaction,
+        tx_order: u64,
     ) -> Result<(TransactionOutput, TransactionExecutionInfo)> {
         let result = self
             .actor
-            .send(crate::actor::messages::ExecuteTransactionMessage { tx })
+            .send(crate::actor::messages::ExecuteTransactionMessage { tx, tx_order })
             .await??;
         Ok((result.output, result.transaction_info))
     }

@@ -608,9 +608,11 @@ impl RoochGenesisV2 {
         genesis_tx_accumulator.clear_after_save();
 
         let tx_hash = self.genesis_tx().tx_hash();
-        let (output, genesis_execution_info) = rooch_db
-            .moveos_store
-            .handle_tx_output(tx_hash, genesis_raw_output.clone())?;
+        // Genesis transaction has tx_order 0
+        let (output, genesis_execution_info) =
+            rooch_db
+                .moveos_store
+                .handle_tx_output(0, tx_hash, genesis_raw_output.clone())?;
 
         // Save genesis tx state change set
         let state_change_set_ext = StateChangeSetExt::new(

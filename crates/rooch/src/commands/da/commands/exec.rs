@@ -881,7 +881,9 @@ impl ExecInner {
     ) -> anyhow::Result<()> {
         let executor = self.executor.clone();
 
-        let (_output, execution_info) = executor.execute_transaction(moveos_tx.clone()).await?;
+        let (_output, execution_info) = executor
+            .execute_transaction(moveos_tx.clone(), tx_order)
+            .await?;
 
         let exp_state_root = if self.bypass_verify {
             None

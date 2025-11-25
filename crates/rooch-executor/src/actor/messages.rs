@@ -52,6 +52,7 @@ impl Message for ValidateL1TxMessage {
 #[derive(Debug)]
 pub struct ExecuteTransactionMessage {
     pub tx: VerifiedMoveOSTransaction,
+    pub tx_order: u64,
 }
 
 #[derive(Debug)]

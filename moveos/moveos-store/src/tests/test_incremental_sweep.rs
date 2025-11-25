@@ -49,7 +49,7 @@ async fn test_incremental_sweep_via_smt_api() {
     if !changeset1.stale_indices.is_empty() {
         let _ = store
             .prune_store
-            .write_stale_indices(&changeset1.stale_indices);
+            .write_stale_indices(1, &changeset1.stale_indices);
     }
 
     // Verify: All new nodes should have refcount > 0
@@ -105,7 +105,7 @@ async fn test_incremental_sweep_via_smt_api() {
     if !changeset2.stale_indices.is_empty() {
         let _ = store
             .prune_store
-            .write_stale_indices(&changeset2.stale_indices);
+            .write_stale_indices(2, &changeset2.stale_indices);
     }
 
     // Step 3: Verify refcount correctness
@@ -135,10 +135,7 @@ async fn test_incremental_sweep_via_smt_api() {
     );
 
     // Step 4: Simulate IncrementalSweep - delete nodes with refcount == 0
-    let stale_list = store
-        .prune_store
-        .list_before(H256::from_low_u64_be(u64::MAX), 1000)
-        .unwrap();
+    let stale_list = store.prune_store.list_before(u64::MAX, 1000).unwrap();
     let mut deleted_count = 0;
     for (stale_root, node_hash) in stale_list {
         let refcount = store.prune_store.get_node_refcount(node_hash).unwrap();
@@ -221,7 +218,7 @@ async fn test_refcount_prevents_premature_deletion() {
     let root = H256::random();
     store
         .prune_store
-        .write_stale_indices(&[(root, node_hash)])
+        .write_stale_indices(1, &[(root, node_hash)])
         .unwrap();
 
     // Refcount should be 2 now (was 3, decremented to 2)
@@ -232,8 +229,8 @@ async fn test_refcount_prevents_premature_deletion() {
     );
 
     // Try to sweep - should NOT delete this node (refcount > 0)
-    let cutoff = H256::from_low_u64_be(u64::MAX);
-    let stale_list = store.prune_store.list_before(cutoff, 1000).unwrap();
+    let cutoff_order = u64::MAX;
+    let stale_list = store.prune_store.list_before(cutoff_order, 1000).unwrap();
 
     for (_stale_root, stale_node_hash) in stale_list {
         if stale_node_hash == node_hash {

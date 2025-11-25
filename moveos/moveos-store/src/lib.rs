@@ -175,6 +175,7 @@ impl MoveOSStore {
 
     pub fn handle_tx_output(
         &self,
+        tx_order: u64,
         tx_hash: H256,
         output: RawTransactionOutput,
     ) -> Result<(TransactionOutput, TransactionExecutionInfo)> {
@@ -196,7 +197,9 @@ impl MoveOSStore {
             let _ = self.prune_store.inc_node_refcount(*hash);
         }
         if !stale_indices.is_empty() {
-            let _ = self.prune_store.write_stale_indices(&stale_indices);
+            let _ = self
+                .prune_store
+                .write_stale_indices(tx_order, &stale_indices);
         }
 
         // transaction_store updates
@@ -392,8 +395,8 @@ impl PruneStore for MoveOSStore {
         self.prune_store.save_prune_meta_bloom(phase)
     }
 
-    fn list_before(&self, cutoff_root: H256, limit: usize) -> Result<Vec<(H256, H256)>> {
-        self.prune_store.list_before(cutoff_root, limit)
+    fn list_before(&self, cutoff_order: u64, limit: usize) -> Result<Vec<(H256, H256)>> {
+        self.prune_store.list_before(cutoff_order, limit)
     }
 
     fn inc_node_refcount(&self, key: H256) -> Result<()> {
@@ -408,8 +411,8 @@ impl PruneStore for MoveOSStore {
         self.prune_store.remove_node_refcount(key)
     }
 
-    fn write_stale_indices(&self, stale: &[(H256, H256)]) -> Result<()> {
-        self.prune_store.write_stale_indices(stale)
+    fn write_stale_indices(&self, tx_order: u64, stale: &[(H256, H256)]) -> Result<()> {
+        self.prune_store.write_stale_indices(tx_order, stale)
     }
 
     fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>> {

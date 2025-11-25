@@ -3,11 +3,10 @@
 
 use anyhow::Result;
 use moveos_store::MoveOSStore;
-use primitive_types::H256;
 use std::sync::Arc;
 
 /// IncrementalSweep scans cf_smt_stale and deletes nodes whose refcount==0
-/// for stale_since_root < cutoff_root.
+/// for stale_since_order < cutoff_order.
 pub struct IncrementalSweep {
     moveos_store: Arc<MoveOSStore>,
 }
@@ -18,11 +17,11 @@ impl IncrementalSweep {
     }
 
     /// Sweep at most `batch` indices per call.
-    pub fn sweep(&self, cutoff_root: H256, batch: usize) -> Result<usize> {
+    pub fn sweep(&self, cutoff_order: u64, batch: usize) -> Result<usize> {
         let indices = self
             .moveos_store
             .prune_store
-            .list_before(cutoff_root, batch)?;
+            .list_before(cutoff_order, batch)?;
         if indices.is_empty() {
             return Ok(0);
         }

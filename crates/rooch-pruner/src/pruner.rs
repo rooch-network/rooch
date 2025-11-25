@@ -612,7 +612,7 @@ impl StatePruner {
 
                                     // Fallback to basic snapshot loading for compatibility
                                     warn!("Falling back to basic snapshot loading for Incremental");
-                                    let snapshot = moveos_store
+                                    let _snapshot = moveos_store
                                         .load_prune_meta_snapshot()
                                         .ok()
                                         .flatten()
@@ -623,7 +623,8 @@ impl StatePruner {
 
                                     // Process using fallback logic
                                     match incremental_sweeper
-                                        .sweep(snapshot.state_root, cfg.incremental_sweep_batch)
+                                        // Use max cutoff to sweep all stale indices (timestamp-based)
+                                        .sweep(u64::MAX, cfg.incremental_sweep_batch)
                                     {
                                         Ok(deleted_count) => {
                                             if deleted_count > 0 {
@@ -699,10 +700,7 @@ impl StatePruner {
                             // Use incremental sweep to clean up remaining stale nodes
                             let incremental_sweeper = IncrementalSweep::new(moveos_store.clone());
 
-                            match incremental_sweeper.sweep(
-                                atomic_snapshot.snapshot.state_root,
-                                cfg.incremental_sweep_batch,
-                            ) {
+                            match incremental_sweeper.sweep(u64::MAX, cfg.incremental_sweep_batch) {
                                 Ok(deleted_count) => {
                                     if deleted_count > 0 {
                                         info!("Incremental sweep deleted {} nodes using atomic snapshot {}", deleted_count, atomic_snapshot.snapshot_id);
