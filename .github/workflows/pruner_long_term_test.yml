@@ -155,6 +155,10 @@ jobs:
           PRUNER_INTERVAL_S: '30'
           SCAN_BATCH: '50000'
           DELETE_BATCH: '25000'
+          # protection_orders: protect N most recent tx_orders
+          # Higher values = safer (less aggressive pruning)
+          # Use 1 to protect recent states during concurrent workload
+          PROTECTION_ORDERS: '1'
         run: |
           echo "Starting pruner long-term test..."
           echo "=========================================="
@@ -170,11 +174,13 @@ jobs:
           echo "Intensity: ${{ inputs.workload_intensity }}"
           echo "Data directory: ${{ steps.disk-setup.outputs.test_data_dir }}"
           
-          # Estimate expected time (cycles * ~4min each + monitoring)
+          # Estimate expected time based on actual measurements (~50ms per op)
           TOTAL_OPS=$((COUNTER_ITERS + CREATE_ITERS + UPDATE_ITERS + DELETE_ITERS))
-          CYCLE_TIME_MIN=$((TOTAL_OPS / 60 + 1))  # ~500ms per op + 30s wait
-          EXPECTED_MIN=$((CYCLE_COUNT * CYCLE_TIME_MIN + MONITORING_MINUTES + 5))
-          echo "Expected test time: approximately $EXPECTED_MIN minutes"
+          OPS_TIME_SEC=$((TOTAL_OPS * 50 / 1000))  # ~50ms per op
+          CYCLE_TIME_SEC=$((OPS_TIME_SEC + 30))     # + 30s inter-cycle wait
+          CYCLES_TIME_MIN=$((CYCLE_COUNT * CYCLE_TIME_SEC / 60))
+          EXPECTED_MIN=$((CYCLES_TIME_MIN + MONITORING_MINUTES + 5))  # + 5min setup buffer
+          echo "Expected test time: approximately $EXPECTED_MIN minutes (${CYCLES_TIME_MIN}min cycles + ${MONITORING_MINUTES}min monitoring)"
           echo "=========================================="
 
           # Record start time

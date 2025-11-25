@@ -29,6 +29,7 @@ interface TestConfig {
   settleMs: number // Wait time after workload before collecting metrics
   // Pruner server parameters
   prunerIntervalS: number
+  protectionOrders: number // Number of recent tx_orders to protect (0 = aggressive, only protect latest root)
   bloomBits: number
   scanBatch: number
   deleteBatch: number
@@ -47,6 +48,10 @@ function loadTestConfig(): TestConfig {
     settleMs: parseInt(process.env.SETTLE_MS || '60000', 10),
     // Pruner server
     prunerIntervalS: parseInt(process.env.PRUNER_INTERVAL_S || '15', 10),
+    // protection_orders: 0 = aggressive (only protect latest root)
+    // Higher values protect more historical states, reducing risk of deleting active data
+    // Default to 0 for aggressive mode
+    protectionOrders: parseInt(process.env.PROTECTION_ORDERS || '0', 10),
     bloomBits: parseInt(process.env.BLOOM_BITS || '16777216', 10), // 16MB default
     scanBatch: parseInt(process.env.SCAN_BATCH || '10000', 10),
     deleteBatch: parseInt(process.env.DELETE_BATCH || '5000', 10),
@@ -57,8 +62,9 @@ function loadTestConfig(): TestConfig {
 function estimateCycleTimeMs(config: TestConfig): number {
   const totalOps =
     config.counterIters + config.createIters + config.updateIters + config.deleteIters
-  // Assume ~500ms per Move call on average (including delays)
-  const opsTimeMs = totalOps * 500
+  // Based on actual measurements: ~25-50ms per Move call via roochCommand (execFileSync)
+  // Using 50ms as conservative estimate
+  const opsTimeMs = totalOps * 50
   // Plus 30 seconds inter-cycle wait
   const waitTimeMs = 30000
   return opsTimeMs + waitTimeMs
@@ -74,8 +80,13 @@ function estimateTotalTimeMs(config: TestConfig): number {
   return allCyclesMs + monitoringMs + settleMs + setupBufferMs
 }
 
-function runMoveFunction(testbox: TestBox, functionId: string, args: string[]) {
-  testbox.roochCommand([
+async function runMoveFunction(
+  testbox: TestBox,
+  functionId: string,
+  args: string[],
+  maxRetries = 3,
+) {
+  const commandArgs = [
     'move',
     'run',
     '--function',
@@ -84,7 +95,50 @@ function runMoveFunction(testbox: TestBox, functionId: string, args: string[]) {
     '--config-dir',
     testbox.roochDir,
     '--json',
-  ])
+  ]
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return testbox.roochCommand(commandArgs)
+    } catch (error: any) {
+      const errorMessage = error?.message?.toLowerCase() || ''
+      const errorCode = error?.code?.toLowerCase() || ''
+      const stderr = error?.stderr?.toLowerCase() || ''
+
+      // Check if it's a timeout-related error
+      const isTimeoutError =
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('etimedout') ||
+        errorMessage.includes('econnreset') ||
+        errorMessage.includes('econnrefused') ||
+        errorCode === 'etimedout' ||
+        errorCode === 'econnreset' ||
+        errorCode === 'econnrefused' ||
+        stderr.includes('timeout') ||
+        stderr.includes('connection')
+
+      // If not a timeout error, throw immediately
+      if (!isTimeoutError) {
+        throw error
+      }
+
+      // If timeout error and we have retries left, retry
+      if (attempt < maxRetries) {
+        const retryDelay = (attempt + 1) * 1000 // Exponential backoff: 1s, 2s, 3s
+        console.warn(
+          `⚠️ Move function call timeout (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${retryDelay}ms...`,
+        )
+        await delay(retryDelay)
+        continue
+      }
+
+      // Last attempt failed, throw the error
+      throw error
+    }
+  }
+
+  // This should never be reached, but TypeScript needs it for type checking
+  throw new Error('Unexpected: retry loop completed without returning or throwing')
 }
 
 async function publishPackage(testbox: TestBox, packagePath: string, namedAddresses: string) {
@@ -114,7 +168,7 @@ describe('Rooch pruner end-to-end', () => {
       '--pruner-interval-s',
       config.prunerIntervalS.toString(),
       '--pruner-protection-orders',
-      '0', // Aggressive mode: only protect latest root
+      config.protectionOrders.toString(),
       '--pruner-bloom-bits',
       config.bloomBits.toString(),
       '--pruner-scan-batch',
@@ -125,6 +179,7 @@ describe('Rooch pruner end-to-end', () => {
 
     console.log('### pruner e2e: pruner config:', {
       intervalS: config.prunerIntervalS,
+      protectionOrders: config.protectionOrders,
       bloomBits: `${(config.bloomBits / 1024 / 1024).toFixed(0)}MB`,
       scanBatch: config.scanBatch,
       deleteBatch: config.deleteBatch,
@@ -216,7 +271,7 @@ describe('Rooch pruner end-to-end', () => {
         // Counter operations - create more versions
         console.log(`  📝 Counter operations: ${config.counterIters}`)
         for (let i = 0; i < config.counterIters; i++) {
-          runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+          await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
           txCounts.counter += 1
           if (i % 10 === 0) await delay(10)
         }
@@ -227,7 +282,7 @@ describe('Rooch pruner end-to-end', () => {
         for (let i = 0; i < config.createIters; i++) {
           const seed = seedBase + cycle * 10_000 + i
           seeds.push(seed)
-          runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_named`, [
+          await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_named`, [
             `u64:${seed}`,
             `u64:${cycle * 1000 + i}`,
           ])
@@ -238,7 +293,7 @@ describe('Rooch pruner end-to-end', () => {
         // Update operations
         console.log(`  ✏️  Update operations: ${config.updateIters}`)
         for (let i = 0; i < config.updateIters && i < seeds.length; i++) {
-          runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::update_named`, [
+          await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::update_named`, [
             `u64:${seeds[i]}`,
             `u64:${cycle * 2000 + i}`,
           ])
@@ -249,7 +304,7 @@ describe('Rooch pruner end-to-end', () => {
         // Delete operations
         console.log(`  🗑️  Delete operations: ${config.deleteIters}`)
         for (let i = 0; i < config.deleteIters && i < seeds.length; i++) {
-          runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::remove_named`, [
+          await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::remove_named`, [
             `u64:${seeds[seeds.length - 1 - i]}`,
           ])
           txCounts.objectDeleted += 1
