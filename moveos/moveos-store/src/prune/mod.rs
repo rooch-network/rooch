@@ -9,8 +9,8 @@ use crate::{
 };
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
+use moveos_types::h256::{StoreKeyH256, H256};
 use moveos_types::prune::{PrunePhase, PruneSnapshot};
-use primitive_types::H256;
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
 use tracing::warn;
 
@@ -22,7 +22,7 @@ const META_KEY_DELETED_STATE_ROOT_BLOOM: &str = "deleted_state_root_bloom";
 
 derive_store!(
     ReachSeenDBStore,
-    H256,
+    StoreKeyH256,
     Vec<u8>,
     REACH_SEEN_COLUMN_FAMILY_NAME
 );
@@ -40,13 +40,13 @@ derive_store!(
 );
 derive_store!(
     StaleIndexStore,
-    (H256, H256),
+    (StoreKeyH256, StoreKeyH256),
     Vec<u8>,
     SMT_STALE_INDEX_COLUMN_FAMILY_NAME
 );
 derive_store!(
     NodeRefcountStore,
-    H256,
+    StoreKeyH256,
     u32,
     NODE_REFCOUNT_COLUMN_FAMILY_NAME
 );
@@ -171,9 +171,12 @@ impl PruneDBStore {
         let mut iter = self.stale_index_store.iter()?;
         iter.seek_to_first();
         for item in iter {
-            let (key, _): ((H256, H256), Vec<u8>) = item?;
-            if key.0 < cutoff {
-                out.push(key);
+            let ((store_order_key, store_node_key), _): ((StoreKeyH256, StoreKeyH256), Vec<u8>) =
+                item?;
+            let order_h256: H256 = store_order_key.into();
+            if order_h256 < cutoff {
+                let node_h256: H256 = store_node_key.into();
+                out.push((order_h256, node_h256));
                 if out.len() >= limit {
                     break;
                 }
@@ -183,18 +186,20 @@ impl PruneDBStore {
     }
 
     pub fn inc_node_refcount(&self, key: H256) -> Result<()> {
-        let current = self.node_refcount_store.kv_get(key)?.unwrap_or(0);
-        self.node_refcount_store.kv_put(key, current + 1)
+        let store_key: StoreKeyH256 = key.into();
+        let current = self.node_refcount_store.kv_get(store_key)?.unwrap_or(0);
+        self.node_refcount_store.kv_put(store_key, current + 1)
     }
 
     pub fn dec_node_refcount(&self, key: H256) -> Result<()> {
-        match self.node_refcount_store.kv_get(key)? {
+        let store_key: StoreKeyH256 = key.into();
+        match self.node_refcount_store.kv_get(store_key)? {
             Some(current) => {
                 let new = current.saturating_sub(1);
                 if new == 0 {
-                    self.node_refcount_store.remove(key)
+                    self.node_refcount_store.remove(store_key)
                 } else {
-                    self.node_refcount_store.kv_put(key, new)
+                    self.node_refcount_store.kv_put(store_key, new)
                 }
             }
             None => {
@@ -210,11 +215,13 @@ impl PruneDBStore {
     /// Get current refcount, 0 if not present.
     /// Return Some(refcount) if present, None if missing.
     pub fn get_node_refcount(&self, key: H256) -> Result<Option<u32>> {
-        self.node_refcount_store.kv_get(key)
+        let store_key: StoreKeyH256 = key.into();
+        self.node_refcount_store.kv_get(store_key)
     }
 
     pub fn remove_node_refcount(&self, key: H256) -> Result<()> {
-        self.node_refcount_store.remove(key)
+        let store_key: StoreKeyH256 = key.into();
+        self.node_refcount_store.remove(store_key)
     }
 
     /// Write stale indices to cf_smt_stale (key = *tx_order-hash*, node_hash)
@@ -222,19 +229,27 @@ impl PruneDBStore {
     pub fn write_stale_indices(&self, tx_order: u64, stale: &[(H256, H256)]) -> Result<()> {
         // Map 64-bit tx_order into H256 (low 64 bits store the value, upper bits are zero)
         let order_h256 = H256::from_low_u64_be(tx_order);
+        let store_order_key: StoreKeyH256 = order_h256.into();
         for (_root, node_hash) in stale {
+            let store_node_key: StoreKeyH256 = (*node_hash).into();
             self.stale_index_store
-                .kv_put((order_h256, *node_hash), Vec::new())?;
+                .kv_put((store_order_key, store_node_key), Vec::new())?;
             self.dec_node_refcount(*node_hash)?;
         }
         Ok(())
     }
 
     pub fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>> {
-        self.stale_index_store.kv_get(key)
+        let store_order_key: StoreKeyH256 = key.0.into();
+        let store_node_key: StoreKeyH256 = key.1.into();
+        self.stale_index_store
+            .kv_get((store_order_key, store_node_key))
     }
 
     pub fn remove_stale_indice(&self, key: (H256, H256)) -> Result<()> {
-        self.stale_index_store.remove(key)
+        let store_order_key: StoreKeyH256 = key.0.into();
+        let store_node_key: StoreKeyH256 = key.1.into();
+        self.stale_index_store
+            .remove((store_order_key, store_node_key))
     }
 }
