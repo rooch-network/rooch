@@ -26,7 +26,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.4",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.5.1",
  "rand 0.8.5",
  "rand_core 0.9.3",
  "rocksdb",
@@ -7074,7 +7074,7 @@ dependencies = [
  "indexmap 1.9.3",
  "move-core-types",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "ref-cast",
  "serde 1.0.228",
  "serde_json",
@@ -7250,7 +7250,7 @@ dependencies = [
  "once_cell",
  "primitive-types 0.10.1",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.3.0",
  "rand 0.8.5",
  "ref-cast",
  "regex",
@@ -7944,7 +7944,7 @@ dependencies = [
  "once_cell",
  "primitive-types 0.12.2",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.5.1",
  "rand 0.8.5",
  "schemars",
  "serde 1.0.228",
@@ -9484,6 +9484,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "proptest-derive"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ee1c9ac207483d5e7db4940700de86a9aae46ef90c48b57f99fe7edb8345e49"
+dependencies = [
+ "proc-macro2 1.0.101",
+ "quote 1.0.42",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "prost"
 version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10877,7 +10888,7 @@ dependencies = [
  "enum_dispatch",
  "fastcrypto",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.5.1",
  "rooch-types",
  "serde 1.0.228",
  "serde_json",
@@ -11306,7 +11317,7 @@ dependencies = [
  "multibase",
  "once_cell",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.5.1",
  "rand 0.8.5",
  "schemars",
  "serde 1.0.228",
@@ -12590,7 +12601,7 @@ dependencies = [
  "primitive-types 0.12.2",
  "prometheus",
  "proptest",
- "proptest-derive",
+ "proptest-derive 0.5.1",
  "rand 0.8.5",
  "serde 1.0.228",
  "thiserror 2.0.17",
