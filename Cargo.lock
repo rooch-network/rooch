@@ -11071,6 +11071,8 @@ name = "rooch-pruner"
 version = "0.12.0"
 dependencies = [
  "anyhow 1.0.95",
+ "bcs",
+ "bcs-ext",
  "criterion",
  "moveos-common",
  "moveos-store",

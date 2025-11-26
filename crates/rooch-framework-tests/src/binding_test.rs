@@ -66,6 +66,7 @@ pub struct RustBindingTest {
     rooch_db: RoochDB,
     pub registry_service: RegistryService,
     events: Vec<Event>,
+    tx_order: u64,
 }
 
 impl RustBindingTest {
@@ -121,6 +122,7 @@ impl RustBindingTest {
             rooch_db,
             registry_service,
             events: vec![],
+            tx_order: 0,
         })
     }
 
@@ -282,11 +284,12 @@ impl RustBindingTest {
         &mut self,
         tx: VerifiedMoveOSTransaction,
     ) -> Result<ExecuteTransactionResult> {
-        let result = self.executor.execute(tx)?;
+        let result = self.executor.execute(tx, self.tx_order)?;
         self.root = result.transaction_info.root_metadata();
         self.events.extend(result.output.events.clone());
         self.reader_executor
             .refresh_state(self.root.clone(), false)?;
+        self.tx_order += 1;
         Ok(result)
     }
 

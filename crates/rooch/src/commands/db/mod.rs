@@ -18,6 +18,7 @@ use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
 use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
 use crate::commands::db::commands::prune_diagnosis::PruneDiagnosisCommand;
+use crate::commands::db::commands::reach_check::ReachCheckCommand;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use crate::commands::db::commands::rocksdb_gc::RocksDBGcCommand;
@@ -114,6 +115,7 @@ impl CommandAction<String> for DB {
                 })
             }
             DBCommand::CheckRefcount(check) => check.execute().await,
+            DBCommand::ReachCheck(reach) => reach.execute().await,
         }
     }
 }
@@ -144,4 +146,5 @@ pub enum DBCommand {
     DeleteBenchmark(DeleteBenchmarkCommand),
     GenerateDBCheckPoint(GenerateDBCheckPointCommand),
     CheckRefcount(CheckRefcountCommand),
+    ReachCheck(ReachCheckCommand),
 }

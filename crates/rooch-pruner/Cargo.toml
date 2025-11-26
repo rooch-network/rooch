@@ -31,11 +31,15 @@ rooch-store = { workspace = true }
 moveos-common = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
+bcs = { workspace = true }
+bcs-ext = { workspace = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = { workspace = true }
 rand = { workspace = true }
+bcs = { workspace = true }
+bcs-ext = { workspace = true }
 
 [[bench]]
 name = "bench_bloom_comparison"
