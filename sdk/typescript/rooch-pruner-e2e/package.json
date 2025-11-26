@@ -14,7 +14,7 @@
     "test": "vitest run src",
     "test:pruner": "vitest run src/case/pruner-e2e.spec.ts",
     "test:pruner:heavy": "COUNTER_ITERS=100 CREATE_ITERS=50 UPDATE_ITERS=25 DELETE_ITERS=20 INTER_CYCLE_WAIT_S=60 SETTLE_MS=90000 vitest run src/case/pruner-e2e.spec.ts",
-    "test:pruner:long-term": "COUNTER_ITERS=100 CREATE_ITERS=50 UPDATE_ITERS=25 DELETE_ITERS=20 CYCLE_COUNT=10 INTER_CYCLE_WAIT_S=120 BLOOM_BITS=67108864 vitest run src/case/pruner-e2e.spec.ts --reporter=verbose",
+    "test:pruner:long-term": "COUNTER_ITERS=100 CREATE_ITERS=50 UPDATE_ITERS=25 DELETE_ITERS=20 CYCLE_COUNT=10 INTER_CYCLE_WAIT_S=60 BLOOM_BITS=67108864 vitest run src/case/pruner-e2e.spec.ts --reporter=verbose",
     "test:pruner:long-term:heavy": "COUNTER_ITERS=200 CREATE_ITERS=100 UPDATE_ITERS=50 DELETE_ITERS=40 CYCLE_COUNT=15 INTER_CYCLE_WAIT_S=120 BLOOM_BITS=67108864 vitest run src/case/pruner-e2e.spec.ts --reporter=verbose",
     "eslint:check": "eslint --max-warnings=0 .",
     "eslint:fix": "pnpm eslint:check --fix",

@@ -144,7 +144,7 @@ async fn test_incremental_sweep() {
         .prune_store
         .write_stale_indices(1, &[(root, hash)])
         .unwrap();
-    assert_eq!(store.prune_store.get_node_refcount(hash).unwrap(), 0);
+    assert_eq!(store.prune_store.get_node_refcount(hash), Some(0));
 
     // incremental sweep should delete
     let sweeper = IncrementalSweep::new(Arc::new(store.clone()));

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::MoveOSStore;
-use moveos_types::h256::{H256, StoreKeyH256};
+use moveos_types::h256::{StoreKeyH256, H256};
 use raw_store::CodecKVStore;
 
 // Test that StoreKeyH256 correctly serializes to raw 32 bytes for database storage
@@ -17,7 +17,11 @@ async fn test_store_key_h256_fixes_serialization() {
     let serialized_store_key = moveos_common::utils::to_bytes(&store_key).unwrap();
 
     // StoreKeyH256 should serialize to exactly 32 bytes (raw H256 bytes)
-    assert_eq!(serialized_store_key.len(), 32, "StoreKeyH256 should be 32 bytes");
+    assert_eq!(
+        serialized_store_key.len(),
+        32,
+        "StoreKeyH256 should be 32 bytes"
+    );
     assert_eq!(
         serialized_store_key,
         test_hash.as_bytes(),
@@ -25,7 +29,6 @@ async fn test_store_key_h256_fixes_serialization() {
     );
 
     // Test that the three fixed stores now use StoreKeyH256 correctly
-    println!("Testing the three fixed stores:");
 
     // 1. NodeRefcountStore
     store.prune_store.inc_node_refcount(test_hash).unwrap();
@@ -72,8 +75,4 @@ async fn test_store_key_h256_fixes_serialization() {
         Some(vec![]),
         "StaleIndexStore should work with StoreKeyH256"
     );
-
-    println!("✅ All three stores work correctly with StoreKeyH256!");
-    println!("📊 Storage savings: Each key now uses 32 bytes instead of 67 bytes");
-    println!("🎉 SUCCESS: H256 serialization issue fixed for NodeRefcountStore, ReachSeenDBStore, and StaleIndexStore!");
 }

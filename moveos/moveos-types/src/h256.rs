@@ -154,9 +154,9 @@ mod tests {
             "Round-trip should preserve H256"
         );
 
-        // Test that it always serializes to raw 32 bytes, even for JSON
+        // Test JSON serialization: JSON will serialize as a human-readable array, not raw 32 bytes,
+        // but round-trip serialization/deserialization should preserve the underlying H256 data.
         let json_bytes = serde_json::to_vec(&store_hash).unwrap();
-        println!("JSON serialization bytes: {:?}", json_bytes);
         // JSON format will be different, but the underlying H256 data should be preserved
         let json_deserialized: StoreKeyH256 = serde_json::from_slice(&json_bytes).unwrap();
         assert_eq!(
