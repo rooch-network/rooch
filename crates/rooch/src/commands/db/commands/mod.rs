@@ -26,6 +26,7 @@ pub mod get_sequencer_info;
 pub mod get_tx_by_order;
 pub mod import_state;
 pub mod list_anomaly;
+pub mod list_stale;
 pub mod prune_diagnosis;
 pub mod reach_check;
 pub mod repair;

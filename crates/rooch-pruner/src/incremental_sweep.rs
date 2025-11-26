@@ -32,19 +32,12 @@ impl IncrementalSweep {
 
         for (stale_root, node_hash) in indices {
             match self.moveos_store.prune_store.get_node_refcount(node_hash)? {
-                Some(0) => {
+                Some(0) | None => {
                     to_delete_nodes.push(node_hash);
                     to_delete_indices.push((stale_root, node_hash));
                 }
                 Some(_) => {
                     // still referenced
-                }
-                None => {
-                    tracing::warn!(
-                        ?node_hash,
-                        ?stale_root,
-                        "IncrementalSweep: refcount missing for stale node, skipping delete"
-                    );
                 }
             }
         }
