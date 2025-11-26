@@ -4,6 +4,7 @@
 use anyhow::Result;
 use moveos_store::MoveOSStore;
 use std::sync::Arc;
+use tracing::info;
 
 /// IncrementalSweep scans cf_smt_stale and deletes nodes whose refcount==0
 /// for stale_since_order < cutoff_order.
@@ -49,6 +50,18 @@ impl IncrementalSweep {
         }
 
         if !to_delete_nodes.is_empty() {
+            // Log delete batch for traceability
+            let sample: Vec<String> = to_delete_nodes
+                .iter()
+                .take(20)
+                .map(|h| format!("{:#x}", h))
+                .collect();
+            info!(
+                cutoff_order,
+                delete_count = to_delete_nodes.len(),
+                sample = ?sample,
+                "IncrementalSweep deleting nodes with refcount==0"
+            );
             // delete nodes
             self.moveos_store
                 .node_store

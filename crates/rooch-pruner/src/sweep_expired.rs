@@ -308,6 +308,15 @@ impl SweepExpired {
                 );
                 // Flush remaining deletions before exit
                 if !batch.is_empty() {
+                    let sample: Vec<String> =
+                        batch.iter().take(20).map(|h| format!("{:#x}", h)).collect();
+                    info!(
+                        tx_order,
+                        ?root_hash,
+                        delete_count = batch.len(),
+                        sample = ?sample,
+                        "SweepExpired deleting batch before shutdown"
+                    );
                     self.moveos_store
                         .node_store
                         .delete_nodes_with_flush(batch.clone(), /*flush*/ true)?;
@@ -368,6 +377,15 @@ impl SweepExpired {
 
             // Step 5: Process batch if it reaches the threshold
             if batch.len() >= 10000 {
+                let sample: Vec<String> =
+                    batch.iter().take(20).map(|h| format!("{:#x}", h)).collect();
+                info!(
+                    tx_order,
+                    ?root_hash,
+                    delete_count = batch.len(),
+                    sample = ?sample,
+                    "SweepExpired deleting batch (streaming)"
+                );
                 self.moveos_store
                     .node_store
                     .delete_nodes_with_flush(batch.clone(), /*flush*/ false)?;
@@ -396,6 +414,14 @@ impl SweepExpired {
         // Process any remaining nodes in the final batch
         if !batch.is_empty() {
             // Final flush to persist all deletions
+            let sample: Vec<String> = batch.iter().take(20).map(|h| format!("{:#x}", h)).collect();
+            info!(
+                tx_order,
+                ?root_hash,
+                delete_count = batch.len(),
+                sample = ?sample,
+                "SweepExpired deleting final batch"
+            );
             self.moveos_store
                 .node_store
                 .delete_nodes_with_flush(batch.clone(), /*flush*/ true)?;

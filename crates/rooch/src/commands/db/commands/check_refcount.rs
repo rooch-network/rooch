@@ -49,7 +49,7 @@ impl CheckRefcountCommand {
         let (refc32, refc_weird) = collect_keys(&db, "node_refcount", 32)?;
 
         // smt_stale key = (tx_order 32B || node_hash 32B)
-        let (stale_nodes, stale_weird) = {
+        let (stale_nodes, stale_weird, stale_order_map) = {
             let cf = db
                 .cf_handle("smt_stale")
                 .ok_or_else(|| RoochError::UnexpectedError("missing smt_stale cf".to_owned()))?;
@@ -57,18 +57,33 @@ impl CheckRefcountCommand {
             iter.seek_to_first();
             let mut nodes = HashSet::new();
             let mut weird = 0usize;
+            // Map node_hash -> (count, min_order, max_order) for diagnostics
+            let mut order_map = std::collections::HashMap::new();
             while iter.valid() {
                 let k = iter
                     .key()
                     .ok_or_else(|| RoochError::UnexpectedError("iter key none".to_owned()))?;
                 if k.len() == 64 {
-                    nodes.insert(k[32..64].to_vec());
+                    let node = k[32..64].to_vec();
+                    nodes.insert(node.clone());
+                    // tx_order is stored in the low 64 bits (big-endian) of the first 32 bytes
+                    let mut buf = [0u8; 8];
+                    buf.copy_from_slice(&k[24..32]);
+                    let order = u64::from_be_bytes(buf);
+                    order_map
+                        .entry(node)
+                        .and_modify(|(cnt, min_o, max_o): &mut (usize, u64, u64)| {
+                            *cnt += 1;
+                            *min_o = (*min_o).min(order);
+                            *max_o = (*max_o).max(order);
+                        })
+                        .or_insert((1usize, order, order));
                 } else {
                     weird += 1;
                 }
                 iter.next();
             }
-            (nodes, weird)
+            (nodes, weird, order_map)
         };
 
         let missing_raw: Vec<_> = state32.difference(&refc32).cloned().collect();
@@ -78,6 +93,16 @@ impl CheckRefcountCommand {
             .filter(|k| !stale_nodes.contains(k))
             .collect();
         let extra: Vec<_> = refc32.difference(&state32).cloned().collect();
+        // Classify extra_rc by whether they appear in stale_index (with tx_order stats)
+        let mut extra_in_stale = Vec::new();
+        let mut extra_not_in_stale = Vec::new();
+        for k in extra.iter() {
+            if let Some((cnt, min_o, max_o)) = stale_order_map.get(k) {
+                extra_in_stale.push((k.clone(), *cnt, *min_o, *max_o));
+            } else {
+                extra_not_in_stale.push(k.clone());
+            }
+        }
 
         let mut out = String::new();
         use std::fmt::Write as _;
@@ -113,8 +138,33 @@ impl CheckRefcountCommand {
             writeln!(out, "  missing_rc {}", hex::encode(k)).ok();
         }
         writeln!(out, "refcount_without_state: {}", extra.len()).ok();
-        for k in extra.iter().take(self.sample) {
-            writeln!(out, "  extra_rc {}", hex::encode(k)).ok();
+        writeln!(
+            out,
+            "  in_stale: {} (showing up to {})",
+            extra_in_stale.len(),
+            self.sample
+        )
+        .ok();
+        for (k, cnt, min_o, max_o) in extra_in_stale.iter().take(self.sample) {
+            writeln!(
+                out,
+                "    extra_rc {} | stale_entries={} tx_order_range=[{},{}]",
+                hex::encode(k),
+                cnt,
+                min_o,
+                max_o
+            )
+            .ok();
+        }
+        writeln!(
+            out,
+            "  not_in_stale: {} (showing up to {})",
+            extra_not_in_stale.len(),
+            self.sample
+        )
+        .ok();
+        for k in extra_not_in_stale.iter().take(self.sample) {
+            writeln!(out, "    extra_rc {}", hex::encode(k)).ok();
         }
 
         Ok(out)
