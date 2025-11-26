@@ -13,6 +13,7 @@ use tracing::info;
 
 pub mod best_rollback;
 pub mod changeset;
+pub mod check_refcount;
 pub mod cp_cf;
 pub mod delete_benchmark;
 pub mod drop;
