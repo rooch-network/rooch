@@ -44,34 +44,48 @@ fn test_stale_node_index_batch_basic_stale_verification() {
     let value1 = TestValue::from(vec![1u8; 32]);
     let value2 = TestValue::from(vec![2u8; 32]);
 
-    let (root1, batch1) = tree.put_blob_set(None, vec![(key1, value1.clone().into())]).unwrap();
+    let (root1, batch1) = tree
+        .put_blob_set(None, vec![(key1, value1.clone().into())])
+        .unwrap();
     assert!(batch1.stale_node_index_batch.is_empty());
     assert_eq!(batch1.num_stale_leaves, 0);
     store.write_tree_update_batch(batch1).unwrap();
 
-    let (root2, batch2) = tree.put_blob_set(Some(root1), vec![(key2, value2.clone().into())]).unwrap();
+    let (root2, batch2) = tree
+        .put_blob_set(Some(root1), vec![(key2, value2.clone().into())])
+        .unwrap();
     assert!(batch2.stale_node_index_batch.is_empty());
     assert_eq!(batch2.num_stale_leaves, 0);
     store.write_tree_update_batch(batch2).unwrap();
 
     // Now update existing key1 with a new value
     let new_value1 = TestValue::from(vec![10u8; 32]);
-    let (new_root1, update_batch) = tree.put_blob_set(Some(root2), vec![(key1, new_value1.clone().into())]).unwrap();
+    let (new_root1, update_batch) = tree
+        .put_blob_set(Some(root2), vec![(key1, new_value1.clone().into())])
+        .unwrap();
 
     // Verify stale_node_index_batch content
     assert!(!update_batch.stale_node_index_batch.is_empty());
     assert_eq!(update_batch.num_stale_leaves, 1);
 
     // Key verification 1: stale nodes should not overlap with new nodes
-    let stale_nodes: HashSet<NodeKey> = update_batch.stale_node_index_batch.iter()
+    let stale_nodes: HashSet<NodeKey> = update_batch
+        .stale_node_index_batch
+        .iter()
         .map(|sni| sni.node_key)
         .collect();
     let new_nodes: HashSet<NodeKey> = update_batch.node_batch.keys().cloned().collect();
-    assert!(stale_nodes.is_disjoint(&new_nodes), "Stale nodes should not overlap with new nodes");
+    assert!(
+        stale_nodes.is_disjoint(&new_nodes),
+        "Stale nodes should not overlap with new nodes"
+    );
 
     // Key verification 2: stale_since_version should be the new root hash
     for sni in &update_batch.stale_node_index_batch {
-        assert_eq!(sni.stale_since_version, new_root1, "stale_since_version should be the new root hash");
+        assert_eq!(
+            sni.stale_since_version, new_root1,
+            "stale_since_version should be the new root hash"
+        );
     }
 
     // Commit the batch and verify we can still get the updated value, and stale nodes are unreachable
@@ -101,22 +115,28 @@ fn test_stale_node_index_batch_delete_stale_verification() {
     let value2 = TestValue::from(vec![2u8; 32]);
 
     // Build initial tree
-    let (root, batch) = tree.put_blob_set(None, vec![
-        (key1, value1.clone().into()),
-        (key2, value2.clone().into())
-    ]).unwrap();
+    let (root, batch) = tree
+        .put_blob_set(
+            None,
+            vec![(key1, value1.clone().into()), (key2, value2.clone().into())],
+        )
+        .unwrap();
     store.write_tree_update_batch(batch).unwrap();
 
     // Delete key2 by setting to empty value
     let empty_value = TestValue::from(vec![]);
-    let (new_root, delete_batch) = tree.put_blob_set(Some(root), vec![(key2, empty_value.into())]).unwrap();
+    let (new_root, delete_batch) = tree
+        .put_blob_set(Some(root), vec![(key2, empty_value.into())])
+        .unwrap();
 
     // Verify stale_node_index_batch for deletion
     assert!(!delete_batch.stale_node_index_batch.is_empty());
     assert_eq!(delete_batch.num_stale_leaves, 1);
 
     // Key verification 1: stale nodes should not overlap with new nodes
-    let stale_nodes: HashSet<NodeKey> = delete_batch.stale_node_index_batch.iter()
+    let stale_nodes: HashSet<NodeKey> = delete_batch
+        .stale_node_index_batch
+        .iter()
         .map(|sni| sni.node_key)
         .collect();
     let new_nodes: HashSet<NodeKey> = delete_batch.node_batch.keys().cloned().collect();
@@ -155,7 +175,9 @@ fn test_stale_node_index_batch_repeated_updates_stale_verification() {
     let initial_value = TestValue::from(vec![1u8; 32]);
 
     // Insert initial value
-    let (root1, batch1) = tree.put_blob_set(None, vec![(key, initial_value.clone().into())]).unwrap();
+    let (root1, batch1) = tree
+        .put_blob_set(None, vec![(key, initial_value.clone().into())])
+        .unwrap();
     assert!(batch1.stale_node_index_batch.is_empty());
     store.write_tree_update_batch(batch1).unwrap();
 
@@ -163,9 +185,12 @@ fn test_stale_node_index_batch_repeated_updates_stale_verification() {
     let mut roots = vec![root1];
 
     // Perform multiple updates to the same key
-    for i in 1..=3 { // Reduced to 3 for simplicity
+    for i in 1..=3 {
+        // Reduced to 3 for simplicity
         let new_value = TestValue::from(vec![(1 + i) as u8; 32]);
-        let (new_root, update_batch) = tree.put_blob_set(Some(roots[i-1]), vec![(key, new_value.clone().into())]).unwrap();
+        let (new_root, update_batch) = tree
+            .put_blob_set(Some(roots[i - 1]), vec![(key, new_value.clone().into())])
+            .unwrap();
 
         roots.push(new_root);
 
@@ -174,7 +199,9 @@ fn test_stale_node_index_batch_repeated_updates_stale_verification() {
         assert!(!update_batch.stale_node_index_batch.is_empty());
 
         // Verify stale nodes don't overlap with new nodes
-        let stale_nodes: HashSet<NodeKey> = update_batch.stale_node_index_batch.iter()
+        let stale_nodes: HashSet<NodeKey> = update_batch
+            .stale_node_index_batch
+            .iter()
             .map(|sni| sni.node_key)
             .collect();
         let new_nodes: HashSet<NodeKey> = update_batch.node_batch.keys().cloned().collect();
@@ -215,19 +242,25 @@ fn test_stale_node_index_batch_multiple_keys_updates_stale_verification() {
     let value2 = TestValue::from(vec![2u8; 32]);
 
     // Build initial tree
-    let (root, batch) = tree.put_blob_set(None, vec![
-        (key1, value1.clone().into()),
-        (key2, value2.clone().into())
-    ]).unwrap();
+    let (root, batch) = tree
+        .put_blob_set(
+            None,
+            vec![(key1, value1.clone().into()), (key2, value2.clone().into())],
+        )
+        .unwrap();
     store.write_tree_update_batch(batch).unwrap();
 
     // Update key1
     let new_value1 = TestValue::from(vec![11u8; 32]);
-    let (root2, update1_batch) = tree.put_blob_set(Some(root), vec![(key1, new_value1.clone().into())]).unwrap();
+    let (root2, update1_batch) = tree
+        .put_blob_set(Some(root), vec![(key1, new_value1.clone().into())])
+        .unwrap();
 
     // Verify first update
     assert_eq!(update1_batch.num_stale_leaves, 1);
-    let stale_nodes1: HashSet<NodeKey> = update1_batch.stale_node_index_batch.iter()
+    let stale_nodes1: HashSet<NodeKey> = update1_batch
+        .stale_node_index_batch
+        .iter()
         .map(|sni| sni.node_key)
         .collect();
     let new_nodes1: HashSet<NodeKey> = update1_batch.node_batch.keys().cloned().collect();
@@ -244,11 +277,15 @@ fn test_stale_node_index_batch_multiple_keys_updates_stale_verification() {
 
     // Update key2
     let new_value2 = TestValue::from(vec![22u8; 32]);
-    let (root3, update2_batch) = tree.put_blob_set(Some(root2), vec![(key2, new_value2.clone().into())]).unwrap();
+    let (root3, update2_batch) = tree
+        .put_blob_set(Some(root2), vec![(key2, new_value2.clone().into())])
+        .unwrap();
 
     // Verify second update
     assert_eq!(update2_batch.num_stale_leaves, 1);
-    let stale_nodes2: HashSet<NodeKey> = update2_batch.stale_node_index_batch.iter()
+    let stale_nodes2: HashSet<NodeKey> = update2_batch
+        .stale_node_index_batch
+        .iter()
         .map(|sni| sni.node_key)
         .collect();
     let new_nodes2: HashSet<NodeKey> = update2_batch.node_batch.keys().cloned().collect();
@@ -285,14 +322,20 @@ fn test_stale_node_index_batch_batch_updates_stale_verification() {
     }
 
     // Build initial tree with all keys
-    let (batch_root, batch_result) = tree.put_blob_set(
-        None,
-        key_value_pairs.iter().map(|(k, v)| (*k, v.clone().into())).collect()
-    ).unwrap();
+    let (batch_root, batch_result) = tree
+        .put_blob_set(
+            None,
+            key_value_pairs
+                .iter()
+                .map(|(k, v)| (*k, v.clone().into()))
+                .collect(),
+        )
+        .unwrap();
     store.write_tree_update_batch(batch_result).unwrap();
 
     // Now update multiple keys in a batch
-    let updated_pairs: Vec<_> = key_value_pairs.iter()
+    let updated_pairs: Vec<_> = key_value_pairs
+        .iter()
         .take(2)
         .map(|(key, _value)| {
             let new_value = TestValue::from(vec![255u8; 32]);
@@ -301,17 +344,25 @@ fn test_stale_node_index_batch_batch_updates_stale_verification() {
         .collect();
 
     // Batch updates
-    let (batch_updated_root, batch_updated_result) = tree.put_blob_set(
-        Some(batch_root),
-        updated_pairs.iter().map(|(k, v)| (*k, v.clone().into())).collect()
-    ).unwrap();
+    let (batch_updated_root, batch_updated_result) = tree
+        .put_blob_set(
+            Some(batch_root),
+            updated_pairs
+                .iter()
+                .map(|(k, v)| (*k, v.clone().into()))
+                .collect(),
+        )
+        .unwrap();
 
     // Verify batch update stale nodes
-    let batch_updated_stale: HashSet<NodeKey> = batch_updated_result.stale_node_index_batch.iter()
+    let batch_updated_stale: HashSet<NodeKey> = batch_updated_result
+        .stale_node_index_batch
+        .iter()
         .map(|sni| sni.node_key)
         .collect();
 
-    let batch_updated_new_nodes: HashSet<NodeKey> = batch_updated_result.node_batch.keys().cloned().collect();
+    let batch_updated_new_nodes: HashSet<NodeKey> =
+        batch_updated_result.node_batch.keys().cloned().collect();
     assert!(batch_updated_stale.is_disjoint(&batch_updated_new_nodes));
 
     // Verify stale_since_version consistency for batch update

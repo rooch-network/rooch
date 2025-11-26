@@ -53,6 +53,18 @@ pub struct PruneConfig {
     /// Batch size for incremental sweep operations (default 1000).
     #[clap(long = "pruner-incremental-sweep-batch", default_value_t = 1000)]
     pub incremental_sweep_batch: usize,
+
+    /// Enable pruner recycle bin for debugging (default: false).
+    #[clap(long = "pruner-recycle-bin-enable", default_value_t = false)]
+    pub recycle_bin_enable: bool,
+
+    /// Maximum number of entries in recycle bin (default: 10000).
+    #[clap(long = "pruner-recycle-bin-max-entries", default_value_t = 10000)]
+    pub recycle_bin_max_entries: usize,
+
+    /// Maximum total bytes in recycle bin (default: 100MB).
+    #[clap(long = "pruner-recycle-bin-max-bytes", default_value_t = 100_000_000)]
+    pub recycle_bin_max_bytes: usize,
 }
 
 impl Default for PruneConfig {
@@ -68,6 +80,9 @@ impl Default for PruneConfig {
             protection_orders: 30000,
             enable_incremental_sweep: true,
             incremental_sweep_batch: 1000,
+            recycle_bin_enable: false,
+            recycle_bin_max_entries: 10000,
+            recycle_bin_max_bytes: 100_000_000, // 100MB
         }
     }
 }

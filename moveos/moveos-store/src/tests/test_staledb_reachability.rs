@@ -80,8 +80,10 @@ fn test_staledb_stale_indices_unreachable_after_apply() {
     let mut child_change = StateChangeSet::new(*smt::SPARSE_MERKLE_PLACEHOLDER_HASH, 0);
     let child_field = FieldKey::derive_from_string("child");
     let child_obj_v1 = make_object(child_id.clone(), None, vec![1u8; 4]);
-    let mut child_change_obj =
-        ObjectChange::new(child_obj_v1.metadata.clone(), Op::New(child_obj_v1.value.clone()));
+    let mut child_change_obj = ObjectChange::new(
+        child_obj_v1.metadata.clone(),
+        Op::New(child_obj_v1.value.clone()),
+    );
     child_change_obj.update_state_root(child_obj_v1.metadata.state_root());
     child_change.changes.insert(child_field, child_change_obj);
     let (child_nodes, _child_stale) = state_store.change_set_to_nodes(&mut child_change).unwrap();
@@ -105,8 +107,10 @@ fn test_staledb_stale_indices_unreachable_after_apply() {
     // Update child object (new state_root), ensure stale nodes are unreachable
     let mut child_change2 = StateChangeSet::new(child_root_v1, 0);
     let child_obj_v2 = make_object(child_id.clone(), None, vec![2u8; 4]);
-    let mut child_change_obj2 =
-        ObjectChange::new(child_obj_v2.metadata.clone(), Op::Modify(child_obj_v2.value.clone()));
+    let mut child_change_obj2 = ObjectChange::new(
+        child_obj_v2.metadata.clone(),
+        Op::Modify(child_obj_v2.value.clone()),
+    );
     child_change_obj2.update_state_root(child_obj_v2.metadata.state_root());
     child_change2.changes.insert(child_field, child_change_obj2);
     let (child_nodes2, child_stale2) = state_store.change_set_to_nodes(&mut child_change2).unwrap();

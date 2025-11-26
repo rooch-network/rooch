@@ -5,6 +5,7 @@ use crate::atomic_snapshot::{AtomicSnapshotManager, SnapshotManagerConfig};
 use crate::incremental_sweep::IncrementalSweep;
 use crate::metrics::PrunerMetrics;
 use crate::reachability::ReachableBuilder;
+use crate::recycle_bin::RecycleBinStore;
 use crate::sweep_expired::SweepExpired;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
@@ -92,6 +93,31 @@ impl StatePruner {
                 .and_then(|opt| opt.map(|bf| Arc::new(Mutex::new(bf))))
                 .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits, 4))));
             info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
+
+            // Initialize recycle bin if enabled
+            let recycle_bin_store = if cfg.recycle_bin_enable {
+                info!(
+                    "Initializing recycle bin with max_entries={}, max_bytes={}",
+                    cfg.recycle_bin_max_entries, cfg.recycle_bin_max_bytes
+                );
+                match RecycleBinStore::new(
+                    moveos_store.get_node_recycle_store().clone(),
+                    cfg.recycle_bin_max_entries,
+                    cfg.recycle_bin_max_bytes,
+                ) {
+                    Ok(store) => Some(Arc::new(store)),
+                    Err(e) => {
+                        warn!(
+                            "Failed to initialize recycle bin: {}, continuing without it",
+                            e
+                        );
+                        None
+                    }
+                }
+            } else {
+                info!("Recycle bin disabled");
+                None
+            };
 
             // Record bloom filter size metric
             if let Some(ref metrics) = metrics {
@@ -347,6 +373,7 @@ impl StatePruner {
                                     bloom.clone(),
                                     cfg.bloom_bits,
                                     is_running_for_thread.clone(),
+                                    recycle_bin_store.clone(),
                                 );
 
                                 // Process using fallback logic (original implementation)
@@ -427,6 +454,7 @@ impl StatePruner {
                             bloom.clone(),
                             cfg.bloom_bits,
                             is_running_for_thread.clone(),
+                            recycle_bin_store.clone(),
                         );
                         let sweep_start_time = std::time::Instant::now();
                         let mut processed_count = 0;
@@ -624,8 +652,10 @@ impl StatePruner {
                                         .flatten()
                                         .unwrap_or_default();
 
-                                    let incremental_sweeper =
-                                        IncrementalSweep::new(moveos_store.clone());
+                                    let incremental_sweeper = IncrementalSweep::new(
+                                        moveos_store.clone(),
+                                        recycle_bin_store.clone(),
+                                    );
 
                                     // Process using fallback logic
                                     match incremental_sweeper
@@ -704,7 +734,10 @@ impl StatePruner {
                             );
 
                             // Use incremental sweep to clean up remaining stale nodes
-                            let incremental_sweeper = IncrementalSweep::new(moveos_store.clone());
+                            let incremental_sweeper = IncrementalSweep::new(
+                                moveos_store.clone(),
+                                recycle_bin_store.clone(),
+                            );
 
                             match incremental_sweeper.sweep(u64::MAX, cfg.incremental_sweep_batch) {
                                 Ok(deleted_count) => {

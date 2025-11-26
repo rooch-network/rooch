@@ -118,6 +118,9 @@ impl CommandAction<String> for DB {
             DBCommand::CheckRefcount(check) => check.execute().await,
             DBCommand::ReachCheck(reach) => reach.execute().await,
             DBCommand::ListStale(list_stale) => list_stale.execute().await,
+            DBCommand::RecycleDump(dump) => dump.execute().await,
+            DBCommand::RecycleRestore(restore) => restore.execute().await,
+            DBCommand::RecycleStat(stat) => stat.execute().await,
         }
     }
 }
@@ -150,4 +153,7 @@ pub enum DBCommand {
     CheckRefcount(CheckRefcountCommand),
     ReachCheck(ReachCheckCommand),
     ListStale(ListStaleCommand),
+    RecycleDump(crate::commands::db::commands::recycle_bin::RecycleDumpCommand),
+    RecycleRestore(crate::commands::db::commands::recycle_bin::RecycleRestoreCommand),
+    RecycleStat(crate::commands::db::commands::recycle_bin::RecycleStatCommand),
 }

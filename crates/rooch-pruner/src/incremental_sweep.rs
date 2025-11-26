@@ -1,20 +1,37 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::recycle_bin::{RecycleBinStore, RecyclePhase, RecycleRecord};
 use anyhow::Result;
 use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
+use smt::NodeReader;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, warn};
 
 /// IncrementalSweep scans cf_smt_stale and deletes nodes whose refcount==0
 /// for stale_since_order < cutoff_order.
 pub struct IncrementalSweep {
     moveos_store: Arc<MoveOSStore>,
+    recycle_bin_store: Option<Arc<RecycleBinStore>>,
 }
 
 impl IncrementalSweep {
     pub fn new(moveos_store: Arc<MoveOSStore>) -> Self {
-        Self { moveos_store }
+        Self {
+            moveos_store,
+            recycle_bin_store: None,
+        }
+    }
+
+    pub fn new_with_recycle_bin(
+        moveos_store: Arc<MoveOSStore>,
+        recycle_bin_store: Option<Arc<RecycleBinStore>>,
+    ) -> Self {
+        Self {
+            moveos_store,
+            recycle_bin_store,
+        }
     }
 
     /// Sweep at most `batch` indices per call.
@@ -55,6 +72,34 @@ impl IncrementalSweep {
                 sample = ?sample,
                 "IncrementalSweep deleting nodes with refcount==0"
             );
+
+            // Capture node data before deletion if recycle bin is enabled
+            if let Some(ref recycle_bin) = self.recycle_bin_store {
+                for &node_hash in &to_delete_nodes {
+                    if let Ok(Some(node_bytes)) = self.moveos_store.node_store.get(&node_hash) {
+                        let record = RecycleRecord {
+                            bytes: node_bytes,
+                            phase: RecyclePhase::Incremental,
+                            stale_root_or_cutoff: H256::from_low_u64_be(cutoff_order),
+                            tx_order: cutoff_order,
+                            deleted_at: std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs(),
+                            note: Some("refcount=0".to_string()),
+                        };
+
+                        if let Err(e) = recycle_bin.put_record(node_hash, record) {
+                            warn!(
+                                node_hash = ?node_hash,
+                                error = ?e,
+                                "Failed to store node in recycle bin"
+                            );
+                        }
+                    }
+                }
+            }
+
             // delete nodes
             self.moveos_store
                 .node_store

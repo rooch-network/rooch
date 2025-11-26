@@ -29,6 +29,7 @@ pub mod list_anomaly;
 pub mod list_stale;
 pub mod prune_diagnosis;
 pub mod reach_check;
+pub mod recycle_bin;
 pub mod repair;
 pub mod revert;
 pub mod rocksdb_gc;

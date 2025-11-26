@@ -31,6 +31,7 @@ rooch-store = { workspace = true }
 moveos-common = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
+raw-store = { workspace = true }
 bcs = { workspace = true }
 bcs-ext = { workspace = true }
 

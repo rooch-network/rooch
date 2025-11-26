@@ -207,6 +207,12 @@ describe('Rooch pruner end-to-end', () => {
       config.scanBatch.toString(),
       '--pruner-delete-batch',
       config.deleteBatch.toString(),
+      // Enable recycle bin for testing
+      '--pruner-recycle-bin-enable',
+      '--pruner-recycle-bin-max-entries',
+      '10000',
+      '--pruner-recycle-bin-max-bytes',
+      '100000000',
       // Configure rate limit for e2e tests to avoid 429 errors
       // traffic-per-second: interval in seconds to replenish one quota element
       // 0.01 means replenish 1 quota every 0.01s = 100 requests/second
@@ -222,6 +228,9 @@ describe('Rooch pruner end-to-end', () => {
       bloomBits: `${(config.bloomBits / 1024 / 1024).toFixed(0)}MB`,
       scanBatch: config.scanBatch,
       deleteBatch: config.deleteBatch,
+      recycleBinEnabled: true,
+      recycleBinMaxEntries: 10000,
+      recycleBinMaxBytes: `${(100000000 / 1024 / 1024).toFixed(0)}MB`,
     })
 
     // Use port 0 to get dynamic port allocation

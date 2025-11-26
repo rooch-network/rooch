@@ -80,12 +80,12 @@ pub(crate) mod hash;
 pub(crate) mod iterator;
 #[cfg(test)]
 pub(crate) mod jellyfish_merkle_test;
-#[cfg(test)]
-pub(crate) mod stale_node_index_batch_test;
 pub mod mock_tree_store;
 pub(crate) mod nibble;
 pub(crate) mod nibble_path;
 pub mod node_type;
+#[cfg(test)]
+pub(crate) mod stale_node_index_batch_test;
 
 // Re-export commonly used types
 pub use node_type::Node;
