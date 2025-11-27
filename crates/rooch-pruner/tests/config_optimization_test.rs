@@ -301,6 +301,9 @@ fn create_optimized_config(node_count: usize) -> PruneConfig {
         protection_orders: 30000,
         enable_incremental_sweep: true,
         incremental_sweep_batch: 1000,
+        recycle_bin_enable: false,
+        recycle_bin_max_entries: 10000,
+        recycle_bin_max_bytes: 100_000_000,
     }
 }
 
