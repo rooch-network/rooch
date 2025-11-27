@@ -652,10 +652,11 @@ impl StatePruner {
                                         .flatten()
                                         .unwrap_or_default();
 
-                                    let incremental_sweeper = IncrementalSweep::new_with_recycle_bin(
-                                        moveos_store.clone(),
-                                        recycle_bin_store.clone(),
-                                    );
+                                    let incremental_sweeper =
+                                        IncrementalSweep::new_with_recycle_bin(
+                                            moveos_store.clone(),
+                                            recycle_bin_store.clone(),
+                                        );
 
                                     // Process using fallback logic
                                     match incremental_sweeper

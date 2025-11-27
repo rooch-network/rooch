@@ -63,8 +63,10 @@ impl RecycleBinStore {
         self.store.kv_put(key, serialized)?;
 
         // Update tracking counters
-        self.current_entries.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        self.current_bytes.fetch_add(record_size, std::sync::atomic::Ordering::Relaxed);
+        self.current_entries
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.current_bytes
+            .fetch_add(record_size, std::sync::atomic::Ordering::Relaxed);
 
         debug!(
             key = ?key,
@@ -95,8 +97,12 @@ impl RecycleBinStore {
 
     pub fn get_stats(&self) -> RecycleBinStats {
         RecycleBinStats {
-            current_entries: self.current_entries.load(std::sync::atomic::Ordering::Relaxed),
-            current_bytes: self.current_bytes.load(std::sync::atomic::Ordering::Relaxed),
+            current_entries: self
+                .current_entries
+                .load(std::sync::atomic::Ordering::Relaxed),
+            current_bytes: self
+                .current_bytes
+                .load(std::sync::atomic::Ordering::Relaxed),
             max_entries: self.max_entries,
             max_bytes: self.max_bytes,
         }
@@ -104,8 +110,12 @@ impl RecycleBinStore {
 
     /// Check capacity and evict oldest records if needed (FIFO)
     fn check_capacity_and_evict_if_needed(&self, new_record_size: usize) -> Result<()> {
-        let current_entries = self.current_entries.load(std::sync::atomic::Ordering::Relaxed);
-        let current_bytes = self.current_bytes.load(std::sync::atomic::Ordering::Relaxed);
+        let current_entries = self
+            .current_entries
+            .load(std::sync::atomic::Ordering::Relaxed);
+        let current_bytes = self
+            .current_bytes
+            .load(std::sync::atomic::Ordering::Relaxed);
 
         // Check if adding this record would exceed capacity
         let would_exceed_entries = current_entries + 1 > self.max_entries;
