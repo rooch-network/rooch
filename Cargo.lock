@@ -16,7 +16,7 @@ dependencies = [
 name = "accumulator"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "bcs-ext",
  "itertools 0.14.0",
@@ -308,9 +308,9 @@ source = "git+https://github.com/dtolnay/anyhow?tag=1.0.93#713bda9247df3846c1444
 
 [[package]]
 name = "anyhow"
-version = "1.0.95"
+version = "1.0.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
+checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
 name = "arbitrary"
@@ -1098,7 +1098,7 @@ dependencies = [
 name = "bcs-ext"
 version = "1.13.6"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "serde 1.0.228",
 ]
@@ -1282,7 +1282,7 @@ dependencies = [
 name = "bitcoin-client"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "bitcoin 0.32.5",
  "bitcoincore-rpc",
@@ -1312,7 +1312,7 @@ checksum = "340e09e8399c7bd8912f495af6aa58bea0c9214773417ffaa8f6460f93aaee56"
 name = "bitcoin-move"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "axum",
  "bitcoin 0.32.5",
  "brotli 3.5.0",
@@ -1582,6 +1582,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "bon"
+version = "3.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebeb9aaf9329dff6ceb65c689ca3db33dbf15f324909c60e4e5eef5701ce31b1"
+dependencies = [
+ "bon-macros",
+ "rustversion",
+]
+
+[[package]]
+name = "bon-macros"
+version = "3.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77e9d642a7e3a318e37c2c9427b5a6a48aa1ad55dcd986f3034ab2239045a645"
+dependencies = [
+ "darling 0.21.3",
+ "ident_case",
+ "prettyplease",
+ "proc-macro2 1.0.101",
+ "quote 1.0.42",
+ "rustversion",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "brotli"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1831,7 +1856,7 @@ name = "celestia-proto"
 version = "0.1.0"
 source = "git+https://github.com/eigerco/celestia-node-rs.git?rev=129272e8d926b4c7badf27a26dea915323dd6489#129272e8d926b4c7badf27a26dea915323dd6489"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "prost",
  "prost-build",
  "prost-types",
@@ -2771,7 +2796,7 @@ version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6cd12917efc3a8b069a4975ef3cb2f2d835d42d04b3814d90838488f9dd9bf69"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "console",
  "cucumber-codegen",
@@ -2926,6 +2951,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling"
+version = "0.21.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9cdf337090841a411e2a7f3deb9187445851f91b309c0c0a29e05f74a00a48c0"
+dependencies = [
+ "darling_core 0.21.3",
+ "darling_macro 0.21.3",
+]
+
+[[package]]
 name = "darling_core"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2968,6 +3003,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling_core"
+version = "0.21.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1247195ecd7e3c85f83c8d2a366e4210d588e802133e1e355180a9870b517ea4"
+dependencies = [
+ "fnv",
+ "ident_case",
+ "proc-macro2 1.0.101",
+ "quote 1.0.42",
+ "strsim 0.11.1",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "darling_macro"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2996,6 +3045,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d336a2a514f6ccccaa3e09b02d41d35330c07ddf03a62165fcec10bb561c7806"
 dependencies = [
  "darling_core 0.20.10",
+ "quote 1.0.42",
+ "syn 2.0.87",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.21.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d38308df82d1080de0afee5d069fa14b0326a88c14f15c5ccda35b4a6c414c81"
+dependencies = [
+ "darling_core 0.21.3",
  "quote 1.0.42",
  "syn 2.0.87",
 ]
@@ -3058,7 +3118,7 @@ dependencies = [
 name = "data-verify"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "rooch-rpc-api",
  "serde 1.0.228",
  "serde_json",
@@ -4237,7 +4297,7 @@ dependencies = [
 name = "evm-exec-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "evm",
  "evm-runtime",
  "hex",
@@ -4605,7 +4665,7 @@ dependencies = [
 name = "framework-builder"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "codespan-reporting",
  "framework-types",
@@ -4629,7 +4689,7 @@ dependencies = [
 name = "framework-release"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "clap 4.5.17",
  "framework-builder",
@@ -5848,7 +5908,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0a0c890c85da4bab7bce4204c707396bbd3c6c8a681716a51c8814cfc2b682df"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "proc-macro-hack",
  "proc-macro2 1.0.101",
  "quote 1.0.42",
@@ -6116,7 +6176,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "feb61a6bd5d40ffb161d35da618bdc09163de3d697f281fc6c2926bb19bd3caa"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "jsonpath-plus",
  "once_cell",
  "regex",
@@ -6235,7 +6295,7 @@ version = "0.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f24ea59b037b6b9b0e2ebe2c30a3e782b56bd7c76dcc5d6d70ba55d442af56e3"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-lock 2.8.0",
  "async-trait",
  "beef",
@@ -6381,7 +6441,7 @@ version = "0.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3264e339143fe37ed081953842ee67bfafa99e3b91559bdded6e4abd8fc8535e"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "beef",
  "serde 1.0.228",
  "serde_json",
@@ -6903,7 +6963,7 @@ dependencies = [
 name = "metrics"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "axum",
  "axum-server",
@@ -7047,7 +7107,7 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 name = "move-abigen"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "codespan-reporting",
  "datatest-stable 0.1.3",
@@ -7068,7 +7128,7 @@ dependencies = [
 name = "move-binary-format"
 version = "0.0.3"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "arbitrary",
  "backtrace",
  "indexmap 1.9.3",
@@ -7089,7 +7149,7 @@ version = "0.0.1"
 name = "move-bytecode-source-map"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "move-binary-format",
  "move-command-line-common",
@@ -7103,7 +7163,7 @@ dependencies = [
 name = "move-bytecode-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "move-binary-format",
  "move-core-types",
  "petgraph 0.5.1",
@@ -7127,7 +7187,7 @@ dependencies = [
 name = "move-bytecode-viewer"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "crossterm 0.26.1",
  "move-binary-format",
@@ -7141,7 +7201,7 @@ dependencies = [
 name = "move-cli"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "clap 4.5.17",
  "codespan-reporting",
@@ -7182,7 +7242,7 @@ dependencies = [
 name = "move-command-line-common"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "difference",
  "dirs-next",
  "hex",
@@ -7198,7 +7258,7 @@ dependencies = [
 name = "move-compiler"
 version = "0.0.1"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "clap 4.5.17",
  "codespan-reporting",
@@ -7225,7 +7285,7 @@ dependencies = [
 name = "move-compiler-v2"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 3.2.25",
  "codespan-reporting",
  "datatest-stable 0.1.3",
@@ -7241,7 +7301,7 @@ dependencies = [
 name = "move-core-types"
 version = "0.0.4"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "arbitrary",
  "bcs",
  "ethnum",
@@ -7264,7 +7324,7 @@ dependencies = [
 name = "move-coverage"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "clap 4.5.17",
  "codespan",
@@ -7282,7 +7342,7 @@ dependencies = [
 name = "move-disassembler"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "colored",
  "move-binary-format",
@@ -7298,7 +7358,7 @@ dependencies = [
 name = "move-docgen"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "codespan",
  "codespan-reporting",
  "datatest-stable 0.1.3",
@@ -7319,7 +7379,7 @@ dependencies = [
 name = "move-errmapgen"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "codespan-reporting",
  "datatest-stable 0.1.3",
  "move-command-line-common",
@@ -7342,7 +7402,7 @@ dependencies = [
 name = "move-ir-compiler"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "clap 4.5.17",
  "move-binary-format",
@@ -7358,7 +7418,7 @@ dependencies = [
 name = "move-ir-to-bytecode"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "codespan-reporting",
  "log",
  "move-binary-format",
@@ -7375,7 +7435,7 @@ dependencies = [
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "hex",
  "move-command-line-common",
  "move-core-types",
@@ -7399,7 +7459,7 @@ dependencies = [
 name = "move-model"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "codespan",
  "codespan-reporting",
  "datatest-stable 0.1.3",
@@ -7425,7 +7485,7 @@ dependencies = [
 name = "move-package"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "colored",
  "datatest-stable 0.1.3",
@@ -7462,7 +7522,7 @@ dependencies = [
 name = "move-prover"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "atty",
  "clap 4.5.17",
  "codespan-reporting",
@@ -7489,7 +7549,7 @@ dependencies = [
 name = "move-prover-boogie-backend"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "codespan",
  "codespan-reporting",
@@ -7516,7 +7576,7 @@ dependencies = [
 name = "move-prover-test-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "move-command-line-common",
  "prettydiff",
  "regex",
@@ -7526,7 +7586,7 @@ dependencies = [
 name = "move-resource-viewer"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "hex",
  "move-binary-format",
  "move-bytecode-utils",
@@ -7538,7 +7598,7 @@ dependencies = [
 name = "move-stackless-bytecode"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "codespan-reporting",
  "datatest-stable 0.1.3",
  "ethnum",
@@ -7562,7 +7622,7 @@ dependencies = [
 name = "move-stdlib"
 version = "0.1.1"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "dir-diff",
  "file_diff",
  "hex",
@@ -7599,7 +7659,7 @@ dependencies = [
 name = "move-table-extension"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "better_any",
  "move-binary-format",
  "move-cli",
@@ -7618,7 +7678,7 @@ dependencies = [
 name = "move-to-yul"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "atty",
  "clap 4.5.17",
  "codespan",
@@ -7647,7 +7707,7 @@ dependencies = [
 name = "move-transactional-test-runner"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "datatest-stable 0.1.3",
  "difference",
@@ -7676,7 +7736,7 @@ dependencies = [
 name = "move-unit-test"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "better_any",
  "clap 4.5.17",
  "codespan-reporting",
@@ -7710,7 +7770,7 @@ dependencies = [
 name = "move-vm-runtime"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "better_any",
  "fail",
  "hex",
@@ -7731,7 +7791,7 @@ dependencies = [
 name = "move-vm-test-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "move-binary-format",
  "move-core-types",
  "move-table-extension",
@@ -7756,7 +7816,7 @@ dependencies = [
 name = "moveos"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "codespan",
  "codespan-reporting",
@@ -7795,7 +7855,7 @@ dependencies = [
 name = "moveos-common"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "itertools 0.14.0",
  "libc",
@@ -7811,7 +7871,7 @@ dependencies = [
 name = "moveos-compiler"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "move-binary-format",
  "petgraph 0.8.3",
 ]
@@ -7829,7 +7889,7 @@ dependencies = [
 name = "moveos-eventbus"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "coerce",
  "crossbeam-channel",
  "thiserror 2.0.17",
@@ -7840,7 +7900,7 @@ dependencies = [
 name = "moveos-gas-profiling"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "handlebars",
  "inferno 0.12.4",
  "move-binary-format",
@@ -7873,7 +7933,7 @@ dependencies = [
 name = "moveos-stdlib"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "base64 0.22.1",
  "bech32 0.11.0",
  "better_any",
@@ -7907,7 +7967,7 @@ name = "moveos-store"
 version = "0.12.0"
 dependencies = [
  "accumulator",
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "chrono",
  "function_name",
@@ -7932,7 +7992,7 @@ dependencies = [
 name = "moveos-types"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "bech32 0.11.0",
  "fastcrypto",
@@ -7960,7 +8020,7 @@ dependencies = [
 name = "moveos-verifier"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "codespan-reporting",
  "itertools 0.14.0",
@@ -7985,7 +8045,7 @@ dependencies = [
 name = "moveos-wasm"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "once_cell",
  "rand 0.8.5",
  "tracing",
@@ -8441,7 +8501,7 @@ version = "0.50.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb28bb6c64e116ceaf8dd4e87099d3cfea4a58e85e62b104fef74c91afba0f44"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "backon",
  "base64 0.22.1",
@@ -9531,7 +9591,7 @@ version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "itertools 0.12.1",
  "proc-macro2 1.0.101",
  "quote 1.0.42",
@@ -9573,7 +9633,7 @@ version = "3.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d3976825c0014bbd2f3b34f0001876604fe87e0c86cd8fa54251530f1544ace"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "once_cell",
  "protobuf 3.7.2",
  "protobuf-parse",
@@ -9588,7 +9648,7 @@ version = "3.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4aeaa1f2460f1d348eeaeed86aea999ce98c1bded6f089ff8514c9d9dbdc973"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "indexmap 2.11.4",
  "log",
  "protobuf 3.7.2",
@@ -9943,7 +10003,7 @@ dependencies = [
 name = "raw-store"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "metrics",
  "moveos-common",
  "moveos-config",
@@ -10130,7 +10190,7 @@ version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eb0075a66c8bfbf4cc8b70dca166e722e1f55a3ea9250ecbb85f4d92a5f64149"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "base64 0.22.1",
  "chrono",
@@ -10424,7 +10484,7 @@ name = "rooch"
 version = "0.12.0"
 dependencies = [
  "accumulator",
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "bcs",
  "bitcoin 0.32.5",
@@ -10526,7 +10586,7 @@ dependencies = [
 name = "rooch-anomalies"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "include_dir",
  "moveos-types",
@@ -10540,9 +10600,9 @@ dependencies = [
 name = "rooch-benchmarks"
 version = "0.12.0"
 dependencies = [
+ "anyhow 1.0.100",
  "anyhow 1.0.76",
  "anyhow 1.0.93",
- "anyhow 1.0.95",
  "bcs",
  "bitcoin 0.32.5",
  "bitcoincore-rpc",
@@ -10595,7 +10655,7 @@ dependencies = [
 name = "rooch-common"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "libc",
 ]
 
@@ -10603,7 +10663,7 @@ dependencies = [
 name = "rooch-config"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "dirs 6.0.0",
  "dirs-next",
@@ -10634,7 +10694,7 @@ dependencies = [
 name = "rooch-da"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "base64 0.22.1",
  "celestia-rpc",
@@ -10659,7 +10719,7 @@ name = "rooch-db"
 version = "0.12.0"
 dependencies = [
  "accumulator",
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "moveos-common",
  "moveos-store",
  "moveos-types",
@@ -10677,7 +10737,7 @@ dependencies = [
 name = "rooch-executor"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "coerce",
  "function_name",
@@ -10702,7 +10762,7 @@ dependencies = [
 name = "rooch-faucet"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "axum",
  "axum-server",
@@ -10750,7 +10810,7 @@ dependencies = [
 name = "rooch-framework-tests"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "bitcoin 0.32.5",
  "bitcoin-client",
@@ -10789,7 +10849,7 @@ name = "rooch-genesis"
 version = "0.12.0"
 dependencies = [
  "accumulator",
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "bitcoin-move",
  "clap 4.5.17",
@@ -10820,7 +10880,7 @@ dependencies = [
 name = "rooch-indexer"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "bcs",
  "coerce",
@@ -10849,7 +10909,7 @@ dependencies = [
 name = "rooch-integration-test-runner"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "clap 4.5.17",
  "codespan-reporting",
@@ -10882,7 +10942,7 @@ dependencies = [
 name = "rooch-key"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "argon2",
  "bip32",
  "enum_dispatch",
@@ -10901,7 +10961,7 @@ dependencies = [
 name = "rooch-notify"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "coerce",
  "futures",
@@ -10948,7 +11008,7 @@ dependencies = [
 name = "rooch-open-rpc"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "fastcrypto",
  "rand 0.8.5",
@@ -10986,7 +11046,7 @@ dependencies = [
 name = "rooch-open-rpc-spec-builder"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "clap 4.5.17",
  "rand 0.8.5",
  "rooch-open-rpc",
@@ -10999,7 +11059,7 @@ dependencies = [
 name = "rooch-oracle"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "clap 4.5.17",
  "futures",
@@ -11024,7 +11084,7 @@ dependencies = [
 name = "rooch-ord"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "ordinals",
  "reqwest 0.12.7",
  "rooch-types",
@@ -11038,7 +11098,7 @@ dependencies = [
 name = "rooch-pipeline-processor"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "bcs",
  "bitcoin 0.32.5",
@@ -11064,7 +11124,7 @@ dependencies = [
 name = "rooch-proposer"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "coerce",
  "metrics",
@@ -11081,7 +11141,7 @@ dependencies = [
 name = "rooch-pruner"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "criterion",
  "moveos-common",
  "moveos-store",
@@ -11106,7 +11166,7 @@ dependencies = [
 name = "rooch-relayer"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "bitcoin 0.32.5",
  "bitcoin-client",
@@ -11134,7 +11194,7 @@ name = "rooch-rpc-api"
 version = "0.12.0"
 dependencies = [
  "accumulator",
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "bitcoin 0.32.5",
  "ethers",
@@ -11158,7 +11218,7 @@ dependencies = [
 name = "rooch-rpc-client"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "bitcoin 0.32.5",
  "bitcoincore-rpc",
@@ -11180,7 +11240,7 @@ dependencies = [
 name = "rooch-rpc-server"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "axum",
  "bcs",
  "bitcoin-client",
@@ -11233,7 +11293,7 @@ name = "rooch-sequencer"
 version = "0.12.0"
 dependencies = [
  "accumulator",
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "async-trait",
  "coerce",
  "function_name",
@@ -11258,7 +11318,7 @@ name = "rooch-store"
 version = "0.12.0"
 dependencies = [
  "accumulator",
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "moveos-common",
  "moveos-config",
  "moveos-types",
@@ -11274,7 +11334,7 @@ dependencies = [
 name = "rooch-test-transaction-builder"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bcs",
  "move-core-types",
  "move-package",
@@ -11289,7 +11349,7 @@ name = "rooch-types"
 version = "0.12.0"
 dependencies = [
  "accumulator",
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "argon2",
  "bcs",
  "bech32 0.11.0",
@@ -11656,9 +11716,9 @@ dependencies = [
 
 [[package]]
 name = "rustversion"
-version = "1.0.19"
+version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
+checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
 name = "rusty-fork"
@@ -12585,7 +12645,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 name = "smt"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "backtrace",
  "bcs",
  "bitcoin_hashes 0.14.0",
@@ -13219,7 +13279,7 @@ dependencies = [
 name = "testsuite"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "assert_cmd",
  "backtrace",
  "clap 4.5.17",
@@ -13370,7 +13430,7 @@ dependencies = [
 name = "timeout-join-handler"
 version = "0.12.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "thiserror 2.0.17",
 ]
 
@@ -14324,7 +14384,7 @@ version = "9.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349ed9e45296a581f455bc18039878f409992999bc1d5da12a6800eb18c8752f"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "cargo_metadata",
  "derive_builder 0.20.2",
  "regex",
@@ -14340,7 +14400,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e771aff771c0d7c2f42e434e2766d304d917e29b40f0424e8faaaa936bbc3f29"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "derive_builder 0.20.2",
  "git2",
  "rustversion",
@@ -14355,20 +14415,20 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b07e6010c0f3e59fcb164e0163834597da68d1f864e2b8ca49f74de01e9c166"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "derive_builder 0.20.2",
  "rustversion",
 ]
 
 [[package]]
 name = "vergen-pretty"
-version = "1.0.1"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86fce764d393d83eb2125f0e86bee124001f4a19d23061eb4d12e8954f91eb15"
+checksum = "29bc27a1f22ebc212cb494729aa89b80536c7c2b5ebe5828dd3dd25b917cfbbb"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
+ "bon",
  "convert_case 0.8.0",
- "derive_builder 0.20.2",
  "rustversion",
 ]
 
@@ -14640,7 +14700,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54a0f70c177b1c5062cfe0f5308c3317751796fef9403c22a0cd7b4cacd4ccd8"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "bytesize",
  "derive_builder 0.12.0",
  "hex",
@@ -14776,7 +14836,7 @@ version = "6.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1fc686c7b43c9bc630a499f6ae1f0a4c4bd656576a53ae8a147b0cc9bc983ad"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.100",
  "base64 0.21.7",
  "bytes",
  "cfg-if",
