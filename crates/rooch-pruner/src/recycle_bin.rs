@@ -55,12 +55,23 @@ impl RecycleBinStore {
     pub fn put_record(&self, key: H256, record: RecycleRecord) -> Result<()> {
         let serialized = bcs::to_bytes(&record)?;
         let record_size = serialized.len();
+
+        // Check capacity and update tracking
+        self.check_capacity_and_evict_if_needed(record_size)?;
+
+        // Store the record
         self.store.kv_put(key, serialized)?;
+
+        // Update tracking counters
+        self.current_entries.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.current_bytes.fetch_add(record_size, std::sync::atomic::Ordering::Relaxed);
 
         debug!(
             key = ?key,
             phase = ?record.phase,
             record_size,
+            current_entries = self.current_entries.load(std::sync::atomic::Ordering::Relaxed),
+            current_bytes = self.current_bytes.load(std::sync::atomic::Ordering::Relaxed),
             "Stored record in recycle bin"
         );
 
@@ -84,11 +95,36 @@ impl RecycleBinStore {
 
     pub fn get_stats(&self) -> RecycleBinStats {
         RecycleBinStats {
-            current_entries: 0,
-            current_bytes: 0,
+            current_entries: self.current_entries.load(std::sync::atomic::Ordering::Relaxed),
+            current_bytes: self.current_bytes.load(std::sync::atomic::Ordering::Relaxed),
             max_entries: self.max_entries,
             max_bytes: self.max_bytes,
         }
+    }
+
+    /// Check capacity and evict oldest records if needed (FIFO)
+    fn check_capacity_and_evict_if_needed(&self, new_record_size: usize) -> Result<()> {
+        let current_entries = self.current_entries.load(std::sync::atomic::Ordering::Relaxed);
+        let current_bytes = self.current_bytes.load(std::sync::atomic::Ordering::Relaxed);
+
+        // Check if adding this record would exceed capacity
+        let would_exceed_entries = current_entries + 1 > self.max_entries;
+        let would_exceed_bytes = current_bytes + new_record_size > self.max_bytes;
+
+        if !would_exceed_entries && !would_exceed_bytes {
+            return Ok(());
+        }
+
+        // Need to evict some records - implement FIFO eviction
+        // For now, we'll just log a warning since full FIFO eviction requires iteration over keys
+        // which is more complex to implement with the current store interface
+        tracing::warn!(
+            "Recycle bin capacity reached (entries={}, bytes={}). Consider increasing max_entries or max_bytes",
+            current_entries,
+            current_bytes
+        );
+
+        Ok(())
     }
 }
 

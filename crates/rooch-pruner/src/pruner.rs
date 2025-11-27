@@ -368,7 +368,7 @@ impl StatePruner {
                                     order_cursor, cfg.protection_orders, latest_order
                                 );
 
-                                let _sweeper = SweepExpired::new(
+                                let _sweeper = SweepExpired::new_with_recycle_bin(
                                     moveos_store.clone(),
                                     bloom.clone(),
                                     cfg.bloom_bits,
@@ -449,7 +449,7 @@ impl StatePruner {
                             order_cursor, cfg.protection_orders, latest_order
                         );
 
-                        let sweeper = SweepExpired::new(
+                        let sweeper = SweepExpired::new_with_recycle_bin(
                             moveos_store.clone(),
                             bloom.clone(),
                             cfg.bloom_bits,
@@ -652,7 +652,7 @@ impl StatePruner {
                                         .flatten()
                                         .unwrap_or_default();
 
-                                    let incremental_sweeper = IncrementalSweep::new(
+                                    let incremental_sweeper = IncrementalSweep::new_with_recycle_bin(
                                         moveos_store.clone(),
                                         recycle_bin_store.clone(),
                                     );
@@ -734,7 +734,7 @@ impl StatePruner {
                             );
 
                             // Use incremental sweep to clean up remaining stale nodes
-                            let incremental_sweeper = IncrementalSweep::new(
+                            let incremental_sweeper = IncrementalSweep::new_with_recycle_bin(
                                 moveos_store.clone(),
                                 recycle_bin_store.clone(),
                             );
