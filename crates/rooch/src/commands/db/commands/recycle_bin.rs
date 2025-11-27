@@ -9,6 +9,19 @@ use rooch_types::error::RoochResult;
 use serde_json;
 use std::path::PathBuf;
 use tracing::info;
+use smt::jellyfish_merkle::node_type::Node;
+use moveos_types::state::{FieldKey, ObjectState};
+use moveos_types::h256::H256;
+
+#[derive(Debug, serde::Serialize)]
+struct DecodedNodeSummary {
+    node_kind: String,
+    field_key: Option<String>,
+    object_id: Option<String>,
+    object_type: Option<String>,
+    state_root: Option<String>,
+    value_len: Option<usize>,
+}
 
 /// Dump recycle bin record for a specific node hash
 #[derive(Debug, Parser)]
@@ -25,6 +38,9 @@ pub struct RecycleDumpCommand {
     /// Output file
     #[clap(long, short = 'o')]
     pub output: Option<PathBuf>,
+    /// Decode node bytes if possible (Node<FieldKey, ObjectState>); best-effort
+    #[clap(long)]
+    pub decode: bool,
 }
 
 impl RecycleDumpCommand {
@@ -57,7 +73,18 @@ impl RecycleDumpCommand {
         let node_hash = moveos_types::h256::H256(arr);
 
         if let Some(record) = recycle_store.get_record(&node_hash)? {
-            let output = serde_json::to_string_pretty(&record)?;
+            #[derive(Debug, serde::Serialize)]
+            struct DumpOut {
+                record: rooch_pruner::recycle_bin::RecycleRecord,
+                #[serde(skip_serializing_if = "Option::is_none")]
+                decoded: Option<DecodedNodeSummary>,
+            }
+            let mut decoded = None;
+            if self.decode {
+                decoded = decode_node(&record.bytes);
+            }
+            let out = DumpOut { record, decoded };
+            let output = serde_json::to_string_pretty(&out)?;
 
             match self.output {
                 Some(output_path) => {
@@ -76,6 +103,46 @@ impl RecycleDumpCommand {
             eprintln!("No recycle bin record found for hash: {}", self.hash);
             Ok("No record found".to_string())
         }
+    }
+}
+
+fn decode_node(bytes: &[u8]) -> Option<DecodedNodeSummary> {
+    if let Ok(node) = Node::<FieldKey, ObjectState>::decode(bytes) {
+        match node {
+            Node::Internal(_internal) => Some(DecodedNodeSummary {
+                node_kind: "Internal".to_string(),
+                field_key: None,
+                object_id: None,
+                object_type: None,
+                state_root: None,
+                value_len: None,
+            }),
+            Node::Leaf(leaf) => {
+                let fk = leaf.key();
+                let val = leaf.value().origin.clone();
+                let obj_id = val.metadata.id.to_string();
+                let obj_type = val.metadata.object_type.to_canonical_string();
+                let sr = val.metadata.state_root().to_string();
+                Some(DecodedNodeSummary {
+                    node_kind: "Leaf".to_string(),
+                    field_key: Some(fk.to_string()),
+                    object_id: Some(obj_id),
+                    object_type: Some(obj_type),
+                    state_root: Some(sr),
+                    value_len: Some(val.value.len()),
+                })
+            }
+            Node::Null => Some(DecodedNodeSummary {
+                node_kind: "Null".to_string(),
+                field_key: None,
+                object_id: None,
+                object_type: None,
+                state_root: None,
+                value_len: None,
+            }),
+        }
+    } else {
+        None
     }
 }
 

@@ -23,6 +23,9 @@ pub struct ReachCheckCommand {
     /// Node hashes to check (0x…)
     #[clap(long = "hash")]
     pub hashes: Vec<String>,
+    /// Override state_root to traverse (default: latest snapshot/root)
+    #[clap(long)]
+    pub root: Option<String>,
     /// Limit of nodes to scan (0 = full)
     #[clap(long, default_value_t = 0)]
     pub scan_limit: usize,
@@ -60,7 +63,11 @@ impl ReachCheckCommand {
                 }
             });
 
-        let state_root = snapshot.state_root;
+        let state_root = if let Some(root_hex) = self.root.as_ref() {
+            parse_h256(root_hex).expect("invalid root hex")
+        } else {
+            snapshot.state_root
+        };
 
         // Run DFS to build reachable set. We reuse StateDBStore's iterators to traverse.
         let mut leaf_samples = Vec::new();
