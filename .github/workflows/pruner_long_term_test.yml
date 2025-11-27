@@ -73,33 +73,37 @@ jobs:
           pnpm --filter @roochnetwork/test-suite build
           pnpm --filter @roochnetwork/rooch-pruner-e2e exec vitest --version
 
-      - name: Setup disk monitoring
+      - name: Setup test data directory
         id: disk-setup
-        if: ${{ inputs.enable_disk_monitoring }}
         run: |
-          # Create dedicated base directory for test data
+          # Always create dedicated base directory for test data
           # TestBox will create subdirectories under this base directory
           TEST_BASE_DIR="/tmp/rooch_pruner_test_$(date +%s)"
           mkdir -p "$TEST_BASE_DIR"
           echo "test_base_dir=$TEST_BASE_DIR" >> $GITHUB_OUTPUT
-          echo "Test base directory: $TEST_BASE_DIR"
+          echo "Test data base directory: $TEST_BASE_DIR"
 
-          # Use the monitoring script from scripts directory
-          MONITOR_SCRIPT="${{ github.workspace }}/scripts/monitor_disk_usage.sh"
-          if [ ! -f "$MONITOR_SCRIPT" ]; then
-            echo "ERROR: Monitoring script not found at $MONITOR_SCRIPT" >&2
-            exit 1
+          # Only start disk monitoring if enabled
+          if [ "${{ inputs.enable_disk_monitoring }}" = "true" ]; then
+            # Use the monitoring script from scripts directory
+            MONITOR_SCRIPT="${{ github.workspace }}/scripts/monitor_disk_usage.sh"
+            if [ ! -f "$MONITOR_SCRIPT" ]; then
+              echo "ERROR: Monitoring script not found at $MONITOR_SCRIPT" >&2
+              exit 1
+            fi
+
+            # Ensure script is executable
+            chmod +x "$MONITOR_SCRIPT"
+
+            # Start monitoring in background
+            "$MONITOR_SCRIPT" "$TEST_BASE_DIR" "/tmp/disk_usage.log" &
+            MONITOR_PID=$!
+            echo "monitor_pid=$MONITOR_PID" >> $GITHUB_OUTPUT
+            echo "Started disk monitor (PID: $MONITOR_PID) for base directory: $TEST_BASE_DIR"
+            echo "Using monitoring script: $MONITOR_SCRIPT"
+          else
+            echo "Disk monitoring disabled, but test data directory created for potential upload"
           fi
-
-          # Ensure script is executable
-          chmod +x "$MONITOR_SCRIPT"
-
-          # Start monitoring in background
-          "$MONITOR_SCRIPT" "$TEST_BASE_DIR" "/tmp/disk_usage.log" &
-          MONITOR_PID=$!
-          echo "monitor_pid=$MONITOR_PID" >> $GITHUB_OUTPUT
-          echo "Started disk monitor (PID: $MONITOR_PID) for base directory: $TEST_BASE_DIR"
-          echo "Using monitoring script: $MONITOR_SCRIPT"
 
       - name: Determine test parameters
         id: test-params
@@ -471,15 +475,12 @@ jobs:
             disk-usage-timeline.csv
           retention-days: 30
 
-      - name: Package and upload test data directory
-        if: always() && ${{ inputs.enable_disk_monitoring }}
+      - name: Create test data manifest and upload
+        if: always()
         run: |
           TEST_BASE_DIR="${{ steps.disk-setup.outputs.test_base_dir }}"
           if [ -n "$TEST_BASE_DIR" ] && [ -d "$TEST_BASE_DIR" ]; then
-            echo "Packaging test data directory: $TEST_BASE_DIR"
-
-            # Create archive name with timestamp
-            ARCHIVE_NAME="pruner-test-data-${{ github.run_number }}-$(date +%Y%m%d-%H%M%S).tar.gz"
+            echo "Creating test data manifest..."
 
             # Create a manifest file with test information
             cat > "$TEST_BASE_DIR/test-manifest.txt" << MANIFEST_EOF
@@ -510,41 +511,28 @@ jobs:
             - Cycle Count: ${{ steps.test-params.outputs.cycle_count }}
 
             Directory Structure:
-            $(find "$TEST_BASE_DIR" -type f | head -20 | sed 's/^/  - /')
+            $(find "$TEST_BASE_DIR" -type f 2>/dev/null | head -20 | sed 's/^/  - /' || echo "  - Could not list files")
 
-            Total Files: $(find "$TEST_BASE_DIR" -type f | wc -l)
-            Total Size: $(du -sh "$TEST_BASE_DIR" 2>/dev/null | awk '{print $1}' || echo "Unknown")
+            Total Files: $(find "$TEST_BASE_DIR" -type f 2>/dev/null | wc -l 2>/dev/null || echo "0")
+            Total Size: $(du -sh "$TEST_BASE_DIR" 2>/dev/null | awk '{print $1}' 2>/dev/null || echo "Unknown")
             MANIFEST_EOF
 
-            # Create compressed archive
-            echo "Creating archive: $ARCHIVE_NAME"
-            tar -czf "$ARCHIVE_NAME" -C "$(dirname "$TEST_BASE_DIR")" "$(basename "$TEST_BASE_DIR")"
+            echo "Manifest created at: $TEST_BASE_DIR/test-manifest.txt"
 
-            # Verify archive was created
-            if [ -f "$ARCHIVE_NAME" ]; then
-              ARCHIVE_SIZE=$(ls -lh "$ARCHIVE_NAME" | awk '{print $5}')
-              echo "Archive created successfully: $ARCHIVE_NAME ($ARCHIVE_SIZE)"
-
-              # Display archive contents summary
-              echo "Archive contains:"
-              tar -tzf "$ARCHIVE_NAME" | head -10
-              echo "..."
-              tar -tzf "$ARCHIVE_NAME" | wc -l
-              echo "files total"
-            else
-              echo "ERROR: Failed to create archive!" >&2
-              exit 1
-            fi
+            # Upload test data as artifact directly
+            echo "Uploading test data directory..."
+            # Note: Using GitHub CLI to upload directory as artifact
+            # The actions/upload-artifact will be called in the next step
           else
-            echo "Test base directory not found or empty, skipping data upload"
+            echo "Test base directory not found, skipping manifest creation"
           fi
 
       - name: Upload test data directory
-        if: always() && ${{ inputs.enable_disk_monitoring }}
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pruner-test-data-${{ github.run_number }}
-          path: pruner-test-data-*.tar.gz
+          path: ${{ steps.disk-setup.outputs.test_base_dir }}
           retention-days: 7
           if-no-files-found: warn
 
