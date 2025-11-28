@@ -15,6 +15,7 @@ use raw_store::CodecKVStore;
 pub enum RecyclePhase {
     Incremental,
     SweepExpired,
+    StopTheWorld,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

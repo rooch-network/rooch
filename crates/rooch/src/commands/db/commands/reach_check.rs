@@ -84,16 +84,15 @@ impl ReachCheckCommand {
         use std::fmt::Write as _;
         writeln!(
             out,
-            "ReachCheck snapshot: root={} latest_order={}",
-            format!("{:#x}", state_root),
-            snapshot.latest_order
+            "ReachCheck snapshot: root={:#x} latest_order={}",
+            state_root, snapshot.latest_order
         )
         .ok();
 
         for hstr in &self.hashes {
             let hh = parse_h256(hstr)?;
             let found = reachable.contains(&hh);
-            writeln!(out, "{} => reachable={}", format!("{:#x}", hh), found).ok();
+            writeln!(out, "{:#x} => reachable={}", hh, found).ok();
         }
 
         // Summary
@@ -148,13 +147,11 @@ fn build_reachable(
                 if dump_leaves > 0 && leaf_samples.len() < dump_leaves {
                     leaf_samples.push((node_hash, state_root));
                 }
-            } else if let Ok(node) =
+            } else if let Ok(smt::jellyfish_merkle::node_type::Node::Internal(internal)) =
                 smt::jellyfish_merkle::node_type::Node::<H256, Vec<u8>>::decode(&bytes)
             {
-                if let smt::jellyfish_merkle::node_type::Node::Internal(internal) = node {
-                    for child in internal.all_child() {
-                        stack.push(child.into());
-                    }
+                for child in internal.all_child() {
+                    stack.push(child.into());
                 }
             }
         }

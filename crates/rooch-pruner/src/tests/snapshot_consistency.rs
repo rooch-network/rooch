@@ -19,13 +19,20 @@ async fn test_snapshot_creation_basic() {
 
     // Create a tree structure
     let (root_hash, all_node_hashes) = tree_builder.create_root_and_leaves(3);
-    println!("Created tree with {} nodes and root: {}", all_node_hashes.len(), root_hash);
+    println!(
+        "Created tree with {} nodes and root: {}",
+        all_node_hashes.len(),
+        root_hash
+    );
 
     // Test that we can create snapshots for different phases
     // Note: This tests the snapshot API availability and basic functionality
 
     // Test 1: Create snapshot for BuildReach phase
-    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
     let reachable_roots = vec![root_hash];
 
     // Simulate BuildReach with snapshot
@@ -39,7 +46,10 @@ async fn test_snapshot_creation_basic() {
         let bloom_guard = bloom.lock();
         bloom_guard.contains(&root_hash)
     };
-    assert!(root_reachable, "Root should be marked reachable after BuildReach");
+    assert!(
+        root_reachable,
+        "Root should be marked reachable after BuildReach"
+    );
     assert!(scanned_size > 0, "Should have scanned some nodes");
 
     println!("✅ Basic snapshot creation test PASSED");
@@ -63,7 +73,10 @@ async fn test_multiple_snapshot_phases() {
         println!("Testing phase {} with root: {}", i + 1, root_hash);
 
         // Create new bloom filter for each phase
-        let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 16, 4)));
+        let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+            1 << 16,
+            4,
+        )));
         let reachable_roots = vec![*root_hash];
 
         // Run BuildReach
@@ -96,8 +109,14 @@ async fn test_snapshot_isolation() {
     let (root_b, _nodes_b) = tree_builder.create_root_and_leaves(2);
 
     // Create bloom filters for different phases
-    let bloom_a = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 16, 4)));
-    let bloom_b = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 16, 4)));
+    let bloom_a = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 16,
+        4,
+    )));
+    let bloom_b = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 16,
+        4,
+    )));
 
     // Phase A: BuildReach with root_a
     println!("Phase A: Processing root_a");
@@ -153,7 +172,10 @@ async fn test_snapshot_consistent_state() {
         println!("Consistency test run {}", run);
 
         // Create fresh bloom for each run
-        let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 18, 4)));
+        let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+            1 << 18,
+            4,
+        )));
         let reachable_roots = vec![root_hash];
 
         // Run BuildReach
@@ -178,17 +200,30 @@ async fn test_snapshot_consistent_state() {
         scanned_sizes.push(scanned_size);
         reachable_counts.push(reachable_count);
 
-        println!("Run {}: scanned {} nodes, {} reachable", run, scanned_size, reachable_count);
+        println!(
+            "Run {}: scanned {} nodes, {} reachable",
+            run, scanned_size, reachable_count
+        );
     }
 
     // Verify consistency: all runs should produce the same results
     for i in 1..scanned_sizes.len() {
-        assert_eq!(scanned_sizes[0], scanned_sizes[i],
+        assert_eq!(
+            scanned_sizes[0],
+            scanned_sizes[i],
             "Scanned size inconsistent between runs 1 and {}: {} vs {}",
-            i + 1, scanned_sizes[0], scanned_sizes[i]);
-        assert_eq!(reachable_counts[0], reachable_counts[i],
+            i + 1,
+            scanned_sizes[0],
+            scanned_sizes[i]
+        );
+        assert_eq!(
+            reachable_counts[0],
+            reachable_counts[i],
             "Reachable count inconsistent between runs 1 and {}: {} vs {}",
-            i + 1, reachable_counts[0], reachable_counts[i]);
+            i + 1,
+            reachable_counts[0],
+            reachable_counts[i]
+        );
     }
 
     assert!(scanned_sizes[0] > 0, "Should have scanned nodes");
@@ -210,8 +245,12 @@ async fn test_snapshot_error_handling() {
 
     // Test 1: Empty roots list
     println!("Testing with empty roots");
-    let bloom_empty = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 16, 4)));
-    let builder_empty = crate::reachability::ReachableBuilder::new(store.clone(), bloom_empty.clone());
+    let bloom_empty = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 16,
+        4,
+    )));
+    let builder_empty =
+        crate::reachability::ReachableBuilder::new(store.clone(), bloom_empty.clone());
     let scanned_empty = builder_empty.build(vec![], 1).unwrap();
 
     assert_eq!(scanned_empty, 0, "Empty roots should scan 0 nodes");
@@ -219,8 +258,12 @@ async fn test_snapshot_error_handling() {
     // Test 2: Non-existent roots (error handling)
     println!("Testing with non-existent roots");
     let fake_root = H256::random();
-    let bloom_fake = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 16, 4)));
-    let builder_fake = crate::reachability::ReachableBuilder::new(store.clone(), bloom_fake.clone());
+    let bloom_fake = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 16,
+        4,
+    )));
+    let builder_fake =
+        crate::reachability::ReachableBuilder::new(store.clone(), bloom_fake.clone());
 
     // This should not panic, even with invalid roots
     let scanned_fake = builder_fake.build(vec![fake_root], 1).unwrap();
@@ -230,8 +273,12 @@ async fn test_snapshot_error_handling() {
     // Test 3: Mixed valid and invalid roots
     println!("Testing with mixed valid/invalid roots");
     let valid_root = H256::from_low_u64_be(42); // Use a deterministic hash
-    let bloom_mixed = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 16, 4)));
-    let builder_mixed = crate::reachability::ReachableBuilder::new(store.clone(), bloom_mixed.clone());
+    let bloom_mixed = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 16,
+        4,
+    )));
+    let builder_mixed =
+        crate::reachability::ReachableBuilder::new(store.clone(), bloom_mixed.clone());
 
     let scanned_mixed = builder_mixed.build(vec![fake_root, valid_root], 1).unwrap();
 
@@ -256,7 +303,10 @@ async fn test_snapshot_performance_characteristics() {
     // Measure performance of BuildReach with snapshots
     let start_time = std::time::Instant::now();
 
-    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
     let reachable_roots = vec![root_hash];
 
     let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
@@ -268,7 +318,10 @@ async fn test_snapshot_performance_characteristics() {
     println!("Scanned {} nodes", scanned_size);
 
     // Performance should be reasonable for testing (under 10 seconds)
-    assert!(duration.as_secs() < 10, "BuildReach should complete in reasonable time");
+    assert!(
+        duration.as_secs() < 10,
+        "BuildReach should complete in reasonable time"
+    );
 
     // Verify functionality still works
     let root_reachable = {

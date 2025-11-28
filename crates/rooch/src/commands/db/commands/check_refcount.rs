@@ -89,8 +89,8 @@ impl CheckRefcountCommand {
         let missing_raw: Vec<_> = state32.difference(&refc32).cloned().collect();
         let missing_after_stale: Vec<_> = missing_raw
             .iter()
+            .filter(|&k| !stale_nodes.contains(k))
             .cloned()
-            .filter(|k| !stale_nodes.contains(k))
             .collect();
         let extra: Vec<_> = refc32.difference(&state32).cloned().collect();
         // Classify extra_rc by whether they appear in stale_index (with tx_order stats)

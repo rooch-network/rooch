@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::reachability::ReachableBuilder;
-use crate::tests::test_utils::{TreeBuilder, BloomInspector};
+use crate::tests::test_utils::TreeBuilder;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
@@ -20,12 +20,17 @@ async fn test_end_to_end_pruning_pipeline() {
 
     // Create a tree structure with multiple nodes
     let (root_hash, all_node_hashes) = tree_builder.create_root_and_leaves(5);
-    println!("Created tree with {} nodes for E2E test", all_node_hashes.len() + 1);
+    println!(
+        "Created tree with {} nodes for E2E test",
+        all_node_hashes.len() + 1
+    );
 
     // Phase 1: Mark some nodes as stale
     let stale_cutoff_order = 100;
     let stale_nodes = vec![all_node_hashes[1], all_node_hashes[3]]; // Mark 2nd and 4th leaves as stale
-    tree_builder.inject_stale_indices(stale_nodes.clone(), stale_cutoff_order).unwrap();
+    tree_builder
+        .inject_stale_indices(stale_nodes.clone(), stale_cutoff_order)
+        .unwrap();
 
     // Phase 2: BuildReach to identify reachable nodes
     let bloom = Arc::new(Mutex::new(BloomFilter::new(1 << 20, 4)));
@@ -37,7 +42,8 @@ async fn test_end_to_end_pruning_pipeline() {
     println!("BuildReach phase completed: scanned {} nodes", scanned_size);
 
     // Phase 3: Verify reachable ∩ stale = Ø invariant
-    let stale_records = store.get_prune_store()
+    let stale_records = store
+        .get_prune_store()
         .list_before(stale_cutoff_order + 1, 1000)
         .unwrap();
     let stale_hashes: Vec<H256> = stale_records.iter().map(|(hash, _)| *hash).collect();
@@ -63,13 +69,18 @@ async fn test_end_to_end_pruning_pipeline() {
     };
     let root_in_stale = stale_hashes.contains(&root_hash);
 
-    println!("E2E Integration: root reachable = {}, root stale = {}, scanned nodes = {}",
-             root_in_bloom, root_in_stale, scanned_size);
+    println!(
+        "E2E Integration: root reachable = {}, root stale = {}, scanned nodes = {}",
+        root_in_bloom, root_in_stale, scanned_size
+    );
 
     // Root should be reachable and not stale, BuildReach should have processed nodes
     assert!(root_in_bloom, "Root should be reachable after BuildReach");
     assert!(!root_in_stale, "Root should not be stale");
-    assert!(scanned_size > 0, "BuildReach should have scanned at least the root");
+    assert!(
+        scanned_size > 0,
+        "BuildReach should have scanned at least the root"
+    );
 
     println!("✅ End-to-end pruning pipeline test PASSED");
 }
@@ -93,9 +104,15 @@ async fn test_concurrent_pruning_operations() {
     let stale_cutoff2 = 200;
     let stale_cutoff3 = 300;
 
-    tree_builder.inject_stale_indices(vec![nodes1[1]], stale_cutoff1).unwrap();
-    tree_builder.inject_stale_indices(vec![nodes2[0], nodes2[2]], stale_cutoff2).unwrap();
-    tree_builder.inject_stale_indices(vec![nodes3[2]], stale_cutoff3).unwrap();
+    tree_builder
+        .inject_stale_indices(vec![nodes1[1]], stale_cutoff1)
+        .unwrap();
+    tree_builder
+        .inject_stale_indices(vec![nodes2[0], nodes2[2]], stale_cutoff2)
+        .unwrap();
+    tree_builder
+        .inject_stale_indices(vec![nodes3[2]], stale_cutoff3)
+        .unwrap();
 
     // Simulate concurrent operations by running them sequentially but rapidly
     let mut results = Vec::new();
@@ -121,13 +138,17 @@ async fn test_concurrent_pruning_operations() {
     // Verify all operations completed successfully
     for (tree_name, scanned_size, bloom) in results {
         println!("{}: scanned {} nodes", tree_name, scanned_size);
-        assert!(scanned_size > 0, "{} should have scanned some nodes", tree_name);
+        assert!(
+            scanned_size > 0,
+            "{} should have scanned some nodes",
+            tree_name
+        );
 
         // Check that bloom filter has some entries (indicating successful operation)
         let bloom_guard = bloom.lock();
-        let has_entries = bloom_guard.contains(&H256::from_low_u64_be(1)) ||
-                         bloom_guard.contains(&H256::from_low_u64_be(2)) ||
-                         bloom_guard.contains(&H256::from_low_u64_be(3));
+        let _has_entries = bloom_guard.contains(&H256::from_low_u64_be(1))
+            || bloom_guard.contains(&H256::from_low_u64_be(2))
+            || bloom_guard.contains(&H256::from_low_u64_be(3));
         // We don't check for specific entries, just that the bloom was used
     }
 
@@ -154,7 +175,9 @@ async fn test_multi_snapshot_consistency() {
     let time3 = 300;
 
     // Time 1: Some nodes become stale
-    tree_builder.inject_stale_indices(vec![nodes1[0]], time1).unwrap();
+    tree_builder
+        .inject_stale_indices(vec![nodes1[0]], time1)
+        .unwrap();
 
     // Snapshot 1: BuildReach at time1
     let bloom1 = Arc::new(Mutex::new(BloomFilter::new(1 << 16, 4)));
@@ -162,7 +185,9 @@ async fn test_multi_snapshot_consistency() {
     let scanned1 = builder1.build(vec![root1], 1).unwrap();
 
     // Time 2: More nodes become stale
-    tree_builder.inject_stale_indices(vec![nodes2[1]], time2).unwrap();
+    tree_builder
+        .inject_stale_indices(vec![nodes2[1]], time2)
+        .unwrap();
 
     // Snapshot 2: BuildReach at time2
     let bloom2 = Arc::new(Mutex::new(BloomFilter::new(1 << 16, 4)));
@@ -170,7 +195,9 @@ async fn test_multi_snapshot_consistency() {
     let scanned2 = builder2.build(vec![root2], 1).unwrap();
 
     // Time 3: Final batch of stale nodes
-    tree_builder.inject_stale_indices(vec![nodes3[0], nodes3[1]], time3).unwrap();
+    tree_builder
+        .inject_stale_indices(vec![nodes3[0], nodes3[1]], time3)
+        .unwrap();
 
     // Snapshot 3: BuildReach at time3
     let bloom3 = Arc::new(Mutex::new(BloomFilter::new(1 << 16, 4)));
@@ -186,27 +213,40 @@ async fn test_multi_snapshot_consistency() {
 
     for (snapshot_name, scanned_size, bloom, expected_roots) in snapshots {
         // Each snapshot should have scanned some nodes
-        assert!(scanned_size > 0, "{} should have scanned nodes", snapshot_name);
+        assert!(
+            scanned_size > 0,
+            "{} should have scanned nodes",
+            snapshot_name
+        );
 
         // Each snapshot should mark its expected roots as reachable
         let bloom_guard = bloom.lock();
         for root in &expected_roots {
             let root_reachable = bloom_guard.contains(root);
-            assert!(root_reachable, "{} should have root {} reachable", snapshot_name, root);
+            assert!(
+                root_reachable,
+                "{} should have root {} reachable",
+                snapshot_name, root
+            );
         }
     }
 
     // Verify temporal consistency: later snapshots should have access to
     // the accumulated state of the system
-    let all_stale_records = store.get_prune_store()
+    let all_stale_records = store
+        .get_prune_store()
         .list_before(time3 + 1, 1000)
         .unwrap();
 
-    assert!(all_stale_records.len() >= 3,
-            "Should have accumulated stale nodes from all time periods");
+    assert!(
+        all_stale_records.len() >= 3,
+        "Should have accumulated stale nodes from all time periods"
+    );
 
-    println!("Multi-snapshot consistency: {} total stale nodes accumulated",
-             all_stale_records.len());
+    println!(
+        "Multi-snapshot consistency: {} total stale nodes accumulated",
+        all_stale_records.len()
+    );
 
     println!("✅ Multi-snapshot consistency test PASSED");
 }
@@ -222,14 +262,19 @@ async fn test_pruning_scalability() {
 
     // Create a larger tree structure
     let (root_hash, all_node_hashes) = tree_builder.create_root_and_leaves(10);
-    println!("Created scalability test with {} nodes", all_node_hashes.len() + 1);
+    println!(
+        "Created scalability test with {} nodes",
+        all_node_hashes.len() + 1
+    );
 
     // Mark a significant portion as stale (40%)
     let stale_count = all_node_hashes.len() * 2 / 5;
     let stale_nodes: Vec<H256> = all_node_hashes.iter().take(stale_count).cloned().collect();
     let stale_cutoff_order = 1000;
 
-    tree_builder.inject_stale_indices(stale_nodes.clone(), stale_cutoff_order).unwrap();
+    tree_builder
+        .inject_stale_indices(stale_nodes.clone(), stale_cutoff_order)
+        .unwrap();
 
     // Measure BuildReach performance
     let start_time = std::time::Instant::now();
@@ -242,13 +287,20 @@ async fn test_pruning_scalability() {
 
     let duration = start_time.elapsed();
 
-    println!("Scalability test: scanned {} nodes in {:?}", scanned_size, duration);
+    println!(
+        "Scalability test: scanned {} nodes in {:?}",
+        scanned_size, duration
+    );
 
     // Performance should be reasonable (complete within 30 seconds for test)
-    assert!(duration.as_secs() < 30, "BuildReach should complete in reasonable time");
+    assert!(
+        duration.as_secs() < 30,
+        "BuildReach should complete in reasonable time"
+    );
 
     // Verify safety invariants are maintained even with larger datasets
-    let stale_records = store.get_prune_store()
+    let stale_records = store
+        .get_prune_store()
         .list_before(stale_cutoff_order + 1, 2000)
         .unwrap();
     let stale_hashes: Vec<H256> = stale_records.iter().map(|(hash, _)| *hash).collect();
@@ -272,7 +324,10 @@ async fn test_pruning_scalability() {
         let bloom_guard = bloom.lock();
         bloom_guard.contains(&root_hash)
     };
-    assert!(root_in_bloom, "Root should be reachable in scalability test");
+    assert!(
+        root_in_bloom,
+        "Root should be reachable in scalability test"
+    );
 
     println!("✅ Pruning scalability test PASSED");
 }
@@ -292,7 +347,9 @@ async fn test_error_recovery_integration() {
     // Mark some nodes as stale
     let stale_cutoff_order = 100;
     let stale_nodes = vec![all_node_hashes[1]];
-    tree_builder.inject_stale_indices(stale_nodes, stale_cutoff_order).unwrap();
+    tree_builder
+        .inject_stale_indices(stale_nodes, stale_cutoff_order)
+        .unwrap();
 
     // Test 1: BuildReach with valid data (baseline)
     let bloom1 = Arc::new(Mutex::new(BloomFilter::new(1 << 16, 4)));
@@ -321,7 +378,10 @@ async fn test_error_recovery_integration() {
 
     // Should not panic with non-existent root
     let scanned3 = builder3.build(vec![fake_root], 1).unwrap();
-    println!("BuildReach with non-existent root scanned {} nodes", scanned3);
+    println!(
+        "BuildReach with non-existent root scanned {} nodes",
+        scanned3
+    );
 
     // Test 4: Recovery - BuildReach should still work correctly after errors
     let bloom4 = Arc::new(Mutex::new(BloomFilter::new(1 << 16, 4)));
@@ -337,7 +397,8 @@ async fn test_error_recovery_integration() {
     assert!(root_in_bloom4, "Root should be reachable after recovery");
 
     // Verify safety invariants are maintained throughout error scenarios
-    let stale_records = store.get_prune_store()
+    let stale_records = store
+        .get_prune_store()
         .list_before(stale_cutoff_order + 1, 1000)
         .unwrap();
     let stale_hashes: Vec<H256> = stale_records.iter().map(|(hash, _)| *hash).collect();
@@ -375,7 +436,9 @@ async fn test_state_consistency_across_operations() {
     // Operation 1: Mark some nodes as stale
     let stale_cutoff_1 = 100;
     let stale_nodes_1 = vec![nodes1[1], nodes2[0]];
-    tree_builder.inject_stale_indices(stale_nodes_1.clone(), stale_cutoff_1).unwrap();
+    tree_builder
+        .inject_stale_indices(stale_nodes_1.clone(), stale_cutoff_1)
+        .unwrap();
 
     // Operation 2: BuildReach for root1
     let bloom1 = Arc::new(Mutex::new(BloomFilter::new(1 << 18, 4)));
@@ -385,7 +448,9 @@ async fn test_state_consistency_across_operations() {
     // Operation 3: More nodes become stale
     let stale_cutoff_2 = 200;
     let stale_nodes_2 = vec![nodes1[2], nodes2[2]];
-    tree_builder.inject_stale_indices(stale_nodes_2.clone(), stale_cutoff_2).unwrap();
+    tree_builder
+        .inject_stale_indices(stale_nodes_2.clone(), stale_cutoff_2)
+        .unwrap();
 
     // Operation 4: BuildReach for root2
     let bloom2 = Arc::new(Mutex::new(BloomFilter::new(1 << 18, 4)));
@@ -410,7 +475,10 @@ async fn test_state_consistency_across_operations() {
     assert!(root2_in_bloom2, "Root2 should be reachable in bloom2");
 
     // 3. Stale nodes should not be reachable in any bloom
-    let all_stale_nodes = stale_nodes_1.iter().chain(stale_nodes_2.iter()).collect::<Vec<_>>();
+    let all_stale_nodes = stale_nodes_1
+        .iter()
+        .chain(stale_nodes_2.iter())
+        .collect::<Vec<_>>();
 
     for stale_node in &all_stale_nodes {
         let in_bloom1 = {
@@ -425,17 +493,23 @@ async fn test_state_consistency_across_operations() {
         assert!(
             !(in_bloom1 || in_bloom2),
             "STATE CONSISTENCY FAILURE: Stale node {} is reachable in bloom1: {}, bloom2: {}",
-            stale_node, in_bloom1, in_bloom2
+            stale_node,
+            in_bloom1,
+            in_bloom2
         );
     }
 
     // 4. Global state consistency check
-    let all_stale_records = store.get_prune_store()
+    let all_stale_records = store
+        .get_prune_store()
         .list_before(stale_cutoff_2 + 1, 1000)
         .unwrap();
 
-    println!("State consistency: {} operations completed, {} stale nodes tracked",
-             2, all_stale_records.len());
+    println!(
+        "State consistency: {} operations completed, {} stale nodes tracked",
+        2,
+        all_stale_records.len()
+    );
 
     // The primary invariant is verified above - no stale nodes are reachable
 

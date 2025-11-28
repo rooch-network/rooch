@@ -187,11 +187,11 @@ fn build_reachable(
         if let Some(bytes) = node_store.get(&node_hash)? {
             if let Some(child_root) = try_extract_child_root(&bytes) {
                 stack.push(child_root);
-            } else if let Ok(node) = Node::<moveos_types::h256::H256, Vec<u8>>::decode(&bytes) {
-                if let smt::jellyfish_merkle::node_type::Node::Internal(internal) = node {
-                    for child in internal.all_child() {
-                        stack.push(child.into());
-                    }
+            } else if let Ok(smt::jellyfish_merkle::node_type::Node::Internal(internal)) =
+                Node::<moveos_types::h256::H256, Vec<u8>>::decode(&bytes)
+            {
+                for child in internal.all_child() {
+                    stack.push(child.into());
                 }
             }
         }

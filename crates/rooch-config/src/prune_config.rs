@@ -65,6 +65,51 @@ pub struct PruneConfig {
     /// Maximum total bytes in recycle bin (default: 100MB).
     #[clap(long = "pruner-recycle-bin-max-bytes", default_value_t = 100_000_000)]
     pub recycle_bin_max_bytes: usize,
+
+    /// Number of recent state roots to protect from GC (default: 1 for backward compatibility).
+    /// Set to higher values to protect more historical state roots.
+    #[clap(long = "pruner-protected-roots-count", default_value_t = 1)]
+    pub protected_roots_count: usize,
+
+    /// PersistentMarker batch size for efficient bulk writes (default: 10000).
+    /// Larger batches improve write performance but use more memory.
+    #[clap(long = "pruner-marker-batch-size", default_value_t = 10000)]
+    pub marker_batch_size: usize,
+
+    /// PersistentMarker bloom filter bits (must be power of two, default: 2^20 = 1MB).
+    /// Larger bloom filters reduce false positive rates but use more memory.
+    #[clap(long = "pruner-marker-bloom-bits", default_value_t = 1048576)] // 2^20
+    pub marker_bloom_bits: usize,
+
+    /// PersistentMarker bloom filter hash functions (default: 4).
+    /// More hash functions reduce false positive rates but increase CPU usage.
+    #[clap(long = "pruner-marker-bloom-hash-fns", default_value_t = 4)]
+    pub marker_bloom_hash_fns: u8,
+
+    /// Memory threshold for selecting PersistentMarker vs InMemoryMarker (MB, default: 1024).
+    /// If estimated memory usage exceeds this threshold, PersistentMarker will be selected.
+    #[clap(long = "pruner-marker-memory-threshold-mb", default_value_t = 1024)]
+    pub marker_memory_threshold_mb: usize,
+
+    /// Enable automatic strategy selection based on dataset size and available memory (default: true).
+    /// When enabled, automatically chooses between InMemory and Persistent markers.
+    #[clap(long = "pruner-marker-auto-strategy", default_value_t = true)]
+    pub marker_auto_strategy: bool,
+
+    /// Force PersistentMarker usage regardless of dataset size (default: false).
+    /// When enabled, always uses PersistentMarker even for small datasets.
+    #[clap(long = "pruner-marker-force-persistent", default_value_t = false)]
+    pub marker_force_persistent: bool,
+
+    /// Temporary column family name for PersistentMarker (default: "gc_marker_temp").
+    /// Used for creating the temporary RocksDB column family for marker data.
+    #[clap(long = "pruner-marker-temp-cf-name", default_value = "gc_marker_temp")]
+    pub marker_temp_cf_name: String,
+
+    /// Enable enhanced error recovery for PersistentMarker (default: true).
+    /// When enabled, provides more robust error handling and retry logic.
+    #[clap(long = "pruner-marker-error-recovery", default_value_t = true)]
+    pub marker_error_recovery: bool,
 }
 
 impl Default for PruneConfig {
@@ -83,6 +128,16 @@ impl Default for PruneConfig {
             recycle_bin_enable: false,
             recycle_bin_max_entries: 10000,
             recycle_bin_max_bytes: 100_000_000, // 100MB
+            protected_roots_count: 1,           // Default to backward compatibility
+            // Phase 3: PersistentMarker-specific configuration defaults
+            marker_batch_size: 10000,
+            marker_bloom_bits: 1048576, // 2^20 = 1MB
+            marker_bloom_hash_fns: 4,
+            marker_memory_threshold_mb: 1024, // 1GB
+            marker_auto_strategy: true,
+            marker_force_persistent: false,
+            marker_temp_cf_name: "gc_marker_temp".to_string(),
+            marker_error_recovery: true,
         }
     }
 }

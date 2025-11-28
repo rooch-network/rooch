@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tests::test_utils::{TreeBuilder, BloomInspector};
+use crate::tests::test_utils::{BloomInspector, TreeBuilder};
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use parking_lot::Mutex;
@@ -21,11 +21,17 @@ async fn test_build_reach_basic_coverage() {
     let (root_hash, all_node_hashes) = tree_builder.create_root_and_leaves(5);
 
     // Verify we have multiple nodes to test with
-    assert!(all_node_hashes.len() >= 5, "Should have at least 5 nodes for testing");
+    assert!(
+        all_node_hashes.len() >= 5,
+        "Should have at least 5 nodes for testing"
+    );
     println!("Created tree with {} nodes", all_node_hashes.len() + 1); // +1 for root
 
     // Run BuildReach to mark reachable nodes
-    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
     let reachable_roots = vec![root_hash];
 
     let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
@@ -43,11 +49,18 @@ async fn test_build_reach_basic_coverage() {
     // Since we use leaf nodes in our simplified tree structure,
     // the key test is that at least some nodes are marked reachable
     let reachable_count = BloomInspector::count_contained_hashes(&bloom, &all_node_hashes);
-    println!("Found {} reachable nodes out of {} total nodes", reachable_count, all_node_hashes.len());
+    println!(
+        "Found {} reachable nodes out of {} total nodes",
+        reachable_count,
+        all_node_hashes.len()
+    );
 
     // The key assertion: BuildReach should process nodes and mark them as reachable
     // In our simplified test, at least the root should be reachable
-    assert!(scanned_size > 0, "BuildReach should have scanned some nodes");
+    assert!(
+        scanned_size > 0,
+        "BuildReach should have scanned some nodes"
+    );
     assert!(root_in_bloom, "Root should be reachable");
 
     println!("✅ Basic BuildReach coverage test PASSED");
@@ -65,16 +78,26 @@ async fn test_build_reach_multiple_roots() {
     let (root1, nodes1) = tree_builder.create_root_and_leaves(3);
     let (root2, nodes2) = tree_builder.create_root_and_leaves(3);
 
-    println!("Created two trees with {} and {} nodes respectively", nodes1.len(), nodes2.len());
+    println!(
+        "Created two trees with {} and {} nodes respectively",
+        nodes1.len(),
+        nodes2.len()
+    );
 
     // Run BuildReach with multiple roots
-    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
     let reachable_roots = vec![root1, root2];
 
     let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
-    println!("BuildReach scanned {} nodes with multiple roots", scanned_size);
+    println!(
+        "BuildReach scanned {} nodes with multiple roots",
+        scanned_size
+    );
 
     // Verify both roots are reachable
     let bloom_guard = bloom.lock();
@@ -101,7 +124,10 @@ async fn test_build_reach_empty_roots() {
     let (_root_hash, _all_node_hashes) = tree_builder.create_root_and_leaves(3);
 
     // Run BuildReach with empty roots
-    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
     let reachable_roots = vec![]; // Empty roots
 
     let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
@@ -118,7 +144,10 @@ async fn test_build_reach_empty_roots() {
     let contains_random = bloom_guard.contains(&test_hash);
     drop(bloom_guard);
 
-    assert!(!contains_random, "Bloom filter should be empty with no reachable nodes");
+    assert!(
+        !contains_random,
+        "Bloom filter should be empty with no reachable nodes"
+    );
 
     println!("✅ Empty roots BuildReach test PASSED");
 }
@@ -132,23 +161,32 @@ async fn test_build_reach_duplicate_roots() {
     let tree_builder = TreeBuilder::new(store.clone());
 
     // Create a tree structure
-    let (root_hash, all_node_hashes) = tree_builder.create_root_and_leaves(3);
+    let (root_hash, _all_node_hashes) = tree_builder.create_root_and_leaves(3);
 
     // Run BuildReach with duplicate roots
-    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
     let reachable_roots = vec![root_hash, root_hash, root_hash]; // Same root 3 times
 
     let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
-    println!("BuildReach scanned {} nodes with duplicate roots", scanned_size);
+    println!(
+        "BuildReach scanned {} nodes with duplicate roots",
+        scanned_size
+    );
 
     // Should handle duplicates gracefully - still mark root as reachable
     let bloom_guard = bloom.lock();
     let root_reachable = bloom_guard.contains(&root_hash);
     drop(bloom_guard);
 
-    assert!(root_reachable, "Root should be reachable even with duplicates");
+    assert!(
+        root_reachable,
+        "Root should be reachable even with duplicates"
+    );
     assert!(scanned_size > 0, "Should have scanned some nodes");
 
     println!("✅ Duplicate roots BuildReach test PASSED");
@@ -164,10 +202,13 @@ async fn test_build_reach_bloom_deduplication() {
     let tree_builder = TreeBuilder::new(store.clone());
 
     // Create a tree structure
-    let (root_hash, all_node_hashes) = tree_builder.create_root_and_leaves(3);
+    let (root_hash, _all_node_hashes) = tree_builder.create_root_and_leaves(3);
 
     // Pre-populate bloom filter with some test hashes
-    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
 
     // Add some random hashes to test bloom behavior
     {
@@ -182,14 +223,20 @@ async fn test_build_reach_bloom_deduplication() {
     let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
-    println!("BuildReach scanned {} nodes with pre-populated bloom", scanned_size);
+    println!(
+        "BuildReach scanned {} nodes with pre-populated bloom",
+        scanned_size
+    );
 
     // Verify root is still marked reachable despite pre-populated bloom
     let bloom_guard = bloom.lock();
     let root_reachable = bloom_guard.contains(&root_hash);
     drop(bloom_guard);
 
-    assert!(root_reachable, "Root should be reachable even with pre-populated bloom");
+    assert!(
+        root_reachable,
+        "Root should be reachable even with pre-populated bloom"
+    );
     assert!(scanned_size > 0, "Should have scanned some nodes");
 
     println!("✅ Bloom deduplication test PASSED");
@@ -206,14 +253,20 @@ async fn test_build_reach_consistency() {
     // Create a tree structure
     let (root_hash, all_node_hashes) = tree_builder.create_root_and_leaves(4);
 
-    println!("Testing consistency with {} nodes", all_node_hashes.len() + 1);
+    println!(
+        "Testing consistency with {} nodes",
+        all_node_hashes.len() + 1
+    );
 
     // Run BuildReach multiple times and verify consistency
     let mut scanned_sizes = Vec::new();
     let mut reachable_counts = Vec::new();
 
     for run in 1..=3 {
-        let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+        let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+            1 << 20,
+            4,
+        )));
         let reachable_roots = vec![root_hash];
 
         let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
@@ -224,21 +277,37 @@ async fn test_build_reach_consistency() {
         scanned_sizes.push(scanned_size);
         reachable_counts.push(reachable_count);
 
-        println!("Run {}: scanned {} nodes, {} reachable", run, scanned_size, reachable_count);
+        println!(
+            "Run {}: scanned {} nodes, {} reachable",
+            run, scanned_size, reachable_count
+        );
     }
 
     // Verify consistency across runs
     for i in 1..scanned_sizes.len() {
-        assert_eq!(scanned_sizes[0], scanned_sizes[i],
+        assert_eq!(
+            scanned_sizes[0],
+            scanned_sizes[i],
             "Scanned size should be consistent across runs (run 1: {}, run {}: {})",
-            scanned_sizes[0], i + 1, scanned_sizes[i]);
-        assert_eq!(reachable_counts[0], reachable_counts[i],
+            scanned_sizes[0],
+            i + 1,
+            scanned_sizes[i]
+        );
+        assert_eq!(
+            reachable_counts[0],
+            reachable_counts[i],
             "Reachable count should be consistent across runs (run 1: {}, run {}: {})",
-            reachable_counts[0], i + 1, reachable_counts[i]);
+            reachable_counts[0],
+            i + 1,
+            reachable_counts[i]
+        );
     }
 
     // At minimum, root should be reachable
-    assert!(scanned_sizes[0] > 0, "Should have scanned at least the root");
+    assert!(
+        scanned_sizes[0] > 0,
+        "Should have scanned at least the root"
+    );
 
     println!("✅ BuildReach consistency test PASSED");
 }
@@ -256,13 +325,19 @@ async fn test_build_reach_error_handling() {
     let fake_root3 = H256::random();
 
     // Run BuildReach with non-existent roots
-    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(1 << 20, 4)));
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
     let reachable_roots = vec![fake_root1, fake_root2, fake_root3];
 
     let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
-    println!("BuildReach scanned {} nodes with non-existent roots", scanned_size);
+    println!(
+        "BuildReach scanned {} nodes with non-existent roots",
+        scanned_size
+    );
 
     // Should handle non-existent roots gracefully without panicking
     // The behavior depends on implementation - could scan 0 or still process
@@ -275,7 +350,10 @@ async fn test_build_reach_error_handling() {
     drop(bloom_guard);
 
     // This test mainly verifies that the operation doesn't panic
-    println!("Fake roots in bloom: {}, {}, {}", fake1_in_bloom, fake2_in_bloom, fake3_in_bloom);
+    println!(
+        "Fake roots in bloom: {}, {}, {}",
+        fake1_in_bloom, fake2_in_bloom, fake3_in_bloom
+    );
 
     println!("✅ Error handling test PASSED (no panics with invalid roots)");
 }

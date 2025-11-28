@@ -9,6 +9,7 @@ use crate::commands::db::commands::cp_cf::CpCfCommand;
 use crate::commands::db::commands::delete_benchmark::DeleteBenchmarkCommand;
 use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::dump_state::DumpStateCommand;
+use crate::commands::db::commands::gc::GCCommand;
 use crate::commands::db::commands::generate_db_checkpoint::GenerateDBCheckPointCommand;
 use crate::commands::db::commands::get_accumulator_leaf_by_index::GetAccumulatorLeafByIndexCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
@@ -118,6 +119,7 @@ impl CommandAction<String> for DB {
             DBCommand::CheckRefcount(check) => check.execute().await,
             DBCommand::ReachCheck(reach) => reach.execute().await,
             DBCommand::ListStale(list_stale) => list_stale.execute().await,
+            DBCommand::GC(gc) => gc.execute().await,
             DBCommand::RecycleDump(dump) => dump.execute().await,
             DBCommand::RecycleRestore(restore) => restore.execute().await,
             DBCommand::RecycleStat(stat) => stat.execute().await,
@@ -153,6 +155,7 @@ pub enum DBCommand {
     CheckRefcount(CheckRefcountCommand),
     ReachCheck(ReachCheckCommand),
     ListStale(ListStaleCommand),
+    GC(GCCommand),
     RecycleDump(crate::commands::db::commands::recycle_bin::RecycleDumpCommand),
     RecycleRestore(crate::commands::db::commands::recycle_bin::RecycleRestoreCommand),
     RecycleStat(crate::commands::db::commands::recycle_bin::RecycleStatCommand),
