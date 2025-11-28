@@ -211,7 +211,7 @@ parking_lot = "0.12.4"
 petgraph = "0.8.3"
 primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
 proptest = "1.9.0"
-proptest-derive = "0.5.1"
+proptest-derive = "0.7.0"
 rayon = "1.11.0"
 rand = "0.8.5"
 rand_core = { version = "0.9.3", default-features = false }
