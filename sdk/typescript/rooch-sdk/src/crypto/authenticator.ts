@@ -103,6 +103,11 @@ export enum BuiltinAuthValidator {
   SESSION = 0x00,
   BITCOIN = 0x01,
   BITCOIN_MULTISIGN = 0x02,
+  /**
+   * @deprecated Use DID validator (ID=4) with WebAuthnV0 envelope instead.
+   * Migration: Authenticator.did(txHash, signer, vmFragment, SigningEnvelope.WebAuthnV0)
+   * or Authenticator.didWebAuthn(txHash, signer, vmFragment)
+   */
   WEBAUTHN = 0x03,
   DID = 0x04,
 }

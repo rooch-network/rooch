@@ -17,6 +17,7 @@ module rooch_framework::builtin_validators{
     const BITCOIN_VALIDATOR_ID: u64 = 1;
     /// Bitcoin multisign validator is defined in bitcoin_move framework.
     const BITCOIN_MULTISIGN_VALIDATOR_ID: u64 = 2;
+    /// WebAuthn validator ID (DEPRECATED). Use DID validator (ID=4) with WebAuthnV0 envelope instead.
     const WEBAUTHN_VALIDATOR_ID: u64 = 3;
     const DID_VALIDATOR_ID: u64 = 4;
 
@@ -41,6 +42,7 @@ module rooch_framework::builtin_validators{
 
 
     /// This function is for init webauthn validator when framework is upgraded.
+    /// DEPRECATED: This validator is deprecated. Use did_validator (ID=4) with WebAuthnV0 envelope instead.
     public entry fun init_webauthn_validator() {
         let id = auth_validator_registry::register_internal_with_id<webauthn_validator::WebauthnValidator>(WEBAUTHN_VALIDATOR_ID);
         assert!(id == webauthn_validator::auth_validator_id(), ErrorGenesisInit);
