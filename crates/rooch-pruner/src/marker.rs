@@ -893,10 +893,10 @@ mod tests {
         let strategy = select_marker_strategy(small_nodes);
         assert_eq!(strategy, MarkerStrategy::InMemory);
 
-        // Test with very large dataset (should select Persistent)
-        // This test assumes we have limited available memory
-        let large_nodes = 100_000_000; // ~6GB
-        let strategy = select_marker_strategy(large_nodes);
+        // Test with extremely large dataset that will force Persistent strategy regardless of environment
+        // Use an absurdly large number that exceeds any reasonable system memory
+        let extremely_large_nodes = usize::MAX / 1_000_000; // Very large dataset
+        let strategy = select_marker_strategy(extremely_large_nodes);
         assert_eq!(strategy, MarkerStrategy::Persistent);
     }
 
