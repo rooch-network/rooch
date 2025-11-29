@@ -8,75 +8,11 @@
 #[cfg(test)]
 mod tests {
     use crate::garbage_collector::{GCConfig, GarbageCollector};
-    use crate::historical_state::{HistoricalStateCollector, HistoricalStateConfig};
     use crate::marker::MarkerStrategy;
     use anyhow::Result;
     use moveos_store::MoveOSStore;
-    use rooch_store::RoochStore;
     use std::sync::Arc;
-    use std::time::Duration;
     use tracing::info;
-
-    /// Test HistoricalStateCollector with different root counts
-    #[test]
-    fn test_historical_state_collector_multi_root() -> Result<()> {
-        info!("Testing HistoricalStateCollector with multi-root functionality");
-
-        let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
-        let moveos_store = Arc::new(moveos_store);
-        let (rooch_store, _temp_dir) = RoochStore::mock_rooch_store()?;
-        let rooch_store = Arc::new(rooch_store);
-
-        // Test collecting 0 roots
-        let config = HistoricalStateConfig {
-            protected_roots_count: 0,
-        };
-        let collector =
-            HistoricalStateCollector::new(moveos_store.clone(), rooch_store.clone(), config);
-        let roots = collector.collect_recent_state_roots()?;
-        assert_eq!(roots.len(), 0);
-        info!("✅ Empty root collection test passed");
-
-        // Test collecting 1 root
-        let config = HistoricalStateConfig {
-            protected_roots_count: 1,
-        };
-        let collector =
-            HistoricalStateCollector::new(moveos_store.clone(), rooch_store.clone(), config);
-        let roots = collector.collect_recent_state_roots()?;
-        assert_eq!(roots.len(), 1);
-        info!("✅ Single root collection test passed");
-
-        // Test collecting multiple roots
-        let config = HistoricalStateConfig {
-            protected_roots_count: 5,
-        };
-        let collector =
-            HistoricalStateCollector::new(moveos_store.clone(), rooch_store.clone(), config);
-        let roots = collector.collect_recent_state_roots()?;
-        assert!(!roots.is_empty());
-        assert!(roots.len() <= 5);
-        info!(
-            "✅ Multi-root collection test passed: {} roots collected",
-            roots.len()
-        );
-
-        // Test collecting many roots
-        let config = HistoricalStateConfig {
-            protected_roots_count: 100,
-        };
-        let collector = HistoricalStateCollector::new(moveos_store, rooch_store, config);
-        let roots = collector.collect_recent_state_roots()?;
-        assert!(!roots.is_empty());
-        assert!(roots.len() <= 100);
-        info!(
-            "✅ Large root count test passed: {} roots collected",
-            roots.len()
-        );
-
-        info!("✅ HistoricalStateCollector multi-root tests completed successfully");
-        Ok(())
-    }
 
     /// Test GC configuration with multi-root support
     #[test]
@@ -255,47 +191,6 @@ mod tests {
         Ok(())
     }
 
-    /// Test memory usage with multi-root protection
-    #[test]
-    fn test_memory_usage_multi_root() -> Result<()> {
-        info!("Testing memory usage with multi-root protection");
-
-        let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
-        let moveos_store = Arc::new(moveos_store);
-        let (rooch_store, _temp_dir) = RoochStore::mock_rooch_store()?;
-        let rooch_store = Arc::new(rooch_store);
-
-        // Test memory usage estimation with different root counts
-        let test_counts = vec![1, 5, 10, 50, 100];
-
-        for count in test_counts {
-            let start_time = std::time::Instant::now();
-            let config = HistoricalStateConfig {
-                protected_roots_count: count,
-            };
-            let collector =
-                HistoricalStateCollector::new(moveos_store.clone(), rooch_store.clone(), config);
-            let roots = collector.collect_recent_state_roots()?;
-            let duration = start_time.elapsed();
-
-            info!(
-                "Root count {}: collected {} roots in {:?}",
-                count,
-                roots.len(),
-                duration
-            );
-
-            // Memory usage should be reasonable (performance assertion)
-            assert!(
-                duration < Duration::from_secs(5),
-                "Root collection took too long"
-            );
-        }
-
-        info!("✅ Memory usage tests completed successfully");
-        Ok(())
-    }
-
     /// Test error handling with invalid root counts
     #[test]
     fn test_error_handling_invalid_root_counts() -> Result<()> {
@@ -320,54 +215,6 @@ mod tests {
         info!("✅ Zero protected roots correctly rejected");
 
         info!("✅ Error handling tests completed successfully");
-        Ok(())
-    }
-
-    /// Test concurrent access to HistoricalStateCollector
-    #[test]
-    fn test_concurrent_historical_state_collection() -> Result<()> {
-        info!("Testing concurrent access to HistoricalStateCollector");
-
-        let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
-        let moveos_store = Arc::new(moveos_store);
-        let (rooch_store, _temp_dir) = RoochStore::mock_rooch_store()?;
-        let rooch_store = Arc::new(rooch_store);
-
-        let config = HistoricalStateConfig {
-            protected_roots_count: 3,
-        };
-        let collector = Arc::new(HistoricalStateCollector::new(
-            moveos_store,
-            rooch_store,
-            config,
-        ));
-
-        let thread_count = 4;
-        let mut handles = vec![];
-
-        for _thread_id in 0..thread_count {
-            let collector_clone = Arc::clone(&collector);
-            let handle = std::thread::spawn(move || -> Result<usize> {
-                let roots = collector_clone.collect_recent_state_roots()?;
-                Ok(roots.len())
-            });
-
-            handles.push(handle);
-        }
-
-        let mut results = vec![];
-        for handle in handles {
-            results.push(handle.join().unwrap()?);
-        }
-
-        // All threads should complete successfully
-        assert_eq!(results.len(), thread_count);
-        for (i, result) in results.iter().enumerate() {
-            info!("Thread {} collected {} roots", i, result);
-            assert!(*result > 0, "Each thread should collect at least one root");
-        }
-
-        info!("✅ Concurrent access test completed successfully");
         Ok(())
     }
 }

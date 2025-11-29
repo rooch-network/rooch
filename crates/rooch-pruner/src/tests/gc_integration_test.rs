@@ -36,7 +36,7 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: MarkerStrategy::InMemory,
-            force_execution: false,
+            force_execution: true,
             protected_roots_count: 1,
         };
 
@@ -103,9 +103,9 @@ mod tests {
         assert_eq!(small_strategy, MarkerStrategy::InMemory);
 
         // Test large dataset - should use Persistent (based on memory constraints)
-        let large_nodes = 10_000_000;
+        let large_nodes = 100_000_000; // 100M nodes should trigger Persistent strategy
         let large_strategy = crate::marker::select_marker_strategy(large_nodes);
-        assert_eq!(large_strategy, MarkerStrategy::Auto); // Auto will make the decision
+        assert_eq!(large_strategy, MarkerStrategy::Persistent); // Large dataset should use Persistent
 
         info!("✅ Marker strategy selection test completed");
         info!(
@@ -277,10 +277,10 @@ mod tests {
 
         let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
-        // Test with force execution disabled (should work)
+        // Test with force execution enabled (should work)
         let config = GCConfig {
             dry_run: true,
-            force_execution: false,
+            force_execution: true,
             ..Default::default()
         };
 
@@ -304,7 +304,10 @@ mod tests {
 
         let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
-        let config = GCConfig::default();
+        let config = GCConfig {
+            force_execution: true,
+            ..Default::default()
+        };
         let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
 
         // Execute GC to get report

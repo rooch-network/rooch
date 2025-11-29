@@ -56,13 +56,13 @@ mod simple_atomic_snapshot_tests {
 
     #[test]
     fn test_snapshot_manager_creation() {
-        // 创建一个临时目录用于测试
+        // Create a temporary directory for testing
         let temp_dir = TempDir::new().unwrap();
         let temp_path = temp_dir.path();
 
         println!("🧪 Created temporary directory: {}", temp_path.display());
 
-        // 创建 SnapshotManagerConfig
+        // Create SnapshotManagerConfig
         let _config = SnapshotManagerConfig {
             lock_timeout_ms: 5000,
             max_snapshot_age_ms: 30000,
@@ -72,8 +72,8 @@ mod simple_atomic_snapshot_tests {
 
         println!("✅ SnapshotManagerConfig created");
 
-        // 注意：这里我们只测试配置部分，因为完整的 AtomicSnapshotManager
-        // 需要真实的 MoveOSStore 和 RoochStore 实例
+        // Note: Here we only test the configuration part, because the complete AtomicSnapshotManager
+        // requires real MoveOSStore and RoochStore instances
         println!("ℹ️ AtomicSnapshotManager requires real stores - config test passed");
     }
 
@@ -88,7 +88,7 @@ mod simple_atomic_snapshot_tests {
         for (i, phase) in phases.iter().enumerate() {
             println!("🔄 Phase {}: {:?}", i + 1, phase);
 
-            // 模拟阶段转换
+            // Simulate phase transition
             let next_phase = match phase {
                 PrunePhase::BuildReach => PrunePhase::SweepExpired,
                 PrunePhase::SweepExpired => PrunePhase::Incremental,
@@ -103,7 +103,7 @@ mod simple_atomic_snapshot_tests {
 
     #[test]
     fn test_consistency_validation_logic() {
-        // 模拟一致性验证逻辑
+        // Simulate consistency validation logic
         let is_consistent = true;
         let snapshot_id = "test-snapshot-001";
 
@@ -113,10 +113,10 @@ mod simple_atomic_snapshot_tests {
             println!("⚠️ Snapshot {} consistency validation failed", snapshot_id);
         }
 
-        // 测试验证函数签名
+        // Test validation function signature
         fn validate_snapshot_consistency(snapshot_id: &str) -> bool {
             println!("🔍 Validating snapshot: {}", snapshot_id);
-            // 简化的验证逻辑
+            // Simplified validation logic
             !snapshot_id.is_empty()
         }
 
@@ -133,7 +133,7 @@ mod simple_atomic_snapshot_tests {
     fn test_performance_benchmarks() {
         let start_time = std::time::Instant::now();
 
-        // 模拟快照创建性能测试
+        // Simulate snapshot creation performance test
         let iterations = 100;
         for i in 0..iterations {
             let snapshot = PruneSnapshot {
@@ -141,7 +141,7 @@ mod simple_atomic_snapshot_tests {
                 state_root: H256::random(),
             };
 
-            // 模拟一些处理
+            // Simulate some processing
             let _hash = snapshot.state_root;
         }
 
@@ -153,7 +153,7 @@ mod simple_atomic_snapshot_tests {
         println!("  - Total time: {:?}", elapsed);
         println!("  - Average time per iteration: {:?}", avg_time);
 
-        // 性能断言
+        // Performance assertion
         assert!(
             avg_time < Duration::from_millis(10),
             "Average snapshot creation should be faster than 10ms"
@@ -164,7 +164,7 @@ mod simple_atomic_snapshot_tests {
 
     #[test]
     fn test_error_handling() {
-        // 模拟错误处理场景
+        // Simulate error handling scenarios
         let error_scenarios = [
             "Snapshot creation failed",
             "Phase validation failed",
@@ -174,7 +174,7 @@ mod simple_atomic_snapshot_tests {
         for scenario in error_scenarios {
             println!("🔧 Testing error scenario: {}", scenario);
 
-            // 模拟错误处理逻辑
+            // Simulate error handling logic
             let should_retry = scenario.contains("timeout");
 
             if should_retry {

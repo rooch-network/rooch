@@ -176,8 +176,8 @@ mod tests {
             ("Pattern-based", {
                 let mut hashes = Vec::new();
                 for i in 0..100_000 {
-                    let hash_val = (i * 1234567) % 1_000_000;
-                    hashes.push(H256::from_low_u64_be(hash_val as u64));
+                    let hash_val = ((i as u64).wrapping_mul(1234567)) % 1_000_000;
+                    hashes.push(H256::from_low_u64_be(hash_val));
                 }
                 hashes
             }),

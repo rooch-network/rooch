@@ -132,10 +132,10 @@ fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
 
             let path = Path::new(file_path);
             if let Some(parent) = path.parent() {
-                fs::create_dir_all(parent)?; // 创建所有父目录
+                fs::create_dir_all(parent)?; // Create all parent directories
             }
 
-            fs::write(path, replaced_yaml_string)?; // 创建文件并写入数据
+            fs::write(path, replaced_yaml_string)?; // Create file and write data
 
             println!("export rooch types to file: {file_path} ok!");
         }

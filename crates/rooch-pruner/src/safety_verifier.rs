@@ -4,12 +4,12 @@
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 
-/// 极简的数据库安全验证器
+/// Minimal database safety verifier
 pub struct SafetyVerifier {
     db_path: PathBuf,
 }
 
-/// 安全验证结果
+/// Safety verification result
 #[derive(Debug)]
 pub struct SafetyReport {
     pub database_available: bool,
@@ -17,16 +17,16 @@ pub struct SafetyReport {
 }
 
 impl SafetyVerifier {
-    /// 创建新的安全验证器
+    /// Create new safety verifier
     pub fn new(db_path: &Path) -> Self {
         Self {
             db_path: db_path.to_path_buf(),
         }
     }
 
-    /// 执行安全验证
+    /// Execute safety verification
     pub fn verify_database_access(&self) -> Result<SafetyReport> {
-        // 1. 检查数据库目录是否存在
+        // 1. Check if database directory exists
         if !self.db_path.exists() || !self.db_path.is_dir() {
             return Ok(SafetyReport {
                 database_available: false,
@@ -34,20 +34,20 @@ impl SafetyVerifier {
             });
         }
 
-        // 2. 检查 RocksDB LOCK 文件状态
+        // 2. Check RocksDB LOCK file status
         let lock_file = self.db_path.join("LOCK");
         if lock_file.exists() {
-            // 尝试获取锁来验证是否真的被锁定
+            // Try to acquire lock to verify if it's actually locked
             match self.try_acquire_exclusive_access(&lock_file) {
                 Ok(_) => {
-                    // 可以获取锁，说明数据库没有被其他进程锁定
+                    // Can acquire lock, database is not locked by another process
                     Ok(SafetyReport {
                         database_available: true,
                         message: "Database is available for exclusive access".to_string(),
                     })
                 }
                 Err(e) => {
-                    // 无法获取锁，说明被其他进程锁定
+                    // Cannot acquire lock, database is locked by another process
                     Ok(SafetyReport {
                         database_available: false,
                         message: format!("Database is locked by another process: {}", e),
@@ -55,7 +55,7 @@ impl SafetyVerifier {
                 }
             }
         } else {
-            // LOCK 文件不存在，可能数据库未初始化或损坏
+            // LOCK file doesn't exist, database may not be initialized or corrupted
             Ok(SafetyReport {
                 database_available: false,
                 message: "Database LOCK file missing - database may not be properly initialized"
@@ -64,19 +64,19 @@ impl SafetyVerifier {
         }
     }
 
-    /// 尝试获取数据库排他访问权限
+    /// Try to acquire database exclusive access
     fn try_acquire_exclusive_access(&self, _lock_file: &Path) -> Result<()> {
-        // 创建测试文件来验证访问权限
+        // Create test file to verify access permissions
         let test_file = self.db_path.join("gc_safety_check.tmp");
 
-        // 尝试创建和锁定测试文件
+        // Try to create and lock test file
         let file = std::fs::OpenOptions::new()
             .create(true)
             .truncate(true)
             .write(true)
             .open(&test_file)?;
 
-        // 立即删除测试文件
+        // Delete test file immediately
         drop(file);
         std::fs::remove_file(&test_file)?;
 
@@ -135,10 +135,10 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let verifier = SafetyVerifier::new(temp_dir.path());
 
-        // 测试创建和删除临时文件的能力
+        // Test ability to create and delete temporary files
         let test_file = temp_dir.path().join("gc_safety_check.tmp");
         let result = verifier.try_acquire_exclusive_access(&temp_dir.path().join("LOCK"));
         assert!(result.is_ok());
-        assert!(!test_file.exists()); // 文件应该被清理
+        assert!(!test_file.exists()); // File should be cleaned up
     }
 }

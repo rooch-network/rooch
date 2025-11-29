@@ -19,7 +19,7 @@ impl StackAllocator {
     }
 
     fn dealloc(&mut self, _ptr: *mut u8, _layout: Layout) {
-        // 在栈分配器中,我们不需要显式地释放内存
+        // In stack allocator, we don't need to explicitly free memory
     }
 }
 
