@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_utf8() {
-        let move_str = MoveString::from_str("hello").unwrap();
+        let move_str = MoveString::from_str("你好").unwrap();
         println!("{}", hex::encode(&move_str.bytes));
         println!("{}", move_str);
     }

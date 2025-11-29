@@ -38,6 +38,9 @@ export class TestBox {
     const keepTmp =
       process.env.TESTBOX_KEEP_TMP === '1' || process.env.TESTBOX_KEEP_TMP?.toLowerCase() === 'true'
 
+    console.error('🔧 TestBox constructor: TESTBOX_KEEP_TMP =', process.env.TESTBOX_KEEP_TMP)
+    console.error('🔧 TestBox constructor: keepTmp =', keepTmp)
+
     let tmpDir: DirResult
     if (baseDir) {
       fs.mkdirSync(baseDir, { recursive: true })
@@ -47,12 +50,15 @@ export class TestBox {
         removeCallback: () => {
           if (!keepTmp) {
             fs.rmSync(name, { recursive: true, force: true })
+          } else {
+            console.error('🔧 Skipping temp directory removal (keepTmp=true)')
           }
         },
       } as DirResult
     } else {
       tmp.setGracefulCleanup()
-      tmpDir = tmp.dirSync({ unsafeCleanup: true })
+      tmpDir = tmp.dirSync({ unsafeCleanup: !keepTmp, keep: keepTmp })
+      console.error('🔧 Using tmp.dirSync with unsafeCleanup:', !keepTmp, 'keep:', keepTmp)
     }
 
     this.tmpDir = tmpDir
@@ -67,7 +73,21 @@ export class TestBox {
 
   private initRoochConfig() {
     console.error('🔧 Running rooch init with config-dir:', this.roochDir)
-    this.roochCommand(['init', '--config-dir', this.roochDir, '--skip-password'])
+    try {
+      const initResult = this.roochCommand(['init', '--config-dir', this.roochDir, '--skip-password'])
+      console.error('🔧 rooch init result:', initResult.substring(0, 200))
+    } catch (error: any) {
+      console.error('🔧 rooch init failed:', error.message)
+      throw error
+    }
+
+    // Verify rooch.yaml was created
+    const configPath = path.join(this.roochDir, 'rooch.yaml')
+    if (fs.existsSync(configPath)) {
+      console.error('🔧 rooch.yaml created successfully at:', configPath)
+    } else {
+      console.error('🔧 WARNING: rooch.yaml not found at:', configPath)
+    }
 
     console.error('🔧 Running rooch env switch with config-dir:', this.roochDir)
     this.roochCommand(['env', 'switch', '--config-dir', this.roochDir, '--alias', 'local'])
@@ -360,8 +380,12 @@ export class TestBox {
           // Ignore
         }
       }
+
+      // Reset roochContainer reference after stopping the process
+      this.roochContainer = undefined
     } else {
       this.roochContainer?.stop()
+      this.roochContainer = undefined
     }
 
     // Try to remove temp directory, but don't fail if it can't be removed
