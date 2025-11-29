@@ -28,6 +28,9 @@ export class TestBox {
   roochContainer?: StartedRoochContainer | number
   roochDir: string
 
+  // Whether to preserve the temporary directory (including data dir and logs)
+  private keepTmp: boolean
+
   roochPort?: number
   metricsPort?: number
   private miningIntervalId: NodeJS.Timeout | null = null
@@ -37,6 +40,9 @@ export class TestBox {
     const baseDir = process.env.TESTBOX_BASE_DIR
     const keepTmp =
       process.env.TESTBOX_KEEP_TMP === '1' || process.env.TESTBOX_KEEP_TMP?.toLowerCase() === 'true'
+
+    // Cache the flag so cleanup logic can respect it later
+    this.keepTmp = keepTmp
 
     console.error('🔧 TestBox constructor: TESTBOX_KEEP_TMP =', process.env.TESTBOX_KEEP_TMP)
     console.error('🔧 TestBox constructor: keepTmp =', keepTmp)
@@ -389,17 +395,22 @@ export class TestBox {
     }
 
     // Try to remove temp directory, but don't fail if it can't be removed
-    try {
-      this.tmpDir.removeCallback()
-      log('Temp directory cleanup completed')
-    } catch (e: any) {
-      log(`Warning: Failed to remove temp directory: ${e.message}`)
-      // Try force removal as fallback
+    // Respect keepTmp: in debugging/investigation flows we must preserve data dir
+    if (this.keepTmp) {
+      log('Temp directory preservation enabled (keepTmp=true); skipping cleanup')
+    } else {
       try {
-        execSync(`rm -rf "${this.tmpDir.name}" 2>/dev/null || true`, { stdio: 'ignore' })
-        log('Temp directory force removed')
-      } catch (e2) {
-        log('Warning: Force removal also failed, temp directory may remain')
+        this.tmpDir.removeCallback()
+        log('Temp directory cleanup completed')
+      } catch (e: any) {
+        log(`Warning: Failed to remove temp directory: ${e.message}`)
+        // Try force removal as fallback
+        try {
+          execSync(`rm -rf "${this.tmpDir.name}" 2>/dev/null || true`, { stdio: 'ignore' })
+          log('Temp directory force removed')
+        } catch (e2) {
+          log('Warning: Force removal also failed, temp directory may remain')
+        }
       }
     }
     log('Environment cleanup completed')

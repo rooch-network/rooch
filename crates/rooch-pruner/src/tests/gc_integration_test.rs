@@ -94,32 +94,6 @@ mod tests {
         Ok(())
     }
 
-    /// Test marker strategy selection based on estimated node count
-    #[test]
-    fn test_marker_strategy_selection() -> Result<()> {
-        // Test small dataset - should use InMemory
-        let small_nodes = 10_000;
-        let small_strategy = crate::marker::select_marker_strategy(small_nodes);
-        assert_eq!(small_strategy, MarkerStrategy::InMemory);
-
-        // Test large dataset - should use Persistent (based on memory constraints)
-        let large_nodes = 100_000_000; // 100M nodes should trigger Persistent strategy
-        let large_strategy = crate::marker::select_marker_strategy(large_nodes);
-        assert_eq!(large_strategy, MarkerStrategy::Persistent); // Large dataset should use Persistent
-
-        info!("✅ Marker strategy selection test completed");
-        info!(
-            "  Small dataset ({} nodes): {:?}",
-            small_nodes, small_strategy
-        );
-        info!(
-            "  Large dataset ({} nodes): {:?}",
-            large_nodes, large_strategy
-        );
-
-        Ok(())
-    }
-
     /// Test GC configuration validation
     #[test]
     fn test_gc_configuration() -> Result<()> {

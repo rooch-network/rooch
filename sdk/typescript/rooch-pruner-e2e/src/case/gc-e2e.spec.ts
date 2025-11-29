@@ -92,13 +92,16 @@ async function executeGCCommand(
 ): Promise<GCReport> {
   const config = { ...loadGCTestConfig(), ...options }
 
+  // The data directory path should match what the server uses
+  const dataDir = path.join(testbox.roochDir, 'data')
+
   const args = [
     'db',
     'gc',
     '--chain-id',
-    'dev',
+    'local', // Must match the network name used when starting the server
     '--data-dir',
-    testbox.roochDir,
+    dataDir, // Must match the data directory used by the server
     ...(config.dryRun ? ['--dry-run'] : []),
     '--batch-size',
     config.batchSize.toString(),
