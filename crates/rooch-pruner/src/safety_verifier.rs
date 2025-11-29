@@ -67,7 +67,15 @@ impl SafetyVerifier {
     /// Try to acquire database exclusive access
     fn try_acquire_exclusive_access(&self, _lock_file: &Path) -> Result<()> {
         // Create test file to verify access permissions
-        let test_file = self.db_path.join("gc_safety_check.tmp");
+        // Use thread ID and timestamp to avoid conflicts in concurrent tests
+        let thread_id = std::thread::current().id();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let test_file = self
+            .db_path
+            .join(format!("gc_safety_check_{:?}_{}.tmp", thread_id, timestamp));
 
         // Try to create and lock test file
         let file = std::fs::OpenOptions::new()
@@ -136,9 +144,26 @@ mod tests {
         let verifier = SafetyVerifier::new(temp_dir.path());
 
         // Test ability to create and delete temporary files
-        let test_file = temp_dir.path().join("gc_safety_check.tmp");
+        // Note: The actual filename now includes thread ID and timestamp, so we can't predict the exact name
         let result = verifier.try_acquire_exclusive_access(&temp_dir.path().join("LOCK"));
         assert!(result.is_ok());
-        assert!(!test_file.exists()); // File should be cleaned up
+
+        // Check that no gc_safety_check files remain (they should be cleaned up)
+        let remaining_files: Vec<_> = std::fs::read_dir(temp_dir.path())
+            .unwrap()
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with("gc_safety_check_")
+            })
+            .collect();
+
+        assert!(
+            remaining_files.is_empty(),
+            "Temporary files should be cleaned up, but found: {:?}",
+            remaining_files
+        );
     }
 }
