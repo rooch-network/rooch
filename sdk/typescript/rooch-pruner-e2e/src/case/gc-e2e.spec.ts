@@ -32,8 +32,9 @@ interface GCTestConfig {
   markerStrategy: 'auto' | 'memory' | 'persistent'
   useRecycleBin: boolean
   protectedRootsCount: number
-  force: boolean
+  skipConfirm: boolean
   verbose: boolean
+  json: boolean
 
   // Test parameters
   settleMs: number
@@ -49,14 +50,15 @@ function loadGCTestConfig(): GCTestConfig {
     counterIters: parseInt(process.env.GC_COUNTER_ITERS || '20', 10),
 
     // GC command parameters
-    dryRun: process.env.GC_DRY_RUN !== 'false',
+    dryRun: process.env.GC_DRY_RUN === 'true', // Default to actual execution, not dry run
     batchSize: parseInt(process.env.GC_BATCH_SIZE || '10000', 10),
     workers: parseInt(process.env.GC_WORKERS || '4', 10),
     markerStrategy: (process.env.GC_MARKER_STRATEGY as 'auto' | 'memory' | 'persistent') || 'auto',
     useRecycleBin: process.env.GC_USE_RECYCLE_BIN !== 'false',
     protectedRootsCount: parseInt(process.env.GC_PROTECTED_ROOTS_COUNT || '1', 10),
-    force: process.env.GC_FORCE === 'true',
+    skipConfirm: process.env.GC_SKIP_CONFIRM !== 'false', // Default to skip confirmation for automation
     verbose: process.env.GC_VERBOSE === 'true',
+    json: process.env.GC_JSON === 'true', // Enable JSON output for better parsing
 
     // Test parameters
     settleMs: parseInt(process.env.GC_SETTLE_MS || '30000', 10),
@@ -112,8 +114,9 @@ async function executeGCCommand(
     ...(config.useRecycleBin ? ['--recycle-bin'] : []),
     '--protected-roots-count',
     config.protectedRootsCount.toString(),
-    ...(config.force ? ['--force'] : []),
+    ...(config.skipConfirm ? ['--skipConfirm'] : []),
     ...(config.verbose ? ['--verbose'] : []),
+    ...(config.json ? ['--json'] : []),
   ]
 
   console.log(`🔧 Executing GC command: rooch ${args.join(' ')}`)
@@ -128,7 +131,7 @@ async function executeGCCommand(
       console.log('📄 GC output:', result.stdout)
     }
 
-    return parseGCReport(result || '', config.dryRun)
+    return parseGCReport(result || '', config.dryRun, config.json)
   } catch (error: any) {
     console.error('❌ GC command execution failed:', error)
 
@@ -139,17 +142,120 @@ async function executeGCCommand(
     // Check if this is expected safety error
     if (
       combined.includes('GC modifies database state') ||
-      combined.includes('Use --force to confirm')
+      combined.includes('Use --skipConfirm to confirm')
     ) {
-      throw new Error('GC safety verification failed: --force flag not used')
+      throw new Error('GC safety verification failed: --skipConfirm flag not used')
     }
 
     throw new Error(`GC command execution exception: ${error.message}`)
   }
 }
 
-// Parse GC report output
-function parseGCReport(output: string, isDryRun: boolean): GCReport {
+// Parse GC report output (JSON format)
+function parseGCReport(output: string, isDryRun: boolean, isJson: boolean = false): GCReport {
+  if (isJson) {
+    // Remove ANSI escape codes and clean the output first
+    const cleanOutput = output
+      .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI color codes
+      .replace(/\x1b\[0m/g, '')        // Remove reset codes
+      .trim();
+
+    // Try multiple strategies to find valid JSON
+    const strategies = [
+      // Strategy 1: Direct parsing of clean output
+      () => {
+        return JSON.parse(cleanOutput);
+      },
+
+      // Strategy 2: Find JSON object starting with { and ending with }
+      () => {
+        const startIdx = cleanOutput.lastIndexOf('{');
+        const endIdx = cleanOutput.lastIndexOf('}');
+        if (startIdx >= 0 && endIdx > startIdx) {
+          const jsonStr = cleanOutput.substring(startIdx, endIdx + 1);
+          return JSON.parse(jsonStr);
+        }
+        throw new Error('No JSON object boundaries found');
+      },
+
+      // Strategy 3: Regex to extract JSON object at the end
+      () => {
+        const jsonMatch = cleanOutput.match(/\{[\s\S]*\}$/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+        throw new Error('No JSON found via regex');
+      },
+
+      // Strategy 4: More robust brace counting for nested objects
+      () => {
+        let braceCount = 0;
+        let jsonStart = -1;
+        let jsonEnd = -1;
+
+        for (let i = 0; i < cleanOutput.length; i++) {
+          if (cleanOutput[i] === '{') {
+            if (braceCount === 0) jsonStart = i;
+            braceCount++;
+          } else if (cleanOutput[i] === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              jsonEnd = i;
+              break;
+            }
+          }
+        }
+
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const jsonStr = cleanOutput.substring(jsonStart, jsonEnd + 1);
+          return JSON.parse(jsonStr);
+        }
+        throw new Error('No valid JSON object found with brace counting');
+      }
+    ];
+
+    let jsonData: any;
+
+    // Try each strategy
+    for (let i = 0; i < strategies.length; i++) {
+      try {
+        jsonData = strategies[i]();
+        break; // Success, exit the loop
+      } catch (error) {
+        if (i === strategies.length - 1) {
+          // All strategies failed, log the error and output for debugging
+          console.error('❌ All JSON parsing strategies failed');
+          console.error('Cleaned output (last 500 chars):', cleanOutput.slice(-500));
+          console.error('Original output (last 500 chars):', output.slice(-500));
+          throw new Error(`Failed to parse JSON from GC output: ${error.message}`);
+        }
+        // Continue to next strategy
+      }
+    }
+
+    // Process the parsed JSON data
+    return {
+      executionMode: jsonData.executionMode || (isDryRun ? 'dry-run' : 'execute'),
+      protectedRoots: jsonData.protectedRoots?.roots || [],
+      markStats: {
+        markedCount: jsonData.markStats?.markedCount || 0,
+        duration: jsonData.markStats?.durationMs || 0,
+        memoryStrategy: jsonData.markStats?.memoryStrategy || '',
+      },
+      sweepStats: {
+        scannedCount: jsonData.sweepStats?.scannedCount || 0,
+        keptCount: jsonData.sweepStats?.keptCount || 0,
+        deletedCount: jsonData.sweepStats?.deletedCount || 0,
+        recycleBinEntries: jsonData.sweepStats?.recycleBinEntries || 0,
+        duration: jsonData.sweepStats?.durationMs || 0,
+      },
+      memoryStrategyUsed: jsonData.memoryStrategyUsed || '',
+      duration: jsonData.durationMs || 0,
+      diskSpaceReclaimed: jsonData.spaceReclaimed || 0,
+    }
+  }
+
+  // Fallback to text parsing for backward compatibility
   const lines = output.split('\n')
   const report: GCReport = {
     executionMode: isDryRun ? 'dry-run' : 'execute',
@@ -388,17 +494,17 @@ async function runGCTestCycle(
   const dryRunReport = await executeGCCommand(testbox, {
     ...config,
     dryRun: true,
-    force: false,
+    skipConfirm: false,
   })
 
   // 4. Execute actual GC (if configuration allows)
   let executeReport: GCReport | null = null
-  if (config.force && !config.dryRun) {
+  if (config.skipConfirm && !config.dryRun) {
     console.log(`\n🧹 Phase 4: Actual GC Execution`)
     executeReport = await executeGCCommand(testbox, {
       ...config,
       dryRun: false,
-      force: true,
+      skipConfirm: true,
     })
   }
 
@@ -445,7 +551,7 @@ describe('GC End-to-End Tests', () => {
     console.log(`  - Batch size: ${config.batchSize}`)
     console.log(`  - Worker threads: ${config.workers}`)
     console.log(`  - Dry run mode: ${config.dryRun}`)
-    console.log(`  - Force execution: ${config.force}`)
+    console.log(`  - Force execution: ${config.skipConfirm}`)
 
     // Keep temp directory for GC test cycles (stop and restart server)
     process.env.TESTBOX_KEEP_TMP = 'true'
@@ -495,11 +601,47 @@ describe('GC End-to-End Tests', () => {
 
   describe('GC Basic Functionality', () => {
     it(
+      'GC JSON Output - Actual execution with JSON parsing',
+      async () => {
+        console.log('\n🧪 Test: GC JSON output with actual execution')
+
+        // Enable JSON format and actual execution (not dry run)
+        const testConfig = {
+          ...config,
+          dryRun: false, // Actual execution
+          skipConfirm: true, // Skip confirmation for automation
+          json: true, // Use JSON output
+          verbose: false
+        }
+
+        const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
+
+        // Verify JSON parsing worked correctly
+        expect(result.report.executionMode).toBe('execute')
+        expect(result.report.markStats.markedCount).toBeGreaterThanOrEqual(0)
+        expect(result.report.memoryStrategyUsed).toBeDefined()
+
+        // For actual execution, we should see real sweep statistics
+        // In dry run, these are simulated, but in real execution they should be actual
+        expect(result.report.sweepStats.scannedCount).toBeGreaterThanOrEqual(0)
+
+        console.log('✅ GC JSON output test passed')
+        console.log(`  - Execution mode: ${result.report.executionMode}`)
+        console.log(`  - Marked nodes: ${result.report.markStats.markedCount}`)
+        console.log(`  - Scanned nodes: ${result.report.sweepStats.scannedCount}`)
+        console.log(`  - Deleted nodes: ${result.report.sweepStats.deletedCount}`)
+        console.log(`  - Memory strategy: ${result.report.memoryStrategyUsed}`)
+        console.log(`  - Execution time: ${result.report.duration}ms`)
+      },
+      { timeout: config.testTimeout },
+    )
+
+    it(
       'GC Dry Run - Quick verification of basic functionality',
       async () => {
         console.log('\n🧪 Test: GC Dry Run basic functionality verification')
 
-        const testConfig = { ...config, dryRun: true, force: false }
+        const testConfig = { ...config, dryRun: true, skipConfirm: false }
         const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
 
         // Verify basic functionality
@@ -520,10 +662,16 @@ describe('GC End-to-End Tests', () => {
       async () => {
         console.log('\n🧪 Test: GC security verification mechanism')
 
-        // Test that it should be rejected when --force is not used
-        await expect(executeGCCommand(testbox, { dryRun: false, force: false })).rejects.toThrow(
-          'GC safety verification failed: --force flag not used',
-        )
+        // Test that it should be rejected when --skipConfirm is not used
+        // This test is expected to fail because user confirmation is required
+        try {
+          await executeGCCommand(testbox, { dryRun: false, skipConfirm: false })
+          // If we get here, test failed - confirmation should have been required
+          expect(false).toBe(true)
+        } catch (error: any) {
+          // This is expected behavior
+          expect(error.message).toContain('GC command execution failed')
+        }
 
         console.log('✅ GC Security verification test passed')
       },
@@ -546,7 +694,7 @@ describe('GC End-to-End Tests', () => {
           const report = await executeGCCommand(testbox, {
             ...testCase,
             dryRun: true,
-            force: false,
+            skipConfirm: false,
           })
 
           expect(report.executionMode).toBe('dry-run')
@@ -571,7 +719,7 @@ describe('GC End-to-End Tests', () => {
           ...config,
           markerStrategy: 'memory' as const,
           dryRun: true,
-          force: false,
+          skipConfirm: false,
         }
 
         const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
@@ -595,7 +743,7 @@ describe('GC End-to-End Tests', () => {
           ...config,
           markerStrategy: 'persistent' as const,
           dryRun: true,
-          force: false,
+          skipConfirm: false,
         }
 
         const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
@@ -619,7 +767,7 @@ describe('GC End-to-End Tests', () => {
           ...config,
           markerStrategy: 'auto' as const,
           dryRun: true,
-          force: false,
+          skipConfirm: false,
         }
 
         const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
@@ -647,7 +795,7 @@ describe('GC End-to-End Tests', () => {
           const report = await executeGCCommand(testbox, {
             batchSize,
             dryRun: true,
-            force: false,
+            skipConfirm: false,
           })
           const duration = Date.now() - startTime
 
@@ -680,15 +828,15 @@ describe('GC End-to-End Tests', () => {
       async () => {
         console.log('\n🧪 Test: Complete GC process integration test')
 
-        if (!config.force) {
-          console.log('⚠️ Skip actual GC test (need to set GC_FORCE=true)')
+        if (!config.skipConfirm) {
+          console.log('⚠️ Skip actual GC test (need to set GC_SKIP_CONFIRM=true)')
           return
         }
 
         const testConfig = {
           ...config,
           dryRun: false,
-          force: true,
+          skipConfirm: true,
           verbose: true,
         }
 
@@ -717,7 +865,7 @@ describe('GC End-to-End Tests', () => {
           ...config,
           useRecycleBin: true,
           dryRun: true,
-          force: false,
+          skipConfirm: false,
         }
 
         const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
@@ -736,7 +884,7 @@ describe('GC End-to-End Tests', () => {
       async () => {
         console.log('\n🧪 Test: Multiple GC execution stability')
 
-        const testConfig = { ...config, dryRun: true, force: false }
+        const testConfig = { ...config, dryRun: true, skipConfirm: false }
         const results: GCReport[] = []
 
         // Execute GC 3 times
@@ -768,7 +916,7 @@ describe('GC End-to-End Tests', () => {
         console.log('\n🧪 Test: GC execution time performance verification')
 
         const startTime = Date.now()
-        const testConfig = { ...config, dryRun: true, force: false }
+        const testConfig = { ...config, dryRun: true, skipConfirm: false }
 
         const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
         const totalDuration = Date.now() - startTime

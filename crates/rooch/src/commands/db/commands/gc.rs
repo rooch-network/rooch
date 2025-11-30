@@ -8,9 +8,10 @@ use async_trait::async_trait;
 use clap::Parser;
 use rooch_pruner::{GCConfig, GarbageCollector, MarkerStrategy};
 use rooch_types::error::RoochResult;
+use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tracing::info;
+// tracing used only in other modules; no info! here
 
 /// Stop-the-world garbage collection for unreachable state nodes
 ///
@@ -85,12 +86,16 @@ pub struct GCCommand {
     /// This option skips the user confirmation step but still performs
     /// technical safety verification (database lock check)
     /// WARNING: Use only for automation when the service is stopped
-    #[clap(long)]
+    #[clap(long = "skip-confirm", alias = "skipConfirm")]
     pub skip_confirm: bool,
 
     /// Verbose output with detailed progress information
     #[clap(long, short = 'v')]
     pub verbose: bool,
+
+    /// Output results in JSON format for better parsing by automated tools
+    #[clap(long)]
+    pub json: bool,
 }
 
 impl GCCommand {
@@ -321,6 +326,101 @@ impl GCCommand {
 
         output
     }
+
+    /// Format report as JSON when --json is specified
+    fn format_report_json(
+        &self,
+        report: &rooch_pruner::garbage_collector::GCReport,
+    ) -> RoochResult<String> {
+        #[derive(Serialize)]
+        struct JsonRoots {
+            count: usize,
+            roots: Vec<String>,
+        }
+
+        #[derive(Serialize)]
+        struct JsonMarkStats {
+            #[serde(rename = "markedCount")]
+            marked_count: u64,
+            #[serde(rename = "durationMs")]
+            duration_ms: u128,
+            #[serde(rename = "memoryStrategy")]
+            memory_strategy: String,
+        }
+
+        #[derive(Serialize)]
+        struct JsonSweepStats {
+            #[serde(rename = "scannedCount")]
+            scanned_count: u64,
+            #[serde(rename = "keptCount")]
+            kept_count: u64,
+            #[serde(rename = "deletedCount")]
+            deleted_count: u64,
+            #[serde(rename = "recycleBinEntries")]
+            recycle_bin_entries: u64,
+            #[serde(rename = "durationMs")]
+            duration_ms: u128,
+        }
+
+        #[derive(Serialize)]
+        struct JsonReport {
+            #[serde(rename = "executionMode")]
+            execution_mode: String,
+            #[serde(rename = "protectedRoots")]
+            protected_roots: JsonRoots,
+            #[serde(rename = "markStats")]
+            mark_stats: JsonMarkStats,
+            #[serde(rename = "sweepStats")]
+            sweep_stats: JsonSweepStats,
+            #[serde(rename = "memoryStrategyUsed")]
+            memory_strategy_used: String,
+            #[serde(rename = "durationMs")]
+            duration_ms: u128,
+            #[serde(rename = "spaceReclaimed")]
+            space_reclaimed: f64,
+        }
+
+        let deletion_ratio = if report.sweep_stats.scanned_count > 0 {
+            report.sweep_stats.deleted_count as f64 / report.sweep_stats.scanned_count as f64
+                * 100.0
+        } else {
+            0.0
+        };
+
+        let json = JsonReport {
+            execution_mode: if self.dry_run {
+                "dry-run".to_string()
+            } else {
+                "execute".to_string()
+            },
+            protected_roots: JsonRoots {
+                count: report.protected_roots.len(),
+                roots: report
+                    .protected_roots
+                    .iter()
+                    .map(|h| format!("{:#x}", h))
+                    .collect(),
+            },
+            mark_stats: JsonMarkStats {
+                marked_count: report.mark_stats.marked_count,
+                duration_ms: report.mark_stats.duration.as_millis(),
+                memory_strategy: report.mark_stats.memory_strategy.clone(),
+            },
+            sweep_stats: JsonSweepStats {
+                scanned_count: report.sweep_stats.scanned_count,
+                kept_count: report.sweep_stats.kept_count,
+                deleted_count: report.sweep_stats.deleted_count,
+                recycle_bin_entries: report.sweep_stats.recycle_bin_entries,
+                duration_ms: report.sweep_stats.duration.as_millis(),
+            },
+            memory_strategy_used: report.memory_strategy_used.to_string(),
+            duration_ms: report.duration.as_millis(),
+            space_reclaimed: deletion_ratio,
+        };
+
+        serde_json::to_string_pretty(&json)
+            .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))
+    }
 }
 
 #[async_trait]
@@ -331,15 +431,18 @@ impl CommandAction<String> for GCCommand {
             return Err(rooch_types::error::RoochError::CommandArgumentError(e));
         }
 
-        // Setup logging based on verbose flag
-        if self.verbose {
-            match tracing_subscriber::fmt()
+        // Setup logging based on JSON/verbose mode (route logs to stderr to keep stdout clean)
+        if self.json {
+            let _ = tracing_subscriber::fmt()
+                .with_max_level(tracing::Level::ERROR)
+                .with_writer(std::io::stderr)
+                .with_ansi(false)
+                .try_init();
+        } else if self.verbose {
+            let _ = tracing_subscriber::fmt()
                 .with_max_level(tracing::Level::INFO)
-                .try_init()
-            {
-                Ok(_) => info!("Verbose logging initialized"),
-                Err(_) => info!("Logging already initialized, using existing configuration"),
-            }
+                .with_writer(std::io::stderr)
+                .try_init();
         }
 
         // Create GC configuration
@@ -348,7 +451,8 @@ impl CommandAction<String> for GCCommand {
             Err(e) => return Err(rooch_types::error::RoochError::CommandArgumentError(e)),
         };
 
-        info!("Starting garbage collection with config: {:?}", config);
+        // Note: Removed debug logging for cleaner JSON output when --json flag is used
+        // info!("Starting garbage collection with config: {:?}", config);
 
         // Create config options to get database path
         let opt = rooch_config::RoochOpt::new_with_default(
@@ -390,7 +494,11 @@ impl CommandAction<String> for GCCommand {
             .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
 
         // Format and return results
-        let output = self.format_report(&report);
+        let output = if self.json {
+            self.format_report_json(&report)?
+        } else {
+            self.format_report(&report)
+        };
 
         Ok(output)
     }
@@ -414,6 +522,7 @@ mod tests {
             protected_roots_count: 1,
             skip_confirm: false,
             verbose: false,
+            json: false,
         };
 
         assert!(matches!(
@@ -433,6 +542,7 @@ mod tests {
             protected_roots_count: 1,
             skip_confirm: false,
             verbose: false,
+            json: false,
         };
         assert!(matches!(
             command.parse_marker_strategy(),
@@ -451,6 +561,7 @@ mod tests {
             protected_roots_count: 1,
             skip_confirm: false,
             verbose: false,
+            json: false,
         };
         assert!(matches!(
             command.parse_marker_strategy(),
@@ -469,6 +580,7 @@ mod tests {
             skip_confirm: false,
             verbose: false,
             protected_roots_count: 1,
+            json: false,
         };
         assert!(command.parse_marker_strategy().is_err());
     }
@@ -487,6 +599,7 @@ mod tests {
             marker_strategy: "auto".to_string(),
             skip_confirm: false,
             verbose: false,
+            json: false,
         };
         assert!(valid_command.validate().is_ok());
 
@@ -503,6 +616,7 @@ mod tests {
             marker_strategy: "auto".to_string(),
             skip_confirm: false,
             verbose: false,
+            json: false,
         };
         assert!(invalid_command.validate().is_err());
 
@@ -519,6 +633,7 @@ mod tests {
             marker_strategy: "auto".to_string(),
             skip_confirm: false,
             verbose: false,
+            json: false,
         };
         assert!(invalid_command.validate().is_err());
 
@@ -535,6 +650,7 @@ mod tests {
             marker_strategy: "auto".to_string(),
             skip_confirm: true, // Skip confirmation for automation
             verbose: false,
+            json: false,
         };
         assert!(valid_write_command_skip_confirm.validate().is_ok());
 
@@ -550,6 +666,7 @@ mod tests {
             marker_strategy: "auto".to_string(),
             skip_confirm: false, // Will require user confirmation
             verbose: false,
+            json: false,
         };
         assert!(valid_write_command_with_confirm.validate().is_ok());
     }
@@ -568,6 +685,7 @@ mod tests {
             skip_confirm: true,
             verbose: false,
             protected_roots_count: 1,
+            json: false,
         };
 
         let config = command.create_gc_config().unwrap();

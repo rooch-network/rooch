@@ -3,7 +3,7 @@
 
 use crate::config::GCConfig;
 use crate::historical_state::{HistoricalStateCollector, HistoricalStateConfig};
-use crate::marker::{create_marker, MarkerStrategy};
+use crate::marker::{create_marker_with_config, MarkerStrategy, NodeMarker};
 use crate::reachability::ReachableBuilder;
 use crate::recycle_bin::RecycleBinStore;
 use crate::safety_verifier::SafetyVerifier;
@@ -14,8 +14,9 @@ use moveos_types::h256::H256;
 use parking_lot::Mutex;
 use raw_store::{CodecKVStore, SchemaStore};
 use rooch_store::RoochStore;
+use smt::NodeReader;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tracing::{debug, info, warn};
 
 /// Comprehensive GC execution report
@@ -129,12 +130,7 @@ impl GarbageCollector {
         // Phase 1: Safety verification
         self.verify_database_safety()?;
 
-        // Phase 2: User confirmation (skip in dry-run or if skip_confirm is enabled)
-        if !self.config.dry_run {
-            self.request_user_confirmation()?;
-        }
-
-        // Phase 3: Determine root set for this GC run
+        // Phase 2: Determine root set for this GC run
         let protected_roots = self.get_protected_roots()?;
         info!("Protected roots: {:?}", protected_roots);
 
@@ -152,14 +148,20 @@ impl GarbageCollector {
         );
 
         // Phase 4: Mark phase - identify all reachable nodes
-        let mark_stats = self.mark_phase(&protected_roots, memory_strategy)?;
+        let (mark_stats, marker) =
+            self.mark_phase(&protected_roots, memory_strategy, estimated_nodes)?;
+
+        // Phase 5: User confirmation (after mark, before sweep; skip in dry-run or if skip_confirm is enabled)
+        if !self.config.dry_run {
+            self.request_user_confirmation(&protected_roots, &mark_stats)?;
+        }
 
         // Phase 5: Sweep phase - delete unreachable nodes (skip in dry-run)
         let sweep_stats = if self.config.dry_run {
             info!("Dry-run mode: skipping sweep phase");
             SweepStats::default()
         } else {
-            self.sweep_phase(&protected_roots, memory_strategy)?
+            self.sweep_phase(&protected_roots, marker.as_ref())?
         };
 
         // Phase 6: Optional compaction
@@ -222,7 +224,11 @@ impl GarbageCollector {
     }
 
     /// Request user confirmation before proceeding with garbage collection
-    fn request_user_confirmation(&self) -> Result<()> {
+    fn request_user_confirmation(
+        &self,
+        protected_roots: &[H256],
+        mark_stats: &MarkStats,
+    ) -> Result<()> {
         // If skip_confirm is enabled, skip user confirmation
         if self.config.skip_confirm {
             warn!("⚠️  Skipping user confirmation (automation mode)");
@@ -230,17 +236,6 @@ impl GarbageCollector {
         }
 
         info!("=== User Confirmation ===");
-
-        // Get root node information for display
-        let protected_roots = match self.get_protected_roots() {
-            Ok(roots) => roots,
-            Err(_) => {
-                warn!(
-                    "Unable to get protected root information, but will continue with confirmation"
-                );
-                vec![]
-            }
-        };
 
         println!("=== Garbage Collection Preview ===");
         println!("Protected Root Nodes Count: {}", protected_roots.len());
@@ -252,6 +247,11 @@ impl GarbageCollector {
         if protected_roots.len() > 5 {
             println!("  ... and {} more root nodes", protected_roots.len() - 5);
         }
+        println!();
+
+        println!("Mark Phase Summary:");
+        println!("  Reachable nodes marked: {}", mark_stats.marked_count);
+        println!("  Marker strategy: {}", mark_stats.memory_strategy);
         println!();
 
         println!("⚠️  This will permanently delete unreachable state nodes");
@@ -360,13 +360,37 @@ impl GarbageCollector {
             return Ok(estimate);
         }
 
-        // Fallback: use a conservative default estimate when RocksDB statistics unavailable
-        let default_estimate = 1_000_000;
+        // Fallback: iterate once to count keys (stop-the-world GC tolerates full scan)
+        if let Some(wrapper) = node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                let mut iter = raw_db.raw_iterator_cf(&cf);
+                iter.seek_to_first();
+                let mut count = 0usize;
+                while iter.valid() {
+                    if let Some(k) = iter.key() {
+                        if k.len() == 32 {
+                            count += 1;
+                        } else {
+                            warn!("Skipping non-32B node key in count len={}", k.len());
+                        }
+                    }
+                    iter.next();
+                }
+                info!(
+                    "Estimated node count via iterator fallback: {} (RocksDB stats unavailable)",
+                    count
+                );
+                return Ok(count.max(1)); // avoid zero for downstream sizing
+            }
+        }
+
         warn!(
-            "Unable to determine node count from RocksDB statistics, using default estimate: {}",
-            default_estimate
+            "Unable to determine node count (stats and raw iterator unavailable), using default estimate: {}",
+            1_000_000
         );
-        Ok(default_estimate)
+
+        Ok(1_000_000)
     }
 
     /// Get node count from RocksDB statistics API using approximate-num-keys property
@@ -402,12 +426,18 @@ impl GarbageCollector {
         &self,
         protected_roots: &[H256],
         memory_strategy: MarkerStrategy,
-    ) -> Result<MarkStats> {
+        estimated_nodes: usize,
+    ) -> Result<(MarkStats, Box<dyn NodeMarker>)> {
         info!("=== Mark Phase ===");
         let start_time = Instant::now();
 
         // Create appropriate marker
-        let marker = create_marker(memory_strategy, 1_000_000)?;
+        let marker = create_marker_with_config(
+            memory_strategy,
+            estimated_nodes,
+            &self.config,
+            Some(self.moveos_store.clone()),
+        )?;
         info!("Created {} marker", marker.marker_type());
 
         // Create ReachableBuilder with a bloom filter for additional optimization
@@ -421,7 +451,7 @@ impl GarbageCollector {
         let reachable_count = reachable_builder.build_with_marker(
             protected_roots.to_vec(),
             self.config.workers,
-            marker,
+            marker.as_ref(),
         )?;
 
         let mark_stats = MarkStats {
@@ -435,14 +465,14 @@ impl GarbageCollector {
             reachable_count, mark_stats.duration
         );
 
-        Ok(mark_stats)
+        Ok((mark_stats, marker))
     }
 
     /// Sweep phase - identify and delete unreachable nodes
     fn sweep_phase(
         &self,
-        protected_roots: &[H256],
-        memory_strategy: MarkerStrategy,
+        _protected_roots: &[H256],
+        reachable_marker: &dyn NodeMarker,
     ) -> Result<SweepStats> {
         info!("=== Sweep Phase ===");
         let start_time = Instant::now();
@@ -457,11 +487,11 @@ impl GarbageCollector {
 
         if self.config.dry_run {
             info!("DRY RUN: Simulating sweep phase without actual deletions");
-            return self.simulate_sweep_phase(protected_roots, memory_strategy);
+            return self.simulate_sweep_phase();
         }
 
         // Get candidate nodes for deletion
-        let candidate_nodes = self.get_candidate_nodes_for_deletion(protected_roots)?;
+        let candidate_nodes = self.get_candidate_nodes_for_deletion()?;
         stats.scanned_count = candidate_nodes.len() as u64;
 
         if candidate_nodes.is_empty() {
@@ -475,10 +505,9 @@ impl GarbageCollector {
             candidate_nodes.len()
         );
 
-        // Determine which nodes are actually deletable by checking against bloom filter
-        let bloom = self.create_marker_for_protected_nodes(protected_roots, memory_strategy)?;
+        // Determine which nodes are actually deletable by checking against reachable marker
         let (nodes_to_delete, nodes_to_keep) =
-            self.filter_nodes_by_reachability(&candidate_nodes, &bloom)?;
+            self.filter_nodes_by_reachability(&candidate_nodes, reachable_marker)?;
 
         stats.kept_count = nodes_to_keep.len() as u64;
         info!("Nodes to keep (reachable): {}", nodes_to_keep.len());
@@ -529,70 +558,50 @@ impl GarbageCollector {
     }
 
     /// Get candidate nodes for deletion by scanning the database
-    fn get_candidate_nodes_for_deletion(&self, _protected_roots: &[H256]) -> Result<Vec<H256>> {
+    fn get_candidate_nodes_for_deletion(&self) -> Result<Vec<H256>> {
         let node_store = self.moveos_store.get_state_node_store();
         let mut candidates = Vec::new();
 
-        // For now, we'll use a simplified approach - get all keys from the node store
-        // In a more sophisticated implementation, we could:
-        // 1. Use RocksDB iterator with range scans
-        // 2. Filter out recently created nodes
-        // 3. Exclude nodes that are part of protected transaction ranges
-
-        match node_store.keys() {
-            Ok(keys) => {
-                // Keys are already H256 format
-                for key in keys {
-                    candidates.push(key);
+        // Prefer RocksDB raw iterator to avoid serde decode errors
+        if let Some(wrapper) = node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                let mut iter = raw_db.raw_iterator_cf(&cf);
+                iter.seek_to_first();
+                while iter.valid() {
+                    if let Some(k) = iter.key() {
+                        if k.len() == 32 {
+                            candidates.push(H256::from_slice(k));
+                        } else {
+                            warn!("Skipping non-32B node key len={}", k.len());
+                        }
+                    }
+                    iter.next();
                 }
                 debug!(
-                    "Found {} total nodes as deletion candidates",
+                    "Collected {} candidate nodes via state_node iterator",
                     candidates.len()
                 );
-            }
-            Err(e) => {
-                warn!(
-                    "Failed to get keys from node store: {}, using empty candidate list",
-                    e
-                );
+                return Ok(candidates);
             }
         }
+
+        warn!("Iterator not supported for node store, returning empty candidate list");
 
         Ok(candidates)
     }
 
-    /// Create a bloom filter for protected nodes
-    fn create_marker_for_protected_nodes(
-        &self,
-        protected_roots: &[H256],
-        _memory_strategy: MarkerStrategy,
-    ) -> Result<Arc<parking_lot::Mutex<BloomFilter>>> {
-        // Create a bloom filter directly
-        let bloom = Arc::new(parking_lot::Mutex::new(BloomFilter::new(8_388_608, 4))); // 1MB bloom filter
-
-        // Mark all protected roots as reachable
-        {
-            let mut bloom_guard = bloom.lock();
-            for root in protected_roots {
-                bloom_guard.insert(root);
-            }
-        }
-
-        Ok(bloom)
-    }
-
-    /// Filter nodes based on reachability using bloom filter
+    /// Filter nodes based on reachability using the marker built during mark phase
     fn filter_nodes_by_reachability(
         &self,
         candidates: &[H256],
-        bloom: &Arc<parking_lot::Mutex<BloomFilter>>,
+        marker: &dyn NodeMarker,
     ) -> Result<(Vec<H256>, Vec<H256>)> {
         let mut nodes_to_delete = Vec::new();
         let mut nodes_to_keep = Vec::new();
-        let bloom_guard = bloom.lock();
 
         for &node in candidates {
-            if bloom_guard.contains(&node) {
+            if marker.is_marked(&node) {
                 nodes_to_keep.push(node);
             } else {
                 nodes_to_delete.push(node);
@@ -620,6 +629,28 @@ impl GarbageCollector {
 
         let batch_size = batch.len();
 
+        // Optionally store deleted nodes into recycle bin for recovery
+        if self.config.use_recycle_bin {
+            for node_hash in batch {
+                if let Ok(Some(bytes)) = node_store.get(node_hash) {
+                    let record = crate::recycle_bin::RecycleRecord {
+                        bytes,
+                        phase: crate::recycle_bin::RecyclePhase::StopTheWorld,
+                        stale_root_or_cutoff: H256::zero(),
+                        tx_order: 0,
+                        deleted_at: SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs(),
+                        note: Some("gc sweep".to_string()),
+                    };
+                    if let Err(e) = self.recycle_bin.put_record(*node_hash, record) {
+                        warn!(?node_hash, "Failed to store recycle record: {}", e);
+                    }
+                }
+            }
+        }
+
         // Use the actual deletion API with flush=false for better performance
         // We'll flush once at the end of the sweep phase
         node_store.delete_nodes_with_flush(batch.to_vec(), false)?;
@@ -639,11 +670,7 @@ impl GarbageCollector {
     }
 
     /// Simulate sweep phase for dry-run mode
-    fn simulate_sweep_phase(
-        &self,
-        _protected_roots: &[H256],
-        _memory_strategy: MarkerStrategy,
-    ) -> Result<SweepStats> {
+    fn simulate_sweep_phase(&self) -> Result<SweepStats> {
         info!("Simulating sweep phase analysis");
 
         // Get candidate count without actual filtering for simplicity

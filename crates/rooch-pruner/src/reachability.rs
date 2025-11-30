@@ -130,7 +130,7 @@ impl ReachableBuilder {
         &self,
         live_roots: Vec<H256>,
         workers: usize,
-        marker: Box<dyn NodeMarker>,
+        marker: &dyn NodeMarker,
     ) -> Result<u64> {
         let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));
 
@@ -139,7 +139,7 @@ impl ReachableBuilder {
             .into_par_iter()
             .with_max_len(workers)
             .for_each(|root| {
-                if let Err(e) = self.dfs_from_root_with_marker(root, &counter, marker.as_ref()) {
+                if let Err(e) = self.dfs_from_root_with_marker(root, &counter, marker) {
                     tracing::error!("DFS error with marker: {}", e);
                 }
             });
