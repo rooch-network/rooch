@@ -23,8 +23,8 @@ pub struct GCConfig {
     /// Whether to trigger RocksDB compaction after GC
     pub force_compaction: bool,
 
-    /// Force execution without safety confirmations
-    pub force_execution: bool,
+    /// Skip user confirmation prompts (use with caution)
+    pub skip_confirm: bool,
 
     // === Core GC Configuration ===
     /// Number of nodes to scan per batch (used by both GC and sweep operations)

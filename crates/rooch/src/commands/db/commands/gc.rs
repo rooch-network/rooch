@@ -80,13 +80,13 @@ pub struct GCCommand {
     #[clap(long = "protected-roots-count", default_value_t = 1)]
     pub protected_roots_count: usize,
 
-    /// Force execution to bypass user confirmation prompts
+    /// Skip interactive confirmation prompts (use with caution)
     ///
-    /// Confirm that you understand the risks and have stopped the blockchain service
-    /// Technical safety verification (database lock check) will still be performed automatically
-    /// WARNING: Use only when the service is stopped and no other processes are accessing the database
+    /// This option skips the user confirmation step but still performs
+    /// technical safety verification (database lock check)
+    /// WARNING: Use only for automation when the service is stopped
     #[clap(long)]
-    pub force: bool,
+    pub skip_confirm: bool,
 
     /// Verbose output with detailed progress information
     #[clap(long, short = 'v')]
@@ -124,13 +124,6 @@ impl GCCommand {
             return Err("Protected roots count must be greater than 0".to_string());
         }
 
-        // For write operations, safety verification is mandatory
-        if !self.dry_run && !self.force {
-            return Err(
-                "GC modifies database state. Use --force to confirm you understand the risks and have stopped the blockchain service, or use --dry-run to preview changes.".to_string()
-            );
-        }
-
         Ok(())
     }
 
@@ -144,7 +137,7 @@ impl GCCommand {
             workers: self.workers,
             use_recycle_bin: self.use_recycle_bin,
             force_compaction: self.force_compaction,
-            force_execution: self.force,
+            skip_confirm: self.skip_confirm,
 
             // Core GC Configuration
             scan_batch: 10000, // Default scan batch size
@@ -321,7 +314,7 @@ impl GCCommand {
             .ok();
             writeln!(
                 output,
-                "   Use --force flag to execute the actual garbage collection"
+                "   Run without --dry-run flag to execute the actual garbage collection"
             )
             .ok();
         }
@@ -419,7 +412,7 @@ mod tests {
             force_compaction: false,
             marker_strategy: "auto".to_string(),
             protected_roots_count: 1,
-            force: false,
+            skip_confirm: false,
             verbose: false,
         };
 
@@ -438,7 +431,7 @@ mod tests {
             force_compaction: false,
             marker_strategy: "memory".to_string(),
             protected_roots_count: 1,
-            force: false,
+            skip_confirm: false,
             verbose: false,
         };
         assert!(matches!(
@@ -456,7 +449,7 @@ mod tests {
             force_compaction: false,
             marker_strategy: "persistent".to_string(),
             protected_roots_count: 1,
-            force: false,
+            skip_confirm: false,
             verbose: false,
         };
         assert!(matches!(
@@ -473,7 +466,7 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: "invalid".to_string(),
-            force: false,
+            skip_confirm: false,
             verbose: false,
             protected_roots_count: 1,
         };
@@ -492,7 +485,7 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: "auto".to_string(),
-            force: false,
+            skip_confirm: false,
             verbose: false,
         };
         assert!(valid_command.validate().is_ok());
@@ -508,7 +501,7 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: "auto".to_string(),
-            force: false,
+            skip_confirm: false,
             verbose: false,
         };
         assert!(invalid_command.validate().is_err());
@@ -524,13 +517,13 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: "auto".to_string(),
-            force: false,
+            skip_confirm: false,
             verbose: false,
         };
         assert!(invalid_command.validate().is_err());
 
-        // Test missing force flag for write operations (should fail without --force)
-        let invalid_command = GCCommand {
+        // Test validation for write operations with new simplified logic
+        let valid_write_command_skip_confirm = GCCommand {
             protected_roots_count: 1,
             base_data_dir: None,
             chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
@@ -540,13 +533,12 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: "auto".to_string(),
-            force: false,
+            skip_confirm: true, // Skip confirmation for automation
             verbose: false,
         };
-        assert!(invalid_command.validate().is_err());
+        assert!(valid_write_command_skip_confirm.validate().is_ok());
 
-        // Test valid case with --force flag for write operations
-        let valid_write_command = GCCommand {
+        let valid_write_command_with_confirm = GCCommand {
             protected_roots_count: 1,
             base_data_dir: None,
             chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
@@ -556,10 +548,10 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: "auto".to_string(),
-            force: true,
+            skip_confirm: false, // Will require user confirmation
             verbose: false,
         };
-        assert!(valid_write_command.validate().is_ok());
+        assert!(valid_write_command_with_confirm.validate().is_ok());
     }
 
     #[test]
@@ -573,7 +565,7 @@ mod tests {
             use_recycle_bin: false,
             force_compaction: true,
             marker_strategy: "memory".to_string(),
-            force: true,
+            skip_confirm: true,
             verbose: false,
             protected_roots_count: 1,
         };
@@ -585,6 +577,6 @@ mod tests {
         assert!(!config.use_recycle_bin);
         assert!(config.force_compaction);
         assert_eq!(config.marker_strategy, MarkerStrategy::InMemory);
-        assert!(config.force_execution);
+        assert!(config.skip_confirm);
     }
 }

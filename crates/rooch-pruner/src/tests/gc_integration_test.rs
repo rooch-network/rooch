@@ -7,7 +7,8 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::garbage_collector::{GCConfig, GarbageCollector};
+    use crate::config::GCConfig;
+    use crate::garbage_collector::GarbageCollector;
     use crate::marker::{MarkerStrategy, NodeMarker};
     use crate::safety_verifier::SafetyVerifier;
     use anyhow::Result;
@@ -36,7 +37,7 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: MarkerStrategy::InMemory,
-            force_execution: true,
+            skip_confirm: true,
             protected_roots_count: 1,
         };
 
@@ -114,7 +115,7 @@ mod tests {
             use_recycle_bin: false,
             force_compaction: true,
             marker_strategy: MarkerStrategy::InMemory,
-            force_execution: true,
+            skip_confirm: true,
             protected_roots_count: 1,
         };
 
@@ -254,7 +255,7 @@ mod tests {
         // Test with force execution enabled (should work)
         let config = GCConfig {
             dry_run: true,
-            force_execution: true,
+            skip_confirm: true,
             ..Default::default()
         };
 
@@ -279,7 +280,7 @@ mod tests {
         let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
         let config = GCConfig {
-            force_execution: true,
+            skip_confirm: true,
             ..Default::default()
         };
         let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;

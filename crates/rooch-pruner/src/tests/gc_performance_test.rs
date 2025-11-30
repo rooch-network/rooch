@@ -7,7 +7,8 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::garbage_collector::{GCConfig, GarbageCollector};
+    use crate::config::GCConfig;
+    use crate::garbage_collector::GarbageCollector;
     use crate::marker::{InMemoryMarker, MarkerStrategy, NodeMarker};
     use anyhow::Result;
     use moveos_store::MoveOSStore;
@@ -82,7 +83,7 @@ mod tests {
                 workers: 1,
                 use_recycle_bin: true,
                 force_compaction: false,
-                force_execution: true,
+                skip_confirm: true,
                 protected_roots_count: 1,
             };
 
@@ -128,7 +129,7 @@ mod tests {
                 use_recycle_bin: true,
                 force_compaction: false,
                 marker_strategy: MarkerStrategy::InMemory,
-                force_execution: true,
+                skip_confirm: true,
                 protected_roots_count: 1,
             };
 
@@ -169,7 +170,7 @@ mod tests {
                 use_recycle_bin: true,
                 force_compaction: false,
                 marker_strategy: MarkerStrategy::InMemory,
-                force_execution: true,
+                skip_confirm: true,
                 protected_roots_count: 1,
             };
 

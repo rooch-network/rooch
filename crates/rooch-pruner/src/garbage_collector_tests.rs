@@ -172,7 +172,7 @@ mod tests {
     fn test_gc_config_force_execution() {
         let config = GCConfig {
             dry_run: false,
-            force_execution: true,
+            skip_confirm: true,
             ..Default::default()
         };
 

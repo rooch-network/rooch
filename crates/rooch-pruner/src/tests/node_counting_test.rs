@@ -5,7 +5,8 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::garbage_collector::{GCConfig, GarbageCollector};
+    use crate::config::GCConfig;
+    use crate::garbage_collector::GarbageCollector;
     use anyhow::Result;
     use moveos_store::MoveOSStore;
     use std::sync::Arc;

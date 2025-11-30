@@ -8,7 +8,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::garbage_collector::{GCConfig, GarbageCollector};
+    use crate::config::GCConfig; use crate::garbage_collector::GarbageCollector;
     use crate::marker::MarkerStrategy;
     use anyhow::Result;
     use moveos_types::h256::H256;
@@ -99,7 +99,7 @@ mod tests {
             use_recycle_bin: false,
             force_compaction: false,
             marker_strategy: MarkerStrategy::InMemory,
-            force_execution: true, // Force execution to bypass safety checks in test
+            skip_confirm: true, // Force execution to bypass safety checks in test
             protected_roots_count: 1,
         };
 
@@ -147,7 +147,7 @@ mod tests {
                     use_recycle_bin: false,
                     force_compaction: false,
                     marker_strategy: MarkerStrategy::InMemory,
-                    force_execution: true,
+                    skip_confirm: true,
                 },
                 "Small batch",
             ),
@@ -159,7 +159,7 @@ mod tests {
                     use_recycle_bin: true,
                     force_compaction: false,
                     marker_strategy: MarkerStrategy::InMemory,
-                    force_execution: true,
+                    skip_confirm: true,
                 },
                 "Large batch with recycle bin",
             ),
@@ -171,7 +171,7 @@ mod tests {
                     use_recycle_bin: true,
                     force_compaction: false,
                     marker_strategy: MarkerStrategy::Auto,
-                    force_execution: true,
+                    skip_confirm: true,
                 },
                 "Multi-worker auto strategy",
             ),
@@ -214,7 +214,7 @@ mod tests {
         {
             let config = GCConfig {
                 dry_run: false,         // Not dry run
-                force_execution: false, // But no force flag
+                skip_confirm: false, // But no force flag
                 ..Default::default()
             };
 
@@ -231,7 +231,7 @@ mod tests {
         {
             let config = GCConfig {
                 dry_run: true,
-                force_execution: true, // Force execution
+                skip_confirm: true, // Force execution
                 ..Default::default()
             };
 
@@ -274,7 +274,7 @@ mod tests {
                 use_recycle_bin: false,
                 force_compaction: false,
                 marker_strategy: strategy.clone(),
-                force_execution: true,
+                skip_confirm: true,
             };
 
             let gc =

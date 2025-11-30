@@ -129,7 +129,12 @@ impl GarbageCollector {
         // Phase 1: Safety verification
         self.verify_database_safety()?;
 
-        // Phase 2: Determine root set for this GC run
+        // Phase 2: User confirmation (skip in dry-run or if skip_confirm is enabled)
+        if !self.config.dry_run {
+            self.request_user_confirmation()?;
+        }
+
+        // Phase 3: Determine root set for this GC run
         let protected_roots = self.get_protected_roots()?;
         info!("Protected roots: {:?}", protected_roots);
 
@@ -184,40 +189,93 @@ impl GarbageCollector {
         info!("=== Safety Verification ===");
 
         if !self.config.dry_run {
-            if self.config.force_execution {
-                info!("Force execution enabled - skipping database safety verification");
-                warn!("⚠️  WARNING: Bypassing safety checks due to force_execution=true");
-            } else {
-                info!("Performing mandatory database safety verification...");
+            info!("Performing mandatory database safety verification...");
 
-                let db_path = self.get_database_path()?;
-                let safety_verifier = SafetyVerifier::new(&db_path);
+            let db_path = self.get_database_path()?;
+            let safety_verifier = SafetyVerifier::new(&db_path);
 
-                match safety_verifier.verify_database_access() {
-                    Ok(report) if report.database_available => {
-                        info!("✅ {}", report.message);
-                        info!("🔒 All technical safety checks passed - proceeding with garbage collection");
-                        info!("   - Database RocksDB LOCK file verified");
-                        info!("   - Exclusive access confirmed");
-                    }
-                    Ok(report) => {
-                        return Err(anyhow::anyhow!(
-                            "Database safety check failed: {}. Please ensure the blockchain service is stopped and no other processes are accessing the database.",
-                            report.message
-                        ));
-                    }
-                    Err(e) => {
-                        return Err(anyhow::anyhow!(
-                            "Failed to verify database safety: {}. Please check database permissions and ensure the service is stopped.",
-                            e
-                        ));
-                    }
+            match safety_verifier.verify_database_access() {
+                Ok(report) if report.database_available => {
+                    info!("✅ {}", report.message);
+                    info!("🔒 All technical safety checks passed - proceeding with garbage collection");
+                    info!("   - Database RocksDB LOCK file verified");
+                    info!("   - Exclusive access confirmed");
+                }
+                Ok(report) => {
+                    return Err(anyhow::anyhow!(
+                        "Database is locked, please stop the blockchain service and retry: {}",
+                        report.message
+                    ));
+                }
+                Err(e) => {
+                    return Err(anyhow::anyhow!(
+                        "Database safety check failed: {}. Please check database permissions and ensure the service is stopped.",
+                        e
+                    ));
                 }
             }
         } else {
             info!("Running in dry-run mode - skipping technical safety verification");
         }
 
+        Ok(())
+    }
+
+    /// Request user confirmation before proceeding with garbage collection
+    fn request_user_confirmation(&self) -> Result<()> {
+        // If skip_confirm is enabled, skip user confirmation
+        if self.config.skip_confirm {
+            warn!("⚠️  Skipping user confirmation (automation mode)");
+            return Ok(());
+        }
+
+        info!("=== User Confirmation ===");
+
+        // Get root node information for display
+        let protected_roots = match self.get_protected_roots() {
+            Ok(roots) => roots,
+            Err(_) => {
+                warn!(
+                    "Unable to get protected root information, but will continue with confirmation"
+                );
+                vec![]
+            }
+        };
+
+        println!("=== Garbage Collection Preview ===");
+        println!("Protected Root Nodes Count: {}", protected_roots.len());
+
+        // Display some root nodes (max 5)
+        for (i, root) in protected_roots.iter().take(5).enumerate() {
+            println!("  {}: {}", i + 1, root);
+        }
+        if protected_roots.len() > 5 {
+            println!("  ... and {} more root nodes", protected_roots.len() - 5);
+        }
+        println!();
+
+        println!("⚠️  This will permanently delete unreachable state nodes");
+        if self.config.use_recycle_bin {
+            println!("📁 Recycle bin enabled, deleted nodes will be saved");
+        } else {
+            println!("🗑️  Recycle bin disabled, deleted nodes will be permanently erased");
+        }
+        println!();
+
+        // Require explicit user confirmation
+        print!("Confirm execution? Type 'yes' to continue, any other input will cancel: ");
+        use std::io::Write;
+        std::io::stdout().flush()?;
+
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+
+        let trimmed_input = input.trim().to_lowercase();
+        if trimmed_input != "yes" {
+            return Err(anyhow::anyhow!("User cancelled the operation"));
+        }
+
+        info!("✅ User confirmed, proceeding with garbage collection");
         Ok(())
     }
 
@@ -260,8 +318,8 @@ impl GarbageCollector {
                         return Ok(collected_roots);
                     }
                     Err(e) => {
-                        if self.config.force_execution {
-                            warn!("Historical state collection failed, but force_execution enabled: {}. Falling back to single root mode.", e);
+                        if self.config.skip_confirm {
+                            warn!("Historical state collection failed, but skip_confirm enabled: {}. Falling back to single root mode.", e);
                         } else {
                             return Err(e);
                         }
@@ -277,9 +335,9 @@ impl GarbageCollector {
             return Ok(vec![startup_info.state_root]);
         }
 
-        // If force_execution is enabled, provide a dummy root for testing
-        if self.config.force_execution {
-            warn!("No startup info available, but force_execution enabled. Using dummy root for testing.");
+        // If skip_confirm is enabled, provide a dummy root for testing
+        if self.config.skip_confirm {
+            warn!("No startup info available, but skip_confirm enabled. Using dummy root for testing.");
             return Ok(vec![H256::random()]);
         }
 
@@ -717,7 +775,7 @@ mod tests {
         assert!(config.use_recycle_bin);
         assert!(!config.force_compaction);
         assert_eq!(config.marker_strategy, MarkerStrategy::Auto);
-        assert!(!config.force_execution);
+        assert!(!config.skip_confirm);
     }
 
     #[test]

@@ -7,7 +7,8 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::garbage_collector::{GCConfig, GarbageCollector};
+    use crate::config::GCConfig;
+    use crate::garbage_collector::GarbageCollector;
     use crate::marker::MarkerStrategy;
     use anyhow::Result;
     use moveos_store::MoveOSStore;
@@ -49,7 +50,7 @@ mod tests {
             let config = GCConfig {
                 dry_run: true,
                 protected_roots_count: 1,
-                force_execution: true,
+                skip_confirm: true,
                 ..Default::default()
             };
 
@@ -69,7 +70,7 @@ mod tests {
             let config = GCConfig {
                 dry_run: true,
                 protected_roots_count: 5,
-                force_execution: true,
+                skip_confirm: true,
                 ..Default::default()
             };
 
@@ -90,7 +91,7 @@ mod tests {
             let config = GCConfig {
                 dry_run: true,
                 protected_roots_count: 10,
-                force_execution: true,
+                skip_confirm: true,
                 ..Default::default()
             };
 
@@ -129,7 +130,7 @@ mod tests {
                 dry_run: true,
                 protected_roots_count: 3,
                 marker_strategy: strategy,
-                force_execution: true,
+                skip_confirm: true,
                 ..Default::default()
             };
 
@@ -160,7 +161,7 @@ mod tests {
         // Test that default behavior (no protected_roots_count specified) works as before
         let config = GCConfig {
             dry_run: true,
-            force_execution: true,
+            skip_confirm: true,
             ..Default::default()
         };
 
@@ -176,7 +177,7 @@ mod tests {
         let config = GCConfig {
             dry_run: true,
             protected_roots_count: 1,
-            force_execution: true,
+            skip_confirm: true,
             ..Default::default()
         };
 
@@ -203,7 +204,7 @@ mod tests {
         let config = GCConfig {
             dry_run: true,
             protected_roots_count: 0,
-            force_execution: true,
+            skip_confirm: true,
             ..Default::default()
         };
 
