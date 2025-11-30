@@ -132,10 +132,14 @@ async function executeGCCommand(
   } catch (error: any) {
     console.error('❌ GC command execution failed:', error)
 
+    const stdout: string = error?.stdout || ''
+    const stderr: string = error?.stderr || ''
+    const combined = `${stdout}\n${stderr}\n${error?.message || ''}`
+
     // Check if this is expected safety error
     if (
-      error.message?.includes('GC modifies database state') ||
-      error.message?.includes('Use --force to confirm')
+      combined.includes('GC modifies database state') ||
+      combined.includes('Use --force to confirm')
     ) {
       throw new Error('GC safety verification failed: --force flag not used')
     }
@@ -573,7 +577,7 @@ describe('GC End-to-End Tests', () => {
         const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
 
         expect(result.report.markStats.markedCount).toBeGreaterThan(0)
-        expect(result.report.memoryStrategyUsed).toContain('memory')
+        expect(result.report.memoryStrategyUsed.toLowerCase()).toContain('memory')
 
         console.log('✅ Memory Marker Strategy test passed')
         console.log(`  - Marked nodes count: ${result.report.markStats.markedCount}`)
@@ -597,7 +601,7 @@ describe('GC End-to-End Tests', () => {
         const result = await runGCTestCycle(testbox, testConfig, defaultAddress)
 
         expect(result.report.markStats.markedCount).toBeGreaterThan(0)
-        expect(result.report.memoryStrategyUsed).toContain('persistent')
+        expect(result.report.memoryStrategyUsed.toLowerCase()).toContain('persistent')
 
         console.log('✅ Persistent Marker Strategy test passed')
         console.log(`  - Marked nodes count: ${result.report.markStats.markedCount}`)

@@ -6,21 +6,12 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-/// Pruning-related configuration (v1+v2 hybrid)
+/// Garbage collection configuration (stop-the-world GC only)
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 pub struct PruneConfig {
-    /// Enable or disable background pruner.
-    #[clap(long = "pruner-enable", default_value_t = false)]
-    pub enable: bool,
-
-    /// Whether boot cleanup (v1 DFS) already finished.
-    /// Normally maintained automatically – manual override only for debugging.
-    #[clap(long = "pruner-boot-cleanup-done", default_value_t = false)]
-    pub boot_cleanup_done: bool,
-
-    /// Number of nodes to scan per DFS batch.
+    /// Number of nodes to scan per batch (used by both GC and sweep operations).
     #[clap(long = "pruner-scan-batch", default_value_t = 10000)]
     pub scan_batch: usize,
 
@@ -28,12 +19,7 @@ pub struct PruneConfig {
     #[clap(long = "pruner-delete-batch", default_value_t = 5000)]
     pub delete_batch: usize,
 
-    /// Background tick interval (seconds).
-    #[clap(long = "pruner-interval-s", default_value_t = 60)]
-    pub interval_s: u64,
-
     /// Bloom filter size in bits (must be power of two for fast modulo).
-    // #[clap(long = "pruner-bloom-bits", default_value_t = 4_194_304)]  // 2^22
     #[clap(long = "pruner-bloom-bits", default_value_t = 8589934592)] // 2^33
     pub bloom_bits: usize,
 
@@ -41,20 +27,12 @@ pub struct PruneConfig {
     #[clap(long = "pruner-enable-reach-seen-cf", default_value_t = false)]
     pub enable_reach_seen_cf: bool,
 
-    /// Number of recent tx_orders to protect from pruning (default 30000).
-    /// Set to 0 to allow aggressive pruning (only protects the latest root - for testing only).
+    /// Number of recent tx_orders to protect from GC (default 30000).
+    /// Set to 0 to allow aggressive GC (only protects the latest root - for testing only).
     #[clap(long = "pruner-protection-orders", default_value_t = 30000)]
     pub protection_orders: u64,
 
-    /// Enable incremental sweep phase for continuous cleanup (default true).
-    #[clap(long = "pruner-enable-incremental-sweep", default_value_t = true)]
-    pub enable_incremental_sweep: bool,
-
-    /// Batch size for incremental sweep operations (default 1000).
-    #[clap(long = "pruner-incremental-sweep-batch", default_value_t = 1000)]
-    pub incremental_sweep_batch: usize,
-
-    /// Enable pruner recycle bin for debugging (default: false).
+    /// Enable GC recycle bin for debugging/recovery (default: false).
     #[clap(long = "pruner-recycle-bin-enable", default_value_t = false)]
     pub recycle_bin_enable: bool,
 
@@ -115,21 +93,16 @@ pub struct PruneConfig {
 impl Default for PruneConfig {
     fn default() -> Self {
         Self {
-            enable: false,
-            boot_cleanup_done: false,
             scan_batch: 10000,
             delete_batch: 5000,
-            interval_s: 60,
             bloom_bits: 8589934592, // 2^33
             enable_reach_seen_cf: false,
             protection_orders: 30000,
-            enable_incremental_sweep: true,
-            incremental_sweep_batch: 1000,
             recycle_bin_enable: false,
             recycle_bin_max_entries: 10000,
             recycle_bin_max_bytes: 100_000_000, // 100MB
             protected_roots_count: 1,           // Default to backward compatibility
-            // Phase 3: PersistentMarker-specific configuration defaults
+            // GC-specific marker configuration defaults
             marker_batch_size: 10000,
             marker_bloom_bits: 1048576, // 2^20 = 1MB
             marker_bloom_hash_fns: 4,

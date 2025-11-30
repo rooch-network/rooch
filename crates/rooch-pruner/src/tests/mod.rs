@@ -18,5 +18,4 @@ mod safety_boundary_test;
 mod simple_test_data_generator_working;
 mod snapshot_consistency;
 mod stale_reachable_disjoint;
-mod test_pruner;
 mod test_utils;
