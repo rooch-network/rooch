@@ -4,7 +4,7 @@
 use moveos_common::bloom_filter::BloomFilter;
 use parking_lot::Mutex;
 use rand::SeedableRng;
-use rooch_config::prune_config::PruneConfig;
+use rooch_pruner::config::GCConfig as PruneConfig;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -283,19 +283,12 @@ fn create_optimized_config(node_count: usize) -> PruneConfig {
         _ => 10_000,
     };
 
-    let delete_batch = scan_batch / 2;
-
     PruneConfig {
         scan_batch,
-        delete_batch,
         bloom_bits,
-        enable_reach_seen_cf: false,
         protection_orders: 30000,
-        recycle_bin_enable: false,
-        recycle_bin_max_entries: 10000,
-        recycle_bin_max_bytes: 100_000_000,
         protected_roots_count: 1,
-        // Phase 3: PersistentMarker configuration fields
+        // Marker configuration
         marker_batch_size: 10000,
         marker_bloom_bits: 1048576,
         marker_bloom_hash_fns: 4,
@@ -304,6 +297,7 @@ fn create_optimized_config(node_count: usize) -> PruneConfig {
         marker_force_persistent: false,
         marker_temp_cf_name: "gc_marker_temp".to_string(),
         marker_error_recovery: true,
+        ..PruneConfig::default()
     }
 }
 
@@ -324,7 +318,7 @@ fn test_optimized_configurations() {
         );
         println!("  Bloom filter bits: {}", config.bloom_bits);
         println!("  Scan batch: {}", config.scan_batch);
-        println!("  Delete batch: {}", config.delete_batch);
+        println!("  Delete batch (derived): {}", config.scan_batch / 2);
         println!(
             "  Estimated memory: {:.2} MB",
             config.bloom_bits as f64 / 8.0 / 1024.0 / 1024.0

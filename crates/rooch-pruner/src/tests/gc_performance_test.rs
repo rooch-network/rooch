@@ -85,6 +85,7 @@ mod tests {
                 force_compaction: false,
                 skip_confirm: true,
                 protected_roots_count: 1,
+                ..GCConfig::default()
             };
 
             let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
@@ -131,6 +132,7 @@ mod tests {
                 marker_strategy: MarkerStrategy::InMemory,
                 skip_confirm: true,
                 protected_roots_count: 1,
+                ..GCConfig::default()
             };
 
             let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
@@ -172,6 +174,7 @@ mod tests {
                 marker_strategy: MarkerStrategy::InMemory,
                 skip_confirm: true,
                 protected_roots_count: 1,
+                ..GCConfig::default()
             };
 
             let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;

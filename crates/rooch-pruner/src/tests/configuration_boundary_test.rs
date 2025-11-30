@@ -6,11 +6,13 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::config::GCConfig;
     use crate::marker::{create_auto_marker_with_config, create_marker_with_config};
     use anyhow::Result;
     use moveos_types::h256::H256;
-    use rooch_config::prune_config::PruneConfig;
     use std::time::Instant;
+
+    type PruneConfig = GCConfig;
 
     /// Configuration boundary test results
     #[derive(Debug, Clone)]
@@ -67,7 +69,7 @@ mod tests {
 
     /// Test configuration boundary for marker batch size
     fn test_batch_size_boundary(batch_size: usize) -> Result<BoundaryTestResult> {
-        let config = PruneConfig {
+        let config = GCConfig {
             marker_batch_size: batch_size,
             ..Default::default()
         };
@@ -120,7 +122,7 @@ mod tests {
 
     /// Test configuration boundary for bloom filter size
     fn test_bloom_bits_boundary(bloom_bits: usize) -> Result<BoundaryTestResult> {
-        let config = PruneConfig {
+        let config = GCConfig {
             marker_bloom_bits: bloom_bits,
             ..Default::default()
         };
@@ -172,7 +174,7 @@ mod tests {
 
     /// Test configuration boundary for bloom filter hash functions
     fn test_bloom_hash_fns_boundary(hash_fns: u8) -> Result<BoundaryTestResult> {
-        let config = PruneConfig {
+        let config = GCConfig {
             marker_bloom_hash_fns: hash_fns,
             ..Default::default()
         };

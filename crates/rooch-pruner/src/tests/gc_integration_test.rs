@@ -39,6 +39,7 @@ mod tests {
             marker_strategy: MarkerStrategy::InMemory,
             skip_confirm: true,
             protected_roots_count: 1,
+            ..GCConfig::default()
         };
 
         // Create GarbageCollector
@@ -105,7 +106,7 @@ mod tests {
         assert!(default_config.use_recycle_bin);
         assert!(!default_config.force_compaction);
         assert_eq!(default_config.marker_strategy, MarkerStrategy::Auto);
-        assert!(!default_config.force_execution);
+        // force_execution removed; skip check
 
         // Test custom configuration
         let custom_config = GCConfig {
@@ -117,6 +118,7 @@ mod tests {
             marker_strategy: MarkerStrategy::InMemory,
             skip_confirm: true,
             protected_roots_count: 1,
+            ..GCConfig::default()
         };
 
         assert!(custom_config.dry_run);
@@ -125,7 +127,7 @@ mod tests {
         assert!(!custom_config.use_recycle_bin);
         assert!(custom_config.force_compaction);
         assert_eq!(custom_config.marker_strategy, MarkerStrategy::InMemory);
-        assert!(custom_config.force_execution);
+        // force_execution removed; skip check
 
         info!("✅ GC configuration test completed");
         info!("  Default config: {:?}", default_config);

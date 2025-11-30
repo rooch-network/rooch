@@ -75,6 +75,7 @@ mod tests {
             marker_strategy: MarkerStrategy::InMemory,
             skip_confirm: true, // Force execution to bypass safety checks in test
             protected_roots_count: 1,
+            ..GCConfig::default()
         };
 
         // Create garbage collector
@@ -123,6 +124,7 @@ mod tests {
                     marker_strategy: MarkerStrategy::InMemory,
                     skip_confirm: true,
                     protected_roots_count: 1,
+                    ..GCConfig::default()
                 },
                 "Small batch",
             ),
@@ -136,6 +138,7 @@ mod tests {
                     marker_strategy: MarkerStrategy::InMemory,
                     skip_confirm: true,
                     protected_roots_count: 1,
+                    ..GCConfig::default()
                 },
                 "Large batch with recycle bin",
             ),
@@ -149,6 +152,7 @@ mod tests {
                     marker_strategy: MarkerStrategy::Auto,
                     skip_confirm: true,
                     protected_roots_count: 1,
+                    ..GCConfig::default()
                 },
                 "Multi-worker auto strategy",
             ),
@@ -253,6 +257,7 @@ mod tests {
                 marker_strategy: strategy,
                 skip_confirm: true,
                 protected_roots_count: 1,
+                ..GCConfig::default()
             };
 
             let gc =
