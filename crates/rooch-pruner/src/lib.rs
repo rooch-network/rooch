@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // GC-only modules after removing live pruner components
+pub mod config; // Unified GC configuration
 pub mod garbage_collector; // Core GC implementation
 pub mod historical_state; // Historical state collection for multi-root GC protection
 pub mod marker; // Node marking strategies for GC
@@ -16,6 +17,7 @@ mod tests;
 pub mod util; // Utility functions for node traversal
 
 // Re-export commonly used GC types
-pub use garbage_collector::{GCConfig, GCReport, GarbageCollector, MarkStats, SweepStats};
+pub use config::GCConfig;
+pub use garbage_collector::{GCReport, GarbageCollector, MarkStats, SweepStats};
 pub use historical_state::{HistoricalStateCollector, HistoricalStateConfig};
 pub use marker::{MarkerStrategy, NodeMarker};

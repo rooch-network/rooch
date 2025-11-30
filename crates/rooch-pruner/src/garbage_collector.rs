@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::config::GCConfig;
 use crate::historical_state::{HistoricalStateCollector, HistoricalStateConfig};
 use crate::marker::{create_marker, MarkerStrategy};
 use crate::reachability::ReachableBuilder;
@@ -16,42 +17,6 @@ use rooch_store::RoochStore;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};
-
-/// Garbage Collector configuration for controlling behavior
-#[derive(Debug, Clone)]
-pub struct GCConfig {
-    /// Whether to run in dry-run mode (scan and report without deleting)
-    pub dry_run: bool,
-    /// Batch size for deletion operations
-    pub batch_size: usize,
-    /// Number of worker threads for parallel processing
-    pub workers: usize,
-    /// Whether to use recycle bin for deleted nodes
-    pub use_recycle_bin: bool,
-    /// Whether to trigger RocksDB compaction after GC
-    pub force_compaction: bool,
-    /// Marker strategy selection (Auto, InMemory, Persistent)
-    pub marker_strategy: MarkerStrategy,
-    /// Force execution without safety confirmations
-    pub force_execution: bool,
-    /// Number of recent state roots to protect from GC (default: 1 for backward compatibility)
-    pub protected_roots_count: usize,
-}
-
-impl Default for GCConfig {
-    fn default() -> Self {
-        Self {
-            dry_run: false,
-            batch_size: 10_000,
-            workers: num_cpus::get(),
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: MarkerStrategy::Auto,
-            force_execution: false,
-            protected_roots_count: 1, // Default to backward compatibility
-        }
-    }
-}
 
 /// Comprehensive GC execution report
 #[derive(Debug, Clone)]

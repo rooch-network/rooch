@@ -139,14 +139,30 @@ impl GCCommand {
         let marker_strategy = self.parse_marker_strategy()?;
 
         let config = GCConfig {
+            // Runtime Configuration
             dry_run: self.dry_run,
-            batch_size: self.batch_size,
             workers: self.workers,
             use_recycle_bin: self.use_recycle_bin,
             force_compaction: self.force_compaction,
-            marker_strategy,
             force_execution: self.force,
+
+            // Core GC Configuration
+            scan_batch: 10000, // Default scan batch size
+            batch_size: self.batch_size,
+            bloom_bits: 8589934592,   // 2^33 bits (1GB)
+            protection_orders: 30000, // Default protection orders
             protected_roots_count: self.protected_roots_count,
+
+            // Marker Strategy Configuration
+            marker_strategy,
+            marker_batch_size: 10000,
+            marker_bloom_bits: 1048576, // 2^20 bits (1MB)
+            marker_bloom_hash_fns: 4,
+            marker_memory_threshold_mb: 1024, // 1GB
+            marker_auto_strategy: true,
+            marker_force_persistent: false,
+            marker_temp_cf_name: "gc_marker_temp".to_string(),
+            marker_error_recovery: true,
         };
 
         Ok(config)

@@ -6,7 +6,7 @@
 //! This module now contains only utility functions that are shared between
 //! the stop-the-world GC implementation and other components.
 
-pub use rooch_config::prune_config::PruneConfig;
+pub use crate::config::GCConfig;
 
 /// Calculate the starting tx_order for SweepExpired phase.
 ///
