@@ -441,7 +441,10 @@ impl PipelineProcessorActor {
 
         // Then execute
         let size = moveos_tx.ctx.tx_size;
-        let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
+        let (output, execution_info) = self
+            .executor
+            .execute_transaction(moveos_tx.clone(), tx.sequence_info.tx_order)
+            .await?;
 
         let root = execution_info.root_metadata();
         // Sync the latest state root from writer executor to reader executor

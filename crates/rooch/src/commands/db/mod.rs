@@ -4,10 +4,12 @@
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::best_rollback::BestRollbackCommand;
 use crate::commands::db::commands::changeset::ChangesetCommand;
+use crate::commands::db::commands::check_refcount::CheckRefcountCommand;
 use crate::commands::db::commands::cp_cf::CpCfCommand;
 use crate::commands::db::commands::delete_benchmark::DeleteBenchmarkCommand;
 use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::dump_state::DumpStateCommand;
+use crate::commands::db::commands::gc::GCCommand;
 use crate::commands::db::commands::generate_db_checkpoint::GenerateDBCheckPointCommand;
 use crate::commands::db::commands::get_accumulator_leaf_by_index::GetAccumulatorLeafByIndexCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
@@ -16,7 +18,9 @@ use crate::commands::db::commands::get_sequencer_info::GetSequencerInfoCommand;
 use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
 use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
+use crate::commands::db::commands::list_stale::ListStaleCommand;
 use crate::commands::db::commands::prune_diagnosis::PruneDiagnosisCommand;
+use crate::commands::db::commands::reach_check::ReachCheckCommand;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use crate::commands::db::commands::rocksdb_gc::RocksDBGcCommand;
@@ -112,6 +116,13 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
+            DBCommand::CheckRefcount(check) => check.execute().await,
+            DBCommand::ReachCheck(reach) => reach.execute().await,
+            DBCommand::ListStale(list_stale) => list_stale.execute().await,
+            DBCommand::GC(gc) => gc.execute().await,
+            DBCommand::RecycleDump(dump) => dump.execute().await,
+            DBCommand::RecycleRestore(restore) => restore.execute().await,
+            DBCommand::RecycleStat(stat) => stat.execute().await,
         }
     }
 }
@@ -141,4 +152,11 @@ pub enum DBCommand {
     PruneDiagnosis(PruneDiagnosisCommand),
     DeleteBenchmark(DeleteBenchmarkCommand),
     GenerateDBCheckPoint(GenerateDBCheckPointCommand),
+    CheckRefcount(CheckRefcountCommand),
+    ReachCheck(ReachCheckCommand),
+    ListStale(ListStaleCommand),
+    GC(GCCommand),
+    RecycleDump(crate::commands::db::commands::recycle_bin::RecycleDumpCommand),
+    RecycleRestore(crate::commands::db::commands::recycle_bin::RecycleRestoreCommand),
+    RecycleStat(crate::commands::db::commands::recycle_bin::RecycleStatCommand),
 }

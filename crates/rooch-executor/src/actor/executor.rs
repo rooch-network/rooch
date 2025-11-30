@@ -120,7 +120,11 @@ impl ExecutorActor {
     }
 
     #[named]
-    pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
+    pub fn execute(
+        &mut self,
+        tx: VerifiedMoveOSTransaction,
+        tx_order: u64,
+    ) -> Result<ExecuteTransactionResult> {
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -132,7 +136,9 @@ impl ExecutorActor {
         let (raw_output, _) = self.moveos.execute_only(tx)?;
         let is_gas_upgrade = raw_output.is_gas_upgrade;
 
-        let (output, execution_info) = self.moveos_store.handle_tx_output(tx_hash, raw_output)?;
+        let (output, execution_info) = self
+            .moveos_store
+            .handle_tx_output(tx_order, tx_hash, raw_output)?;
 
         self.root = execution_info.root_metadata();
         self.metrics
@@ -320,9 +326,10 @@ impl ExecutorActor {
                     let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
                     let status_view = explain_vm_status(&resolver, e.clone())?;
                     tracing::warn!(
-                        "transaction validate vm error, tx_hash: {:?}, error:{:?}",
+                        "transaction validate vm error, tx_hash: {:?}, error_view:{:?}, vm_status:{:?}",
                         tx_hash,
                         status_view,
+                        e,
                     );
                     //TODO how to return the vm status to rpc client.
                     Err(e.into())
@@ -506,7 +513,7 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         msg: ExecuteTransactionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
-        self.execute(msg.tx)
+        self.execute(msg.tx, msg.tx_order)
     }
 }
 

@@ -5,6 +5,7 @@ use crate::atomic_snapshot::{AtomicSnapshotManager, SnapshotManagerConfig};
 use crate::incremental_sweep::IncrementalSweep;
 use crate::metrics::PrunerMetrics;
 use crate::reachability::ReachableBuilder;
+use crate::recycle_bin::RecycleBinStore;
 use crate::sweep_expired::SweepExpired;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
@@ -93,6 +94,31 @@ impl StatePruner {
                 .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits, 4))));
             info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
 
+            // Initialize recycle bin if enabled
+            let recycle_bin_store = if cfg.recycle_bin_enable {
+                info!(
+                    "Initializing recycle bin with max_entries={}, max_bytes={}",
+                    cfg.recycle_bin_max_entries, cfg.recycle_bin_max_bytes
+                );
+                match RecycleBinStore::new(
+                    moveos_store.get_node_recycle_store().clone(),
+                    cfg.recycle_bin_max_entries,
+                    cfg.recycle_bin_max_bytes,
+                ) {
+                    Ok(store) => Some(Arc::new(store)),
+                    Err(e) => {
+                        warn!(
+                            "Failed to initialize recycle bin: {}, continuing without it",
+                            e
+                        );
+                        None
+                    }
+                }
+            } else {
+                info!("Recycle bin disabled");
+                None
+            };
+
             // Record bloom filter size metric
             if let Some(ref metrics) = metrics {
                 let bloom_size_bytes = cfg.bloom_bits / 8 + (cfg.bloom_bits % 8 != 0) as usize;
@@ -135,6 +161,12 @@ impl StatePruner {
                 match phase {
                     PrunePhase::BuildReach => {
                         info!("Starting BuildReach phase");
+
+                        // Reset bloom each BuildReach to avoid short-circuiting traversal across cycles.
+                        {
+                            let mut guard = bloom.lock();
+                            *guard = BloomFilter::new(cfg.bloom_bits, 4);
+                        }
 
                         // Create atomic snapshot for this pruning cycle
                         let atomic_snapshot = match atomic_snapshot_manager_clone
@@ -336,11 +368,12 @@ impl StatePruner {
                                     order_cursor, cfg.protection_orders, latest_order
                                 );
 
-                                let _sweeper = SweepExpired::new(
+                                let _sweeper = SweepExpired::new_with_recycle_bin(
                                     moveos_store.clone(),
                                     bloom.clone(),
                                     cfg.bloom_bits,
                                     is_running_for_thread.clone(),
+                                    recycle_bin_store.clone(),
                                 );
 
                                 // Process using fallback logic (original implementation)
@@ -416,11 +449,12 @@ impl StatePruner {
                             order_cursor, cfg.protection_orders, latest_order
                         );
 
-                        let sweeper = SweepExpired::new(
+                        let sweeper = SweepExpired::new_with_recycle_bin(
                             moveos_store.clone(),
                             bloom.clone(),
                             cfg.bloom_bits,
                             is_running_for_thread.clone(),
+                            recycle_bin_store.clone(),
                         );
                         let sweep_start_time = std::time::Instant::now();
                         let mut processed_count = 0;
@@ -612,18 +646,22 @@ impl StatePruner {
 
                                     // Fallback to basic snapshot loading for compatibility
                                     warn!("Falling back to basic snapshot loading for Incremental");
-                                    let snapshot = moveos_store
+                                    let _snapshot = moveos_store
                                         .load_prune_meta_snapshot()
                                         .ok()
                                         .flatten()
                                         .unwrap_or_default();
 
                                     let incremental_sweeper =
-                                        IncrementalSweep::new(moveos_store.clone());
+                                        IncrementalSweep::new_with_recycle_bin(
+                                            moveos_store.clone(),
+                                            recycle_bin_store.clone(),
+                                        );
 
                                     // Process using fallback logic
                                     match incremental_sweeper
-                                        .sweep(snapshot.state_root, cfg.incremental_sweep_batch)
+                                        // Use max cutoff to sweep all stale indices (timestamp-based)
+                                        .sweep(u64::MAX, cfg.incremental_sweep_batch)
                                     {
                                         Ok(deleted_count) => {
                                             if deleted_count > 0 {
@@ -697,12 +735,12 @@ impl StatePruner {
                             );
 
                             // Use incremental sweep to clean up remaining stale nodes
-                            let incremental_sweeper = IncrementalSweep::new(moveos_store.clone());
+                            let incremental_sweeper = IncrementalSweep::new_with_recycle_bin(
+                                moveos_store.clone(),
+                                recycle_bin_store.clone(),
+                            );
 
-                            match incremental_sweeper.sweep(
-                                atomic_snapshot.snapshot.state_root,
-                                cfg.incremental_sweep_batch,
-                            ) {
+                            match incremental_sweeper.sweep(u64::MAX, cfg.incremental_sweep_batch) {
                                 Ok(deleted_count) => {
                                     if deleted_count > 0 {
                                         info!("Incremental sweep deleted {} nodes using atomic snapshot {}", deleted_count, atomic_snapshot.snapshot_id);

@@ -214,33 +214,35 @@ impl RuntimeObject {
         field_key: FieldKey,
     ) -> PartialVMResult<(&mut RuntimeObject, Option<Option<NumBytes>>)> {
         let state_root = self.state_root()?;
-        let field_obj_id = self.id().child_id(field_key);
+        // Capture parent id now to use in error logs without borrowing self later.
+        let parent_for_log = self.id().clone();
         Ok(match self.fields.entry(field_key) {
             Entry::Vacant(entry) => {
-                let (tv, loaded) =
-                    match resolver
-                        .get_field_at(state_root, &field_key)
-                        .map_err(|err| {
-                            partial_extension_error(format!(
-                                "remote object resolver failure: {}",
-                                err
-                            ))
-                        })? {
-                        Some(obj_state) => {
-                            debug_assert!(
+                // Build field_obj_id outside to avoid borrowing self twice
+                let field_obj_id = parent_for_log.child_id(field_key);
+                let (tv, loaded) = match resolver
+                    .get_field_at(state_root, &field_key)
+                    .map_err(|err| {
+                        // Capture detailed context to help diagnose missing node / pruner issues.
+                        partial_extension_error(format!(
+                            "remote object resolver failure: {}, object_id: {}, state_root: {}, field_key: {}",
+                            err, parent_for_log, state_root, field_key
+                        ))
+                    })? {
+                    Some(obj_state) => {
+                        debug_assert!(
                             obj_state.metadata.id == field_obj_id,
                             "The loaded object id should be equal to the expected field object id"
                         );
-                            let value_layout =
-                                layout_loader.get_type_layout(obj_state.object_type())?;
-                            let state_bytes_len = obj_state.value.len() as u64;
-                            (
-                                RuntimeObject::load(value_layout, obj_state)?,
-                                Some(NumBytes::new(state_bytes_len)),
-                            )
-                        }
-                        None => (RuntimeObject::none(field_obj_id), None),
-                    };
+                        let value_layout = layout_loader.get_type_layout(obj_state.object_type())?;
+                        let state_bytes_len = obj_state.value.len() as u64;
+                        (
+                            RuntimeObject::load(value_layout, obj_state)?,
+                            Some(NumBytes::new(state_bytes_len)),
+                        )
+                    }
+                    None => (RuntimeObject::none(field_obj_id), None),
+                };
                 (entry.insert(tv), Some(loaded))
             }
             Entry::Occupied(entry) => (entry.into_mut(), None),
@@ -255,12 +257,16 @@ impl RuntimeObject {
         field_key: FieldKey,
     ) -> PartialVMResult<(RuntimeObject, Option<Option<NumBytes>>)> {
         let state_root = self.state_root()?;
-        let field_obj_id = self.id().child_id(field_key);
+        let parent_id = self.id();
+        let field_obj_id = parent_id.child_id(field_key);
 
         match resolver
             .get_field_at(state_root, &field_key)
             .map_err(|err| {
-                partial_extension_error(format!("remote object resolver failure: {}", err))
+                partial_extension_error(format!(
+                    "remote object retrieve_field failure: {}, object_id: {}, state_root: {}, field_key: {}",
+                    err, parent_id, state_root, field_key
+                ))
             })? {
             Some(obj_state) => {
                 debug_assert!(

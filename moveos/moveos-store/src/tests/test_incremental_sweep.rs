@@ -49,15 +49,15 @@ async fn test_incremental_sweep_via_smt_api() {
     if !changeset1.stale_indices.is_empty() {
         let _ = store
             .prune_store
-            .write_stale_indices(&changeset1.stale_indices);
+            .write_stale_indices(1, &changeset1.stale_indices);
     }
 
     // Verify: All new nodes should have refcount > 0
     for hash in changeset1.nodes.keys() {
         let refcount = store.prune_store.get_node_refcount(*hash).unwrap();
         assert!(
-            refcount > 0,
-            "New node {:?} should have refcount > 0, got {}",
+            matches!(refcount, Some(v) if v > 0),
+            "New node {:?} should have refcount > 0, got {:?}",
             hash,
             refcount
         );
@@ -105,7 +105,7 @@ async fn test_incremental_sweep_via_smt_api() {
     if !changeset2.stale_indices.is_empty() {
         let _ = store
             .prune_store
-            .write_stale_indices(&changeset2.stale_indices);
+            .write_stale_indices(2, &changeset2.stale_indices);
     }
 
     // Step 3: Verify refcount correctness
@@ -113,8 +113,8 @@ async fn test_incremental_sweep_via_smt_api() {
     for hash in changeset2.nodes.keys() {
         let refcount = store.prune_store.get_node_refcount(*hash).unwrap();
         assert!(
-            refcount > 0,
-            "New node {:?} should have refcount > 0, got {}",
+            matches!(refcount, Some(v) if v > 0),
+            "New node {:?} should have refcount > 0, got {:?}",
             hash,
             refcount
         );
@@ -125,7 +125,7 @@ async fn test_incremental_sweep_via_smt_api() {
     let mut nodes_with_zero_refcount = 0;
     for (_stale_root, stale_hash) in &changeset2.stale_indices {
         let refcount = store.prune_store.get_node_refcount(*stale_hash).unwrap();
-        if refcount == 0 {
+        if refcount == Some(0) {
             nodes_with_zero_refcount += 1;
         }
     }
@@ -135,14 +135,11 @@ async fn test_incremental_sweep_via_smt_api() {
     );
 
     // Step 4: Simulate IncrementalSweep - delete nodes with refcount == 0
-    let stale_list = store
-        .prune_store
-        .list_before(H256::from_low_u64_be(u64::MAX), 1000)
-        .unwrap();
+    let stale_list = store.prune_store.list_before(u64::MAX, 1000).unwrap();
     let mut deleted_count = 0;
     for (stale_root, node_hash) in stale_list {
         let refcount = store.prune_store.get_node_refcount(node_hash).unwrap();
-        if refcount == 0 {
+        if refcount == Some(0) {
             // Verify node exists before deletion
             let exists = store
                 .get_state_node_store()
@@ -215,25 +212,26 @@ async fn test_refcount_prevents_premature_deletion() {
     store.prune_store.inc_node_refcount(node_hash).unwrap();
 
     let refcount = store.prune_store.get_node_refcount(node_hash).unwrap();
-    assert_eq!(refcount, 3, "Node should have refcount == 3");
+    assert_eq!(refcount, Some(3), "Node should have refcount == 3");
 
     // Mark it as stale (this decrements refcount by 1)
     let root = H256::random();
     store
         .prune_store
-        .write_stale_indices(&[(root, node_hash)])
+        .write_stale_indices(1, &[(root, node_hash)])
         .unwrap();
 
     // Refcount should be 2 now (was 3, decremented to 2)
     let refcount = store.prune_store.get_node_refcount(node_hash).unwrap();
     assert_eq!(
-        refcount, 2,
+        refcount,
+        Some(2),
         "Node should have refcount == 2 after one write_stale_indices"
     );
 
     // Try to sweep - should NOT delete this node (refcount > 0)
-    let cutoff = H256::from_low_u64_be(u64::MAX);
-    let stale_list = store.prune_store.list_before(cutoff, 1000).unwrap();
+    let cutoff_order = u64::MAX;
+    let stale_list = store.prune_store.list_before(cutoff_order, 1000).unwrap();
 
     for (_stale_root, stale_node_hash) in stale_list {
         if stale_node_hash == node_hash {
@@ -241,7 +239,10 @@ async fn test_refcount_prevents_premature_deletion() {
                 .prune_store
                 .get_node_refcount(stale_node_hash)
                 .unwrap();
-            assert!(refcount > 0, "Node should have refcount > 0");
+            assert!(
+                matches!(refcount, Some(v) if v > 0),
+                "Node should have refcount > 0"
+            );
 
             // Should NOT delete
             let exists = store
@@ -251,7 +252,7 @@ async fn test_refcount_prevents_premature_deletion() {
                 .is_some();
             assert!(
                 exists,
-                "Node {} with refcount={} should NOT be deleted",
+                "Node {} with refcount={:?} should NOT be deleted",
                 stale_node_hash, refcount
             );
         }

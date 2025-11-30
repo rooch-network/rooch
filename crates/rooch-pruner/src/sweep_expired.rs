@@ -1,18 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::recycle_bin::{RecycleBinStore, RecyclePhase, RecycleRecord};
 use crate::util::try_extract_child_root;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::prune::PruneStore;
 use moveos_store::MoveOSStore;
+use moveos_types::h256::H256;
 use parking_lot::Mutex;
-use primitive_types::H256;
 use rayon::prelude::*;
 use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, warn};
 // no extra high-level imports
 
 /// SweepExpired traverses expired roots (< cutoff) and deletes any node hash not present in ReachableSet.
@@ -24,6 +25,7 @@ pub struct SweepExpired {
     processed_roots_count: Arc<std::sync::atomic::AtomicU64>, // Counter for aggressive compaction
     is_running: Arc<std::sync::atomic::AtomicBool>, // true = running, false = stopped
     debug_refcount_guard: bool,     // Enable debug-only refcount guard for Bloom misses
+    recycle_bin_store: Option<Arc<RecycleBinStore>>, // Optional recycle bin for deleted nodes
                                     // metrics: Arc<StateDBMetrics>,
 }
 
@@ -34,6 +36,17 @@ impl SweepExpired {
         bloom_bits: usize,              // configurable bloom filter size
         is_running: Arc<std::sync::atomic::AtomicBool>, // true = running, false = stopped
                                         // metrics: Arc<StateDBMetrics>,
+    ) -> Self {
+        Self::new_with_recycle_bin(moveos_store, bloom, bloom_bits, is_running, None)
+    }
+
+    pub fn new_with_recycle_bin(
+        moveos_store: Arc<MoveOSStore>,
+        bloom: Arc<Mutex<BloomFilter>>, // pass the same bloom instance
+        bloom_bits: usize,              // configurable bloom filter size
+        is_running: Arc<std::sync::atomic::AtomicBool>, // true = running, false = stopped
+        recycle_bin_store: Option<Arc<RecycleBinStore>>,
+        // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         // Load or create deleted roots bloom filter
         let deleted_state_root_bloom = moveos_store
@@ -56,6 +69,7 @@ impl SweepExpired {
                 .ok()
                 .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
                 .unwrap_or(false),
+            recycle_bin_store,
         }
     }
 
@@ -308,6 +322,15 @@ impl SweepExpired {
                 );
                 // Flush remaining deletions before exit
                 if !batch.is_empty() {
+                    let sample: Vec<String> =
+                        batch.iter().take(20).map(|h| format!("{:#x}", h)).collect();
+                    info!(
+                        tx_order,
+                        ?root_hash,
+                        delete_count = batch.len(),
+                        sample = ?sample,
+                        "SweepExpired deleting batch before shutdown"
+                    );
                     self.moveos_store
                         .node_store
                         .delete_nodes_with_flush(batch.clone(), /*flush*/ true)?;
@@ -325,17 +348,20 @@ impl SweepExpired {
 
             // Optional debug guard: double-check refcount to catch Bloom misses in testing.
             if self.debug_refcount_guard {
-                let refcount = self.moveos_store.prune_store.get_node_refcount(node_hash)?;
-                if refcount > 0 {
-                    debug_protected += 1;
-                    tracing::warn!(
-                        ?node_hash,
-                        refcount,
-                        tx_order,
-                        ?root_hash,
-                        "PRUNER_DEBUG_REFCOUNT: protecting node not in bloom"
-                    );
-                    continue;
+                if let Some(refcount) =
+                    self.moveos_store.prune_store.get_node_refcount(node_hash)?
+                {
+                    if refcount > 0 {
+                        debug_protected += 1;
+                        tracing::warn!(
+                            ?node_hash,
+                            refcount,
+                            tx_order,
+                            ?root_hash,
+                            "PRUNER_DEBUG_REFCOUNT: protecting node not in bloom"
+                        );
+                        continue;
+                    }
                 }
             }
 
@@ -343,6 +369,31 @@ impl SweepExpired {
             // We only reach here if the node is NOT reachable
             let mut children_to_traverse = Vec::new();
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
+                // Capture node data in recycle bin before deletion (if enabled)
+                if let Some(ref recycle_bin) = self.recycle_bin_store {
+                    let record = RecycleRecord {
+                        bytes: bytes.clone(),
+                        phase: RecyclePhase::SweepExpired,
+                        stale_root_or_cutoff: root_hash,
+                        tx_order,
+                        deleted_at: std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                        note: Some("unreachable node".to_string()),
+                    };
+
+                    if let Err(e) = recycle_bin.put_record(node_hash, record) {
+                        warn!(
+                            node_hash = ?node_hash,
+                            root_hash = ?root_hash,
+                            tx_order,
+                            error = ?e,
+                            "Failed to store node in recycle bin"
+                        );
+                    }
+                }
+
                 // If this leaf embeds another table root, collect it for traversal
                 if let Some(child_root) = try_extract_child_root(&bytes) {
                     children_to_traverse.push(child_root);
@@ -365,6 +416,15 @@ impl SweepExpired {
 
             // Step 5: Process batch if it reaches the threshold
             if batch.len() >= 10000 {
+                let sample: Vec<String> =
+                    batch.iter().take(20).map(|h| format!("{:#x}", h)).collect();
+                info!(
+                    tx_order,
+                    ?root_hash,
+                    delete_count = batch.len(),
+                    sample = ?sample,
+                    "SweepExpired deleting batch (streaming)"
+                );
                 self.moveos_store
                     .node_store
                     .delete_nodes_with_flush(batch.clone(), /*flush*/ false)?;
@@ -393,6 +453,14 @@ impl SweepExpired {
         // Process any remaining nodes in the final batch
         if !batch.is_empty() {
             // Final flush to persist all deletions
+            let sample: Vec<String> = batch.iter().take(20).map(|h| format!("{:#x}", h)).collect();
+            info!(
+                tx_order,
+                ?root_hash,
+                delete_count = batch.len(),
+                sample = ?sample,
+                "SweepExpired deleting final batch"
+            );
             self.moveos_store
                 .node_store
                 .delete_nodes_with_flush(batch.clone(), /*flush*/ true)?;

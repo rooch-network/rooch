@@ -86,11 +86,13 @@ pub(crate) fn error_to_abort_code(err: PartialVMError) -> u64 {
     };
     if tracing::enabled!(tracing::Level::DEBUG) {
         tracing::warn!(
-            "[ObjectRuntime] error err: {:?}, abort: {}",
+            "[ObjectRuntime] error_to_abort_code: err={:?}, major={:?}, sub={:?}, abort={}",
             err,
+            err.major_status(),
+            err.sub_status(),
             abort_code
         );
-    };
+    }
     abort_code
 }
 

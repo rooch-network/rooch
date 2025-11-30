@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use moveos_types::state::FieldKey;
 use primitive_types::H256;
+use smt::jellyfish_merkle::node_type::Node;
 use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 
 /// Read unsigned LEB128 from the given byte slice.
@@ -28,61 +30,76 @@ pub fn read_uleb128(bytes: &[u8]) -> Option<(usize, usize)> {
 /// The on-disk layout is: `[tag 0x02][key 32B][ULEB128 len][payload len bytes]`.
 /// We assume the payload is `[32B child_root][4B entry_count]` when `len == 36`.
 pub fn try_extract_child_root(bytes: &[u8]) -> Option<H256> {
-    // Ensure node tag indicates Leaf
-    if bytes.first()? != &2u8 {
-        return None;
-    }
-
-    // Skip tag (1) + key (32)
-    let mut pos = 1 + 32;
-
-    // Read payload length
-    let (len, leb_len) = read_uleb128(&bytes[pos..])?;
-    pos += leb_len;
-    if pos + len > bytes.len() {
-        return None;
-    }
-    let payload = &bytes[pos..pos + len];
-
-    // Fast-parse ObjectState metadata without full BCS
-    let mut p = 0;
-    // 1. ObjectID (32 bytes)
-    if payload.len() < p + 32 {
-        return None;
-    }
-    p += 32;
-    // 2. owner AccountAddress (32 bytes)
-    if payload.len() < p + 32 {
-        return None;
-    }
-    p += 32;
-    // 3. flag (1 byte)
-    if payload.len() < p + 1 {
-        return None;
-    }
-    p += 1;
-
-    // 4. Option<H256> variant for state_root
-    if payload.len() <= p {
-        return None;
-    }
-    let variant = payload[p];
-    p += 1;
-    if variant != 1 {
-        // Option::None => not a table root
-        return None;
-    }
-    if payload.len() < p + 32 {
-        return None;
-    }
-    let hash = H256::from_slice(&payload[p..p + 32]);
-
-    // Skip size (u64) + created_at (u64) + updated_at (u64)
-    // We do not need to parse further; presence of a non-placeholder state_root
-    // is a strong indicator the object represents a table.
-
-    if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
-        return Some(hash);
+    // Decode the SMT node via BCS; only Leaf nodes contain the value we care about.
+    let node = Node::<FieldKey, moveos_types::state::ObjectState>::decode(bytes).ok()?;
+    if let Node::Leaf(leaf) = node {
+        let state = &leaf.value().origin;
+        if let Some(hash) = state.metadata.state_root {
+            if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
+                return Some(hash);
+            }
+        }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use moveos_types::state::{FieldKey, ObjectState};
+    use moveos_types::test_utils::random_table_object;
+
+    fn uleb128(mut v: usize) -> Vec<u8> {
+        let mut out = Vec::new();
+        loop {
+            let mut byte = (v & 0x7F) as u8;
+            v >>= 7;
+            if v != 0 {
+                byte |= 0x80;
+            }
+            out.push(byte);
+            if v == 0 {
+                break;
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn test_extract_child_root_none_variant_none() {
+        let mut bytes = Vec::new();
+        bytes.push(2u8);
+        bytes.extend_from_slice(&[0u8; 32]);
+        let payload_len = 98usize;
+        bytes.extend_from_slice(&uleb128(payload_len));
+        bytes.extend_from_slice(&[0xAAu8; 32]);
+        bytes.extend_from_slice(&[0xBBu8; 32]);
+        bytes.push(0);
+        // Option::None discriminator
+        bytes.push(0);
+        bytes.extend_from_slice(&[0u8; 32]);
+
+        let extracted = try_extract_child_root(&bytes);
+        assert!(extracted.is_none());
+    }
+
+    #[test]
+    fn test_extract_child_root_some_real_object_state() {
+        let table = random_table_object();
+        let mut meta = table.metadata().clone();
+        let expected_root = H256::random();
+        meta.state_root = Some(expected_root);
+        let state = ObjectState::new_with_struct(meta, table.value.clone()).unwrap();
+        let leaf = smt::jellyfish_merkle::node_type::LeafNode::new(
+            FieldKey::new(*H256::random().as_fixed_bytes()),
+            smt::SMTObject::from_origin(state).unwrap(),
+        );
+        let leaf_bytes =
+            smt::jellyfish_merkle::node_type::Node::<FieldKey, ObjectState>::Leaf(leaf)
+                .encode()
+                .unwrap();
+
+        let extracted = try_extract_child_root(&leaf_bytes);
+        assert_eq!(extracted, Some(expected_root));
+    }
 }

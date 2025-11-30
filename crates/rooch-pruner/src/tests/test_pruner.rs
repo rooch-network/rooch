@@ -26,10 +26,16 @@ async fn test_refcount_inc_dec() {
     let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
     let key = H256::random();
     // initial ref == 0
-    assert_eq!(store.get_prune_store().get_node_refcount(key).unwrap(), 0);
+    assert_eq!(
+        store.get_prune_store().get_node_refcount(key).unwrap(),
+        None
+    );
     // inc -> 1
     store.get_prune_store().inc_node_refcount(key).unwrap();
-    assert_eq!(store.get_prune_store().get_node_refcount(key).unwrap(), 1);
+    assert_eq!(
+        store.get_prune_store().get_node_refcount(key).unwrap(),
+        Some(1)
+    );
     // dec -> 0 and removed
     store.get_prune_store().dec_node_refcount(key).unwrap();
 }
@@ -52,26 +58,29 @@ async fn test_write_stale_indices_and_refcount() {
             .get_prune_store()
             .get_node_refcount(node_hash)
             .unwrap(),
-        1
+        Some(1)
     );
 
     // write stale index which should dec ref to 0 and create stale entry
     store
         .get_prune_store()
-        .write_stale_indices(&[(root, node_hash)])
+        .write_stale_indices(1, &[(root, node_hash)])
         .unwrap();
 
-    // refcount removed -> 0
+    // refcount removed -> None
     assert_eq!(
         store
             .get_prune_store()
             .get_node_refcount(node_hash)
             .unwrap(),
-        0
+        None
     );
-    // stale index present (timestamp key internally generated)
-    let cutoff = H256::from_low_u64_be(u64::MAX);
-    let indices = store.get_prune_store().list_before(cutoff, 100).unwrap();
+    // stale index present (tx_order key internally generated)
+    let cutoff_order = u64::MAX;
+    let indices = store
+        .get_prune_store()
+        .list_before(cutoff_order, 100)
+        .unwrap();
     assert!(indices.iter().any(|(_, nh)| *nh == node_hash));
 }
 
@@ -139,13 +148,13 @@ async fn test_incremental_sweep() {
     let root = H256::random();
     store
         .prune_store
-        .write_stale_indices(&[(root, hash)])
+        .write_stale_indices(1, &[(root, hash)])
         .unwrap();
-    assert_eq!(store.prune_store.get_node_refcount(hash).unwrap(), 0);
+    assert_eq!(store.prune_store.get_node_refcount(hash).unwrap(), None);
 
     // incremental sweep should delete
     let sweeper = IncrementalSweep::new(Arc::new(store.clone()));
-    let _deleted = sweeper.sweep(root, 100).unwrap();
+    let _deleted = sweeper.sweep(u64::MAX, 100).unwrap();
     // assert_eq!(deleted, 1);
     // assert!(node_store.get(&hash).unwrap().is_none());
     // assert!(store

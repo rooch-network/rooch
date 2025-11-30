@@ -1155,4 +1155,57 @@ mod tests {
             "0x07d29b5cffb95d39f98baed1a973e676891bc9d379022aba6f4a2e4912a5e552",
         );
     }
+
+    /// Ensure delete+new on same field in one StateChangeSet folds to final state.
+    #[test]
+    fn test_fold_delete_then_new_same_field() {
+        let root_id = ObjectID::root();
+        let field = FieldKey::derive_from_string("foo");
+        let child_id = root_id.child_id(field);
+
+        // Start with a pre-existing field (global_size = 1)
+        let mut scs = StateChangeSet::new(*GENESIS_STATE_ROOT, 1);
+
+        // First, mark delete
+        let delete_change = ObjectChange::new(
+            ObjectMeta::new(
+                child_id.clone(),
+                AccountAddress::ZERO,
+                0,
+                Some(*GENESIS_STATE_ROOT),
+                0,
+                0,
+                0,
+                TypeTag::Bool,
+            ),
+            Op::Delete,
+        );
+        scs.add_change(delete_change).unwrap();
+
+        // Then, add back a new value (should overwrite delete)
+        let new_change = ObjectChange::new(
+            ObjectMeta::new(
+                child_id.clone(),
+                AccountAddress::ZERO,
+                0,
+                Some(*GENESIS_STATE_ROOT),
+                0,
+                0,
+                0,
+                TypeTag::Bool,
+            ),
+            Op::New(vec![1, 2, 3, 4]),
+        );
+        scs.add_change(new_change).unwrap();
+
+        // Only one entry should remain, with final Op::New
+        assert_eq!(scs.changes.len(), 1);
+        let change = scs.changes.values().next().unwrap();
+        match change.value.as_ref().unwrap() {
+            Op::New(v) => assert_eq!(v, &vec![1, 2, 3, 4]),
+            _ => panic!("expected final Op::New after overwrite"),
+        }
+        // Global size should be back to 1 (delete then add)
+        assert_eq!(scs.global_size, 1);
+    }
 }

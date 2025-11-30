@@ -301,6 +301,19 @@ fn create_optimized_config(node_count: usize) -> PruneConfig {
         protection_orders: 30000,
         enable_incremental_sweep: true,
         incremental_sweep_batch: 1000,
+        recycle_bin_enable: false,
+        recycle_bin_max_entries: 10000,
+        recycle_bin_max_bytes: 100_000_000,
+        protected_roots_count: 1,
+        // Phase 3: PersistentMarker configuration fields
+        marker_batch_size: 10000,
+        marker_bloom_bits: 1048576,
+        marker_bloom_hash_fns: 4,
+        marker_memory_threshold_mb: 1024,
+        marker_auto_strategy: true,
+        marker_force_persistent: false,
+        marker_temp_cf_name: "gc_marker_temp".to_string(),
+        marker_error_recovery: true,
     }
 }
 

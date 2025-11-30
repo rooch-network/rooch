@@ -8,7 +8,7 @@ use crate::config_store::{ConfigDBStore, ConfigStore, STARTUP_INFO_KEY};
 use crate::event_store::{EventDBStore, EventStore};
 use crate::prune::{PruneDBStore, PruneStore};
 use crate::state_store::statedb::StateDBStore;
-use crate::state_store::{nodes_to_write_batch, NodeDBStore};
+use crate::state_store::{nodes_to_write_batch, NodeDBStore, NodeRecycleDBStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
@@ -66,6 +66,7 @@ pub const PRUNE_META_BLOOM_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_bl
 pub const PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_snapshot";
 pub const PRUNE_META_DELETED_ROOTS_BLOOM_COLUMN_FAMILY_NAME: ColumnFamilyName =
     "prune_meta_deleted_state_root_bloom";
+pub const STATE_NODE_RECYCLE_COLUMN_FAMILY_NAME: ColumnFamilyName = "state_node_recycle";
 
 // pub const META_KEY_PHASE: &str = "phase";
 // pub const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
@@ -88,6 +89,7 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         PRUNE_META_BLOOM_COLUMN_FAMILY_NAME,
         PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME,
         PRUNE_META_DELETED_ROOTS_BLOOM_COLUMN_FAMILY_NAME,
+        STATE_NODE_RECYCLE_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -108,6 +110,7 @@ pub struct MoveOSStore {
     pub config_store: ConfigDBStore,
     pub state_store: StateDBStore,
     pub prune_store: PruneDBStore,
+    pub node_recycle_store: NodeRecycleDBStore,
 }
 
 impl MoveOSStore {
@@ -130,13 +133,15 @@ impl MoveOSStore {
         let state_store =
             StateDBStore::new(node_store.clone(), registry, store_config.state_cache_size);
 
+        let node_recycle_store = NodeRecycleDBStore::new(instance.clone());
         let store = Self {
             node_store,
             event_store: EventDBStore::new(instance.clone()),
             transaction_store: TransactionDBStore::new(instance.clone()),
             config_store: ConfigDBStore::new(instance.clone()),
             state_store,
-            prune_store: PruneDBStore::new(instance),
+            prune_store: PruneDBStore::new(instance.clone()),
+            node_recycle_store,
         };
         Ok(store)
     }
@@ -173,8 +178,13 @@ impl MoveOSStore {
         &self.prune_store
     }
 
+    pub fn get_node_recycle_store(&self) -> &NodeRecycleDBStore {
+        &self.node_recycle_store
+    }
+
     pub fn handle_tx_output(
         &self,
+        tx_order: u64,
         tx_hash: H256,
         output: RawTransactionOutput,
     ) -> Result<(TransactionOutput, TransactionExecutionInfo)> {
@@ -193,10 +203,11 @@ impl MoveOSStore {
 
         // Maintain refcount & stale indices
         for hash in changed_nodes.keys() {
-            let _ = self.prune_store.inc_node_refcount(*hash);
+            self.prune_store.inc_node_refcount(*hash)?;
         }
         if !stale_indices.is_empty() {
-            let _ = self.prune_store.write_stale_indices(&stale_indices);
+            self.prune_store
+                .write_stale_indices(tx_order, &stale_indices)?;
         }
 
         // transaction_store updates
@@ -392,8 +403,8 @@ impl PruneStore for MoveOSStore {
         self.prune_store.save_prune_meta_bloom(phase)
     }
 
-    fn list_before(&self, cutoff_root: H256, limit: usize) -> Result<Vec<(H256, H256)>> {
-        self.prune_store.list_before(cutoff_root, limit)
+    fn list_before(&self, cutoff_order: u64, limit: usize) -> Result<Vec<(H256, H256)>> {
+        self.prune_store.list_before(cutoff_order, limit)
     }
 
     fn inc_node_refcount(&self, key: H256) -> Result<()> {
@@ -408,8 +419,8 @@ impl PruneStore for MoveOSStore {
         self.prune_store.remove_node_refcount(key)
     }
 
-    fn write_stale_indices(&self, stale: &[(H256, H256)]) -> Result<()> {
-        self.prune_store.write_stale_indices(stale)
+    fn write_stale_indices(&self, tx_order: u64, stale: &[(H256, H256)]) -> Result<()> {
+        self.prune_store.write_stale_indices(tx_order, stale)
     }
 
     fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>> {
