@@ -36,7 +36,7 @@ raw-store = { workspace = true }
 bcs = { workspace = true }
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 tempfile = { workspace = true }
 rand = { workspace = true }
 bcs = { workspace = true }
