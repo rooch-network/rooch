@@ -284,23 +284,13 @@ fn create_optimized_config(node_count: usize) -> PruneConfig {
     };
 
     let delete_batch = scan_batch / 2;
-    let interval_s = match node_count {
-        0..=1_000_000 => 60,
-        1_000_001..=10_000_000 => 30,
-        _ => 15,
-    };
 
     PruneConfig {
-        enable: true,
-        boot_cleanup_done: false,
         scan_batch,
         delete_batch,
-        interval_s,
         bloom_bits,
         enable_reach_seen_cf: false,
         protection_orders: 30000,
-        enable_incremental_sweep: true,
-        incremental_sweep_batch: 1000,
         recycle_bin_enable: false,
         recycle_bin_max_entries: 10000,
         recycle_bin_max_bytes: 100_000_000,
@@ -335,7 +325,6 @@ fn test_optimized_configurations() {
         println!("  Bloom filter bits: {}", config.bloom_bits);
         println!("  Scan batch: {}", config.scan_batch);
         println!("  Delete batch: {}", config.delete_batch);
-        println!("  Interval: {} seconds", config.interval_s);
         println!(
             "  Estimated memory: {:.2} MB",
             config.bloom_bits as f64 / 8.0 / 1024.0 / 1024.0
