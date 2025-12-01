@@ -12,20 +12,15 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 /// Marker strategy selection for different memory scenarios
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum MarkerStrategy {
+    #[default]
     /// Automatically select strategy based on available memory
     Auto,
     /// Use in-memory HashSet for smaller datasets
     InMemory,
     /// Use persistent temporary column family for large datasets
     Persistent,
-}
-
-impl Default for MarkerStrategy {
-    fn default() -> Self {
-        MarkerStrategy::Auto
-    }
 }
 
 impl std::fmt::Display for MarkerStrategy {

@@ -371,19 +371,18 @@ impl SweepExpired {
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
                 // Capture node data in recycle bin before deletion (if enabled)
                 if let Some(ref recycle_bin) = self.recycle_bin_store {
-                    let record = RecycleRecord {
-                        bytes: bytes.clone(),
-                        phase: RecyclePhase::SweepExpired,
-                        stale_root_or_cutoff: root_hash,
+                    let record = recycle_bin.create_record(
+                        node_hash,
+                        bytes.clone(),
+                        RecyclePhase::SweepExpired,
+                        root_hash,
                         tx_order,
-                        deleted_at: std::time::SystemTime::now()
-                            .duration_since(std::time::UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs(),
-                        note: Some("unreachable node".to_string()),
-                    };
+                    );
+                    // Add specific note for this context
+                    let mut record_with_note = record;
+                    record_with_note.note = Some("unreachable node".to_string());
 
-                    if let Err(e) = recycle_bin.put_record(node_hash, record) {
+                    if let Err(e) = recycle_bin.put_record(node_hash, record_with_note) {
                         warn!(
                             node_hash = ?node_hash,
                             root_hash = ?root_hash,

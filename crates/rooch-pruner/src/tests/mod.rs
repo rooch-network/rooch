@@ -12,6 +12,7 @@ mod integration_tests;
 mod multi_root_test;
 mod node_counting_test;
 mod performance_benchmarks;
+mod recycle_bin_strong_backup_tests;
 mod persistent_marker_integration_test;
 mod reachability_correctness;
 mod safety_boundary_test;

@@ -117,6 +117,9 @@ impl CommandAction<String> for DB {
             DBCommand::RecycleDump(dump) => dump.execute().await,
             DBCommand::RecycleRestore(restore) => restore.execute().await,
             DBCommand::RecycleStat(stat) => stat.execute().await,
+            DBCommand::RecycleList(list) => list.execute().await,
+            DBCommand::RecycleClean(clean) => clean.execute().await,
+            DBCommand::RecycleExport(export) => export.execute().await,
         }
     }
 }
@@ -150,4 +153,7 @@ pub enum DBCommand {
     RecycleDump(crate::commands::db::commands::recycle_bin::RecycleDumpCommand),
     RecycleRestore(crate::commands::db::commands::recycle_bin::RecycleRestoreCommand),
     RecycleStat(crate::commands::db::commands::recycle_bin::RecycleStatCommand),
+    RecycleList(crate::commands::db::commands::recycle_bin::RecycleListCommand),
+    RecycleClean(crate::commands::db::commands::recycle_bin::RecycleCleanCommand),
+    RecycleExport(crate::commands::db::commands::recycle_bin::RecycleExportCommand),
 }

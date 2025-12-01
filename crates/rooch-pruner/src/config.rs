@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::marker::MarkerStrategy;
+use super::recycle_bin::RecycleBinConfig;
 
 /// Unified Garbage Collector configuration
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -19,6 +20,10 @@ pub struct GCConfig {
 
     /// Whether to use recycle bin for deleted nodes
     pub use_recycle_bin: bool,
+
+    /// Recycle bin configuration with strong backup defaults
+    #[serde(default)]
+    pub recycle_bin: RecycleBinConfig,
 
     /// Whether to trigger RocksDB compaction after GC
     pub force_compaction: bool,

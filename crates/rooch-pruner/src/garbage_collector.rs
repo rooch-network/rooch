@@ -633,18 +633,17 @@ impl GarbageCollector {
         if self.config.use_recycle_bin {
             for node_hash in batch {
                 if let Ok(Some(bytes)) = node_store.get(node_hash) {
-                    let record = crate::recycle_bin::RecycleRecord {
+                    let record = self.recycle_bin.create_record(
+                        *node_hash,
                         bytes,
-                        phase: crate::recycle_bin::RecyclePhase::StopTheWorld,
-                        stale_root_or_cutoff: H256::zero(),
-                        tx_order: 0,
-                        deleted_at: SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .as_secs(),
-                        note: Some("gc sweep".to_string()),
-                    };
-                    if let Err(e) = self.recycle_bin.put_record(*node_hash, record) {
+                        crate::recycle_bin::RecyclePhase::StopTheWorld,
+                        H256::zero(),
+                        0,
+                    );
+                    // Add specific note for this context
+                    let mut record_with_note = record;
+                    record_with_note.note = Some("gc sweep".to_string());
+                    if let Err(e) = self.recycle_bin.put_record(*node_hash, record_with_note) {
                         warn!(?node_hash, "Failed to store recycle record: {}", e);
                     }
                 }

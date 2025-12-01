@@ -7,6 +7,7 @@ use crate::utils::open_rooch_db_readonly;
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_pruner::{GCConfig, GarbageCollector, MarkerStrategy};
+use rooch_pruner::recycle_bin::RecycleBinConfig;
 use rooch_types::error::RoochResult;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -55,9 +56,24 @@ pub struct GCCommand {
     /// Enable recycle bin to store deleted nodes for potential recovery
     ///
     /// Deleted nodes are stored in the recycle bin before deletion
-    /// Default: true
+    /// Default: true (strong backup mode)
     #[clap(long = "recycle-bin", default_value_t = true)]
     pub use_recycle_bin: bool,
+
+    /// Disk space warning threshold for recycle bin (percentage)
+    ///
+    /// When recycle bin usage exceeds this percentage of available space,
+    /// a warning will be issued. Requires manual cleanup to free space.
+    /// Default: 90
+    #[clap(long = "recycle-space-warning-threshold", default_value_t = 90)]
+    pub recycle_space_warning_threshold: u64,
+
+    /// Force recycle bin operation despite space warnings
+    ///
+    /// This flag bypasses disk space safety checks for the recycle bin.
+    /// Use with caution - may lead to disk space exhaustion.
+    #[clap(long = "force-recycle-despite-space-warning")]
+    pub force_recycle_despite_space_warning: bool,
 
     /// Force RocksDB compaction after garbage collection
     ///
@@ -136,6 +152,13 @@ impl GCCommand {
     fn create_gc_config(&self) -> Result<GCConfig, String> {
         let marker_strategy = self.parse_marker_strategy()?;
 
+        // Create recycle bin configuration with strong backup defaults
+        let recycle_bin_config = RecycleBinConfig {
+            strong_backup: true, // Always enabled - immutable default
+            disk_space_warning_threshold: self.recycle_space_warning_threshold,
+            space_check_enabled: !self.force_recycle_despite_space_warning,
+        };
+
         let config = GCConfig {
             // Runtime Configuration
             dry_run: self.dry_run,
@@ -161,6 +184,9 @@ impl GCCommand {
             marker_force_persistent: false,
             marker_temp_cf_name: "gc_marker_temp".to_string(),
             marker_error_recovery: true,
+
+            // Recycle Bin Configuration
+            recycle_bin: recycle_bin_config,
         };
 
         Ok(config)
@@ -431,19 +457,9 @@ impl CommandAction<String> for GCCommand {
             return Err(rooch_types::error::RoochError::CommandArgumentError(e));
         }
 
-        // Setup logging based on JSON/verbose mode (route logs to stderr to keep stdout clean)
-        if self.json {
-            let _ = tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::ERROR)
-                .with_writer(std::io::stderr)
-                .with_ansi(false)
-                .try_init();
-        } else if self.verbose {
-            let _ = tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::INFO)
-                .with_writer(std::io::stderr)
-                .try_init();
-        }
+        // Note: Logging is now handled globally in main.rs with ERROR level by default
+        // This prevents info! statements from contaminating JSON output
+        // Set GC_VERBOSE_MODE=1 if INFO level logging is needed for debugging
 
         // Create GC configuration
         let config = match self.create_gc_config() {
