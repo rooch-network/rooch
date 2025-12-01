@@ -7,7 +7,7 @@ use super::marker::MarkerStrategy;
 use super::recycle_bin::RecycleBinConfig;
 
 /// Unified Garbage Collector configuration
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 pub struct GCConfig {
@@ -75,6 +75,38 @@ pub struct GCConfig {
 
     /// Enable enhanced error recovery for PersistentMarker
     pub marker_error_recovery: bool,
+}
+
+impl Default for GCConfig {
+    fn default() -> Self {
+        Self {
+            // === Runtime Configuration ===
+            dry_run: false,
+            workers: num_cpus::get(),
+            use_recycle_bin: true,
+            recycle_bin: RecycleBinConfig::default(),
+            force_compaction: false,
+            skip_confirm: false,
+
+            // === Core GC Configuration ===
+            scan_batch: 1000,
+            batch_size: 10_000,
+            bloom_bits: 1 << 20, // 1M bits
+            protection_orders: 30000,
+            protected_roots_count: 1,
+
+            // === Marker Configuration ===
+            marker_strategy: crate::marker::MarkerStrategy::Auto,
+            marker_batch_size: 10000,
+            marker_bloom_bits: 1 << 20, // 1M bits
+            marker_bloom_hash_fns: 4,
+            marker_memory_threshold_mb: 2048, // 2GB
+            marker_auto_strategy: true,
+            marker_force_persistent: false,
+            marker_temp_cf_name: "gc_marker_temp".to_string(),
+            marker_error_recovery: true,
+        }
+    }
 }
 
 impl GCConfig {

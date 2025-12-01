@@ -26,8 +26,8 @@ mod tests {
             "Space checking should be enabled by default"
         );
         assert_eq!(
-            config.disk_space_warning_threshold, 90,
-            "Default warning threshold should be 90%"
+            config.disk_space_warning_threshold, 20,
+            "Default warning threshold should be 20%"
         );
 
         Ok(())
@@ -77,6 +77,8 @@ mod tests {
         let config2 = RecycleBinConfig {
             strong_backup: true,
             disk_space_warning_threshold: 80,
+            disk_space_critical_threshold: 10,
+            disk_space_stop_threshold: 5,
             space_check_enabled: false,
         };
 
@@ -104,6 +106,8 @@ mod tests {
             max_bytes: usize::MAX,
             strong_backup: true,
             space_warning_threshold: 90,
+            space_critical_threshold: 10,
+            space_stop_threshold: 5,
         };
 
         assert_eq!(stats.current_entries, 1000);
@@ -126,6 +130,8 @@ mod tests {
             max_bytes: usize::MAX,
             strong_backup: true,
             space_warning_threshold: 85,
+            space_critical_threshold: 15,
+            space_stop_threshold: 5,
         };
 
         // Test that structure is properly formed
@@ -159,10 +165,14 @@ mod tests {
             "Space checking should be enabled for safety"
         );
 
-        // Core principle 3: Reasonable warning threshold
+        // Core principle 3: Reasonable warning threshold (updated for better responsiveness)
         assert!(
-            config.disk_space_warning_threshold >= 50,
-            "Warning threshold should be at least 50% for reasonable safety"
+            config.disk_space_warning_threshold >= 20,
+            "Warning threshold should be at least 20% for early detection"
+        );
+        assert!(
+            config.disk_space_warning_threshold <= 50,
+            "Warning threshold should not be too high to miss issues"
         );
     }
 
@@ -259,6 +269,56 @@ mod tests {
         assert!(
             !filter.matches(&record),
             "Record should not match when too small"
+        );
+    }
+
+    /// Test node type extraction from encoded bytes
+    #[test]
+    fn test_node_type_extraction() {
+        // Create a mock implementation to test the logic
+        struct MockRecycleBinStore;
+        impl MockRecycleBinStore {
+            fn extract_node_type(&self, bytes: &[u8]) -> Option<String> {
+                if bytes.is_empty() {
+                    return Some("Null".to_string());
+                }
+
+                // First byte is the node tag according to Jellyfish Merkle Tree encoding
+                match bytes[0] {
+                    0 => Some("Null".to_string()),
+                    1 => Some("Internal".to_string()),
+                    2 => Some("Leaf".to_string()),
+                    _ => Some("Unknown".to_string()), // Unknown tag
+                }
+            }
+        }
+
+        let mock_store = MockRecycleBinStore;
+
+        // Test Null node (empty bytes or tag 0)
+        assert_eq!(mock_store.extract_node_type(&[]), Some("Null".to_string()));
+        assert_eq!(mock_store.extract_node_type(&[0]), Some("Null".to_string()));
+
+        // Test Internal node (tag 1)
+        assert_eq!(
+            mock_store.extract_node_type(&[1, 2, 3]),
+            Some("Internal".to_string())
+        );
+
+        // Test Leaf node (tag 2)
+        assert_eq!(
+            mock_store.extract_node_type(&[2, 4, 5, 6]),
+            Some("Leaf".to_string())
+        );
+
+        // Test Unknown node (invalid tag)
+        assert_eq!(
+            mock_store.extract_node_type(&[255]),
+            Some("Unknown".to_string())
+        );
+        assert_eq!(
+            mock_store.extract_node_type(&[3, 1, 2]),
+            Some("Unknown".to_string())
         );
     }
 

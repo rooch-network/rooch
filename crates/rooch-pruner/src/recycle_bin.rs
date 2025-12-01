@@ -319,15 +319,18 @@ impl RecycleBinStore {
         }
     }
 
-    /// Extract node type for metadata
-    /// TODO: Implement proper node type extraction when Node type is available
+    /// Extract node type for metadata using Jellyfish Merkle Tree node encoding
     fn extract_node_type(&self, bytes: &[u8]) -> Option<String> {
-        // For now, we'll use a simple heuristic to guess node type
-        // This can be improved later when we have access to Node type
-        match bytes.len() {
+        if bytes.is_empty() {
+            return Some("Null".to_string());
+        }
+
+        // First byte is the node tag according to Jellyfish Merkle Tree encoding
+        match bytes[0] {
             0 => Some("Null".to_string()),
-            len if len > 100 => Some("Leaf".to_string()), // Larger nodes are typically leaf nodes
-            _ => Some("Internal".to_string()),
+            1 => Some("Internal".to_string()),
+            2 => Some("Leaf".to_string()),
+            _ => Some("Unknown".to_string()), // Unknown tag
         }
     }
 
