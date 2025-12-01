@@ -14,6 +14,7 @@ mod node_counting_test;
 mod performance_benchmarks;
 mod persistent_marker_integration_test;
 mod reachability_correctness;
+mod recycle_bin_integration_test;
 mod recycle_bin_strong_backup_tests;
 mod safety_boundary_test;
 mod simple_test_data_generator_working;

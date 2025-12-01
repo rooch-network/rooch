@@ -11,7 +11,7 @@ use sysinfo::Disks;
 use tracing::{debug, error, warn};
 
 // Import CodecKVStore trait for store methods
-use raw_store::CodecKVStore;
+use raw_store::{CodecKVStore, CodecWriteBatch};
 
 /// Result of disk space check
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -382,13 +382,71 @@ impl RecycleBinStore {
     }
 
     pub fn delete_record(&self, key: &H256) -> Result<bool> {
-        // For now, return false - we'll implement this later when we have proper access to raw_store traits
-        // This is intentional - manual deletion should be explicit and careful
-        warn!(
-            key = ?key,
-            "Delete record called but not implemented - manual deletion should use dedicated cleanup commands"
-        );
-        Ok(false)
+        // Check if key exists first
+        if let Some(record) = self.get_record(key)? {
+            // Use CodecKVStore::remove to delete the record
+            self.store.remove(*key)?;
+
+            // Update statistics counters
+            self.current_entries
+                .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+
+            // Calculate the serialized record size for accurate byte counting
+            let serialized_size = bcs::to_bytes(&record)?.len();
+            self.current_bytes
+                .fetch_sub(serialized_size, std::sync::atomic::Ordering::Relaxed);
+
+            debug!(
+                key = ?key,
+                phase = ?record.phase,
+                record_size = serialized_size,
+                current_entries = self.current_entries.load(std::sync::atomic::Ordering::Relaxed),
+                current_bytes = self.current_bytes.load(std::sync::atomic::Ordering::Relaxed),
+                "Deleted record from recycle bin"
+            );
+
+            Ok(true)
+        } else {
+            debug!(key = ?key, "Record not found for deletion");
+            Ok(false)
+        }
+    }
+
+    /// Internal method to list entries with keys
+    fn list_entries_with_keys(
+        &self,
+        filter: Option<RecycleFilter>,
+        limit: Option<usize>,
+    ) -> Result<Vec<(H256, RecycleRecord)>> {
+        let mut results = Vec::new();
+
+        // Get iterator
+        let mut iter = self.store.iter()?;
+        iter.seek_to_first();
+
+        let max_count = limit.unwrap_or(usize::MAX);
+
+        for item in iter {
+            if results.len() >= max_count {
+                break;
+            }
+
+            let (key, value_bytes): (H256, Vec<u8>) = item?;
+
+            // Deserialize record
+            let record: RecycleRecord = bcs::from_bytes(&value_bytes)?;
+
+            // Apply filter conditions
+            if let Some(ref f) = filter {
+                if !f.matches(&record) {
+                    continue;
+                }
+            }
+
+            results.push((key, record));
+        }
+
+        Ok(results)
     }
 
     /// List all entries in the recycle bin with optional filtering
@@ -397,34 +455,55 @@ impl RecycleBinStore {
         filter: Option<RecycleFilter>,
         limit: Option<usize>,
     ) -> Result<Vec<RecycleRecord>> {
-        // For now, return empty vector - this requires raw_store iterator access
-        // In a full implementation, this would iterate over the column family
-        debug!(
-            filter = ?filter,
-            limit = ?limit,
-            "Listing recycle bin entries (placeholder implementation)"
-        );
-
-        // TODO: Implement full iteration when raw_store iterator access is available
-        // This requires access to the underlying RocksDB iterator
-        Ok(vec![])
+        let entries = self.list_entries_with_keys(filter, limit)?;
+        Ok(entries.into_iter().map(|(_, record)| record).collect())
     }
 
     /// Delete entries from the recycle bin based on filter criteria
     pub fn delete_entries(&self, filter: &RecycleFilter, batch_size: usize) -> Result<usize> {
-        // For now, return 0 - this requires raw_store iterator access
-        // In a full implementation, this would:
-        // 1. Iterate to find matching entries
-        // 2. Collect their keys
-        // 3. Delete in batches
-        warn!(
-            filter = ?filter,
-            batch_size,
-            "Delete entries called but not implemented - requires raw_store iterator access"
-        );
+        let mut total_deleted = 0;
 
-        // TODO: Implement full deletion when raw_store iterator access is available
-        Ok(0)
+        loop {
+            // Get a batch of matching entries
+            let entries = self.list_entries_with_keys(Some(filter.clone()), Some(batch_size))?;
+
+            if entries.is_empty() {
+                break;
+            }
+
+            // Collect keys to delete
+            let keys_to_delete: Vec<H256> = entries.iter().map(|(k, _)| *k).collect();
+
+            // Create batch delete operation
+            let batch = CodecWriteBatch::new_deletes(keys_to_delete.clone());
+            self.store.write_batch(batch)?;
+
+            // Update statistics
+            let deleted_count = keys_to_delete.len();
+            let deleted_bytes: usize = entries.iter().map(|(_, r)| r.original_size).sum();
+
+            self.current_entries
+                .fetch_sub(deleted_count, std::sync::atomic::Ordering::Relaxed);
+            self.current_bytes
+                .fetch_sub(deleted_bytes, std::sync::atomic::Ordering::Relaxed);
+
+            total_deleted += deleted_count;
+
+            debug!(
+                deleted_count,
+                deleted_bytes,
+                total_deleted,
+                current_entries = self
+                    .current_entries
+                    .load(std::sync::atomic::Ordering::Relaxed),
+                current_bytes = self
+                    .current_bytes
+                    .load(std::sync::atomic::Ordering::Relaxed),
+                "Batch deleted entries from recycle bin"
+            );
+        }
+
+        Ok(total_deleted)
     }
 
     /// Delete entries older than the specified timestamp
