@@ -6,7 +6,6 @@ pub mod config; // Unified GC configuration
 pub mod garbage_collector; // Core GC implementation
 pub mod historical_state; // Historical state collection for multi-root GC protection
 pub mod marker; // Node marking strategies for GC
-pub mod metrics; // Metrics (may need cleanup for live pruner metrics)
 pub mod reachability; // Reachability analysis for GC
 pub mod recycle_bin; // Recycle bin for debugging/recovery
 pub mod safety_verifier; // Safety verification for GC operations
