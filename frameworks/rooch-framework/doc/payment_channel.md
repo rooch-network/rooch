@@ -14,6 +14,7 @@
 -  [Struct `ChannelCancellationFinalizedEvent`](#0x3_payment_channel_ChannelCancellationFinalizedEvent)
 -  [Struct `SubChannelAuthorizedEvent`](#0x3_payment_channel_SubChannelAuthorizedEvent)
 -  [Struct `PaymentHubWithdrawEvent`](#0x3_payment_channel_PaymentHubWithdrawEvent)
+-  [Struct `PaymentHubTransferEvent`](#0x3_payment_channel_PaymentHubTransferEvent)
 -  [Struct `LockedUnitConfigUpdatedEvent`](#0x3_payment_channel_LockedUnitConfigUpdatedEvent)
 -  [Struct `ChannelKey`](#0x3_payment_channel_ChannelKey)
 -  [Resource `PaymentHub`](#0x3_payment_channel_PaymentHub)
@@ -36,6 +37,9 @@
 -  [Function `deposit_to_hub_generic`](#0x3_payment_channel_deposit_to_hub_generic)
 -  [Function `withdraw_from_hub`](#0x3_payment_channel_withdraw_from_hub)
 -  [Function `withdraw_from_hub_entry`](#0x3_payment_channel_withdraw_from_hub_entry)
+-  [Function `transfer_to_hub`](#0x3_payment_channel_transfer_to_hub)
+-  [Function `transfer_to_hub_entry`](#0x3_payment_channel_transfer_to_hub_entry)
+-  [Function `transfer_to_hub_generic`](#0x3_payment_channel_transfer_to_hub_generic)
 -  [Function `open_channel`](#0x3_payment_channel_open_channel)
 -  [Function `open_channel_entry`](#0x3_payment_channel_open_channel_entry)
 -  [Function `authorize_sub_channel`](#0x3_payment_channel_authorize_sub_channel)
@@ -206,6 +210,18 @@ Event emitted when funds are withdrawn from a payment hub
 
 
 <pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_PaymentHubWithdrawEvent">PaymentHubWithdrawEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_PaymentHubTransferEvent"></a>
+
+## Struct `PaymentHubTransferEvent`
+
+Event emitted when funds are transferred between payment hubs
+
+
+<pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_PaymentHubTransferEvent">PaymentHubTransferEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -797,6 +813,42 @@ Entry function for withdrawing from payment hub
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_withdraw_from_hub_entry">withdraw_from_hub_entry</a>&lt;CoinType: store, key&gt;(owner: &<a href="">signer</a>, amount: <a href="">u256</a>)
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_transfer_to_hub"></a>
+
+## Function `transfer_to_hub`
+
+Transfer funds from the sender's payment hub to the receiver's payment hub
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_transfer_to_hub">transfer_to_hub</a>&lt;CoinType: store, key&gt;(sender: &<a href="">signer</a>, receiver: <b>address</b>, amount: <a href="">u256</a>)
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_transfer_to_hub_entry"></a>
+
+## Function `transfer_to_hub_entry`
+
+Entry function for transferring funds between payment hubs
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_transfer_to_hub_entry">transfer_to_hub_entry</a>&lt;CoinType: store, key&gt;(sender: &<a href="">signer</a>, receiver: <b>address</b>, amount: <a href="">u256</a>)
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_transfer_to_hub_generic"></a>
+
+## Function `transfer_to_hub_generic`
+
+Transfer generic coin from the sender's payment hub to the receiver's payment hub
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_transfer_to_hub_generic">transfer_to_hub_generic</a>(sender: &<a href="">signer</a>, receiver: <b>address</b>, amount: <a href="">u256</a>, coin_type: <a href="_String">string::String</a>)
 </code></pre>
 
 

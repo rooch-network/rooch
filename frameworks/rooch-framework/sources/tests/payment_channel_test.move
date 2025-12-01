@@ -986,4 +986,37 @@ module rooch_framework::payment_channel_test {
         assert!(last_amount == TEST_AMOUNT_15, 9041);
         assert!(last_nonce == TEST_NONCE_2, 9042);
     }
+
+    // === Test Group 8: Payment Hub Transfer ===
+
+    #[test]
+    fun test_8_1_transfer_to_hub() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, _vm_id) = setup_payment_channel_test();
+
+        // Setup: Deposit 100 to Alice's hub
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+
+        // Verify initial balances
+        assert!(payment_channel::get_balance_in_hub<RGas>(alice_addr) == TEST_AMOUNT_100, 8001);
+        assert!(payment_channel::get_balance_in_hub<RGas>(bob_addr) == 0, 8002);
+
+        // Test: Transfer 50 from Alice to Bob
+        payment_channel::transfer_to_hub<RGas>(&alice_signer, bob_addr, TEST_AMOUNT_50);
+
+        // Verify final balances
+        assert!(payment_channel::get_balance_in_hub<RGas>(alice_addr) == TEST_AMOUNT_50, 8003);
+        assert!(payment_channel::get_balance_in_hub<RGas>(bob_addr) == TEST_AMOUNT_50, 8004);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = payment_channel::ErrorInsufficientUnlockedBalance)]
+    fun test_8_2_transfer_insufficient_balance() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, _vm_id) = setup_payment_channel_test();
+
+        // Setup: Deposit 100 to Alice's hub
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+
+        // Test: Try to transfer 101 from Alice to Bob - should fail
+        payment_channel::transfer_to_hub<RGas>(&alice_signer, bob_addr, TEST_AMOUNT_100 + 1);
+    }
 }
