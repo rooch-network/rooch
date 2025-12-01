@@ -10,7 +10,6 @@ pub mod metrics; // Metrics (may need cleanup for live pruner metrics)
 pub mod reachability; // Reachability analysis for GC
 pub mod recycle_bin; // Recycle bin for debugging/recovery
 pub mod safety_verifier; // Safety verification for GC operations
-pub mod sweep_expired; // Sweeping functionality used by GC
 #[cfg(test)]
 mod tests;
 pub mod util; // Utility functions for node traversal
