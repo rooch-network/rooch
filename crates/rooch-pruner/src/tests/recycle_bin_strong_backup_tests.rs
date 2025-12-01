@@ -17,9 +17,18 @@ mod tests {
         // For now, we test the configuration logic
 
         let config = RecycleBinConfig::default();
-        assert!(config.strong_backup, "Strong backup should be enabled by default");
-        assert_eq!(config.space_check_enabled, true, "Space checking should be enabled by default");
-        assert_eq!(config.disk_space_warning_threshold, 90, "Default warning threshold should be 90%");
+        assert!(
+            config.strong_backup,
+            "Strong backup should be enabled by default"
+        );
+        assert_eq!(
+            config.space_check_enabled, true,
+            "Space checking should be enabled by default"
+        );
+        assert_eq!(
+            config.disk_space_warning_threshold, 90,
+            "Default warning threshold should be 90%"
+        );
 
         Ok(())
     }
@@ -76,7 +85,10 @@ mod tests {
         assert!(config2.strong_backup);
 
         // But other fields should be configurable
-        assert_ne!(config1.disk_space_warning_threshold, config2.disk_space_warning_threshold);
+        assert_ne!(
+            config1.disk_space_warning_threshold,
+            config2.disk_space_warning_threshold
+        );
         assert_ne!(config1.space_check_enabled, config2.space_check_enabled);
     }
 
@@ -136,14 +148,22 @@ mod tests {
         let config = RecycleBinConfig::default();
 
         // Core principle 1: Strong backup is immutable default
-        assert!(config.strong_backup, "Strong backup must be enabled by default");
+        assert!(
+            config.strong_backup,
+            "Strong backup must be enabled by default"
+        );
 
         // Core principle 2: Space checking enabled for operational safety
-        assert!(config.space_check_enabled, "Space checking should be enabled for safety");
+        assert!(
+            config.space_check_enabled,
+            "Space checking should be enabled for safety"
+        );
 
         // Core principle 3: Reasonable warning threshold
-        assert!(config.disk_space_warning_threshold >= 50,
-               "Warning threshold should be at least 50% for reasonable safety");
+        assert!(
+            config.disk_space_warning_threshold >= 50,
+            "Warning threshold should be at least 50% for reasonable safety"
+        );
     }
 
     /// Test RecycleFilter functionality
@@ -174,7 +194,10 @@ mod tests {
             min_size: None,
             max_size: None,
         };
-        assert!(filter.matches(&record), "Record should match older_than filter");
+        assert!(
+            filter.matches(&record),
+            "Record should match older_than filter"
+        );
 
         let filter = RecycleFilter {
             older_than: Some(base_time + 50), // Record is newer than this
@@ -183,7 +206,10 @@ mod tests {
             min_size: None,
             max_size: None,
         };
-        assert!(!filter.matches(&record), "Record should not match when it's newer than filter");
+        assert!(
+            !filter.matches(&record),
+            "Record should not match when it's newer than filter"
+        );
 
         // Test phase filtering
         let filter = RecycleFilter {
@@ -193,7 +219,10 @@ mod tests {
             min_size: None,
             max_size: None,
         };
-        assert!(filter.matches(&record), "Record should match same phase filter");
+        assert!(
+            filter.matches(&record),
+            "Record should match same phase filter"
+        );
 
         let filter = RecycleFilter {
             older_than: None,
@@ -202,7 +231,10 @@ mod tests {
             min_size: None,
             max_size: None,
         };
-        assert!(!filter.matches(&record), "Record should not match different phase filter");
+        assert!(
+            !filter.matches(&record),
+            "Record should not match different phase filter"
+        );
 
         // Test size filtering
         let filter = RecycleFilter {
@@ -212,7 +244,10 @@ mod tests {
             min_size: Some(2),
             max_size: Some(10),
         };
-        assert!(filter.matches(&record), "Record should match size range filter");
+        assert!(
+            filter.matches(&record),
+            "Record should match size range filter"
+        );
 
         let filter = RecycleFilter {
             older_than: None,
@@ -221,13 +256,16 @@ mod tests {
             min_size: Some(5), // Record is smaller
             max_size: None,
         };
-        assert!(!filter.matches(&record), "Record should not match when too small");
+        assert!(
+            !filter.matches(&record),
+            "Record should not match when too small"
+        );
     }
 
     /// Test database iteration placeholder functionality
     #[test]
     fn test_database_iteration_placeholder() {
-        use crate::recycle_bin::{RecycleFilter, RecycleBinStore};
+        use crate::recycle_bin::{RecycleBinStore, RecycleFilter};
         use moveos_store::state_store::NodeRecycleDBStore;
 
         // Create a mock store (this won't work in tests without proper setup)

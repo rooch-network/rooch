@@ -5,13 +5,13 @@ use crate::utils::{open_rooch_db, open_rooch_db_readonly};
 use clap::Parser;
 use moveos_types::state::{FieldKey, ObjectState};
 use raw_store::CodecKVStore;
-use rooch_pruner::recycle_bin::{RecycleBinStore, RecycleBinConfig, RecycleFilter, RecyclePhase};
+use rooch_pruner::recycle_bin::{RecycleBinConfig, RecycleBinStore, RecycleFilter, RecyclePhase};
 use rooch_types::error::RoochResult;
 use serde_json;
 use smt::jellyfish_merkle::node_type::Node;
 use std::path::PathBuf;
-use tracing::info;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tracing::info;
 
 /// Parse time duration string (e.g., "1h", "24h", "7d", "30d") to timestamp
 fn parse_time_duration(duration_str: &str) -> Result<u64, String> {
@@ -31,7 +31,8 @@ fn parse_time_duration(duration_str: &str) -> Result<u64, String> {
         (num_part, unit_part)
     };
 
-    let number = num_str.parse::<u64>()
+    let number = num_str
+        .parse::<u64>()
         .map_err(|_| "Invalid number".to_string())?;
 
     let seconds_to_subtract = match unit {
@@ -53,7 +54,9 @@ fn parse_phase(phase_str: &str) -> Result<RecyclePhase, String> {
         "sweepexpired" | "sweep_expired" => Ok(RecyclePhase::SweepExpired),
         "stoptheworld" | "stop_the_world" => Ok(RecyclePhase::StopTheWorld),
         "manual" => Ok(RecyclePhase::Manual),
-        _ => Err("Invalid phase. Use: incremental, sweepexpired, stoptheworld, or manual".to_string()),
+        _ => Err(
+            "Invalid phase. Use: incremental, sweepexpired, stoptheworld, or manual".to_string(),
+        ),
     }
 }
 
@@ -96,11 +99,8 @@ impl RecycleDumpCommand {
             )),
         );
 
-        let recycle_store = RecycleBinStore::new(
-            rooch_db.moveos_store.get_node_recycle_store().clone(),
-            10000,       // max_entries
-            100_000_000, // max_bytes 100MB
-        )?;
+        let recycle_store =
+            RecycleBinStore::new(rooch_db.moveos_store.get_node_recycle_store().clone())?;
 
         // Parse hex string to bytes
         let hash_str = self.hash.strip_prefix("0x").unwrap_or(&self.hash);
@@ -222,11 +222,8 @@ impl RecycleRestoreCommand {
             )),
         );
 
-        let recycle_store = RecycleBinStore::new(
-            rooch_db.moveos_store.get_node_recycle_store().clone(),
-            10000,
-            100_000_000,
-        )?;
+        let recycle_store =
+            RecycleBinStore::new(rooch_db.moveos_store.get_node_recycle_store().clone())?;
 
         // Parse hex string to bytes
         let hash_str = self.hash.strip_prefix("0x").unwrap_or(&self.hash);
@@ -341,12 +338,12 @@ impl RecycleStatCommand {
 
         // Generate recommendations based on strong backup mode
         if stats.strong_backup {
-            detailed_stats.recommendations.push(
-                "Strong backup is ENABLED - no automatic deletion will occur".to_string()
-            );
-            detailed_stats.recommendations.push(
-                "Manual cleanup required when disk space is low".to_string()
-            );
+            detailed_stats
+                .recommendations
+                .push("Strong backup is ENABLED - no automatic deletion will occur".to_string());
+            detailed_stats
+                .recommendations
+                .push("Manual cleanup required when disk space is low".to_string());
 
             if stats.current_bytes > 0 {
                 let current_gb = stats.current_bytes / (1024 * 1024 * 1024);
@@ -392,7 +389,11 @@ impl RecycleStatCommand {
         }
     }
 
-    fn show_table_format(&self, stats: &rooch_pruner::recycle_bin::RecycleBinStats, detailed_stats: &DetailedRecycleStats) -> RoochResult<()> {
+    fn show_table_format(
+        &self,
+        stats: &rooch_pruner::recycle_bin::RecycleBinStats,
+        detailed_stats: &DetailedRecycleStats,
+    ) -> RoochResult<()> {
         println!("{}", stats);
 
         // Show recommendations
@@ -409,13 +410,18 @@ impl RecycleStatCommand {
             println!("  📦 All deleted nodes are preserved indefinitely");
             println!("  🔒 No automatic deletion will occur");
             println!("  🧹 Manual cleanup is the only way to free space");
-            println!("  📊 Current storage: {} MB", stats.current_bytes / (1024 * 1024));
+            println!(
+                "  📊 Current storage: {} MB",
+                stats.current_bytes / (1024 * 1024)
+            );
 
             if stats.current_bytes > 0 {
                 let current_gb = stats.current_bytes / (1024 * 1024 * 1024);
                 if current_gb >= 50 {
                     println!("  🚨 CRITICAL: High storage usage detected!");
-                    println!("     Run 'rooch db recycle-clean --dry-run' to review cleanup options");
+                    println!(
+                        "     Run 'rooch db recycle-clean --dry-run' to review cleanup options"
+                    );
                 } else if current_gb >= 10 {
                     println!("  ⚠️  WARNING: Growing storage usage detected");
                 }
@@ -529,27 +535,31 @@ impl RecycleListCommand {
                     }
                 }
             }
-            _ => { // table format
+            _ => {
+                // table format
                 println!("=== Recycle Bin Entries ===");
                 println!("Total entries: {}", entries.len());
                 println!();
 
                 if self.hashes_only {
-                    for record in entries {
+                    for record in &entries {
                         // Note: We would need to store the hash key to show it here
                         // For now, we show the stale_root_or_cutoff as a proxy
                         println!("0x{}", hex::encode(record.stale_root_or_cutoff.as_bytes()));
                     }
                 } else {
-                    println!("{:<20} {:<12} {:<10} {:<20} {:<10}",
-                        "Phase", "Size", "Age", "Deleted At", "Type");
+                    println!(
+                        "{:<20} {:<12} {:<10} {:<20} {:<10}",
+                        "Phase", "Size", "Age", "Deleted At", "Type"
+                    );
                     println!("{}", "-".repeat(80));
 
-                    for record in entries {
+                    for record in &entries {
                         let age_seconds = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .unwrap()
-                            .as_secs() - record.deleted_at;
+                            .as_secs()
+                            - record.deleted_at;
                         let age_hours = age_seconds / 3600;
                         let age_str = if age_hours < 24 {
                             format!("{}h", age_hours)
@@ -560,8 +570,10 @@ impl RecycleListCommand {
                         let node_type = record.node_type.as_deref().unwrap_or("Unknown");
                         let phase_str = format!("{:?}", record.phase);
 
-                        println!("{:<20} {:<12} {:<10} {:<20} {:<10}",
-                            phase_str, record.original_size, age_str, record.deleted_at, node_type);
+                        println!(
+                            "{:<20} {:<12} {:<10} {:<20} {:<10}",
+                            phase_str, record.original_size, age_str, record.deleted_at, node_type
+                        );
                     }
                 }
             }
@@ -705,20 +717,25 @@ impl RecycleCleanCommand {
             println!("");
 
             // Use list_entries to show what would be deleted
-            let entries = recycle_store.list_entries(Some(filter.clone()), Some(self.batch_size))?;
+            let entries =
+                recycle_store.list_entries(Some(filter.clone()), Some(self.batch_size))?;
 
             println!("=== Records that would be deleted ===");
             println!("Found {} matching records", entries.len());
 
             for (i, record) in entries.iter().take(10).enumerate() {
-                println!("  {}. {:?} - {} bytes (deleted at: {})",
-                    i + 1, record.phase, record.original_size, record.deleted_at);
+                println!(
+                    "  {}. {:?} - {} bytes (deleted at: {})",
+                    i + 1,
+                    record.phase,
+                    record.original_size,
+                    record.deleted_at
+                );
             }
 
             if entries.len() > 10 {
                 println!("  ... and {} more", entries.len() - 10);
             }
-
         } else {
             println!("\n🚨 LIVE DELETION MODE - Records will be permanently deleted!");
             println!("   This operation is IRREVERSIBLE!");
@@ -824,16 +841,25 @@ impl RecycleExportCommand {
         // Create basic export metadata
         #[derive(Debug, serde::Serialize)]
         struct ExportMetadata {
-            export_time: u64, // Unix timestamp
+            export_time: u64,        // Unix timestamp
             export_time_iso: String, // ISO 8601 format for readability
             stats: rooch_pruner::recycle_bin::RecycleBinStats,
             parameters: std::collections::HashMap<String, serde_json::Value>,
         }
 
         let mut parameters = std::collections::HashMap::new();
-        parameters.insert("format".to_string(), serde_json::Value::String(self.format.clone()));
-        parameters.insert("include_node_data".to_string(), serde_json::Value::Bool(self.include_node_data));
-        parameters.insert("compress".to_string(), serde_json::Value::Bool(self.compress));
+        parameters.insert(
+            "format".to_string(),
+            serde_json::Value::String(self.format.clone()),
+        );
+        parameters.insert(
+            "include_node_data".to_string(),
+            serde_json::Value::Bool(self.include_node_data),
+        );
+        parameters.insert(
+            "compress".to_string(),
+            serde_json::Value::Bool(self.compress),
+        );
 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)

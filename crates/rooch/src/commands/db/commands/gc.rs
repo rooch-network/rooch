@@ -6,8 +6,8 @@ use crate::utils::open_rooch_db;
 use crate::utils::open_rooch_db_readonly;
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_pruner::{GCConfig, GarbageCollector, MarkerStrategy};
 use rooch_pruner::recycle_bin::RecycleBinConfig;
+use rooch_pruner::{GCConfig, GarbageCollector, MarkerStrategy};
 use rooch_types::error::RoochResult;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -156,6 +156,8 @@ impl GCCommand {
         let recycle_bin_config = RecycleBinConfig {
             strong_backup: true, // Always enabled - immutable default
             disk_space_warning_threshold: self.recycle_space_warning_threshold,
+            disk_space_critical_threshold: 10, // 10% - trigger emergency cleanup
+            disk_space_stop_threshold: 5,      // 5% - stop GC process
             space_check_enabled: !self.force_recycle_despite_space_warning,
         };
 
@@ -470,19 +472,6 @@ impl CommandAction<String> for GCCommand {
         // Note: Removed debug logging for cleaner JSON output when --json flag is used
         // info!("Starting garbage collection with config: {:?}", config);
 
-        // Create config options to get database path
-        let opt = rooch_config::RoochOpt::new_with_default(
-            self.base_data_dir.clone(),
-            Some(rooch_types::rooch_network::RoochChainID::Builtin(
-                self.chain_id,
-            )),
-            None,
-        )
-        .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
-
-        // Get database path from config
-        let db_path = opt.store_config().get_store_dir();
-
         // Open database (readonly for dry-run, writable for actual execution)
         let (_root_meta, rooch_db, _start) = if self.dry_run {
             open_rooch_db_readonly(
@@ -500,9 +489,13 @@ impl CommandAction<String> for GCCommand {
             )
         };
 
-        // Create garbage collector with database path
-        let gc = GarbageCollector::new(Arc::new(rooch_db.moveos_store.clone()), config, db_path)
-            .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
+        // Create garbage collector - database path will be obtained from store
+        let gc = GarbageCollector::new(
+            Arc::new(rooch_db.moveos_store.clone()),
+            config,
+            PathBuf::new(), // This parameter is no longer used
+        )
+        .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
 
         // Execute garbage collection
         let report = gc

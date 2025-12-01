@@ -7,10 +7,24 @@ use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{debug, warn};
+use sysinfo::Disks;
+use tracing::{debug, error, warn};
 
 // Import CodecKVStore trait for store methods
 use raw_store::CodecKVStore;
+
+/// Result of disk space check
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DiskSpaceStatus {
+    /// Disk space is adequate
+    Ok,
+    /// Disk space is low, warning level
+    Warning,
+    /// Disk space is critical, emergency cleanup recommended
+    Critical,
+    /// Disk space is critically low, GC should stop
+    Stop,
+}
 
 // Node type import for metadata extraction (TODO: add proper Node access when available)
 // use moveos_store::state_store::NodeStore;
@@ -56,7 +70,7 @@ impl RecycleFilter {
 
         // Check phase
         if let Some(ref phase) = self.phase {
-            if !std::mem::discriminant(&record.phase).eq(std::mem::discriminant(phase)) {
+            if std::mem::discriminant(&record.phase) != std::mem::discriminant(phase) {
                 return false;
             }
         }
@@ -83,8 +97,12 @@ impl RecycleFilter {
 pub struct RecycleBinConfig {
     /// Strong backup mode - always true, no automatic deletion
     pub strong_backup: bool,
-    /// Disk space warning threshold (percentage, default 90)
+    /// Disk space warning threshold (percentage, default 20%)
     pub disk_space_warning_threshold: u64,
+    /// Disk space critical threshold (percentage, default 10%) - trigger emergency cleanup
+    pub disk_space_critical_threshold: u64,
+    /// Disk space stop threshold (percentage, default 5%) - stop GC process
+    pub disk_space_stop_threshold: u64,
     /// Enable disk space checks
     pub space_check_enabled: bool,
 }
@@ -92,8 +110,10 @@ pub struct RecycleBinConfig {
 impl Default for RecycleBinConfig {
     fn default() -> Self {
         Self {
-            strong_backup: true, // Immutable default - never auto-delete
-            disk_space_warning_threshold: 90,
+            strong_backup: true,               // Immutable default - never auto-delete
+            disk_space_warning_threshold: 20,  // 20% - general warning
+            disk_space_critical_threshold: 10, // 10% - trigger emergency cleanup
+            disk_space_stop_threshold: 5,      // 5% - stop GC process
             space_check_enabled: true,
         }
     }
@@ -124,28 +144,46 @@ pub struct RecycleRecord {
 pub struct RecycleBinStore {
     store: NodeRecycleDBStore,
     config: RecycleBinConfig,
+    // Database path obtained from store for disk space monitoring
+    db_path: std::path::PathBuf,
     // Keep legacy fields for compatibility but don't use them for capacity enforcement
     current_entries: Arc<std::sync::atomic::AtomicUsize>,
     current_bytes: Arc<std::sync::atomic::AtomicUsize>,
 }
 
 impl RecycleBinStore {
-    pub fn new(store: NodeRecycleDBStore, max_entries: usize, max_bytes: usize) -> Result<Self> {
-        Ok(Self {
-            store,
-            config: RecycleBinConfig::default(),
-            current_entries: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
-            current_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
-        })
+    pub fn new(store: NodeRecycleDBStore) -> Result<Self> {
+        Self::new_with_config(store, RecycleBinConfig::default())
     }
 
     pub fn new_with_config(store: NodeRecycleDBStore, config: RecycleBinConfig) -> Result<Self> {
-        Ok(Self {
+        // Get database path from store
+        let db_path = store
+            .get_db_path()
+            .ok_or_else(|| anyhow::anyhow!("Failed to get database path from store"))?;
+
+        let instance = Self {
             store,
             config,
+            db_path,
             current_entries: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             current_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
-        })
+        };
+
+        // Check disk space on initialization
+        if instance.config.space_check_enabled {
+            let status = instance.check_disk_space_status()?;
+            if status == DiskSpaceStatus::Stop {
+                let (total, available) = instance.get_disk_space_info()?;
+                let available_percentage = (available as f64 / total as f64 * 100.0) as u64;
+                return Err(anyhow::anyhow!(
+                    "Cannot initialize RecycleBin: Disk space critically low ({}% available). Please free up disk space before starting GC.",
+                    available_percentage
+                ));
+            }
+        }
+
+        Ok(instance)
     }
 
     pub fn put_record(&self, key: H256, record: RecycleRecord) -> Result<()> {
@@ -217,6 +255,70 @@ impl RecycleBinStore {
         }
     }
 
+    /// Get disk space information for the database directory
+    fn get_disk_space_info(&self) -> Result<(u64, u64)> {
+        let disks = Disks::new_with_refreshed_list();
+        if disks.is_empty() {
+            return Err(anyhow::anyhow!("No disks found in the system"));
+        }
+
+        // Find the disk that contains our database directory
+        for disk in &disks {
+            if let Ok(canonical_db_path) = self.db_path.canonicalize() {
+                // Check if the database directory is on this disk by comparing mount points
+                if canonical_db_path.starts_with(disk.mount_point()) {
+                    let total_space = disk.total_space();
+                    let available_space = disk.available_space();
+                    debug!(
+                        "Monitoring disk space for database: {} (mount point: {}, total: {}GB, available: {}GB)",
+                        self.db_path.display(),
+                        disk.mount_point().display(),
+                        total_space / (1024 * 1024 * 1024),
+                        available_space / (1024 * 1024 * 1024)
+                    );
+                    return Ok((total_space, available_space));
+                }
+            }
+        }
+
+        // Fallback: use the first disk if we can't find the specific disk
+        // This maintains backward compatibility
+        warn!(
+            "Could not find disk containing database: {}, falling back to first disk",
+            self.db_path.display()
+        );
+        let disk = &disks[0];
+        let total_space = disk.total_space();
+        let available_space = disk.available_space();
+
+        Ok((total_space, available_space))
+    }
+
+    /// Check disk space and return status
+    fn check_disk_space_status(&self) -> Result<DiskSpaceStatus> {
+        if !self.config.space_check_enabled {
+            return Ok(DiskSpaceStatus::Ok);
+        }
+
+        let (total_space, available_space) = self.get_disk_space_info()?;
+
+        if total_space == 0 {
+            return Err(anyhow::anyhow!("Invalid disk space information"));
+        }
+
+        let available_percentage = (available_space as f64 / total_space as f64 * 100.0) as u64;
+
+        if available_percentage <= self.config.disk_space_stop_threshold {
+            Ok(DiskSpaceStatus::Stop)
+        } else if available_percentage <= self.config.disk_space_critical_threshold {
+            Ok(DiskSpaceStatus::Critical)
+        } else if available_percentage <= self.config.disk_space_warning_threshold {
+            Ok(DiskSpaceStatus::Warning)
+        } else {
+            Ok(DiskSpaceStatus::Ok)
+        }
+    }
+
     /// Extract node type for metadata
     /// TODO: Implement proper node type extraction when Node type is available
     fn extract_node_type(&self, bytes: &[u8]) -> Option<String> {
@@ -229,27 +331,48 @@ impl RecycleBinStore {
         }
     }
 
-    /// Check disk space and issue warnings
+    /// Check disk space and issue warnings or errors based on status
     fn check_disk_space_and_warn(&self) -> Result<()> {
-        let current_bytes = self.current_bytes.load(std::sync::atomic::Ordering::Relaxed);
+        let status = self.check_disk_space_status()?;
 
-        // For now, we'll issue a warning at 1GB since we don't have easy access to total disk space
-        // In a real implementation, you'd check actual disk space available
-        const WARNING_THRESHOLD_GB: u64 = 10; // 10GB warning threshold
-        const CRITICAL_THRESHOLD_GB: u64 = 50; // 50GB critical threshold
-
-        let current_gb = current_bytes as u64 / (1024 * 1024 * 1024);
-
-        if current_gb >= CRITICAL_THRESHOLD_GB {
-            warn!(
-                "CRITICAL: Recycle bin using {}GB disk space. Manual cleanup required!",
-                current_gb
-            );
-        } else if current_gb >= WARNING_THRESHOLD_GB {
-            warn!(
-                "WARNING: Recycle bin using {}GB disk space. Consider manual cleanup.",
-                current_gb
-            );
+        match status {
+            DiskSpaceStatus::Ok => {
+                // Disk space is adequate, no action needed
+            }
+            DiskSpaceStatus::Warning => {
+                let (total, available) = self.get_disk_space_info()?;
+                let available_percentage = (available as f64 / total as f64 * 100.0) as u64;
+                warn!(
+                    "WARNING: Disk space low ({}% available, {}GB total, {}GB available). Consider manual cleanup.",
+                    available_percentage,
+                    total / (1024 * 1024 * 1024),
+                    available / (1024 * 1024 * 1024)
+                );
+            }
+            DiskSpaceStatus::Critical => {
+                let (total, available) = self.get_disk_space_info()?;
+                let available_percentage = (available as f64 / total as f64 * 100.0) as u64;
+                error!(
+                    "CRITICAL: Disk space critically low ({}% available, {}GB total, {}GB available). Emergency cleanup recommended!",
+                    available_percentage,
+                    total / (1024 * 1024 * 1024),
+                    available / (1024 * 1024 * 1024)
+                );
+            }
+            DiskSpaceStatus::Stop => {
+                let (total, available) = self.get_disk_space_info()?;
+                let available_percentage = (available as f64 / total as f64 * 100.0) as u64;
+                error!(
+                    "STOP: Disk space exhausted ({}% available, {}GB total, {}GB available). GC process should stop to prevent system issues!",
+                    available_percentage,
+                    total / (1024 * 1024 * 1024),
+                    available / (1024 * 1024 * 1024)
+                );
+                return Err(anyhow::anyhow!(
+                    "Disk space critically low ({}% available). GC process stopped to prevent system damage.",
+                    available_percentage
+                ));
+            }
         }
 
         Ok(())
@@ -344,16 +467,22 @@ impl RecycleBinStore {
     }
 
     pub fn get_stats(&self) -> RecycleBinStats {
-        let current_entries = self.current_entries.load(std::sync::atomic::Ordering::Relaxed);
-        let current_bytes = self.current_bytes.load(std::sync::atomic::Ordering::Relaxed);
+        let current_entries = self
+            .current_entries
+            .load(std::sync::atomic::Ordering::Relaxed);
+        let current_bytes = self
+            .current_bytes
+            .load(std::sync::atomic::Ordering::Relaxed);
 
         RecycleBinStats {
             current_entries,
             current_bytes,
             max_entries: usize::MAX, // No limit with strong backup
-            max_bytes: usize::MAX,    // No limit with strong backup
+            max_bytes: usize::MAX,   // No limit with strong backup
             strong_backup: self.config.strong_backup,
             space_warning_threshold: self.config.disk_space_warning_threshold,
+            space_critical_threshold: self.config.disk_space_critical_threshold,
+            space_stop_threshold: self.config.disk_space_stop_threshold,
         }
     }
 
@@ -375,6 +504,8 @@ pub struct RecycleBinStats {
     pub max_bytes: usize,   // usize::MAX with strong backup (no limit)
     pub strong_backup: bool,
     pub space_warning_threshold: u64,
+    pub space_critical_threshold: u64,
+    pub space_stop_threshold: u64,
 }
 
 impl std::fmt::Display for RecycleBinStats {
@@ -386,9 +517,27 @@ impl std::fmt::Display for RecycleBinStats {
         }
 
         let current_mb = self.current_bytes / (1024 * 1024);
-        writeln!(f, "  Entries: {} (unlimited with strong backup)", self.current_entries)?;
-        writeln!(f, "  Storage: {} MB (unlimited with strong backup)", current_mb)?;
-        writeln!(f, "  Space Warning Threshold: {}%", self.space_warning_threshold)?;
+        writeln!(
+            f,
+            "  Entries: {} (unlimited with strong backup)",
+            self.current_entries
+        )?;
+        writeln!(
+            f,
+            "  Storage: {} MB (unlimited with strong backup)",
+            current_mb
+        )?;
+        writeln!(
+            f,
+            "  Space Warning Threshold: {}%",
+            self.space_warning_threshold
+        )?;
+        writeln!(
+            f,
+            "  Space Critical Threshold: {}%",
+            self.space_critical_threshold
+        )?;
+        writeln!(f, "  Space Stop Threshold: {}%", self.space_stop_threshold)?;
 
         if self.strong_backup {
             writeln!(f, "  ⚠️  Manual cleanup required when disk space is low")?;

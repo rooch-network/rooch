@@ -16,7 +16,7 @@ use raw_store::{CodecKVStore, SchemaStore};
 use rooch_store::RoochStore;
 use smt::NodeReader;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};
 
 /// Comprehensive GC execution report
@@ -84,8 +84,6 @@ impl GarbageCollector {
         // Initialize recycle bin with reasonable defaults
         let recycle_bin = Arc::new(RecycleBinStore::new(
             moveos_store.get_node_recycle_store().clone(),
-            10_000,      // max_entries
-            100_000_000, // max_bytes (100MB)
         )?);
 
         Ok(Self {
@@ -107,8 +105,6 @@ impl GarbageCollector {
         // Initialize recycle bin with reasonable defaults
         let recycle_bin = Arc::new(RecycleBinStore::new(
             moveos_store.get_node_recycle_store().clone(),
-            10_000,      // max_entries
-            100_000_000, // max_bytes (100MB)
         )?);
 
         Ok(Self {

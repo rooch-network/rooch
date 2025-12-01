@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::recycle_bin::{RecycleBinStore, RecyclePhase, RecycleRecord};
+use crate::recycle_bin::{RecycleBinStore, RecyclePhase};
 use crate::util::try_extract_child_root;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;

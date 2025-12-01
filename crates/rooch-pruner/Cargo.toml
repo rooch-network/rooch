@@ -34,6 +34,7 @@ moveos-store = { workspace = true }
 moveos-types = { workspace = true }
 raw-store = { workspace = true }
 bcs = { workspace = true }
+sysinfo = { workspace = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

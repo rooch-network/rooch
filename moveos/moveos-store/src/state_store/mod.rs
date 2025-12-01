@@ -12,6 +12,7 @@ use raw_store::WriteOp;
 use raw_store::{derive_store, CodecKVStore};
 use smt::{NodeReader, NodeWriter};
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
 derive_store!(NodeDBStore, H256, Vec<u8>, STATE_NODE_COLUMN_FAMILY_NAME);
 derive_store!(
@@ -234,5 +235,14 @@ impl NodeReader for NodeDBStore {
 impl NodeWriter for NodeDBStore {
     fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
         NodeDBStore::write_nodes(self, nodes)
+    }
+}
+
+impl NodeRecycleDBStore {
+    pub fn get_db_path(&self) -> Option<PathBuf> {
+        self.store
+            .store()
+            .db()
+            .map(|db| db.inner().path().to_path_buf())
     }
 }
