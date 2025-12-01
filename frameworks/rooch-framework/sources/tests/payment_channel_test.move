@@ -1019,4 +1019,45 @@ module rooch_framework::payment_channel_test {
         // Test: Try to transfer 101 from Alice to Bob - should fail
         payment_channel::transfer_to_hub<RGas>(&alice_signer, bob_addr, TEST_AMOUNT_100 + 1);
     }
+
+    #[test]
+    #[expected_failure(abort_code = payment_channel::ErrorInsufficientUnlockedBalance)]
+    fun test_8_3_transfer_with_locked_balance_failure() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, _vm_id) = setup_payment_channel_test();
+        let genesis_signer = account::create_signer_for_testing(core_addresses::genesis_address());
+
+        // Set locked unit to 50
+        payment_channel::set_locked_unit<RGas>(&genesis_signer, TEST_AMOUNT_50);
+
+        // Setup: Deposit 100 to Alice's hub
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+
+        // Open channel to lock 50
+        payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
+
+        // Test: Try to transfer 51 from Alice to Bob - should fail (100 - 50 = 50 unlocked)
+        payment_channel::transfer_to_hub<RGas>(&alice_signer, bob_addr, TEST_AMOUNT_50 + 1);
+    }
+
+    #[test]
+    fun test_8_4_transfer_with_locked_balance_success() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, _vm_id) = setup_payment_channel_test();
+        let genesis_signer = account::create_signer_for_testing(core_addresses::genesis_address());
+
+        // Set locked unit to 50
+        payment_channel::set_locked_unit<RGas>(&genesis_signer, TEST_AMOUNT_50);
+
+        // Setup: Deposit 100 to Alice's hub
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+
+        // Open channel to lock 50
+        payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
+
+        // Test: Transfer 50 from Alice to Bob - should succeed
+        payment_channel::transfer_to_hub<RGas>(&alice_signer, bob_addr, TEST_AMOUNT_50);
+        
+        // Verify balances
+        assert!(payment_channel::get_balance_in_hub<RGas>(alice_addr) == TEST_AMOUNT_50, 8005);
+        assert!(payment_channel::get_balance_in_hub<RGas>(bob_addr) == TEST_AMOUNT_50, 8006);
+    }
 }
