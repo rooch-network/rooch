@@ -12,7 +12,6 @@ use rooch_store::transaction_store::TransactionStore as RoochTransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::framework::chain_id::ChainID;
 use rooch_types::rooch_network::BuiltinChainID;
-use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 /// Configuration for historical state collection
@@ -61,16 +60,16 @@ impl Default for HistoricalStateConfig {
 /// Collects recent state roots from transaction execution info to provide
 /// time-window based protection in garbage collection.
 pub struct HistoricalStateCollector {
-    moveos_store: Arc<MoveOSStore>,
-    rooch_store: Arc<RoochStore>,
+    moveos_store: MoveOSStore,
+    rooch_store: RoochStore,
     config: HistoricalStateConfig,
 }
 
 impl HistoricalStateCollector {
     /// Create a new historical state collector with required stores
     pub fn new(
-        moveos_store: Arc<MoveOSStore>,
-        rooch_store: Arc<RoochStore>,
+        moveos_store: MoveOSStore,
+        rooch_store: RoochStore,
         config: HistoricalStateConfig,
     ) -> Self {
         Self {

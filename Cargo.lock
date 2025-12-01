@@ -11105,6 +11105,7 @@ dependencies = [
  "raw-store",
  "rayon",
  "rooch-config",
+ "rooch-db",
  "rooch-store",
  "rooch-types",
  "serde 1.0.228",

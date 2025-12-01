@@ -28,7 +28,7 @@ rand = { workspace = true }
 rooch-config = { workspace = true }
 rooch-store = { workspace = true }
 rooch-types = { workspace = true }
-
+rooch-db = { workspace = true }
 moveos-common = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }

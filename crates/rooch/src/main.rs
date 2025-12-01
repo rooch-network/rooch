@@ -33,18 +33,7 @@ static GLOBAL: allocator::Allocator = allocator::allocator();
 /// rooch is a command line tools for Rooch Network
 #[tokio::main]
 async fn main() {
-    // Initialize logging with ERROR level by default to prevent info! contamination
-    // Use ERROR level unless GC_VERBOSE_MODE is set (for test scenarios)
-    let log_level = if std::env::var("GC_VERBOSE_MODE").is_ok() {
-        tracing::Level::INFO
-    } else {
-        tracing::Level::ERROR
-    };
-
-    let _ = tracing_subscriber::fmt()
-        .with_max_level(log_level)
-        .try_init();
-
+    let _ = tracing_subscriber::fmt::try_init();
     let opt = RoochCli::parse();
     let result = rooch::run_cli(opt).await;
 

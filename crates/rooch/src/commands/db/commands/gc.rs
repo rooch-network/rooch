@@ -11,7 +11,6 @@ use rooch_pruner::{GCConfig, GarbageCollector, MarkerStrategy};
 use rooch_types::error::RoochResult;
 use serde::Serialize;
 use std::path::PathBuf;
-use std::sync::Arc;
 // tracing used only in other modules; no info! here
 
 /// Stop-the-world garbage collection for unreachable state nodes
@@ -459,18 +458,11 @@ impl CommandAction<String> for GCCommand {
             return Err(rooch_types::error::RoochError::CommandArgumentError(e));
         }
 
-        // Note: Logging is now handled globally in main.rs with ERROR level by default
-        // This prevents info! statements from contaminating JSON output
-        // Set GC_VERBOSE_MODE=1 if INFO level logging is needed for debugging
-
         // Create GC configuration
         let config = match self.create_gc_config() {
             Ok(config) => config,
             Err(e) => return Err(rooch_types::error::RoochError::CommandArgumentError(e)),
         };
-
-        // Note: Removed debug logging for cleaner JSON output when --json flag is used
-        // info!("Starting garbage collection with config: {:?}", config);
 
         // Open database (readonly for dry-run, writable for actual execution)
         let (_root_meta, rooch_db, _start) = if self.dry_run {
@@ -491,9 +483,8 @@ impl CommandAction<String> for GCCommand {
 
         // Create garbage collector - database path will be obtained from store
         let gc = GarbageCollector::new(
-            Arc::new(rooch_db.moveos_store.clone()),
+            rooch_db,
             config,
-            PathBuf::new(), // This parameter is no longer used
         )
         .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
 

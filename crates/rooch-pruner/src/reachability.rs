@@ -23,13 +23,13 @@ use tracing::info;
 /// * When `bloom` is saturated, overflow hashes are flushed into RocksDB CF `reach_seen`.
 /// * Builder can be resumed by seeding Bloom with hashes already in `reach_seen`.
 pub struct ReachableBuilder {
-    moveos_store: Arc<MoveOSStore>,
+    moveos_store: MoveOSStore,
     bloom: Arc<Mutex<BloomFilter>>,
     // metrics: Arc<StateDBMetrics>,
 }
 
 impl ReachableBuilder {
-    pub fn new(moveos_store: Arc<MoveOSStore>, bloom: Arc<Mutex<BloomFilter>>) -> Self {
+    pub fn new(moveos_store: MoveOSStore, bloom: Arc<Mutex<BloomFilter>>) -> Self {
         Self {
             moveos_store,
             bloom,

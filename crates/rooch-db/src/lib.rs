@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::{HashMap, HashSet};
-
+use std::path::PathBuf;
 use accumulator::accumulator_info::AccumulatorInfo;
 use anyhow::{anyhow, Error, Result};
 use moveos_common::utils::to_bytes;
@@ -50,6 +50,7 @@ pub struct RoochDB {
     pub rooch_store: RoochStore,
     pub indexer_store: IndexerStore,
     pub indexer_reader: IndexerReader,
+    store_instance: StoreInstance,
 }
 
 impl RoochDB {
@@ -79,6 +80,7 @@ impl RoochDB {
             rooch_store,
             indexer_store,
             indexer_reader,
+            store_instance: instance,
         })
     }
 
@@ -517,5 +519,9 @@ impl RoochDB {
         }
         // TODO repair the changeset sync and indexer store
         Ok((issues, fixed))
+    }
+
+    pub fn rocksdb_path(&self) -> Option<PathBuf> {
+        self.store_instance.db().map(|db| db.inner().path().to_path_buf())
     }
 }
