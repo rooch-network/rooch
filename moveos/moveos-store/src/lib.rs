@@ -350,7 +350,6 @@ impl ConfigStore for MoveOSStore {
     }
 }
 
-
 /// Moveos store define
 pub trait Store:
     NodeReader + TransactionStore + EventStore + ConfigStore + IntoSuper<dyn NodeReader>

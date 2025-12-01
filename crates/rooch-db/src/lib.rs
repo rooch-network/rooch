@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 use accumulator::accumulator_info::AccumulatorInfo;
 use anyhow::{anyhow, Error, Result};
 use moveos_common::utils::to_bytes;
@@ -42,6 +40,8 @@ use rooch_types::indexer::state::{
     IndexerObjectStatesIndexGenerator,
 };
 use rooch_types::sequencer::SequencerInfo;
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 use tracing::{error, info, warn};
 
 #[derive(Clone)]
@@ -522,6 +522,8 @@ impl RoochDB {
     }
 
     pub fn rocksdb_path(&self) -> Option<PathBuf> {
-        self.store_instance.db().map(|db| db.inner().path().to_path_buf())
+        self.store_instance
+            .db()
+            .map(|db| db.inner().path().to_path_buf())
     }
 }

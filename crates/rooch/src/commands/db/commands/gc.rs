@@ -482,11 +482,8 @@ impl CommandAction<String> for GCCommand {
         };
 
         // Create garbage collector - database path will be obtained from store
-        let gc = GarbageCollector::new(
-            rooch_db,
-            config,
-        )
-        .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
+        let gc = GarbageCollector::new(rooch_db, config)
+            .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
 
         // Execute garbage collection
         let report = gc

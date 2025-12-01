@@ -33,28 +33,27 @@ mod tests {
         Ok(())
     }
 
-    /// Test that RecycleRecord structure includes new metadata fields
+    /// Test simplified RecycleRecord structure (3 fields)
     #[test]
-    fn test_enhanced_recycle_record_structure() {
-        // Create a test record with all fields
+    fn test_simplified_recycle_record_structure() {
+        // Create a test record with simplified 3-field structure
         let record = RecycleRecord {
             bytes: vec![1, 2, 3, 4],
-            phase: RecyclePhase::Manual,
-            stale_root_or_cutoff: H256::random(),
-            tx_order: 12345,
             created_at: 1640995200, // Test timestamp
-            deleted_at: 1640995300,
             original_size: 4,
-            node_type: Some("Internal".to_string()),
-            note: Some("Test record".to_string()),
         };
 
-        // Verify all new fields are present and accessible
+        // Verify all fields are present and accessible
+        assert_eq!(record.bytes, vec![1, 2, 3, 4]);
         assert_eq!(record.created_at, 1640995200);
-        assert_eq!(record.deleted_at, 1640995300);
         assert_eq!(record.original_size, 4);
-        assert_eq!(record.node_type, Some("Internal".to_string()));
-        assert_eq!(record.note, Some("Test record".to_string()));
+
+        // Test serialization/deserialization works
+        let serialized = bcs::to_bytes(&record).unwrap();
+        let deserialized: RecycleRecord = bcs::from_bytes(&serialized).unwrap();
+        assert_eq!(deserialized.bytes, record.bytes);
+        assert_eq!(deserialized.created_at, record.created_at);
+        assert_eq!(deserialized.original_size, record.original_size);
     }
 
     /// Test RecyclePhase includes new Manual variant

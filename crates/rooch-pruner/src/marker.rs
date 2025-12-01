@@ -699,10 +699,8 @@ mod tests {
     #[test]
     fn test_persistent_marker_with_moveos_store() -> Result<()> {
         let (moveos_store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
-        let marker = PersistentMarker::with_moveos_store(
-            "test_with_store_cf".to_string(),
-            moveos_store,
-        )?;
+        let marker =
+            PersistentMarker::with_moveos_store("test_with_store_cf".to_string(), moveos_store)?;
         let hash1 = H256::random();
         let hash2 = H256::random();
 

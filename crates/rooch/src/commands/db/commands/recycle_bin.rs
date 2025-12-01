@@ -11,7 +11,7 @@ use serde_json;
 use smt::jellyfish_merkle::node_type::Node;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::info;
+use tracing::{info, warn};
 
 /// Parse time duration string (e.g., "1h", "24h", "7d", "30d") to timestamp
 fn parse_time_duration(duration_str: &str) -> Result<u64, String> {
@@ -248,8 +248,8 @@ impl RecycleRestoreCommand {
                 .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
 
             info!("Node {} restored to state_node store", self.hash);
-            info!("Phase: {:?}", record.phase);
-            info!("Deleted at: {}", record.deleted_at);
+            info!("Created at: {}", record.created_at);
+            info!("Original size: {} bytes", record.original_size);
 
             // Optionally remove from recycle bin after successful restore
             // recycle_store.delete_record(&node_hash)?;
@@ -492,7 +492,6 @@ impl RecycleListCommand {
         let mut filter = RecycleFilter {
             older_than: None,
             newer_than: None,
-            phase: None,
             min_size: None,
             max_size: None,
         };
@@ -508,7 +507,8 @@ impl RecycleListCommand {
         if let Some(phase_str) = &self.phase {
             let phase = parse_phase(phase_str)
                 .map_err(|e| rooch_types::error::RoochError::CommandArgumentError(e))?;
-            filter.phase = Some(phase);
+            // Phase filtering removed in simplified RecycleRecord design
+            warn!("Phase filtering requested but phase field has been removed");
         }
 
         // Get filtered entries
@@ -543,9 +543,13 @@ impl RecycleListCommand {
 
                 if self.hashes_only {
                     for record in &entries {
-                        // Note: We would need to store the hash key to show it here
-                        // For now, we show the stale_root_or_cutoff as a proxy
-                        println!("0x{}", hex::encode(record.stale_root_or_cutoff.as_bytes()));
+                        // Show a sample of bytes data as identifier
+                        let bytes_preview = if record.bytes.len() >= 4 {
+                            &record.bytes[0..4]
+                        } else {
+                            &record.bytes
+                        };
+                        println!("0x{}", hex::encode(bytes_preview));
                     }
                 } else {
                     println!(
@@ -559,7 +563,7 @@ impl RecycleListCommand {
                             .duration_since(UNIX_EPOCH)
                             .unwrap()
                             .as_secs()
-                            - record.deleted_at;
+                            - record.created_at; // Use created_at instead of deleted_at
                         let age_hours = age_seconds / 3600;
                         let age_str = if age_hours < 24 {
                             format!("{}h", age_hours)
@@ -567,12 +571,23 @@ impl RecycleListCommand {
                             format!("{}d", age_hours / 24)
                         };
 
-                        let node_type = record.node_type.as_deref().unwrap_or("Unknown");
-                        let phase_str = format!("{:?}", record.phase);
+                        // Node type can be derived from bytes if needed
+                        let node_type = if record.bytes.is_empty() {
+                            "Null"
+                        } else {
+                            match record.bytes[0] {
+                                0 => "Null",
+                                1 => "Internal",
+                                2 => "Leaf",
+                                _ => "Unknown",
+                            }
+                        };
+
+                        println!("{:<12} {:<10} {:<10}", "Size", "Age", "Type");
 
                         println!(
-                            "{:<20} {:<12} {:<10} {:<20} {:<10}",
-                            phase_str, record.original_size, age_str, record.deleted_at, node_type
+                            "{:<12} {:<10} {:<10}",
+                            record.original_size, age_str, node_type
                         );
                     }
                 }
@@ -692,7 +707,6 @@ impl RecycleCleanCommand {
         let mut filter = RecycleFilter {
             older_than: None,
             newer_than: None,
-            phase: None,
             min_size: None,
             max_size: None,
         };
@@ -708,7 +722,8 @@ impl RecycleCleanCommand {
         if let Some(phase_str) = &self.phase {
             let phase = parse_phase(phase_str)
                 .map_err(|e| rooch_types::error::RoochError::CommandArgumentError(e))?;
-            filter.phase = Some(phase);
+            // Phase filtering removed in simplified RecycleRecord design
+            warn!("Phase filtering requested but phase field has been removed");
         }
 
         // Execute the cleanup
@@ -725,11 +740,10 @@ impl RecycleCleanCommand {
 
             for (i, record) in entries.iter().take(10).enumerate() {
                 println!(
-                    "  {}. {:?} - {} bytes (deleted at: {})",
+                    "  {}. {} bytes (created at: {})",
                     i + 1,
-                    record.phase,
                     record.original_size,
-                    record.deleted_at
+                    record.created_at
                 );
             }
 

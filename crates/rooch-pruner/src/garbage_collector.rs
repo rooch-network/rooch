@@ -11,9 +11,9 @@ use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::STATE_NODE_COLUMN_FAMILY_NAME;
 use moveos_types::h256::H256;
-use rooch_db::RoochDB;
 use parking_lot::Mutex;
 use raw_store::{CodecKVStore, SchemaStore};
+use rooch_db::RoochDB;
 use smt::NodeReader;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -75,18 +75,14 @@ pub struct GarbageCollector {
 
 impl GarbageCollector {
     /// Create a new GarbageCollector with the given store, configuration, and database path
-    pub fn new(
-        rooch_db: RoochDB,
-        config: GCConfig,
-    ) -> Result<Self> {
-        let recycle_bin = RecycleBinStore::new(
-            rooch_db.moveos_store.get_node_recycle_store().clone(),
-        )?;
+    pub fn new(rooch_db: RoochDB, config: GCConfig) -> Result<Self> {
+        let recycle_bin =
+            RecycleBinStore::new(rooch_db.moveos_store.get_node_recycle_store().clone())?;
         // Initialize recycle bin with reasonable defaults
         let recycle_bin = Arc::new(recycle_bin);
-        let db_path = rooch_db.rocksdb_path().ok_or_else(|| {
-            anyhow::anyhow!("Failed to get database path from store")
-        })?;
+        let db_path = rooch_db
+            .rocksdb_path()
+            .ok_or_else(|| anyhow::anyhow!("Failed to get database path from store"))?;
         Ok(Self {
             rooch_db,
             recycle_bin,
@@ -270,35 +266,35 @@ impl GarbageCollector {
 
         // 1. Use historical state collector for multi-root protection
         if self.config.protected_roots_count > 1 {
-                info!(
-                    "Collecting {} recent state roots for multi-root protection",
-                    self.config.protected_roots_count
-                );
-                let config = HistoricalStateConfig {
-                    protected_roots_count: self.config.protected_roots_count,
-                };
-                let collector = HistoricalStateCollector::new(
-                    self.rooch_db.moveos_store.clone(),
-                    self.rooch_db.rooch_store.clone(),
-                    config,
-                );
-                let roots = collector.collect_recent_state_roots();
-                match roots {
-                    Ok(collected_roots) => {
-                        info!(
-                            "Collected {} historical protected roots",
-                            collected_roots.len()
-                        );
-                        return Ok(collected_roots);
-                    }
-                    Err(e) => {
-                        if self.config.skip_confirm {
-                            warn!("Historical state collection failed, but skip_confirm enabled: {}. Falling back to single root mode.", e);
-                        } else {
-                            return Err(e);
-                        }
+            info!(
+                "Collecting {} recent state roots for multi-root protection",
+                self.config.protected_roots_count
+            );
+            let config = HistoricalStateConfig {
+                protected_roots_count: self.config.protected_roots_count,
+            };
+            let collector = HistoricalStateCollector::new(
+                self.rooch_db.moveos_store.clone(),
+                self.rooch_db.rooch_store.clone(),
+                config,
+            );
+            let roots = collector.collect_recent_state_roots();
+            match roots {
+                Ok(collected_roots) => {
+                    info!(
+                        "Collected {} historical protected roots",
+                        collected_roots.len()
+                    );
+                    return Ok(collected_roots);
+                }
+                Err(e) => {
+                    if self.config.skip_confirm {
+                        warn!("Historical state collection failed, but skip_confirm enabled: {}. Falling back to single root mode.", e);
+                    } else {
+                        return Err(e);
                     }
                 }
+            }
         }
 
         if let Ok(Some(startup_info)) = self.rooch_db.moveos_store.config_store.get_startup_info() {
@@ -605,10 +601,8 @@ impl GarbageCollector {
                         H256::zero(),
                         0,
                     );
-                    // Add specific note for this context
-                    let mut record_with_note = record;
-                    record_with_note.note = Some("gc sweep".to_string());
-                    if let Err(e) = self.recycle_bin.put_record(*node_hash, record_with_note) {
+                    // Note field removed - RecycleRecord now simplified to 3 fields
+                    if let Err(e) = self.recycle_bin.put_record(*node_hash, record) {
                         warn!(?node_hash, "Failed to store recycle record: {}", e);
                     }
                 }
