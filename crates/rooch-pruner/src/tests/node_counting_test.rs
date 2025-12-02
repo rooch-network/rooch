@@ -5,23 +5,25 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::garbage_collector::{GCConfig, GarbageCollector};
+    use crate::config::GCConfig;
+    use crate::garbage_collector::GarbageCollector;
     use anyhow::Result;
-    use moveos_store::MoveOSStore;
-    use std::sync::Arc;
+    use rooch_config::RoochOpt;
+    use rooch_db::RoochDB;
     use tempfile::TempDir;
     use tracing::info;
 
     /// Test that the garbage collector can be created with the new implementation
     #[test]
     fn test_garbage_collector_creation() -> Result<()> {
-        let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
         let temp_dir = TempDir::new()?;
         let db_path = temp_dir.path().to_path_buf();
 
         // Create garbage collector - this will use our new node counting implementation
         let config = GCConfig::default();
-        let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
+        let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+        let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+        let gc = GarbageCollector::new(rooch_db, config)?;
 
         info!("✅ GarbageCollector creation test passed");
         info!("  GC created successfully with new node counting methods");
@@ -40,12 +42,13 @@ mod tests {
     #[test]
     fn test_compilation_and_imports() -> Result<()> {
         // This test will fail to compile if any imports are missing
-        let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
         let temp_dir = TempDir::new()?;
         let db_path = temp_dir.path().to_path_buf();
 
         let config = GCConfig::default();
-        let _gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
+        let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+        let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+        let _gc = GarbageCollector::new(rooch_db, config)?;
 
         info!("✅ Compilation and imports test passed");
         info!("  All imports and types are working correctly");

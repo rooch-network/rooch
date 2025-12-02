@@ -55,7 +55,7 @@ async fn test_bloom_saturation_false_positives() {
 
     // Run BuildReach with saturated bloom
     let reachable_roots = vec![root_hash];
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!(
@@ -116,7 +116,7 @@ async fn test_bloom_capacity_boundaries() {
     ))); // Very small
     let start_time = std::time::Instant::now();
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), small_bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), small_bloom.clone());
     let _scanned_size = builder.build(vec![root_hash], 1).unwrap();
 
     let small_bloom_duration = start_time.elapsed();
@@ -133,7 +133,7 @@ async fn test_bloom_capacity_boundaries() {
     ))); // Large
     let start_time = std::time::Instant::now();
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), large_bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), large_bloom.clone());
     let _scanned_size = builder.build(vec![root_hash], 1).unwrap();
 
     let large_bloom_duration = start_time.elapsed();
@@ -195,7 +195,7 @@ async fn test_bloom_concurrent_access() {
 
     // Run BuildReach
     let reachable_roots = vec![root_hash];
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!(
@@ -257,7 +257,7 @@ async fn test_bloom_memory_usage() {
     ] {
         let start_time = std::time::Instant::now();
 
-        let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+        let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
         let scanned_size = builder.build(vec![root_hash], 1).unwrap();
 
         let duration = start_time.elapsed();

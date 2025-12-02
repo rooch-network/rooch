@@ -1,24 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod atomic_snapshot;
-pub mod error_recovery;
-pub mod garbage_collector;
-pub mod historical_state;
-pub mod incremental_sweep;
-pub mod marker;
-pub mod metrics;
-pub mod pruner;
-pub mod reachability;
-pub mod recycle_bin;
-pub mod safety_verifier;
-pub mod sweep_expired;
+// GC-only modules after removing live pruner components
+pub mod config; // Unified GC configuration
+pub mod garbage_collector; // Core GC implementation
+pub mod historical_state; // Historical state collection for multi-root GC protection
+pub mod marker; // Node marking strategies for GC
+pub mod reachability; // Reachability analysis for GC
+pub mod recycle_bin; // Recycle bin for debugging/recovery
+pub mod safety_verifier; // Safety verification for GC operations
 #[cfg(test)]
 mod tests;
-pub mod util;
-pub mod validation_tests;
+pub mod util; // Utility functions for node traversal
 
-// Re-export commonly used types
-pub use garbage_collector::{GCConfig, GCReport, GarbageCollector, MarkStats, SweepStats};
+// Re-export commonly used GC types
+pub use config::GCConfig;
+pub use garbage_collector::{GCReport, GarbageCollector, MarkStats, SweepStats};
 pub use historical_state::{HistoricalStateCollector, HistoricalStateConfig};
 pub use marker::{MarkerStrategy, NodeMarker};

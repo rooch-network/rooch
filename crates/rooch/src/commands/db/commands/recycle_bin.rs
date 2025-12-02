@@ -5,12 +5,49 @@ use crate::utils::{open_rooch_db, open_rooch_db_readonly};
 use clap::Parser;
 use moveos_types::state::{FieldKey, ObjectState};
 use raw_store::CodecKVStore;
-use rooch_pruner::recycle_bin::RecycleBinStore;
+use rooch_pruner::recycle_bin::{RecycleBinConfig, RecycleBinStore, RecycleFilter};
 use rooch_types::error::RoochResult;
 use serde_json;
 use smt::jellyfish_merkle::node_type::Node;
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
+
+/// Parse time duration string (e.g., "1h", "24h", "7d", "30d") to timestamp
+fn parse_time_duration(duration_str: &str) -> Result<u64, String> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    if let Ok(seconds) = duration_str.parse::<u64>() {
+        return Ok(now - seconds);
+    }
+
+    let (num_str, unit) = if duration_str.len() < 2 {
+        return Err("Invalid duration format".to_string());
+    } else {
+        let (num_part, unit_part) = duration_str.split_at(duration_str.len() - 1);
+        (num_part, unit_part)
+    };
+
+    let number = num_str
+        .parse::<u64>()
+        .map_err(|_| "Invalid number".to_string())?;
+
+    let seconds_to_subtract = match unit {
+        "s" => number,
+        "m" => number * 60,
+        "h" => number * 60 * 60,
+        "d" => number * 24 * 60 * 60,
+        "w" => number * 7 * 24 * 60 * 60,
+        _ => return Err("Invalid unit. Use s, m, h, d, or w".to_string()),
+    };
+
+    Ok(now - seconds_to_subtract)
+}
+
+// Phase parsing removed - no longer needed with simplified RecycleRecord structure
 
 #[derive(Debug, serde::Serialize)]
 struct DecodedNodeSummary {
@@ -51,11 +88,8 @@ impl RecycleDumpCommand {
             )),
         );
 
-        let recycle_store = RecycleBinStore::new(
-            rooch_db.moveos_store.get_node_recycle_store().clone(),
-            10000,       // max_entries
-            100_000_000, // max_bytes 100MB
-        )?;
+        let recycle_store =
+            RecycleBinStore::new(rooch_db.moveos_store.get_node_recycle_store().clone())?;
 
         // Parse hex string to bytes
         let hash_str = self.hash.strip_prefix("0x").unwrap_or(&self.hash);
@@ -74,15 +108,47 @@ impl RecycleDumpCommand {
         if let Some(record) = recycle_store.get_record(&node_hash)? {
             #[derive(Debug, serde::Serialize)]
             struct DumpOut {
-                record: rooch_pruner::recycle_bin::RecycleRecord,
+                #[serde(flatten)]
+                record_fields: RecycleRecordFields,
                 #[serde(skip_serializing_if = "Option::is_none")]
                 decoded: Option<DecodedNodeSummary>,
             }
+
+            #[derive(Debug, serde::Serialize)]
+            struct RecycleRecordFields {
+                original_size: usize,
+                created_at: u64,
+                #[serde(with = "hex_bytes")]
+                bytes: Vec<u8>,
+            }
+
+            // Module for hex serialization of Vec<u8>
+            mod hex_bytes {
+                use hex;
+                use serde::Serializer;
+
+                pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+                {
+                    let hex_string = format!("0x{}", hex::encode(bytes));
+                    serializer.serialize_str(&hex_string)
+                }
+            }
+
             let mut decoded = None;
             if self.decode {
                 decoded = decode_node(&record.bytes);
             }
-            let out = DumpOut { record, decoded };
+
+            let out = DumpOut {
+                record_fields: RecycleRecordFields {
+                    original_size: record.original_size,
+                    created_at: record.created_at,
+                    bytes: record.bytes,
+                },
+                decoded,
+            };
             let output = serde_json::to_string_pretty(&out)?;
 
             match self.output {
@@ -177,11 +243,8 @@ impl RecycleRestoreCommand {
             )),
         );
 
-        let recycle_store = RecycleBinStore::new(
-            rooch_db.moveos_store.get_node_recycle_store().clone(),
-            10000,
-            100_000_000,
-        )?;
+        let recycle_store =
+            RecycleBinStore::new(rooch_db.moveos_store.get_node_recycle_store().clone())?;
 
         // Parse hex string to bytes
         let hash_str = self.hash.strip_prefix("0x").unwrap_or(&self.hash);
@@ -206,8 +269,8 @@ impl RecycleRestoreCommand {
                 .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
 
             info!("Node {} restored to state_node store", self.hash);
-            info!("Phase: {:?}", record.phase);
-            info!("Deleted at: {}", record.deleted_at);
+            info!("Created at: {}", record.created_at);
+            info!("Original size: {} bytes", record.original_size);
 
             // Optionally remove from recycle bin after successful restore
             // recycle_store.delete_record(&node_hash)?;
@@ -220,22 +283,60 @@ impl RecycleRestoreCommand {
     }
 }
 
-/// Show recycle bin statistics
+// RecycleStatCommand removed - output unreliable data from memory counters instead of actual database
+// Use 'rooch db recycle-list' to see actual entries
+
+/// List recycle bin entries with filtering options
 #[derive(Debug, Parser)]
-pub struct RecycleStatCommand {
+pub struct RecycleListCommand {
     /// Base data dir, e.g. ~/.rooch
     #[clap(long = "data-dir", short = 'd')]
     pub base_data_dir: Option<PathBuf>,
     /// Chain ID
     #[clap(long, short = 'n')]
     pub chain_id: rooch_types::rooch_network::BuiltinChainID,
-    /// Show detailed listing
+
+    /// Filter by age (e.g., "1h", "24h", "7d")
     #[clap(long)]
-    pub detailed: bool,
+    pub older_than: Option<String>,
+
+    /// Page size for cursor-based pagination (default: 20)
+    #[clap(long, default_value_t = 20)]
+    pub page_size: usize,
+
+    /// Cursor for pagination (returned from previous page)
+    #[clap(long)]
+    pub cursor: Option<String>,
+
+    // Output options
+    /// Output format (json/table)
+    #[clap(long, default_value = "table")]
+    pub format: String,
+
+    /// Export to file
+    #[clap(long)]
+    pub export: Option<PathBuf>,
+
+    /// Show only node hashes
+    #[clap(long)]
+    pub hashes_only: bool,
 }
 
-impl RecycleStatCommand {
+impl RecycleListCommand {
     pub async fn execute(self) -> RoochResult<String> {
+        // Display structure for table format
+        #[derive(Debug)]
+        struct TableDisplayEntry<'a> {
+            hash: String,
+            record: &'a rooch_pruner::recycle_bin::RecycleRecord,
+        }
+
+        // JSON output structure
+        #[derive(Debug, serde::Serialize)]
+        struct JsonOutputEntry {
+            hash: String,
+            record: rooch_pruner::recycle_bin::RecycleRecord,
+        }
         let (_root_meta, rooch_db, _start) = open_rooch_db_readonly(
             self.base_data_dir.clone(),
             Some(rooch_types::rooch_network::RoochChainID::Builtin(
@@ -243,20 +344,337 @@ impl RecycleStatCommand {
             )),
         );
 
-        let recycle_store = RecycleBinStore::new(
+        let recycle_config = RecycleBinConfig::default();
+        let recycle_store = RecycleBinStore::new_with_config(
             rooch_db.moveos_store.get_node_recycle_store().clone(),
-            10000,
-            100_000_000,
+            recycle_config,
         )?;
 
-        let stats = recycle_store.get_stats();
-        println!("{}", stats);
+        // Build the filter based on command line options
+        let mut filter = RecycleFilter {
+            older_than: None,
+            newer_than: None,
+            min_size: None,
+            max_size: None,
+        };
 
-        if self.detailed {
-            // Note: This would require implementing list_entries method
-            println!("\nDetailed listing not yet implemented");
+        // Parse time filter
+        if let Some(older_than) = &self.older_than {
+            let cutoff_time = parse_time_duration(older_than)
+                .map_err(rooch_types::error::RoochError::CommandArgumentError)?;
+            filter.older_than = Some(cutoff_time);
         }
 
-        Ok("Statistics displayed".to_string())
+        // Phase filtering removed - RecycleRecord no longer has phase field
+
+        // Validate page size
+        if self.page_size == 0 || self.page_size > 1000 {
+            return Err(rooch_types::error::RoochError::CommandArgumentError(
+                "Page size must be between 1 and 1000".to_string(),
+            ));
+        }
+
+        // Parse cursor if provided
+        let cursor = if let Some(cursor_str) = &self.cursor {
+            let clean_str = cursor_str.strip_prefix("0x").unwrap_or(cursor_str);
+            let bytes = hex::decode(clean_str).map_err(|_| {
+                rooch_types::error::RoochError::CommandArgumentError(
+                    "Invalid cursor format".to_string(),
+                )
+            })?;
+            if bytes.len() != 32 {
+                return Err(rooch_types::error::RoochError::CommandArgumentError(
+                    "Cursor must be 32 bytes".to_string(),
+                ));
+            }
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(&bytes);
+            Some(moveos_types::h256::H256(arr))
+        } else {
+            None
+        };
+
+        // Use cursor-based pagination if page_size is specified
+        let paginated_result =
+            recycle_store.list_entries_cursor(Some(filter), cursor, self.page_size)?;
+
+        if paginated_result.entries.is_empty() {
+            println!("No entries found matching the specified criteria.");
+            return Ok("No entries found".to_string());
+        }
+
+        // Prepare display data with hash information
+        let display_entries: Vec<TableDisplayEntry> = paginated_result
+            .entries
+            .iter()
+            .map(|(hash, record)| TableDisplayEntry {
+                hash: format!("0x{}", hex::encode(hash.as_bytes())),
+                record,
+            })
+            .collect();
+
+        // Output based on format
+        match self.format.as_str() {
+            "json" => {
+                let json_entries: Vec<JsonOutputEntry> = paginated_result
+                    .entries
+                    .iter()
+                    .map(|(hash, record)| JsonOutputEntry {
+                        hash: format!("0x{}", hex::encode(hash.as_bytes())),
+                        record: record.clone(),
+                    })
+                    .collect();
+
+                let json_output = serde_json::json!({
+                    "entries": json_entries,
+                    "pagination": {
+                        "next_cursor": paginated_result.next_cursor,
+                        "has_more": paginated_result.has_more,
+                        "page_size": paginated_result.page_size,
+                        "entries_on_page": paginated_result.entries.len()
+                    }
+                });
+
+                let json_string = serde_json::to_string_pretty(&json_output)?;
+                match self.export {
+                    Some(ref path) => {
+                        std::fs::write(path, json_string).map_err(|e| {
+                            rooch_types::error::RoochError::UnexpectedError(e.to_string())
+                        })?;
+                        println!(
+                            "Exported {} entries to {:?}",
+                            paginated_result.entries.len(),
+                            path
+                        );
+                    }
+                    None => {
+                        println!("{}", json_string);
+                    }
+                }
+            }
+            _ => {
+                // table format
+                println!("=== Recycle Bin Entries ===");
+                println!();
+
+                if self.hashes_only {
+                    for entry in &display_entries {
+                        // Show the real hash value
+                        println!("{}", entry.hash);
+                    }
+                } else {
+                    // New table format with Hash column (66 chars for hash + other columns)
+                    println!("{:<66} {:<10} {:<6} {:<10}", "Hash", "Size", "Age", "Type");
+                    println!("{}", "-".repeat(94));
+
+                    for entry in &display_entries {
+                        let age_seconds = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs()
+                            - entry.record.created_at; // Use created_at instead of deleted_at
+                        let age_str = if age_seconds < 3600 {
+                            format!("{}m", age_seconds / 60)
+                        } else if age_seconds < 86400 {
+                            format!("{}h", age_seconds / 3600)
+                        } else {
+                            format!("{}d", age_seconds / 86400)
+                        };
+
+                        // Node type can be derived from bytes if needed
+                        let node_type = if entry.record.bytes.is_empty() {
+                            "Null"
+                        } else {
+                            match entry.record.bytes[0] {
+                                0 => "Null",
+                                1 => "Internal",
+                                2 => "Leaf",
+                                _ => "Unknown",
+                            }
+                        };
+
+                        println!(
+                            "{:<66} {:<10} {:<6} {:<10}",
+                            entry.hash, entry.record.original_size, age_str, node_type
+                        );
+                    }
+                }
+            }
+        }
+
+        // Add pagination information at the bottom
+        self.display_pagination_info(&paginated_result)?;
+
+        Ok(format!("Listed {} entries", paginated_result.entries.len()))
+    }
+
+    /// Display pagination information for cursor-based pagination
+    fn display_pagination_info(
+        &self,
+        paginated_result: &rooch_pruner::recycle_bin::PaginatedListResult,
+    ) -> RoochResult<()> {
+        println!();
+        println!("--- Pagination Info ---");
+        println!("Page size: {}", paginated_result.page_size);
+        println!("Entries returned: {}", paginated_result.entries.len());
+        println!("Has more: {}", paginated_result.has_more);
+
+        if let Some(next_cursor) = &paginated_result.next_cursor {
+            println!("Next cursor: {}", next_cursor);
+        }
+
+        Ok(())
+    }
+}
+
+/// Clean up recycle bin entries with explicit manual control
+#[derive(Debug, Parser)]
+pub struct RecycleCleanCommand {
+    /// Base data dir, e.g. ~/.rooch
+    #[clap(long = "data-dir", short = 'd')]
+    pub base_data_dir: Option<PathBuf>,
+    /// Chain ID
+    #[clap(long, short = 'n')]
+    pub chain_id: rooch_types::rooch_network::BuiltinChainID,
+
+    // Safety options
+    /// Dry run - show what would be deleted without actually deleting
+    #[clap(long)]
+    pub dry_run: bool,
+
+    /// Force cleanup without interactive confirmation
+    #[clap(long, short = 'f')]
+    pub force: bool,
+
+    // Filtering options
+    /// Delete records older than specified time (e.g., "1h", "24h", "7d")
+    #[clap(long)]
+    pub older_than: Option<String>,
+
+    // Performance options
+    /// Batch size for deletion operations
+    #[clap(long, default_value_t = 1000)]
+    pub batch_size: usize,
+}
+
+impl RecycleCleanCommand {
+    pub async fn execute(self) -> RoochResult<String> {
+        // Safety check: require either --dry-run or --force
+        if !self.dry_run && !self.force {
+            eprintln!("Error: Either --dry-run or --force is required");
+            eprintln!("This is a PERMANENT deletion operation. Consider:");
+            eprintln!("  1. Run with --dry-run first to see what would be deleted");
+            eprintln!("  2. Run with --force after reviewing the dry-run output");
+            eprintln!("Example:");
+            eprintln!("  rooch db recycle-clean --dry-run --older-than 7d");
+            eprintln!("  rooch db recycle-clean --force --older-than 7d");
+            return Ok("Operation cancelled for safety".to_string());
+        }
+
+        let (_root_meta, rooch_db, _start) = open_rooch_db_readonly(
+            self.base_data_dir.clone(),
+            Some(rooch_types::rooch_network::RoochChainID::Builtin(
+                self.chain_id,
+            )),
+        );
+
+        let recycle_config = RecycleBinConfig::default();
+        let recycle_store = RecycleBinStore::new_with_config(
+            rooch_db.moveos_store.get_node_recycle_store().clone(),
+            recycle_config,
+        )?;
+
+        // Get current statistics
+        let stats = recycle_store.get_stats();
+
+        println!("=== Recycle Bin Cleanup Plan ===");
+        println!("{}", stats);
+
+        if stats.strong_backup {
+            println!("🔒 Strong Backup Mode: ENABLED");
+            println!("⚠️  WARNING: This is a PERMANENT deletion operation");
+            println!("📦 Deleted records cannot be recovered after cleanup");
+        }
+
+        // Show what would be affected
+        println!("\n=== Cleanup Parameters ===");
+        if let Some(older_than) = &self.older_than {
+            println!("  Delete records older than: {}", older_than);
+        }
+        // phase and node_type filtering removed - RecycleRecord simplified
+        // preserve_count functionality removed - not implemented
+        println!("  Batch size: {}", self.batch_size);
+
+        // Build the filter based on command line options
+        let mut filter = RecycleFilter {
+            older_than: None,
+            newer_than: None,
+            min_size: None,
+            max_size: None,
+        };
+
+        // Parse time filter
+        if let Some(older_than) = &self.older_than {
+            let cutoff_time = parse_time_duration(older_than)
+                .map_err(rooch_types::error::RoochError::CommandArgumentError)?;
+            filter.older_than = Some(cutoff_time);
+        }
+
+        // Phase filtering removed - RecycleRecord no longer has phase field
+
+        // Execute the cleanup
+        if self.dry_run {
+            println!("\n📋 DRY RUN MODE - No actual deletion will occur");
+
+            // Use list_entries to show what would be deleted
+            let entries =
+                recycle_store.list_entries(Some(filter.clone()), Some(self.batch_size))?;
+
+            println!("=== Records that would be deleted ===");
+            println!("Found {} matching records", entries.len());
+
+            for (i, record) in entries.iter().take(10).enumerate() {
+                println!(
+                    "  {}. {} bytes (created at: {})",
+                    i + 1,
+                    record.original_size,
+                    record.created_at
+                );
+            }
+
+            if entries.len() > 10 {
+                println!("  ... and {} more", entries.len() - 10);
+            }
+        } else {
+            println!("\n🚨 LIVE DELETION MODE - Records will be permanently deleted!");
+            println!("   This operation is IRREVERSIBLE!");
+
+            // Additional safety confirmation
+            if !self.force {
+                eprintln!("\nType 'DELETE-RECYCLE-BIN' to confirm permanent deletion:");
+                use std::io::{self, Write};
+                let mut input = String::new();
+                io::stdout().flush().unwrap();
+                io::stdin().read_line(&mut input).unwrap();
+
+                if input.trim() != "DELETE-RECYCLE-BIN" {
+                    eprintln!("Confirmation failed. Operation cancelled.");
+                    return Ok("Operation cancelled by user".to_string());
+                }
+            }
+
+            // Execute the actual deletion
+            let deleted_count = recycle_store.delete_entries(&filter, self.batch_size)?;
+
+            println!("✅ Cleanup completed!");
+            println!("🗑️  Deleted {} records", deleted_count);
+
+            // Show updated statistics
+            let new_stats = recycle_store.get_stats();
+            println!("\n=== Updated Statistics ===");
+            println!("{}", new_stats);
+        }
+
+        Ok("Cleanup operation completed".to_string())
     }
 }

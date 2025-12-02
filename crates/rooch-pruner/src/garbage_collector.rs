@@ -1,57 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::config::GCConfig;
 use crate::historical_state::{HistoricalStateCollector, HistoricalStateConfig};
-use crate::marker::{create_marker, MarkerStrategy};
+use crate::marker::{create_marker_with_config, MarkerStrategy, NodeMarker};
 use crate::reachability::ReachableBuilder;
 use crate::recycle_bin::RecycleBinStore;
 use crate::safety_verifier::SafetyVerifier;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
-use moveos_store::{MoveOSStore, STATE_NODE_COLUMN_FAMILY_NAME};
+use moveos_store::STATE_NODE_COLUMN_FAMILY_NAME;
 use moveos_types::h256::H256;
 use parking_lot::Mutex;
 use raw_store::{CodecKVStore, SchemaStore};
-use rooch_store::RoochStore;
+use rooch_db::RoochDB;
+use smt::NodeReader;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};
-
-/// Garbage Collector configuration for controlling behavior
-#[derive(Debug, Clone)]
-pub struct GCConfig {
-    /// Whether to run in dry-run mode (scan and report without deleting)
-    pub dry_run: bool,
-    /// Batch size for deletion operations
-    pub batch_size: usize,
-    /// Number of worker threads for parallel processing
-    pub workers: usize,
-    /// Whether to use recycle bin for deleted nodes
-    pub use_recycle_bin: bool,
-    /// Whether to trigger RocksDB compaction after GC
-    pub force_compaction: bool,
-    /// Marker strategy selection (Auto, InMemory, Persistent)
-    pub marker_strategy: MarkerStrategy,
-    /// Force execution without safety confirmations
-    pub force_execution: bool,
-    /// Number of recent state roots to protect from GC (default: 1 for backward compatibility)
-    pub protected_roots_count: usize,
-}
-
-impl Default for GCConfig {
-    fn default() -> Self {
-        Self {
-            dry_run: false,
-            batch_size: 10_000,
-            workers: num_cpus::get(),
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: MarkerStrategy::Auto,
-            force_execution: false,
-            protected_roots_count: 1, // Default to backward compatibility
-        }
-    }
-}
 
 /// Comprehensive GC execution report
 #[derive(Debug, Clone)]
@@ -100,8 +66,7 @@ pub struct SweepStats {
 /// while the database is stopped (no concurrent writes). It provides both safety
 /// guarantees and comprehensive reporting.
 pub struct GarbageCollector {
-    moveos_store: Arc<MoveOSStore>,
-    rooch_store: Option<Arc<RoochStore>>,
+    rooch_db: RoochDB,
     #[allow(dead_code)]
     recycle_bin: Arc<RecycleBinStore>,
     pub config: GCConfig,
@@ -110,44 +75,16 @@ pub struct GarbageCollector {
 
 impl GarbageCollector {
     /// Create a new GarbageCollector with the given store, configuration, and database path
-    pub fn new(
-        moveos_store: Arc<MoveOSStore>,
-        config: GCConfig,
-        db_path: std::path::PathBuf,
-    ) -> Result<Self> {
+    pub fn new(rooch_db: RoochDB, config: GCConfig) -> Result<Self> {
+        let recycle_bin =
+            RecycleBinStore::new(rooch_db.moveos_store.get_node_recycle_store().clone())?;
         // Initialize recycle bin with reasonable defaults
-        let recycle_bin = Arc::new(RecycleBinStore::new(
-            moveos_store.get_node_recycle_store().clone(),
-            10_000,      // max_entries
-            100_000_000, // max_bytes (100MB)
-        )?);
-
+        let recycle_bin = Arc::new(recycle_bin);
+        let db_path = rooch_db
+            .rocksdb_path()
+            .ok_or_else(|| anyhow::anyhow!("Failed to get database path from store"))?;
         Ok(Self {
-            moveos_store,
-            rooch_store: None,
-            recycle_bin,
-            config,
-            db_path,
-        })
-    }
-
-    /// Create a new GarbageCollector with RoochStore access for historical state collection
-    pub fn new_with_rooch_store(
-        moveos_store: Arc<MoveOSStore>,
-        rooch_store: Arc<RoochStore>,
-        config: GCConfig,
-        db_path: std::path::PathBuf,
-    ) -> Result<Self> {
-        // Initialize recycle bin with reasonable defaults
-        let recycle_bin = Arc::new(RecycleBinStore::new(
-            moveos_store.get_node_recycle_store().clone(),
-            10_000,      // max_entries
-            100_000_000, // max_bytes (100MB)
-        )?);
-
-        Ok(Self {
-            moveos_store,
-            rooch_store: Some(rooch_store),
+            rooch_db,
             recycle_bin,
             config,
             db_path,
@@ -182,14 +119,20 @@ impl GarbageCollector {
         );
 
         // Phase 4: Mark phase - identify all reachable nodes
-        let mark_stats = self.mark_phase(&protected_roots, memory_strategy)?;
+        let (mark_stats, marker) =
+            self.mark_phase(&protected_roots, memory_strategy, estimated_nodes)?;
+
+        // Phase 5: User confirmation (after mark, before sweep; skip in dry-run or if skip_confirm is enabled)
+        if !self.config.dry_run {
+            self.request_user_confirmation(&protected_roots, &mark_stats)?;
+        }
 
         // Phase 5: Sweep phase - delete unreachable nodes (skip in dry-run)
         let sweep_stats = if self.config.dry_run {
             info!("Dry-run mode: skipping sweep phase");
             SweepStats::default()
         } else {
-            self.sweep_phase(&protected_roots, memory_strategy)?
+            self.sweep_phase(&protected_roots, marker.as_ref())?
         };
 
         // Phase 6: Optional compaction
@@ -219,40 +162,91 @@ impl GarbageCollector {
         info!("=== Safety Verification ===");
 
         if !self.config.dry_run {
-            if self.config.force_execution {
-                info!("Force execution enabled - skipping database safety verification");
-                warn!("⚠️  WARNING: Bypassing safety checks due to force_execution=true");
-            } else {
-                info!("Performing mandatory database safety verification...");
+            info!("Performing mandatory database safety verification...");
 
-                let db_path = self.get_database_path()?;
-                let safety_verifier = SafetyVerifier::new(&db_path);
+            let db_path = self.get_database_path()?;
+            let safety_verifier = SafetyVerifier::new(&db_path);
 
-                match safety_verifier.verify_database_access() {
-                    Ok(report) if report.database_available => {
-                        info!("✅ {}", report.message);
-                        info!("🔒 All technical safety checks passed - proceeding with garbage collection");
-                        info!("   - Database RocksDB LOCK file verified");
-                        info!("   - Exclusive access confirmed");
-                    }
-                    Ok(report) => {
-                        return Err(anyhow::anyhow!(
-                            "Database safety check failed: {}. Please ensure the blockchain service is stopped and no other processes are accessing the database.",
-                            report.message
-                        ));
-                    }
-                    Err(e) => {
-                        return Err(anyhow::anyhow!(
-                            "Failed to verify database safety: {}. Please check database permissions and ensure the service is stopped.",
-                            e
-                        ));
-                    }
+            match safety_verifier.verify_database_access() {
+                Ok(report) if report.database_available => {
+                    info!("✅ {}", report.message);
+                    info!("🔒 All technical safety checks passed - proceeding with garbage collection");
+                    info!("   - Database RocksDB LOCK file verified");
+                    info!("   - Exclusive access confirmed");
+                }
+                Ok(report) => {
+                    return Err(anyhow::anyhow!(
+                        "Database is locked, please stop the blockchain service and retry: {}",
+                        report.message
+                    ));
+                }
+                Err(e) => {
+                    return Err(anyhow::anyhow!(
+                        "Database safety check failed: {}. Please check database permissions and ensure the service is stopped.",
+                        e
+                    ));
                 }
             }
         } else {
             info!("Running in dry-run mode - skipping technical safety verification");
         }
 
+        Ok(())
+    }
+
+    /// Request user confirmation before proceeding with garbage collection
+    fn request_user_confirmation(
+        &self,
+        protected_roots: &[H256],
+        mark_stats: &MarkStats,
+    ) -> Result<()> {
+        // If skip_confirm is enabled, skip user confirmation
+        if self.config.skip_confirm {
+            warn!("⚠️  Skipping user confirmation (automation mode)");
+            return Ok(());
+        }
+
+        info!("=== User Confirmation ===");
+
+        println!("=== Garbage Collection Preview ===");
+        println!("Protected Root Nodes Count: {}", protected_roots.len());
+
+        // Display some root nodes (max 5)
+        for (i, root) in protected_roots.iter().take(5).enumerate() {
+            println!("  {}: {}", i + 1, root);
+        }
+        if protected_roots.len() > 5 {
+            println!("  ... and {} more root nodes", protected_roots.len() - 5);
+        }
+        println!();
+
+        println!("Mark Phase Summary:");
+        println!("  Reachable nodes marked: {}", mark_stats.marked_count);
+        println!("  Marker strategy: {}", mark_stats.memory_strategy);
+        println!();
+
+        println!("⚠️  This will permanently delete unreachable state nodes");
+        if self.config.use_recycle_bin {
+            println!("📁 Recycle bin enabled, deleted nodes will be saved");
+        } else {
+            println!("🗑️  Recycle bin disabled, deleted nodes will be permanently erased");
+        }
+        println!();
+
+        // Require explicit user confirmation
+        print!("Confirm execution? Type 'yes' to continue, any other input will cancel: ");
+        use std::io::Write;
+        std::io::stdout().flush()?;
+
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+
+        let trimmed_input = input.trim().to_lowercase();
+        if trimmed_input != "yes" {
+            return Err(anyhow::anyhow!("User cancelled the operation"));
+        }
+
+        info!("✅ User confirmed, proceeding with garbage collection");
         Ok(())
     }
 
@@ -272,50 +266,40 @@ impl GarbageCollector {
 
         // 1. Use historical state collector for multi-root protection
         if self.config.protected_roots_count > 1 {
-            if let Some(rooch_store) = &self.rooch_store {
-                info!(
-                    "Collecting {} recent state roots for multi-root protection",
-                    self.config.protected_roots_count
-                );
-                let config = HistoricalStateConfig {
-                    protected_roots_count: self.config.protected_roots_count,
-                };
-                let collector = HistoricalStateCollector::new(
-                    Arc::clone(&self.moveos_store),
-                    Arc::clone(rooch_store),
-                    config,
-                );
-                let roots = collector.collect_recent_state_roots();
-                match roots {
-                    Ok(collected_roots) => {
-                        info!(
-                            "Collected {} historical protected roots",
-                            collected_roots.len()
-                        );
-                        return Ok(collected_roots);
-                    }
-                    Err(e) => {
-                        if self.config.force_execution {
-                            warn!("Historical state collection failed, but force_execution enabled: {}. Falling back to single root mode.", e);
-                        } else {
-                            return Err(e);
-                        }
+            info!(
+                "Collecting {} recent state roots for multi-root protection",
+                self.config.protected_roots_count
+            );
+            let config = HistoricalStateConfig {
+                protected_roots_count: self.config.protected_roots_count,
+            };
+            let collector = HistoricalStateCollector::new(
+                self.rooch_db.moveos_store.clone(),
+                self.rooch_db.rooch_store.clone(),
+                config,
+            );
+            let roots = collector.collect_recent_state_roots();
+            match roots {
+                Ok(collected_roots) => {
+                    info!(
+                        "Collected {} historical protected roots",
+                        collected_roots.len()
+                    );
+                    return Ok(collected_roots);
+                }
+                Err(e) => {
+                    if self.config.skip_confirm {
+                        warn!("Historical state collection failed, but skip_confirm enabled: {}. Falling back to single root mode.", e);
+                    } else {
+                        return Err(e);
                     }
                 }
-            } else {
-                warn!("RoochStore not available for multi-root protection, falling back to single root mode");
             }
         }
 
-        if let Ok(Some(startup_info)) = self.moveos_store.config_store.get_startup_info() {
+        if let Ok(Some(startup_info)) = self.rooch_db.moveos_store.config_store.get_startup_info() {
             info!("Using startup_info state_root: {}", startup_info.state_root);
             return Ok(vec![startup_info.state_root]);
-        }
-
-        // If force_execution is enabled, provide a dummy root for testing
-        if self.config.force_execution {
-            warn!("No startup info available, but force_execution enabled. Using dummy root for testing.");
-            return Ok(vec![H256::random()]);
         }
 
         Err(anyhow::anyhow!(
@@ -326,7 +310,7 @@ impl GarbageCollector {
     /// Estimate the number of nodes to process for strategy selection
     /// Uses RocksDB statistics for O(1) performance instead of key traversal
     fn estimate_node_count(&self, _protected_roots: &[H256]) -> Result<usize> {
-        let node_store = self.moveos_store.get_state_node_store();
+        let node_store = self.rooch_db.moveos_store.get_state_node_store();
 
         // Try to use RocksDB's built-in statistics - O(1) time complexity
         if let Some(estimate) = self.get_node_count_from_rocksdb_stats(node_store)? {
@@ -337,13 +321,37 @@ impl GarbageCollector {
             return Ok(estimate);
         }
 
-        // Fallback: use a conservative default estimate when RocksDB statistics unavailable
-        let default_estimate = 1_000_000;
+        // Fallback: iterate once to count keys (stop-the-world GC tolerates full scan)
+        if let Some(wrapper) = node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                let mut iter = raw_db.raw_iterator_cf(&cf);
+                iter.seek_to_first();
+                let mut count = 0usize;
+                while iter.valid() {
+                    if let Some(k) = iter.key() {
+                        if k.len() == 32 {
+                            count += 1;
+                        } else {
+                            warn!("Skipping non-32B node key in count len={}", k.len());
+                        }
+                    }
+                    iter.next();
+                }
+                info!(
+                    "Estimated node count via iterator fallback: {} (RocksDB stats unavailable)",
+                    count
+                );
+                return Ok(count.max(1)); // avoid zero for downstream sizing
+            }
+        }
+
         warn!(
-            "Unable to determine node count from RocksDB statistics, using default estimate: {}",
-            default_estimate
+            "Unable to determine node count (stats and raw iterator unavailable), using default estimate: {}",
+            1_000_000
         );
-        Ok(default_estimate)
+
+        Ok(1_000_000)
     }
 
     /// Get node count from RocksDB statistics API using approximate-num-keys property
@@ -379,17 +387,23 @@ impl GarbageCollector {
         &self,
         protected_roots: &[H256],
         memory_strategy: MarkerStrategy,
-    ) -> Result<MarkStats> {
+        estimated_nodes: usize,
+    ) -> Result<(MarkStats, Box<dyn NodeMarker>)> {
         info!("=== Mark Phase ===");
         let start_time = Instant::now();
 
         // Create appropriate marker
-        let marker = create_marker(memory_strategy, 1_000_000)?;
+        let marker = create_marker_with_config(
+            memory_strategy,
+            estimated_nodes,
+            &self.config,
+            Some(self.rooch_db.moveos_store.clone()),
+        )?;
         info!("Created {} marker", marker.marker_type());
 
         // Create ReachableBuilder with a bloom filter for additional optimization
         let bloom = Arc::new(Mutex::new(BloomFilter::new(1 << 20, 4)));
-        let reachable_builder = ReachableBuilder::new(self.moveos_store.clone(), bloom);
+        let reachable_builder = ReachableBuilder::new(self.rooch_db.moveos_store.clone(), bloom);
 
         // Capture strategy name before marker is moved
         let strategy_name = marker.marker_type().to_string();
@@ -398,7 +412,7 @@ impl GarbageCollector {
         let reachable_count = reachable_builder.build_with_marker(
             protected_roots.to_vec(),
             self.config.workers,
-            marker,
+            marker.as_ref(),
         )?;
 
         let mark_stats = MarkStats {
@@ -412,14 +426,14 @@ impl GarbageCollector {
             reachable_count, mark_stats.duration
         );
 
-        Ok(mark_stats)
+        Ok((mark_stats, marker))
     }
 
     /// Sweep phase - identify and delete unreachable nodes
     fn sweep_phase(
         &self,
-        protected_roots: &[H256],
-        memory_strategy: MarkerStrategy,
+        _protected_roots: &[H256],
+        reachable_marker: &dyn NodeMarker,
     ) -> Result<SweepStats> {
         info!("=== Sweep Phase ===");
         let start_time = Instant::now();
@@ -434,11 +448,11 @@ impl GarbageCollector {
 
         if self.config.dry_run {
             info!("DRY RUN: Simulating sweep phase without actual deletions");
-            return self.simulate_sweep_phase(protected_roots, memory_strategy);
+            return self.simulate_sweep_phase();
         }
 
         // Get candidate nodes for deletion
-        let candidate_nodes = self.get_candidate_nodes_for_deletion(protected_roots)?;
+        let candidate_nodes = self.get_candidate_nodes_for_deletion()?;
         stats.scanned_count = candidate_nodes.len() as u64;
 
         if candidate_nodes.is_empty() {
@@ -452,16 +466,15 @@ impl GarbageCollector {
             candidate_nodes.len()
         );
 
-        // Determine which nodes are actually deletable by checking against bloom filter
-        let bloom = self.create_marker_for_protected_nodes(protected_roots, memory_strategy)?;
+        // Determine which nodes are actually deletable by checking against reachable marker
         let (nodes_to_delete, nodes_to_keep) =
-            self.filter_nodes_by_reachability(&candidate_nodes, &bloom)?;
+            self.filter_nodes_by_reachability(&candidate_nodes, reachable_marker)?;
 
         stats.kept_count = nodes_to_keep.len() as u64;
         info!("Nodes to keep (reachable): {}", nodes_to_keep.len());
 
         // Process deletions in batches
-        let node_store = self.moveos_store.get_state_node_store();
+        let node_store = self.rooch_db.moveos_store.get_state_node_store();
         let batch_size = self.config.batch_size;
 
         info!(
@@ -506,70 +519,50 @@ impl GarbageCollector {
     }
 
     /// Get candidate nodes for deletion by scanning the database
-    fn get_candidate_nodes_for_deletion(&self, _protected_roots: &[H256]) -> Result<Vec<H256>> {
-        let node_store = self.moveos_store.get_state_node_store();
+    fn get_candidate_nodes_for_deletion(&self) -> Result<Vec<H256>> {
+        let node_store = self.rooch_db.moveos_store.get_state_node_store();
         let mut candidates = Vec::new();
 
-        // For now, we'll use a simplified approach - get all keys from the node store
-        // In a more sophisticated implementation, we could:
-        // 1. Use RocksDB iterator with range scans
-        // 2. Filter out recently created nodes
-        // 3. Exclude nodes that are part of protected transaction ranges
-
-        match node_store.keys() {
-            Ok(keys) => {
-                // Keys are already H256 format
-                for key in keys {
-                    candidates.push(key);
+        // Prefer RocksDB raw iterator to avoid serde decode errors
+        if let Some(wrapper) = node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                let mut iter = raw_db.raw_iterator_cf(&cf);
+                iter.seek_to_first();
+                while iter.valid() {
+                    if let Some(k) = iter.key() {
+                        if k.len() == 32 {
+                            candidates.push(H256::from_slice(k));
+                        } else {
+                            warn!("Skipping non-32B node key len={}", k.len());
+                        }
+                    }
+                    iter.next();
                 }
                 debug!(
-                    "Found {} total nodes as deletion candidates",
+                    "Collected {} candidate nodes via state_node iterator",
                     candidates.len()
                 );
-            }
-            Err(e) => {
-                warn!(
-                    "Failed to get keys from node store: {}, using empty candidate list",
-                    e
-                );
+                return Ok(candidates);
             }
         }
+
+        warn!("Iterator not supported for node store, returning empty candidate list");
 
         Ok(candidates)
     }
 
-    /// Create a bloom filter for protected nodes
-    fn create_marker_for_protected_nodes(
-        &self,
-        protected_roots: &[H256],
-        _memory_strategy: MarkerStrategy,
-    ) -> Result<Arc<parking_lot::Mutex<BloomFilter>>> {
-        // Create a bloom filter directly
-        let bloom = Arc::new(parking_lot::Mutex::new(BloomFilter::new(8_388_608, 4))); // 1MB bloom filter
-
-        // Mark all protected roots as reachable
-        {
-            let mut bloom_guard = bloom.lock();
-            for root in protected_roots {
-                bloom_guard.insert(root);
-            }
-        }
-
-        Ok(bloom)
-    }
-
-    /// Filter nodes based on reachability using bloom filter
+    /// Filter nodes based on reachability using the marker built during mark phase
     fn filter_nodes_by_reachability(
         &self,
         candidates: &[H256],
-        bloom: &Arc<parking_lot::Mutex<BloomFilter>>,
+        marker: &dyn NodeMarker,
     ) -> Result<(Vec<H256>, Vec<H256>)> {
         let mut nodes_to_delete = Vec::new();
         let mut nodes_to_keep = Vec::new();
-        let bloom_guard = bloom.lock();
 
         for &node in candidates {
-            if bloom_guard.contains(&node) {
+            if marker.is_marked(&node) {
                 nodes_to_keep.push(node);
             } else {
                 nodes_to_delete.push(node);
@@ -597,6 +590,19 @@ impl GarbageCollector {
 
         let batch_size = batch.len();
 
+        // Optionally store deleted nodes into recycle bin for recovery
+        if self.config.use_recycle_bin {
+            for node_hash in batch {
+                if let Ok(Some(bytes)) = node_store.get(node_hash) {
+                    let record = self.recycle_bin.create_record(bytes);
+                    // Note field removed - RecycleRecord now simplified to 3 fields
+                    if let Err(e) = self.recycle_bin.put_record(*node_hash, record) {
+                        warn!(?node_hash, "Failed to store recycle record: {}", e);
+                    }
+                }
+            }
+        }
+
         // Use the actual deletion API with flush=false for better performance
         // We'll flush once at the end of the sweep phase
         node_store.delete_nodes_with_flush(batch.to_vec(), false)?;
@@ -616,15 +622,11 @@ impl GarbageCollector {
     }
 
     /// Simulate sweep phase for dry-run mode
-    fn simulate_sweep_phase(
-        &self,
-        _protected_roots: &[H256],
-        _memory_strategy: MarkerStrategy,
-    ) -> Result<SweepStats> {
+    fn simulate_sweep_phase(&self) -> Result<SweepStats> {
         info!("Simulating sweep phase analysis");
 
         // Get candidate count without actual filtering for simplicity
-        let candidate_count = match self.moveos_store.get_state_node_store().keys() {
+        let candidate_count = match self.rooch_db.moveos_store.get_state_node_store().keys() {
             Ok(keys) => keys.len(),
             Err(_) => 0,
         };
@@ -649,32 +651,12 @@ impl GarbageCollector {
         Ok(stats)
     }
 
-    /// Process a batch of node deletions
-    #[allow(dead_code)]
-    fn process_deletion_batch(&self, batch: &mut Vec<H256>, stats: &mut SweepStats) -> Result<()> {
-        if batch.is_empty() {
-            return Ok(());
-        }
-
-        // In a real implementation, this would use the actual deletion API
-        // For now, we'll simulate the deletion
-        let batch_size = batch.len();
-
-        // This would be something like:
-        // self.moveos_store.get_state_node_store().delete_nodes_with_flush(batch.clone(), false)?;
-
-        stats.deleted_count += batch_size as u64;
-        batch.clear();
-
-        Ok(())
-    }
-
     /// Trigger RocksDB compaction to reclaim space
     fn trigger_compaction(&self) -> Result<()> {
         info!("=== Trigger Compaction ===");
         let start_time = Instant::now();
 
-        let node_store = self.moveos_store.get_state_node_store();
+        let node_store = self.rooch_db.moveos_store.get_state_node_store();
 
         // Record database size before compaction for statistics
         let before_size = self.get_database_size(node_store)?;
@@ -752,7 +734,7 @@ mod tests {
         assert!(config.use_recycle_bin);
         assert!(!config.force_compaction);
         assert_eq!(config.marker_strategy, MarkerStrategy::Auto);
-        assert!(!config.force_execution);
+        assert!(!config.skip_confirm);
     }
 
     #[test]

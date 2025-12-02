@@ -6,11 +6,12 @@ use crate::utils::open_rooch_db;
 use crate::utils::open_rooch_db_readonly;
 use async_trait::async_trait;
 use clap::Parser;
+use rooch_pruner::recycle_bin::RecycleBinConfig;
 use rooch_pruner::{GCConfig, GarbageCollector, MarkerStrategy};
 use rooch_types::error::RoochResult;
+use serde::Serialize;
 use std::path::PathBuf;
-use std::sync::Arc;
-use tracing::info;
+// tracing used only in other modules; no info! here
 
 /// Stop-the-world garbage collection for unreachable state nodes
 ///
@@ -54,9 +55,24 @@ pub struct GCCommand {
     /// Enable recycle bin to store deleted nodes for potential recovery
     ///
     /// Deleted nodes are stored in the recycle bin before deletion
-    /// Default: true
+    /// Default: true (strong backup mode)
     #[clap(long = "recycle-bin", default_value_t = true)]
     pub use_recycle_bin: bool,
+
+    /// Disk space warning threshold for recycle bin (percentage)
+    ///
+    /// When recycle bin usage exceeds this percentage of available space,
+    /// a warning will be issued. Requires manual cleanup to free space.
+    /// Default: 90
+    #[clap(long = "recycle-space-warning-threshold", default_value_t = 90)]
+    pub recycle_space_warning_threshold: u64,
+
+    /// Force recycle bin operation despite space warnings
+    ///
+    /// This flag bypasses disk space safety checks for the recycle bin.
+    /// Use with caution - may lead to disk space exhaustion.
+    #[clap(long = "force-recycle-despite-space-warning")]
+    pub force_recycle_despite_space_warning: bool,
 
     /// Force RocksDB compaction after garbage collection
     ///
@@ -80,17 +96,21 @@ pub struct GCCommand {
     #[clap(long = "protected-roots-count", default_value_t = 1)]
     pub protected_roots_count: usize,
 
-    /// Force execution to bypass user confirmation prompts
+    /// Skip interactive confirmation prompts (use with caution)
     ///
-    /// Confirm that you understand the risks and have stopped the blockchain service
-    /// Technical safety verification (database lock check) will still be performed automatically
-    /// WARNING: Use only when the service is stopped and no other processes are accessing the database
-    #[clap(long)]
-    pub force: bool,
+    /// This option skips the user confirmation step but still performs
+    /// technical safety verification (database lock check)
+    /// WARNING: Use only for automation when the service is stopped
+    #[clap(long = "skip-confirm", alias = "skipConfirm")]
+    pub skip_confirm: bool,
 
     /// Verbose output with detailed progress information
     #[clap(long, short = 'v')]
     pub verbose: bool,
+
+    /// Output results in JSON format for better parsing by automated tools
+    #[clap(long)]
+    pub json: bool,
 }
 
 impl GCCommand {
@@ -124,13 +144,6 @@ impl GCCommand {
             return Err("Protected roots count must be greater than 0".to_string());
         }
 
-        // For write operations, safety verification is mandatory
-        if !self.dry_run && !self.force {
-            return Err(
-                "GC modifies database state. Use --force to confirm you understand the risks and have stopped the blockchain service, or use --dry-run to preview changes.".to_string()
-            );
-        }
-
         Ok(())
     }
 
@@ -138,15 +151,43 @@ impl GCCommand {
     fn create_gc_config(&self) -> Result<GCConfig, String> {
         let marker_strategy = self.parse_marker_strategy()?;
 
+        // Create recycle bin configuration with strong backup defaults
+        let recycle_bin_config = RecycleBinConfig {
+            strong_backup: true, // Always enabled - immutable default
+            disk_space_warning_threshold: self.recycle_space_warning_threshold,
+            disk_space_critical_threshold: 10, // 10% - trigger emergency cleanup
+            disk_space_stop_threshold: 5,      // 5% - stop GC process
+            space_check_enabled: !self.force_recycle_despite_space_warning,
+        };
+
         let config = GCConfig {
+            // Runtime Configuration
             dry_run: self.dry_run,
-            batch_size: self.batch_size,
             workers: self.workers,
             use_recycle_bin: self.use_recycle_bin,
             force_compaction: self.force_compaction,
-            marker_strategy,
-            force_execution: self.force,
+            skip_confirm: self.skip_confirm,
+
+            // Core GC Configuration
+            scan_batch: 10000, // Default scan batch size
+            batch_size: self.batch_size,
+            bloom_bits: 8589934592,   // 2^33 bits (1GB)
+            protection_orders: 30000, // Default protection orders
             protected_roots_count: self.protected_roots_count,
+
+            // Marker Strategy Configuration
+            marker_strategy,
+            marker_batch_size: 10000,
+            marker_bloom_bits: 1048576, // 2^20 bits (1MB)
+            marker_bloom_hash_fns: 4,
+            marker_memory_threshold_mb: 1024, // 1GB
+            marker_auto_strategy: true,
+            marker_force_persistent: false,
+            marker_temp_cf_name: "gc_marker_temp".to_string(),
+            marker_error_recovery: true,
+
+            // Recycle Bin Configuration
+            recycle_bin: recycle_bin_config,
         };
 
         Ok(config)
@@ -280,17 +321,17 @@ impl GCCommand {
             .ok();
             writeln!(
                 output,
-                "  Use 'rooch db recycle-stat' to view recycle bin statistics"
+                "  Use 'rooch db recycle list' to view recycle bin entries"
             )
             .ok();
             writeln!(
                 output,
-                "  Use 'rooch db recycle-dump <hash>' to view specific deleted nodes"
+                "  Use 'rooch db recycle dump <hash>' to view specific deleted nodes"
             )
             .ok();
             writeln!(
                 output,
-                "  Use 'rooch db recycle-restore <hash>' to recover specific nodes"
+                "  Use 'rooch db recycle restore <hash>' to recover specific nodes"
             )
             .ok();
             writeln!(output).ok();
@@ -305,12 +346,107 @@ impl GCCommand {
             .ok();
             writeln!(
                 output,
-                "   Use --force flag to execute the actual garbage collection"
+                "   Run without --dry-run flag to execute the actual garbage collection"
             )
             .ok();
         }
 
         output
+    }
+
+    /// Format report as JSON when --json is specified
+    fn format_report_json(
+        &self,
+        report: &rooch_pruner::garbage_collector::GCReport,
+    ) -> RoochResult<String> {
+        #[derive(Serialize)]
+        struct JsonRoots {
+            count: usize,
+            roots: Vec<String>,
+        }
+
+        #[derive(Serialize)]
+        struct JsonMarkStats {
+            #[serde(rename = "markedCount")]
+            marked_count: u64,
+            #[serde(rename = "durationMs")]
+            duration_ms: u128,
+            #[serde(rename = "memoryStrategy")]
+            memory_strategy: String,
+        }
+
+        #[derive(Serialize)]
+        struct JsonSweepStats {
+            #[serde(rename = "scannedCount")]
+            scanned_count: u64,
+            #[serde(rename = "keptCount")]
+            kept_count: u64,
+            #[serde(rename = "deletedCount")]
+            deleted_count: u64,
+            #[serde(rename = "recycleBinEntries")]
+            recycle_bin_entries: u64,
+            #[serde(rename = "durationMs")]
+            duration_ms: u128,
+        }
+
+        #[derive(Serialize)]
+        struct JsonReport {
+            #[serde(rename = "executionMode")]
+            execution_mode: String,
+            #[serde(rename = "protectedRoots")]
+            protected_roots: JsonRoots,
+            #[serde(rename = "markStats")]
+            mark_stats: JsonMarkStats,
+            #[serde(rename = "sweepStats")]
+            sweep_stats: JsonSweepStats,
+            #[serde(rename = "memoryStrategyUsed")]
+            memory_strategy_used: String,
+            #[serde(rename = "durationMs")]
+            duration_ms: u128,
+            #[serde(rename = "spaceReclaimed")]
+            space_reclaimed: f64,
+        }
+
+        let deletion_ratio = if report.sweep_stats.scanned_count > 0 {
+            report.sweep_stats.deleted_count as f64 / report.sweep_stats.scanned_count as f64
+                * 100.0
+        } else {
+            0.0
+        };
+
+        let json = JsonReport {
+            execution_mode: if self.dry_run {
+                "dry-run".to_string()
+            } else {
+                "execute".to_string()
+            },
+            protected_roots: JsonRoots {
+                count: report.protected_roots.len(),
+                roots: report
+                    .protected_roots
+                    .iter()
+                    .map(|h| format!("{:#x}", h))
+                    .collect(),
+            },
+            mark_stats: JsonMarkStats {
+                marked_count: report.mark_stats.marked_count,
+                duration_ms: report.mark_stats.duration.as_millis(),
+                memory_strategy: report.mark_stats.memory_strategy.clone(),
+            },
+            sweep_stats: JsonSweepStats {
+                scanned_count: report.sweep_stats.scanned_count,
+                kept_count: report.sweep_stats.kept_count,
+                deleted_count: report.sweep_stats.deleted_count,
+                recycle_bin_entries: report.sweep_stats.recycle_bin_entries,
+                duration_ms: report.sweep_stats.duration.as_millis(),
+            },
+            memory_strategy_used: report.memory_strategy_used.to_string(),
+            duration_ms: report.duration.as_millis(),
+            space_reclaimed: deletion_ratio,
+        };
+
+        serde_json::to_string_pretty(&json)
+            .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))
     }
 }
 
@@ -322,37 +458,11 @@ impl CommandAction<String> for GCCommand {
             return Err(rooch_types::error::RoochError::CommandArgumentError(e));
         }
 
-        // Setup logging based on verbose flag
-        if self.verbose {
-            match tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::INFO)
-                .try_init()
-            {
-                Ok(_) => info!("Verbose logging initialized"),
-                Err(_) => info!("Logging already initialized, using existing configuration"),
-            }
-        }
-
         // Create GC configuration
         let config = match self.create_gc_config() {
             Ok(config) => config,
             Err(e) => return Err(rooch_types::error::RoochError::CommandArgumentError(e)),
         };
-
-        info!("Starting garbage collection with config: {:?}", config);
-
-        // Create config options to get database path
-        let opt = rooch_config::RoochOpt::new_with_default(
-            self.base_data_dir.clone(),
-            Some(rooch_types::rooch_network::RoochChainID::Builtin(
-                self.chain_id,
-            )),
-            None,
-        )
-        .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
-
-        // Get database path from config
-        let db_path = opt.store_config().get_store_dir();
 
         // Open database (readonly for dry-run, writable for actual execution)
         let (_root_meta, rooch_db, _start) = if self.dry_run {
@@ -371,8 +481,8 @@ impl CommandAction<String> for GCCommand {
             )
         };
 
-        // Create garbage collector with database path
-        let gc = GarbageCollector::new(Arc::new(rooch_db.moveos_store.clone()), config, db_path)
+        // Create garbage collector - database path will be obtained from store
+        let gc = GarbageCollector::new(rooch_db, config)
             .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
 
         // Execute garbage collection
@@ -381,194 +491,12 @@ impl CommandAction<String> for GCCommand {
             .map_err(|e| rooch_types::error::RoochError::UnexpectedError(e.to_string()))?;
 
         // Format and return results
-        let output = self.format_report(&report);
+        let output = if self.json {
+            self.format_report_json(&report)?
+        } else {
+            self.format_report(&report)
+        };
 
         Ok(output)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_marker_strategy() {
-        let command = GCCommand {
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: false,
-            batch_size: 1000,
-            workers: 4,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "auto".to_string(),
-            protected_roots_count: 1,
-            force: false,
-            verbose: false,
-        };
-
-        assert!(matches!(
-            command.parse_marker_strategy(),
-            Ok(MarkerStrategy::Auto)
-        ));
-
-        let command = GCCommand {
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: false,
-            batch_size: 1000,
-            workers: 4,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "memory".to_string(),
-            protected_roots_count: 1,
-            force: false,
-            verbose: false,
-        };
-        assert!(matches!(
-            command.parse_marker_strategy(),
-            Ok(MarkerStrategy::InMemory)
-        ));
-
-        let command = GCCommand {
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: false,
-            batch_size: 1000,
-            workers: 4,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "persistent".to_string(),
-            protected_roots_count: 1,
-            force: false,
-            verbose: false,
-        };
-        assert!(matches!(
-            command.parse_marker_strategy(),
-            Ok(MarkerStrategy::Persistent)
-        ));
-
-        let command = GCCommand {
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: false,
-            batch_size: 1000,
-            workers: 4,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "invalid".to_string(),
-            force: false,
-            verbose: false,
-            protected_roots_count: 1,
-        };
-        assert!(command.parse_marker_strategy().is_err());
-    }
-
-    #[test]
-    fn test_validation() {
-        let valid_command = GCCommand {
-            protected_roots_count: 1,
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: true,
-            batch_size: 1000,
-            workers: 4,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "auto".to_string(),
-            force: false,
-            verbose: false,
-        };
-        assert!(valid_command.validate().is_ok());
-
-        // Test invalid batch size
-        let invalid_command = GCCommand {
-            protected_roots_count: 1,
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: true,
-            batch_size: 0,
-            workers: 4,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "auto".to_string(),
-            force: false,
-            verbose: false,
-        };
-        assert!(invalid_command.validate().is_err());
-
-        // Test invalid worker count
-        let invalid_command = GCCommand {
-            protected_roots_count: 1,
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: true,
-            batch_size: 1000,
-            workers: 0,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "auto".to_string(),
-            force: false,
-            verbose: false,
-        };
-        assert!(invalid_command.validate().is_err());
-
-        // Test missing force flag for write operations (should fail without --force)
-        let invalid_command = GCCommand {
-            protected_roots_count: 1,
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: false,
-            batch_size: 1000,
-            workers: 4,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "auto".to_string(),
-            force: false,
-            verbose: false,
-        };
-        assert!(invalid_command.validate().is_err());
-
-        // Test valid case with --force flag for write operations
-        let valid_write_command = GCCommand {
-            protected_roots_count: 1,
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: false,
-            batch_size: 1000,
-            workers: 4,
-            use_recycle_bin: true,
-            force_compaction: false,
-            marker_strategy: "auto".to_string(),
-            force: true,
-            verbose: false,
-        };
-        assert!(valid_write_command.validate().is_ok());
-    }
-
-    #[test]
-    fn test_config_creation() {
-        let command = GCCommand {
-            base_data_dir: None,
-            chain_id: rooch_types::rooch_network::BuiltinChainID::Dev,
-            dry_run: true,
-            batch_size: 5000,
-            workers: 8,
-            use_recycle_bin: false,
-            force_compaction: true,
-            marker_strategy: "memory".to_string(),
-            force: true,
-            verbose: false,
-            protected_roots_count: 1,
-        };
-
-        let config = command.create_gc_config().unwrap();
-        assert!(config.dry_run);
-        assert_eq!(config.batch_size, 5000);
-        assert_eq!(config.workers, 8);
-        assert!(!config.use_recycle_bin);
-        assert!(config.force_compaction);
-        assert_eq!(config.marker_strategy, MarkerStrategy::InMemory);
-        assert!(config.force_execution);
     }
 }

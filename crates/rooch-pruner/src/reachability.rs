@@ -23,13 +23,13 @@ use tracing::info;
 /// * When `bloom` is saturated, overflow hashes are flushed into RocksDB CF `reach_seen`.
 /// * Builder can be resumed by seeding Bloom with hashes already in `reach_seen`.
 pub struct ReachableBuilder {
-    moveos_store: Arc<MoveOSStore>,
+    moveos_store: MoveOSStore,
     bloom: Arc<Mutex<BloomFilter>>,
     // metrics: Arc<StateDBMetrics>,
 }
 
 impl ReachableBuilder {
-    pub fn new(moveos_store: Arc<MoveOSStore>, bloom: Arc<Mutex<BloomFilter>>) -> Self {
+    pub fn new(moveos_store: MoveOSStore, bloom: Arc<Mutex<BloomFilter>>) -> Self {
         Self {
             moveos_store,
             bloom,
@@ -130,7 +130,7 @@ impl ReachableBuilder {
         &self,
         live_roots: Vec<H256>,
         workers: usize,
-        marker: Box<dyn NodeMarker>,
+        marker: &dyn NodeMarker,
     ) -> Result<u64> {
         let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));
 
@@ -139,7 +139,7 @@ impl ReachableBuilder {
             .into_par_iter()
             .with_max_len(workers)
             .for_each(|root| {
-                if let Err(e) = self.dfs_from_root_with_marker(root, &counter, marker.as_ref()) {
+                if let Err(e) = self.dfs_from_root_with_marker(root, &counter, marker) {
                     tracing::error!("DFS error with marker: {}", e);
                 }
             });

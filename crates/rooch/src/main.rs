@@ -34,7 +34,6 @@ static GLOBAL: allocator::Allocator = allocator::allocator();
 #[tokio::main]
 async fn main() {
     let _ = tracing_subscriber::fmt::try_init();
-
     let opt = RoochCli::parse();
     let result = rooch::run_cli(opt).await;
 

@@ -7,12 +7,14 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::garbage_collector::{GCConfig, GarbageCollector};
+    use crate::config::GCConfig;
+    use crate::garbage_collector::GarbageCollector;
     use crate::marker::{InMemoryMarker, MarkerStrategy, NodeMarker};
     use anyhow::Result;
-    use moveos_store::MoveOSStore;
     use moveos_types::h256::H256;
-    use std::sync::Arc;
+    use moveos_types::startup_info::StartupInfo;
+    use rooch_config::RoochOpt;
+    use rooch_db::RoochDB;
     use std::time::{Duration, Instant};
     use tempfile::TempDir;
     use tracing::info;
@@ -73,7 +75,6 @@ mod tests {
 
             let temp_dir = TempDir::new()?;
             let db_path = temp_dir.path().to_path_buf();
-            let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
             let config = GCConfig {
                 dry_run: true,
@@ -82,11 +83,23 @@ mod tests {
                 workers: 1,
                 use_recycle_bin: true,
                 force_compaction: false,
-                force_execution: true,
+                skip_confirm: true,
                 protected_roots_count: 1,
+                ..GCConfig::default()
             };
 
-            let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
+            let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+            let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+
+            // Create and save startup info for the test
+            let test_state_root = H256::random();
+            let startup_info = StartupInfo::new(test_state_root, 0);
+            rooch_db
+                .moveos_store
+                .config_store
+                .save_startup_info(startup_info)?;
+
+            let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();
             let report = gc.execute_gc()?;
@@ -119,7 +132,6 @@ mod tests {
 
             let temp_dir = TempDir::new()?;
             let db_path = temp_dir.path().to_path_buf();
-            let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
             let config = GCConfig {
                 dry_run: true,
@@ -128,11 +140,23 @@ mod tests {
                 use_recycle_bin: true,
                 force_compaction: false,
                 marker_strategy: MarkerStrategy::InMemory,
-                force_execution: true,
+                skip_confirm: true,
                 protected_roots_count: 1,
+                ..GCConfig::default()
             };
 
-            let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
+            let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+            let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+
+            // Create and save startup info for the test
+            let test_state_root = H256::random();
+            let startup_info = StartupInfo::new(test_state_root, 0);
+            rooch_db
+                .moveos_store
+                .config_store
+                .save_startup_info(startup_info)?;
+
+            let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();
             let report = gc.execute_gc()?;
@@ -160,7 +184,6 @@ mod tests {
 
             let temp_dir = TempDir::new()?;
             let db_path = temp_dir.path().to_path_buf();
-            let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
             let config = GCConfig {
                 dry_run: true,
@@ -169,11 +192,23 @@ mod tests {
                 use_recycle_bin: true,
                 force_compaction: false,
                 marker_strategy: MarkerStrategy::InMemory,
-                force_execution: true,
+                skip_confirm: true,
                 protected_roots_count: 1,
+                ..GCConfig::default()
             };
 
-            let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
+            let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+            let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+
+            // Create and save startup info for the test
+            let test_state_root = H256::random();
+            let startup_info = StartupInfo::new(test_state_root, 0);
+            rooch_db
+                .moveos_store
+                .config_store
+                .save_startup_info(startup_info)?;
+
+            let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();
             let report = gc.execute_gc()?;

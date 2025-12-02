@@ -143,7 +143,7 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: MarkerStrategy::InMemory,
-            force_execution: false,
+            skip_confirm: false,
         };
 
         // Create garbage collector
@@ -195,7 +195,7 @@ mod tests {
                 use_recycle_bin: false,
                 force_compaction: false,
                 marker_strategy: strategy.clone(),
-                force_execution: false,
+                skip_confirm: false,
             };
 
             let gc = GarbageCollector::new(
@@ -234,7 +234,7 @@ mod tests {
                 use_recycle_bin: true,
                 force_compaction: false,
                 marker_strategy: MarkerStrategy::InMemory,
-                force_execution: false,
+                skip_confirm: false,
             }, "Small batch"),
             (GCConfig {
                 dry_run: true,
@@ -243,7 +243,7 @@ mod tests {
                 use_recycle_bin: true,
                 force_compaction: false,
                 marker_strategy: MarkerStrategy::InMemory,
-                force_execution: false,
+                skip_confirm: false,
             }, "Large batch"),
         ];
 
@@ -286,7 +286,7 @@ mod tests {
             use_recycle_bin: true,
             force_compaction: false,
             marker_strategy: MarkerStrategy::InMemory,
-            force_execution: false,
+            skip_confirm: false,
         };
 
         let gc = GarbageCollector::new(
@@ -336,7 +336,7 @@ mod tests {
 
             let config = GCConfig {
                 dry_run: false, // Not dry run
-                force_execution: false, // But no force flag
+                skip_confirm: false, // But no force flag
                 ..Default::default()
             };
 
@@ -358,7 +358,7 @@ mod tests {
 
             let config = GCConfig {
                 dry_run: true,
-                force_execution: true, // Force execution
+                skip_confirm: true, // Force execution
                 ..Default::default()
             };
 

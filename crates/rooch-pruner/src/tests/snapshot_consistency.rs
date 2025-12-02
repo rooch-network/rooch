@@ -36,7 +36,7 @@ async fn test_snapshot_creation_basic() {
     let reachable_roots = vec![root_hash];
 
     // Simulate BuildReach with snapshot
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!("BuildReach scanned {} nodes with snapshot", scanned_size);
@@ -80,7 +80,7 @@ async fn test_multiple_snapshot_phases() {
         let reachable_roots = vec![*root_hash];
 
         // Run BuildReach
-        let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+        let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
         let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
         // Verify this phase's root is reachable
@@ -120,12 +120,12 @@ async fn test_snapshot_isolation() {
 
     // Phase A: BuildReach with root_a
     println!("Phase A: Processing root_a");
-    let builder_a = crate::reachability::ReachableBuilder::new(store.clone(), bloom_a.clone());
+    let builder_a = crate::reachability::ReachableBuilder::new((*store).clone(), bloom_a.clone());
     let scanned_a = builder_a.build(vec![root_a], 1).unwrap();
 
     // Phase B: BuildReach with root_b (different snapshot)
     println!("Phase B: Processing root_b");
-    let builder_b = crate::reachability::ReachableBuilder::new(store.clone(), bloom_b.clone());
+    let builder_b = crate::reachability::ReachableBuilder::new((*store).clone(), bloom_b.clone());
     let scanned_b = builder_b.build(vec![root_b], 1).unwrap();
 
     // Verify key functionality: each phase should work correctly
@@ -179,7 +179,7 @@ async fn test_snapshot_consistent_state() {
         let reachable_roots = vec![root_hash];
 
         // Run BuildReach
-        let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+        let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
         let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
         let reachable_count = {
@@ -250,7 +250,7 @@ async fn test_snapshot_error_handling() {
         4,
     )));
     let builder_empty =
-        crate::reachability::ReachableBuilder::new(store.clone(), bloom_empty.clone());
+        crate::reachability::ReachableBuilder::new((*store).clone(), bloom_empty.clone());
     let scanned_empty = builder_empty.build(vec![], 1).unwrap();
 
     assert_eq!(scanned_empty, 0, "Empty roots should scan 0 nodes");
@@ -263,7 +263,7 @@ async fn test_snapshot_error_handling() {
         4,
     )));
     let builder_fake =
-        crate::reachability::ReachableBuilder::new(store.clone(), bloom_fake.clone());
+        crate::reachability::ReachableBuilder::new((*store).clone(), bloom_fake.clone());
 
     // This should not panic, even with invalid roots
     let scanned_fake = builder_fake.build(vec![fake_root], 1).unwrap();
@@ -278,7 +278,7 @@ async fn test_snapshot_error_handling() {
         4,
     )));
     let builder_mixed =
-        crate::reachability::ReachableBuilder::new(store.clone(), bloom_mixed.clone());
+        crate::reachability::ReachableBuilder::new((*store).clone(), bloom_mixed.clone());
 
     let scanned_mixed = builder_mixed.build(vec![fake_root, valid_root], 1).unwrap();
 
@@ -309,7 +309,7 @@ async fn test_snapshot_performance_characteristics() {
     )));
     let reachable_roots = vec![root_hash];
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     let duration = start_time.elapsed();

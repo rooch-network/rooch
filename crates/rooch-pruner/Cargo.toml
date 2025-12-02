@@ -12,11 +12,10 @@ version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 smt = { workspace = true }
-prometheus = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-thiserror = { workspace = true }
 serde = { workspace = true }
+hex = { workspace = true }
 
 rayon = { workspace = true }
 
@@ -28,12 +27,13 @@ rand = { workspace = true }
 rooch-config = { workspace = true }
 rooch-store = { workspace = true }
 rooch-types = { workspace = true }
-
+rooch-db = { workspace = true }
 moveos-common = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
 raw-store = { workspace = true }
 bcs = { workspace = true }
+sysinfo = { workspace = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

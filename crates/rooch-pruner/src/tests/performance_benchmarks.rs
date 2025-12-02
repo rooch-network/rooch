@@ -6,12 +6,12 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::config::GCConfig as PruneConfig;
     use crate::marker::{
         create_auto_marker_with_config, InMemoryMarker, NodeMarker, PersistentMarker,
     };
     use anyhow::Result;
     use moveos_types::h256::H256;
-    use rooch_config::prune_config::PruneConfig;
     use std::sync::Arc;
     use std::time::{Duration, Instant};
 

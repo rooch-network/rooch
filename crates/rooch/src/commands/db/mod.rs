@@ -18,9 +18,7 @@ use crate::commands::db::commands::get_sequencer_info::GetSequencerInfoCommand;
 use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
 use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
-use crate::commands::db::commands::list_stale::ListStaleCommand;
-use crate::commands::db::commands::prune_diagnosis::PruneDiagnosisCommand;
-use crate::commands::db::commands::reach_check::ReachCheckCommand;
+use crate::commands::db::commands::recycle::RecycleCommand;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use crate::commands::db::commands::rocksdb_gc::RocksDBGcCommand;
@@ -109,7 +107,6 @@ impl CommandAction<String> for DB {
             }),
             DBCommand::RocksdbStats(stats) => stats.execute().await,
             DBCommand::RocksdbGc(gc) => gc.execute().await,
-            DBCommand::PruneDiagnosis(diag) => diag.execute().await,
             DBCommand::DeleteBenchmark(bench) => bench.execute().await,
             DBCommand::GenerateDBCheckPoint(generate_db_checkpoint) => {
                 generate_db_checkpoint.execute().await.map(|resp| {
@@ -117,12 +114,8 @@ impl CommandAction<String> for DB {
                 })
             }
             DBCommand::CheckRefcount(check) => check.execute().await,
-            DBCommand::ReachCheck(reach) => reach.execute().await,
-            DBCommand::ListStale(list_stale) => list_stale.execute().await,
             DBCommand::GC(gc) => gc.execute().await,
-            DBCommand::RecycleDump(dump) => dump.execute().await,
-            DBCommand::RecycleRestore(restore) => restore.execute().await,
-            DBCommand::RecycleStat(stat) => stat.execute().await,
+            DBCommand::Recycle(recycle) => recycle.execute().await,
         }
     }
 }
@@ -149,14 +142,9 @@ pub enum DBCommand {
     ImportToStateDB(ImportStateCommand),
     RocksdbStats(RocksDBStatsCommand),
     RocksdbGc(RocksDBGcCommand),
-    PruneDiagnosis(PruneDiagnosisCommand),
     DeleteBenchmark(DeleteBenchmarkCommand),
     GenerateDBCheckPoint(GenerateDBCheckPointCommand),
     CheckRefcount(CheckRefcountCommand),
-    ReachCheck(ReachCheckCommand),
-    ListStale(ListStaleCommand),
     GC(GCCommand),
-    RecycleDump(crate::commands::db::commands::recycle_bin::RecycleDumpCommand),
-    RecycleRestore(crate::commands::db::commands::recycle_bin::RecycleRestoreCommand),
-    RecycleStat(crate::commands::db::commands::recycle_bin::RecycleStatCommand),
+    Recycle(RecycleCommand),
 }

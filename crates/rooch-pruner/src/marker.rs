@@ -1,18 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::config::GCConfig;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use parking_lot::{Mutex, RwLock};
-use rooch_config::prune_config::PruneConfig;
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 /// Marker strategy selection for different memory scenarios
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum MarkerStrategy {
+    #[default]
     /// Automatically select strategy based on available memory
     Auto,
     /// Use in-memory HashSet for smaller datasets
@@ -135,7 +137,7 @@ pub struct PersistentMarker {
     temp_cf_name: String,
     bloom_filter: Arc<Mutex<BloomFilter>>,
     counter: Arc<AtomicU64>,
-    moveos_store: Option<Arc<MoveOSStore>>,
+    moveos_store: Option<MoveOSStore>,
     cf_initialized: Arc<std::sync::atomic::AtomicBool>,
     batch_buffer: Arc<Mutex<Vec<H256>>>,
     batch_size: usize,
@@ -160,7 +162,7 @@ impl PersistentMarker {
     }
 
     /// Create a new PersistentMarker with MoveOSStore for actual database operations
-    pub fn with_moveos_store(temp_cf_name: String, moveos_store: Arc<MoveOSStore>) -> Result<Self> {
+    pub fn with_moveos_store(temp_cf_name: String, moveos_store: MoveOSStore) -> Result<Self> {
         let mut marker = Self::new(temp_cf_name)?;
         marker.moveos_store = Some(moveos_store);
         Ok(marker)
@@ -478,10 +480,10 @@ pub fn select_marker_strategy(estimated_nodes: usize) -> MarkerStrategy {
     }
 }
 
-/// Memory strategy selector using PruneConfig for customizable thresholds
+/// Memory strategy selector using GCConfig for customizable thresholds
 pub fn select_marker_strategy_with_config(
     estimated_nodes: usize,
-    config: &PruneConfig,
+    config: &GCConfig,
 ) -> MarkerStrategy {
     let estimated_memory_mb = estimate_memory_usage_mb(estimated_nodes);
     let available_memory_mb = get_available_memory_mb();
@@ -626,8 +628,8 @@ pub fn create_marker(
 pub fn create_marker_with_config(
     strategy: MarkerStrategy,
     estimated_nodes: usize,
-    config: &PruneConfig,
-    moveos_store: Option<Arc<MoveOSStore>>,
+    config: &GCConfig,
+    moveos_store: Option<MoveOSStore>,
 ) -> Result<Box<dyn NodeMarker>> {
     match strategy {
         MarkerStrategy::InMemory => Ok(Box::new(InMemoryMarker::with_capacity(estimated_nodes))),
@@ -655,8 +657,8 @@ pub fn create_marker_with_config(
 /// Create an auto-selected marker instance using configuration
 pub fn create_auto_marker_with_config(
     estimated_nodes: usize,
-    config: &PruneConfig,
-    moveos_store: Option<Arc<MoveOSStore>>,
+    config: &GCConfig,
+    moveos_store: Option<MoveOSStore>,
 ) -> Result<Box<dyn NodeMarker>> {
     create_marker_with_config(MarkerStrategy::Auto, estimated_nodes, config, moveos_store)
 }
@@ -697,10 +699,8 @@ mod tests {
     #[test]
     fn test_persistent_marker_with_moveos_store() -> Result<()> {
         let (moveos_store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
-        let marker = PersistentMarker::with_moveos_store(
-            "test_with_store_cf".to_string(),
-            Arc::new(moveos_store),
-        )?;
+        let marker =
+            PersistentMarker::with_moveos_store("test_with_store_cf".to_string(), moveos_store)?;
         let hash1 = H256::random();
         let hash2 = H256::random();
 
@@ -744,7 +744,7 @@ mod tests {
 
     #[test]
     fn test_configuration_integration() -> Result<()> {
-        let config = PruneConfig::default();
+        let config = GCConfig::default();
         let _hash1 = H256::random();
         let _hash2 = H256::random();
 
@@ -771,7 +771,7 @@ mod tests {
 
     #[test]
     fn test_force_persistent_configuration() -> Result<()> {
-        let config = PruneConfig {
+        let config = GCConfig {
             marker_force_persistent: true,
             marker_auto_strategy: true,
             ..Default::default()
@@ -790,7 +790,7 @@ mod tests {
 
     #[test]
     fn test_custom_batch_size_configuration() -> Result<()> {
-        let config = PruneConfig {
+        let config = GCConfig {
             marker_batch_size: 5000, // Custom batch size
             marker_temp_cf_name: "custom_test_cf".to_string(),
             ..Default::default()
@@ -810,7 +810,7 @@ mod tests {
 
     #[test]
     fn test_disabled_auto_strategy() -> Result<()> {
-        let config = PruneConfig {
+        let config = GCConfig {
             marker_auto_strategy: false,
             ..Default::default()
         };
