@@ -98,6 +98,7 @@ export interface GCStressTestConfig {
   tps: number // Target transactions per second
   batchSize: number // Number of operations per batch
   reportIntervalSeconds: number // How often to report progress (seconds)
+  useRecycleBin: boolean // Whether to use recycle bin for GC (default: false for stress tests)
   mixRatio: {
     // Operation mix ratio (should sum to 1.0)
     create: number // Create new objects
@@ -118,6 +119,9 @@ export function loadGCStressTestConfig(): GCStressTestConfig {
     tps,
     batchSize: parseInt(process.env.GC_STRESS_BATCH_SIZE || '10', 10),
     reportIntervalSeconds: parseInt(process.env.GC_STRESS_REPORT_INTERVAL || '60', 10), // Default: 1 min
+    // Default: false for stress tests to see real disk space reclaim
+    // Set to 'true' if you want to test recycle bin functionality
+    useRecycleBin: process.env.GC_STRESS_USE_RECYCLE_BIN === 'true',
     mixRatio: {
       create: parseFloat(process.env.GC_STRESS_MIX_CREATE || '0.4'), // 40% create
       update: parseFloat(process.env.GC_STRESS_MIX_UPDATE || '0.3'), // 30% update
@@ -152,7 +156,10 @@ export function loadGCTestConfig(): GCTestConfig {
   }
 }
 
-export function executeGC(testbox: TestBox, options: { dryRun?: boolean }): GCResult {
+export function executeGC(
+  testbox: TestBox,
+  options: { dryRun?: boolean; useRecycleBin?: boolean },
+): GCResult {
   // The data directory path should match what the server uses
   const dataDir = `${testbox.roochDir}/data`
 
@@ -164,7 +171,7 @@ export function executeGC(testbox: TestBox, options: { dryRun?: boolean }): GCRe
     '--data-dir',
     dataDir, // Must match the data directory used by the server
     ...(options.dryRun ? ['--dry-run'] : ['--skip-confirm']),
-    '--recycle-bin',
+    ...(options.useRecycleBin !== false ? ['--recycle-bin'] : []), // Default: use recycle bin
     '--json', // Request JSON output but don't depend on it
   ]
 
@@ -237,6 +244,28 @@ export function printGCReport(report: GCJsonReport): void {
   console.log(`  - Total Duration: ${report.durationMs}ms`)
   console.log(`  - Space Reclaimed: ${report.spaceReclaimed.toFixed(2)}%`)
   console.log('==========================================\n')
+}
+
+// Purge recycle bin to actually free disk space
+export function purgeRecycleBin(testbox: TestBox): { success: boolean; output: string } {
+  const dataDir = `${testbox.roochDir}/data`
+
+  const args = ['db', 'recycle', 'purge', '--chain-id', 'local', '--data-dir', dataDir, '--yes']
+
+  // Set RUST_LOG=error to suppress logs
+  const envs = ['RUST_LOG=error']
+
+  console.log('🗑️  Purging recycle bin to free disk space...')
+  console.log('🔧 Command:', `RUST_LOG=error rooch ${args.join(' ')}`)
+
+  try {
+    const output = testbox.roochCommand(args, envs)
+    console.log('✅ Recycle bin purged successfully')
+    return { success: true, output }
+  } catch (error: any) {
+    console.error('❌ Failed to purge recycle bin:', error?.message || String(error))
+    return { success: false, output: error?.message || String(error) }
+  }
 }
 
 // Legacy parse function for backward compatibility
@@ -547,6 +576,7 @@ const gcUtils = {
   executeGCCommand,
   tryParseGCJson,
   printGCReport,
+  purgeRecycleBin,
   parseGCReport,
   runMoveFunction,
   publishPackage,

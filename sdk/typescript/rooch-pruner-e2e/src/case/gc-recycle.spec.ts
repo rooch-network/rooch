@@ -400,9 +400,12 @@ describe.skipIf(!process.env.GC_STRESS_MODE)('GC Stress Test - Long Running', ()
         // Stop server for GC
         await stopServerForGC(testbox)
 
-        // Execute GC with recycle bin
-        console.log('\n🗑️ Executing GC after stress test...')
-        const gcResult = executeGC(testbox, { dryRun: false })
+        // Execute GC (use config to determine recycle bin usage)
+        const useRecycleBin = stressConfig.useRecycleBin
+        console.log(
+          `\n🗑️ Executing GC after stress test (${useRecycleBin ? 'with recycle bin' : 'direct delete for real disk space reclaim'})...`,
+        )
+        const gcResult = executeGC(testbox, { dryRun: false, useRecycleBin })
 
         expect(gcResult.success).toBe(true)
         console.log('✅ GC execution completed')
@@ -415,9 +418,18 @@ describe.skipIf(!process.env.GC_STRESS_MODE)('GC Stress Test - Long Running', ()
           expect(gcResult.report.markStats.markedCount).toBeGreaterThan(0)
           expect(gcResult.report.sweepStats.scannedCount).toBeGreaterThan(0)
 
-          console.log(
-            `🎯 GC Performance: Deleted ${gcResult.report.sweepStats.deletedCount} nodes, reclaimed ${gcResult.report.spaceReclaimed.toFixed(2)}% space`,
-          )
+          if (useRecycleBin) {
+            console.log(
+              `🎯 GC Performance: Deleted ${gcResult.report.sweepStats.deletedCount} nodes, ${gcResult.report.sweepStats.recycleBinEntries} entries in recycle bin`,
+            )
+            console.log(
+              `ℹ️  Note: Nodes are in recycle bin. Use 'rooch db recycle purge' to actually free disk space.`,
+            )
+          } else {
+            console.log(
+              `🎯 GC Performance: Deleted ${gcResult.report.sweepStats.deletedCount} nodes, disk space freed immediately`,
+            )
+          }
         } else {
           console.log('⚠️ GC executed but JSON report not available')
         }
