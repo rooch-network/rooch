@@ -5,13 +5,13 @@ use crate::utils::{open_rooch_db, open_rooch_db_readonly};
 use clap::Parser;
 use moveos_types::state::{FieldKey, ObjectState};
 use raw_store::CodecKVStore;
-use rooch_pruner::recycle_bin::{RecycleBinConfig, RecycleBinStore, RecycleFilter, RecyclePhase};
+use rooch_pruner::recycle_bin::{RecycleBinConfig, RecycleBinStore, RecycleFilter};
 use rooch_types::error::RoochResult;
 use serde_json;
 use smt::jellyfish_merkle::node_type::Node;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{info, warn};
+use tracing::info;
 
 /// Parse time duration string (e.g., "1h", "24h", "7d", "30d") to timestamp
 fn parse_time_duration(duration_str: &str) -> Result<u64, String> {
@@ -47,18 +47,7 @@ fn parse_time_duration(duration_str: &str) -> Result<u64, String> {
     Ok(now - seconds_to_subtract)
 }
 
-/// Parse phase string to RecyclePhase enum
-fn parse_phase(phase_str: &str) -> Result<RecyclePhase, String> {
-    match phase_str.to_lowercase().as_str() {
-        "incremental" => Ok(RecyclePhase::Incremental),
-        "sweepexpired" | "sweep_expired" => Ok(RecyclePhase::SweepExpired),
-        "stoptheworld" | "stop_the_world" => Ok(RecyclePhase::StopTheWorld),
-        "manual" => Ok(RecyclePhase::Manual),
-        _ => Err(
-            "Invalid phase. Use: incremental, sweepexpired, stoptheworld, or manual".to_string(),
-        ),
-    }
-}
+// Phase parsing removed - no longer needed with simplified RecycleRecord structure
 
 #[derive(Debug, serde::Serialize)]
 struct DecodedNodeSummary {
@@ -262,175 +251,8 @@ impl RecycleRestoreCommand {
     }
 }
 
-/// Show recycle bin statistics with enhanced safety focus
-#[derive(Debug, Parser)]
-pub struct RecycleStatCommand {
-    /// Base data dir, e.g. ~/.rooch
-    #[clap(long = "data-dir", short = 'd')]
-    pub base_data_dir: Option<PathBuf>,
-    /// Chain ID
-    #[clap(long, short = 'n')]
-    pub chain_id: rooch_types::rooch_network::BuiltinChainID,
-
-    // Enhanced options for strong backup mode
-    /// Show detailed statistics by phase and node type
-    #[clap(long)]
-    pub detailed: bool,
-
-    /// Group statistics by deletion phase
-    #[clap(long)]
-    pub by_phase: bool,
-
-    /// Show age distribution analysis
-    #[clap(long)]
-    pub by_age: bool,
-
-    /// Export statistics to JSON file
-    #[clap(long)]
-    pub export: Option<PathBuf>,
-
-    /// Output format (json/table)
-    #[clap(long, default_value = "table")]
-    pub format: String,
-}
-
-#[derive(Debug, serde::Serialize)]
-struct DetailedRecycleStats {
-    summary: rooch_pruner::recycle_bin::RecycleBinStats,
-    by_phase: Option<std::collections::HashMap<String, u64>>,
-    age_distribution: Option<AgeDistribution>,
-    recommendations: Vec<String>,
-}
-
-#[derive(Debug, serde::Serialize)]
-struct AgeDistribution {
-    under_1h: u64,
-    hours_1_24: u64,
-    days_1_7: u64,
-    over_7d: u64,
-}
-
-impl RecycleStatCommand {
-    pub async fn execute(self) -> RoochResult<String> {
-        let (_root_meta, rooch_db, _start) = open_rooch_db_readonly(
-            self.base_data_dir.clone(),
-            Some(rooch_types::rooch_network::RoochChainID::Builtin(
-                self.chain_id,
-            )),
-        );
-
-        // Use new RecycleBinConfig with strong backup defaults
-        let recycle_config = RecycleBinConfig::default();
-        let recycle_store = RecycleBinStore::new_with_config(
-            rooch_db.moveos_store.get_node_recycle_store().clone(),
-            recycle_config,
-        )?;
-
-        let stats = recycle_store.get_stats();
-
-        // Create detailed statistics
-        let mut detailed_stats = DetailedRecycleStats {
-            summary: stats.clone(),
-            by_phase: None,
-            age_distribution: None,
-            recommendations: Vec::new(),
-        };
-
-        // Generate recommendations based on strong backup mode
-        if stats.strong_backup {
-            detailed_stats
-                .recommendations
-                .push("Strong backup is ENABLED - no automatic deletion will occur".to_string());
-            detailed_stats
-                .recommendations
-                .push("Manual cleanup required when disk space is low".to_string());
-
-            if stats.current_bytes > 0 {
-                let current_gb = stats.current_bytes / (1024 * 1024 * 1024);
-                if current_gb >= 10 {
-                    detailed_stats.recommendations.push(
-                        format!("Consider running 'rooch db recycle-clean --dry-run' to review cleanup options")
-                    );
-                }
-            }
-        }
-
-        // Format output
-        match self.format.as_str() {
-            "json" => {
-                let output = serde_json::to_string_pretty(&detailed_stats)?;
-                match self.export {
-                    Some(export_path) => {
-                        std::fs::write(&export_path, output).map_err(|e| {
-                            rooch_types::error::RoochError::UnexpectedError(e.to_string())
-                        })?;
-                        info!("Recycle bin statistics exported to {:?}", export_path);
-                        Ok("Statistics exported successfully".to_string())
-                    }
-                    None => {
-                        println!("{}", output);
-                        Ok("Statistics displayed".to_string())
-                    }
-                }
-            }
-            _ => {
-                self.show_table_format(&stats, &detailed_stats)?;
-
-                if let Some(export_path) = self.export {
-                    let output = serde_json::to_string_pretty(&detailed_stats)?;
-                    std::fs::write(&export_path, output).map_err(|e| {
-                        rooch_types::error::RoochError::UnexpectedError(e.to_string())
-                    })?;
-                    info!("Recycle bin statistics exported to {:?}", export_path);
-                }
-
-                Ok("Statistics displayed".to_string())
-            }
-        }
-    }
-
-    fn show_table_format(
-        &self,
-        stats: &rooch_pruner::recycle_bin::RecycleBinStats,
-        detailed_stats: &DetailedRecycleStats,
-    ) -> RoochResult<()> {
-        println!("{}", stats);
-
-        // Show recommendations
-        if !detailed_stats.recommendations.is_empty() {
-            println!("\n=== Recommendations ===");
-            for recommendation in &detailed_stats.recommendations {
-                println!("  ⚠️  {}", recommendation);
-            }
-        }
-
-        // Show safety information for strong backup
-        if stats.strong_backup {
-            println!("\n=== Strong Backup Mode ===");
-            println!("  📦 All deleted nodes are preserved indefinitely");
-            println!("  🔒 No automatic deletion will occur");
-            println!("  🧹 Manual cleanup is the only way to free space");
-            println!(
-                "  📊 Current storage: {} MB",
-                stats.current_bytes / (1024 * 1024)
-            );
-
-            if stats.current_bytes > 0 {
-                let current_gb = stats.current_bytes / (1024 * 1024 * 1024);
-                if current_gb >= 50 {
-                    println!("  🚨 CRITICAL: High storage usage detected!");
-                    println!(
-                        "     Run 'rooch db recycle-clean --dry-run' to review cleanup options"
-                    );
-                } else if current_gb >= 10 {
-                    println!("  ⚠️  WARNING: Growing storage usage detected");
-                }
-            }
-        }
-
-        Ok(())
-    }
-}
+// RecycleStatCommand removed - output unreliable data from memory counters instead of actual database
+// Use 'rooch db recycle-list' to see actual entries
 
 /// List recycle bin entries with filtering options
 #[derive(Debug, Parser)]
@@ -451,10 +273,7 @@ pub struct RecycleListCommand {
     #[clap(long)]
     pub older_than: Option<String>,
 
-    /// Filter by node type (Internal/Leaf/Null/Unknown)
-    #[clap(long)]
-    pub node_type: Option<String>,
-
+    // node_type filtering removed - RecycleRecord no longer has node_type field
     /// Limit number of results
     #[clap(long)]
     pub limit: Option<usize>,
@@ -503,13 +322,7 @@ impl RecycleListCommand {
             filter.older_than = Some(cutoff_time);
         }
 
-        // Parse phase filter
-        if let Some(phase_str) = &self.phase {
-            let phase = parse_phase(phase_str)
-                .map_err(|e| rooch_types::error::RoochError::CommandArgumentError(e))?;
-            // Phase filtering removed in simplified RecycleRecord design
-            warn!("Phase filtering requested but phase field has been removed");
-        }
+        // Phase filtering removed - RecycleRecord no longer has phase field
 
         // Get filtered entries
         let entries = recycle_store.list_entries(Some(filter), self.limit)?;
@@ -617,22 +430,13 @@ pub struct RecycleCleanCommand {
     #[clap(long, short = 'f')]
     pub force: bool,
 
-    /// Keep most recent N records (preserve newest)
-    #[clap(long)]
-    pub preserve_count: Option<usize>,
-
     // Filtering options
     /// Delete records older than specified time (e.g., "1h", "24h", "7d")
     #[clap(long)]
     pub older_than: Option<String>,
 
-    /// Delete records from specific phase
-    #[clap(long)]
-    pub phase: Option<String>,
-
-    /// Delete records of specific node type
-    #[clap(long)]
-    pub node_type: Option<String>,
+    // phase filtering removed - RecycleRecord no longer has phase field
+    // node_type filtering removed - RecycleRecord no longer has node_type field
 
     // Performance options
     /// Batch size for deletion operations
@@ -691,15 +495,8 @@ impl RecycleCleanCommand {
         if let Some(older_than) = &self.older_than {
             println!("  Delete records older than: {}", older_than);
         }
-        if let Some(phase) = &self.phase {
-            println!("  Delete records from phase: {}", phase);
-        }
-        if let Some(node_type) = &self.node_type {
-            println!("  Delete records of type: {}", node_type);
-        }
-        if let Some(preserve_count) = self.preserve_count {
-            println!("  Preserve most recent {} records", preserve_count);
-        }
+        // phase and node_type filtering removed - RecycleRecord simplified
+        // preserve_count functionality removed - not implemented
         println!("  Batch size: {}", self.batch_size);
         println!("  Parallel processing: {}", self.parallel);
 
@@ -718,13 +515,7 @@ impl RecycleCleanCommand {
             filter.older_than = Some(cutoff_time);
         }
 
-        // Parse phase filter
-        if let Some(phase_str) = &self.phase {
-            let phase = parse_phase(phase_str)
-                .map_err(|e| rooch_types::error::RoochError::CommandArgumentError(e))?;
-            // Phase filtering removed in simplified RecycleRecord design
-            warn!("Phase filtering requested but phase field has been removed");
-        }
+        // Phase filtering removed - RecycleRecord no longer has phase field
 
         // Execute the cleanup
         if self.dry_run {
@@ -769,11 +560,7 @@ impl RecycleCleanCommand {
             }
 
             // Execute the actual deletion
-            let deleted_count = if let Some(preserve_count) = self.preserve_count {
-                recycle_store.preserve_recent_entries(preserve_count)?
-            } else {
-                recycle_store.delete_entries(&filter, self.batch_size)?
-            };
+            let deleted_count = recycle_store.delete_entries(&filter, self.batch_size)?;
 
             println!("✅ Cleanup completed!");
             println!("🗑️  Deleted {} records", deleted_count);

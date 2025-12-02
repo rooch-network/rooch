@@ -321,7 +321,7 @@ impl GCCommand {
             .ok();
             writeln!(
                 output,
-                "  Use 'rooch db recycle-stat' to view recycle bin statistics"
+                "  Use 'rooch db recycle-list' to view recycle bin entries"
             )
             .ok();
             writeln!(

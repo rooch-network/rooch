@@ -594,13 +594,7 @@ impl GarbageCollector {
         if self.config.use_recycle_bin {
             for node_hash in batch {
                 if let Ok(Some(bytes)) = node_store.get(node_hash) {
-                    let record = self.recycle_bin.create_record(
-                        *node_hash,
-                        bytes,
-                        crate::recycle_bin::RecyclePhase::StopTheWorld,
-                        H256::zero(),
-                        0,
-                    );
+                    let record = self.recycle_bin.create_record(bytes);
                     // Note field removed - RecycleRecord now simplified to 3 fields
                     if let Err(e) = self.recycle_bin.put_record(*node_hash, record) {
                         warn!(?node_hash, "Failed to store recycle record: {}", e);

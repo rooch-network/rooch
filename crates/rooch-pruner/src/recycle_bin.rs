@@ -26,18 +26,6 @@ pub enum DiskSpaceStatus {
     Stop,
 }
 
-// Node type import for metadata extraction (TODO: add proper Node access when available)
-// use moveos_store::state_store::NodeStore;
-// use moveos_types::state::ObjectState;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RecyclePhase {
-    Incremental,
-    SweepExpired,
-    StopTheWorld,
-    Manual, // NEW: For manual deletions
-}
-
 #[derive(Debug, Clone)]
 pub struct RecycleFilter {
     /// Delete entries older than this timestamp (seconds since epoch)
@@ -110,8 +98,7 @@ impl Default for RecycleBinConfig {
     }
 }
 
-/// Simplified RecycleRecord structure - optimized for GC performance
-/// Reduced from 9 fields to 3 essential fields for ~66% storage savings
+/// Simplified RecycleRecord structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecycleRecord {
     /// Original node bytes - ESSENTIAL for recovery
@@ -212,14 +199,7 @@ impl RecycleBinStore {
     }
 
     /// Create simplified record with essential data only
-    pub fn create_record(
-        &self,
-        _node_hash: H256,
-        node_bytes: Vec<u8>,
-        _phase: RecyclePhase, // Phase removed - not needed for current GC design
-        _stale_root_or_cutoff: H256, // Removed - not needed for current GC design
-        _tx_order: u64,       // Removed - not needed for current GC design
-    ) -> RecycleRecord {
+    pub fn create_record(&self, node_bytes: Vec<u8>) -> RecycleRecord {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -480,36 +460,7 @@ impl RecycleBinStore {
         self.delete_entries(&filter, batch_size)
     }
 
-    /// Delete entries from a specific phase - DEPRECATED
-    /// Phase filtering removed in simplified RecycleRecord design
-    /// Use time-based filtering instead
-    #[deprecated(note = "Phase filtering removed - use time-based filtering instead")]
-    pub fn delete_entries_by_phase(
-        &self,
-        _phase: RecyclePhase,
-        _batch_size: usize,
-    ) -> Result<usize> {
-        // Since we removed phase field, this method now deletes entries based on time
-        // Return 0 to indicate no phase-based deletion is possible
-        warn!("delete_entries_by_phase called but phase filtering has been removed");
-        Ok(0)
-    }
-
-    /// Keep only the most recent N entries (preserve count)
-    pub fn preserve_recent_entries(&self, preserve_count: usize) -> Result<usize> {
-        // For now, return 0 - this requires raw_store iterator access
-        // In a full implementation, this would:
-        // 1. Collect all entries with their timestamps
-        // 2. Sort by timestamp (newest first)
-        // 3. Delete all entries beyond the preserve count
-        warn!(
-            preserve_count,
-            "Preserve recent entries called but not implemented - requires raw_store iterator access"
-        );
-
-        // TODO: Implement full preserve functionality when raw_store iterator access is available
-        Ok(0)
-    }
+    // preserve_recent_entries functionality removed - not implemented
 
     pub fn get_stats(&self) -> RecycleBinStats {
         let current_entries = self

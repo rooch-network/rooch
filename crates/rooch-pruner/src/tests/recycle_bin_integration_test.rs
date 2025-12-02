@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::recycle_bin::{RecycleBinStore, RecycleFilter, RecyclePhase};
+use crate::recycle_bin::{RecycleBinStore, RecycleFilter};
 use anyhow::Result;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
@@ -25,29 +25,11 @@ async fn test_recycle_bin_list_entries() -> Result<()> {
     let key2 = H256::random();
     let key3 = H256::random();
 
-    let record1 = recycle_bin.create_record(
-        key1,
-        vec![1, 2, 3, 4],
-        RecyclePhase::Incremental,
-        H256::random(),
-        100,
-    );
+    let record1 = recycle_bin.create_record(vec![1, 2, 3, 4]);
 
-    let record2 = recycle_bin.create_record(
-        key2,
-        vec![5, 6, 7, 8],
-        RecyclePhase::SweepExpired,
-        H256::random(),
-        200,
-    );
+    let record2 = recycle_bin.create_record(vec![5, 6, 7, 8]);
 
-    let record3 = recycle_bin.create_record(
-        key3,
-        vec![9, 10, 11, 12],
-        RecyclePhase::Incremental,
-        H256::random(),
-        300,
-    );
+    let record3 = recycle_bin.create_record(vec![9, 10, 11, 12]);
 
     // Put records
     recycle_bin.put_record(key1, record1.clone())?;
@@ -62,20 +44,18 @@ async fn test_recycle_bin_list_entries() -> Result<()> {
     let limited_entries = recycle_bin.list_entries(None, Some(2))?;
     assert_eq!(limited_entries.len(), 2);
 
-    // Test list with filter
+    // Test list with time filter
     let filter = RecycleFilter {
-        phase: Some(RecyclePhase::Incremental),
-        older_than: None,
+        older_than: Some(1640995200 + 100), // Filter for older records
         newer_than: None,
         min_size: None,
         max_size: None,
     };
     let filtered_entries = recycle_bin.list_entries(Some(filter), None)?;
-    assert_eq!(filtered_entries.len(), 2); // key1 and key3 are Incremental
+    assert_eq!(filtered_entries.len(), 3); // All records should match time filter
 
     // Test size filter
     let size_filter = RecycleFilter {
-        phase: None,
         older_than: None,
         newer_than: None,
         min_size: Some(5),
@@ -98,13 +78,7 @@ async fn test_recycle_bin_delete_record() -> Result<()> {
 
     // Create and put a record
     let key = H256::random();
-    let record = recycle_bin.create_record(
-        key,
-        vec![1, 2, 3, 4, 5],
-        RecyclePhase::Manual,
-        H256::random(),
-        100,
-    );
+    let record = recycle_bin.create_record(vec![1, 2, 3, 4, 5]);
 
     recycle_bin.put_record(key, record.clone())?;
 
@@ -149,20 +123,9 @@ async fn test_recycle_bin_delete_entries() -> Result<()> {
         H256::random(),
     ];
 
-    // Put records with different phases
+    // Put records
     for (i, &key) in keys.iter().enumerate() {
-        let phase = if i % 2 == 0 {
-            RecyclePhase::Incremental
-        } else {
-            RecyclePhase::SweepExpired
-        };
-        let record = recycle_bin.create_record(
-            key,
-            vec![i as u8; 4],
-            phase,
-            H256::random(),
-            (i * 100) as u64,
-        );
+        let record = recycle_bin.create_record(vec![i as u8; 4]);
         recycle_bin.put_record(key, record)?;
     }
 
@@ -170,25 +133,23 @@ async fn test_recycle_bin_delete_entries() -> Result<()> {
     let all_entries = recycle_bin.list_entries(None, None)?;
     assert_eq!(all_entries.len(), 4);
 
-    // Delete entries by phase filter (Incremental)
+    // Delete entries by time filter (older than current time)
     let filter = RecycleFilter {
-        phase: Some(RecyclePhase::Incremental),
-        older_than: None,
+        older_than: Some(1640995200 + 1000), // Time-based filter
         newer_than: None,
         min_size: None,
         max_size: None,
     };
 
     let deleted_count = recycle_bin.delete_entries(&filter, 10)?;
-    assert_eq!(deleted_count, 2); // 2 Incremental records
+    assert_eq!(deleted_count, 4); // All records should match the time filter
 
     // Verify remaining entries
     let remaining_entries = recycle_bin.list_entries(None, None)?;
-    assert_eq!(remaining_entries.len(), 2);
+    assert_eq!(remaining_entries.len(), 0); // All records should be deleted
 
     // Delete all remaining entries
     let all_filter = RecycleFilter {
-        phase: None,
         older_than: None,
         newer_than: None,
         min_size: None,
@@ -196,7 +157,7 @@ async fn test_recycle_bin_delete_entries() -> Result<()> {
     };
 
     let final_deleted_count = recycle_bin.delete_entries(&all_filter, 10)?;
-    assert_eq!(final_deleted_count, 2);
+    assert_eq!(final_deleted_count, 0); // No remaining entries to delete
 
     // Verify empty
     let final_entries = recycle_bin.list_entries(None, None)?;
@@ -218,21 +179,9 @@ async fn test_recycle_bin_record_operations() -> Result<()> {
     let key1 = H256::random();
     let key2 = H256::random();
 
-    let record1 = recycle_bin.create_record(
-        key1,
-        vec![1, 2, 3],
-        RecyclePhase::Incremental,
-        H256::random(),
-        100,
-    );
+    let record1 = recycle_bin.create_record(vec![1, 2, 3]);
 
-    let record2 = recycle_bin.create_record(
-        key2,
-        vec![4, 5, 6],
-        RecyclePhase::SweepExpired,
-        H256::random(),
-        200,
-    );
+    let record2 = recycle_bin.create_record(vec![4, 5, 6]);
 
     recycle_bin.put_record(key1, record1.clone())?;
     recycle_bin.put_record(key2, record2.clone())?;

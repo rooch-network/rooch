@@ -1,10 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::recycle_bin::{RecycleBinConfig, RecyclePhase, RecycleRecord};
+use crate::recycle_bin::{RecycleBinConfig, RecycleRecord};
 use anyhow::Result;
-use moveos_types::h256::H256;
-use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
 mod tests {
@@ -56,17 +54,18 @@ mod tests {
         assert_eq!(deserialized.original_size, record.original_size);
     }
 
-    /// Test RecyclePhase includes new Manual variant
+    /// Test RecycleRecord simplified structure (3 fields only)
     #[test]
-    fn test_recycle_phase_manual_variant() {
-        let phase = RecyclePhase::Manual;
-        match phase {
-            RecyclePhase::Manual => {
-                // Manual phase exists
-                assert!(true);
-            }
-            _ => assert!(false, "Manual phase should exist"),
-        }
+    fn test_recycle_record_simplified_structure() {
+        let record = RecycleRecord {
+            bytes: vec![1, 2, 3, 4],
+            created_at: 1640995200,
+            original_size: 4,
+        };
+
+        assert_eq!(record.bytes, vec![1, 2, 3, 4]);
+        assert_eq!(record.created_at, 1640995200);
+        assert_eq!(record.original_size, 4);
     }
 
     /// Test RecycleBinConfig validation prevents automatic deletion
@@ -178,28 +177,20 @@ mod tests {
     /// Test RecycleFilter functionality
     #[test]
     fn test_recycle_filter() {
-        use crate::recycle_bin::{RecycleFilter, RecyclePhase};
-        use moveos_types::h256::H256;
+        use crate::recycle_bin::RecycleFilter;
 
         let base_time = 1640995200; // Fixed timestamp for testing
 
         let record = RecycleRecord {
             bytes: vec![1, 2, 3, 4],
-            phase: RecyclePhase::Manual,
-            stale_root_or_cutoff: H256::random(),
-            tx_order: 12345,
             created_at: base_time,
-            deleted_at: base_time + 100,
             original_size: 4,
-            node_type: Some("Internal".to_string()),
-            note: Some("Test record".to_string()),
         };
 
         // Test time filtering
         let filter = RecycleFilter {
             older_than: Some(base_time + 200), // Record is older than this
             newer_than: None,
-            phase: None,
             min_size: None,
             max_size: None,
         };
@@ -211,7 +202,6 @@ mod tests {
         let filter = RecycleFilter {
             older_than: Some(base_time + 50), // Record is newer than this
             newer_than: None,
-            phase: None,
             min_size: None,
             max_size: None,
         };
@@ -220,36 +210,22 @@ mod tests {
             "Record should not match when it's newer than filter"
         );
 
-        // Test phase filtering
+        // Test newer_than filtering
         let filter = RecycleFilter {
             older_than: None,
-            newer_than: None,
-            phase: Some(RecyclePhase::Manual),
+            newer_than: Some(base_time - 100), // Record is newer than this
             min_size: None,
             max_size: None,
         };
         assert!(
             filter.matches(&record),
-            "Record should match same phase filter"
-        );
-
-        let filter = RecycleFilter {
-            older_than: None,
-            newer_than: None,
-            phase: Some(RecyclePhase::Incremental),
-            min_size: None,
-            max_size: None,
-        };
-        assert!(
-            !filter.matches(&record),
-            "Record should not match different phase filter"
+            "Record should match newer_than filter"
         );
 
         // Test size filtering
         let filter = RecycleFilter {
             older_than: None,
             newer_than: None,
-            phase: None,
             min_size: Some(2),
             max_size: Some(10),
         };
@@ -261,7 +237,6 @@ mod tests {
         let filter = RecycleFilter {
             older_than: None,
             newer_than: None,
-            phase: None,
             min_size: Some(5), // Record is smaller
             max_size: None,
         };
@@ -324,8 +299,7 @@ mod tests {
     /// Test database iteration placeholder functionality
     #[test]
     fn test_database_iteration_placeholder() {
-        use crate::recycle_bin::{RecycleBinStore, RecycleFilter};
-        use moveos_store::state_store::NodeRecycleDBStore;
+        use crate::recycle_bin::RecycleFilter;
 
         // Create a mock store (this won't work in tests without proper setup)
         // For now, we just test the structure exists
@@ -357,14 +331,8 @@ mod tests {
         // Verify RecycleRecord structure supports serialization
         let record = RecycleRecord {
             bytes: vec![1, 2, 3],
-            phase: RecyclePhase::Manual,
-            stale_root_or_cutoff: H256::random(),
-            tx_order: 123,
             created_at: 1000,
-            deleted_at: 1000,
             original_size: 3,
-            node_type: Some("Test".to_string()),
-            note: None,
         };
 
         // Test that record can be serialized (required for our implementation)
@@ -377,7 +345,7 @@ mod tests {
 
         let deserialized = deserialized.unwrap();
         assert_eq!(deserialized.bytes, record.bytes);
-        assert_eq!(deserialized.tx_order, record.tx_order);
+        assert_eq!(deserialized.created_at, record.created_at);
         assert_eq!(deserialized.original_size, record.original_size);
 
         println!("✅ RecycleBinStore method signatures and serialization work correctly");
