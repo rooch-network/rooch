@@ -3,8 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::recycle_bin::{
-    RecycleCleanCommand, RecycleDumpCommand, RecycleExportCommand, RecycleListCommand,
-    RecycleRestoreCommand,
+    RecycleCleanCommand, RecycleDumpCommand, RecycleListCommand, RecycleRestoreCommand,
 };
 use async_trait::async_trait;
 use clap::Parser;
@@ -27,8 +26,6 @@ pub enum RecycleSubCommand {
     List(RecycleListCommand),
     /// Clean up recycle bin entries with explicit manual control
     Clean(RecycleCleanCommand),
-    /// Export recycle bin data for backup or analysis
-    Export(RecycleExportCommand),
 }
 
 #[async_trait]
@@ -39,7 +36,6 @@ impl CommandAction<String> for RecycleCommand {
             RecycleSubCommand::Restore(cmd) => cmd.execute().await,
             RecycleSubCommand::List(cmd) => cmd.execute().await,
             RecycleSubCommand::Clean(cmd) => cmd.execute().await,
-            RecycleSubCommand::Export(cmd) => cmd.execute().await,
         }
     }
 }
