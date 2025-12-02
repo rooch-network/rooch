@@ -180,6 +180,16 @@ module rooch_framework::payment_channel {
         amount: u256,
     }
 
+    /// Event emitted when funds are transferred between payment hubs
+    struct PaymentHubTransferEvent has copy, drop {
+        sender_hub_id: ObjectID,
+        sender: address,
+        receiver_hub_id: ObjectID,
+        receiver: address,
+        coin_type: String,
+        amount: u256,
+    }
+
     /// Event emitted when locked unit config is updated
     struct LockedUnitConfigUpdatedEvent has copy, drop {
         coin_type: String,
@@ -390,6 +400,89 @@ module rooch_framework::payment_channel {
         amount: u256,
     ) {
         withdraw_from_hub<CoinType>(owner, amount);
+    }
+
+    /// Transfer funds from the sender's payment hub to the receiver's payment hub
+    public fun transfer_to_hub<CoinType: key + store>(
+        sender: &signer,
+        receiver: address,
+        amount: u256,
+    ) {
+        let sender_addr = signer::address_of(sender);
+        let coin_type_name = type_info::type_name<CoinType>();
+        
+        // Check unlocked balance
+        let unlocked = get_unlocked_balance_in_hub_with_name_internal(sender_addr, coin_type_name);
+        assert!(amount <= unlocked, ErrorInsufficientUnlockedBalance);
+
+        // Withdraw from sender's hub
+        let sender_hub_obj = borrow_or_create_payment_hub(sender_addr);
+        let sender_hub = object::borrow_mut(sender_hub_obj);
+        let coin = multi_coin_store::withdraw_by_type<CoinType>(&mut sender_hub.multi_coin_store, amount);
+        let sender_hub_id = object::id(sender_hub_obj);
+
+        // Deposit to receiver's hub
+        let receiver_hub_obj = borrow_or_create_payment_hub(receiver);
+        let receiver_hub = object::borrow_mut(receiver_hub_obj);
+        multi_coin_store::deposit_by_type(&mut receiver_hub.multi_coin_store, coin);
+        let receiver_hub_id = object::id(receiver_hub_obj);
+        
+        // Emit transfer event
+        let event_handle_id = hub_event_handle_id<PaymentHubTransferEvent>(sender_hub_id);
+        event::emit_with_handle(event_handle_id, PaymentHubTransferEvent {
+            sender_hub_id,
+            sender: sender_addr,
+            receiver_hub_id,
+            receiver,
+            coin_type: coin_type_name,
+            amount,
+        });
+    }
+
+    /// Entry function for transferring funds between payment hubs
+    public entry fun transfer_to_hub_entry<CoinType: key + store>(
+        sender: &signer,
+        receiver: address,
+        amount: u256,
+    ) {
+        transfer_to_hub<CoinType>(sender, receiver, amount);
+    }
+
+    /// Transfer generic coin from the sender's payment hub to the receiver's payment hub
+    public fun transfer_to_hub_generic(
+        sender: &signer,
+        receiver: address,
+        amount: u256,
+        coin_type: String,
+    ) {
+        let sender_addr = signer::address_of(sender);
+        
+        // Check unlocked balance
+        let unlocked = get_unlocked_balance_in_hub_with_name_internal(sender_addr, coin_type);
+        assert!(amount <= unlocked, ErrorInsufficientUnlockedBalance);
+
+        // Withdraw from sender's hub
+        let sender_hub_obj = borrow_or_create_payment_hub(sender_addr);
+        let sender_hub = object::borrow_mut(sender_hub_obj);
+        let coin = multi_coin_store::withdraw(&mut sender_hub.multi_coin_store, coin_type, amount);
+        let sender_hub_id = object::id(sender_hub_obj);
+
+        // Deposit to receiver's hub
+        let receiver_hub_obj = borrow_or_create_payment_hub(receiver);
+        let receiver_hub = object::borrow_mut(receiver_hub_obj);
+        multi_coin_store::deposit(&mut receiver_hub.multi_coin_store, coin);
+        let receiver_hub_id = object::id(receiver_hub_obj);
+        
+        // Emit transfer event
+        let event_handle_id = hub_event_handle_id<PaymentHubTransferEvent>(sender_hub_id);
+        event::emit_with_handle(event_handle_id, PaymentHubTransferEvent {
+            sender_hub_id,
+            sender: sender_addr,
+            receiver_hub_id,
+            receiver,
+            coin_type,
+            amount,
+        });
     }
 
     /// Opens a new payment channel linked to a payment hub.
