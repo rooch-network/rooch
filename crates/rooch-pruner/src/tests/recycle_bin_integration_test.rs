@@ -49,7 +49,8 @@ async fn test_recycle_bin_list_entries() -> Result<()> {
     let future_timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs() + 1000;
+        .as_secs()
+        + 1000;
     let filter = RecycleFilter {
         older_than: Some(future_timestamp), // Filter for older records (future timestamp)
         newer_than: None,
@@ -142,7 +143,8 @@ async fn test_recycle_bin_delete_entries() -> Result<()> {
     let future_timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs() + 10000;
+        .as_secs()
+        + 10000;
     let filter = RecycleFilter {
         older_than: Some(future_timestamp), // Time-based filter with future timestamp
         newer_than: None,
