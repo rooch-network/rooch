@@ -268,10 +268,13 @@ pub struct RecycleListCommand {
     #[clap(long)]
     pub older_than: Option<String>,
 
-    // node_type filtering removed - RecycleRecord no longer has node_type field
-    /// Limit number of results
+    /// Page size for cursor-based pagination (default: 20)
+    #[clap(long, default_value_t = 20)]
+    pub page_size: usize,
+
+    /// Cursor for pagination (returned from previous page)
     #[clap(long)]
-    pub limit: Option<usize>,
+    pub cursor: Option<String>,
 
     // Output options
     /// Output format (json/table)
@@ -332,16 +335,45 @@ impl RecycleListCommand {
 
         // Phase filtering removed - RecycleRecord no longer has phase field
 
-        // Get filtered entries with keys
-        let entries_with_keys = recycle_store.list_entries_with_keys(Some(filter), self.limit)?;
+        // Validate page size
+        if self.page_size == 0 || self.page_size > 1000 {
+            return Err(rooch_types::error::RoochError::CommandArgumentError(
+                "Page size must be between 1 and 1000".to_string(),
+            ));
+        }
 
-        if entries_with_keys.is_empty() {
+        // Parse cursor if provided
+        let cursor = if let Some(cursor_str) = &self.cursor {
+            let clean_str = cursor_str.strip_prefix("0x").unwrap_or(cursor_str);
+            let bytes = hex::decode(clean_str).map_err(|_| {
+                rooch_types::error::RoochError::CommandArgumentError(
+                    "Invalid cursor format".to_string(),
+                )
+            })?;
+            if bytes.len() != 32 {
+                return Err(rooch_types::error::RoochError::CommandArgumentError(
+                    "Cursor must be 32 bytes".to_string(),
+                ));
+            }
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(&bytes);
+            Some(moveos_types::h256::H256(arr))
+        } else {
+            None
+        };
+
+        // Use cursor-based pagination if page_size is specified
+        let paginated_result =
+            recycle_store.list_entries_cursor(Some(filter), cursor, self.page_size)?;
+
+        if paginated_result.entries.is_empty() {
             println!("No entries found matching the specified criteria.");
             return Ok("No entries found".to_string());
         }
 
         // Prepare display data with hash information
-        let display_entries: Vec<TableDisplayEntry> = entries_with_keys
+        let display_entries: Vec<TableDisplayEntry> = paginated_result
+            .entries
             .iter()
             .map(|(hash, record)| TableDisplayEntry {
                 hash: format!("0x{}", hex::encode(hash.as_bytes())),
@@ -352,7 +384,8 @@ impl RecycleListCommand {
         // Output based on format
         match self.format.as_str() {
             "json" => {
-                let json_entries: Vec<JsonOutputEntry> = entries_with_keys
+                let json_entries: Vec<JsonOutputEntry> = paginated_result
+                    .entries
                     .iter()
                     .map(|(hash, record)| JsonOutputEntry {
                         hash: format!("0x{}", hex::encode(hash.as_bytes())),
@@ -360,16 +393,30 @@ impl RecycleListCommand {
                     })
                     .collect();
 
-                let json_output = serde_json::to_string_pretty(&json_entries)?;
+                let json_output = serde_json::json!({
+                    "entries": json_entries,
+                    "pagination": {
+                        "next_cursor": paginated_result.next_cursor,
+                        "has_more": paginated_result.has_more,
+                        "page_size": paginated_result.page_size,
+                        "entries_on_page": paginated_result.entries.len()
+                    }
+                });
+
+                let json_string = serde_json::to_string_pretty(&json_output)?;
                 match self.export {
-                    Some(path) => {
-                        std::fs::write(&path, json_output).map_err(|e| {
+                    Some(ref path) => {
+                        std::fs::write(&path, json_string).map_err(|e| {
                             rooch_types::error::RoochError::UnexpectedError(e.to_string())
                         })?;
-                        println!("Exported {} entries to {:?}", json_entries.len(), path);
+                        println!(
+                            "Exported {} entries to {:?}",
+                            paginated_result.entries.len(),
+                            path
+                        );
                     }
                     None => {
-                        println!("{}", json_output);
+                        println!("{}", json_string);
                     }
                 }
             }
@@ -424,7 +471,28 @@ impl RecycleListCommand {
             }
         }
 
-        Ok(format!("Listed {} entries", display_entries.len()))
+        // Add pagination information at the bottom
+        self.display_pagination_info(&paginated_result)?;
+
+        Ok(format!("Listed {} entries", paginated_result.entries.len()))
+    }
+
+    /// Display pagination information for cursor-based pagination
+    fn display_pagination_info(
+        &self,
+        paginated_result: &rooch_pruner::recycle_bin::PaginatedListResult,
+    ) -> RoochResult<()> {
+        println!();
+        println!("--- Pagination Info ---");
+        println!("Page size: {}", paginated_result.page_size);
+        println!("Entries returned: {}", paginated_result.entries.len());
+        println!("Has more: {}", paginated_result.has_more);
+
+        if let Some(next_cursor) = &paginated_result.next_cursor {
+            println!("Next cursor: {}", next_cursor);
+        }
+
+        Ok(())
     }
 }
 

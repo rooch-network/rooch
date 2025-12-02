@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use hex;
 use moveos_store::state_store::NodeRecycleDBStore;
 use moveos_types::h256::H256;
+use raw_store::{CodecKVStore, CodecWriteBatch};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use sysinfo::Disks;
 use tracing::{debug, error, warn};
 
-// Import CodecKVStore trait for store methods
-use raw_store::{CodecKVStore, CodecWriteBatch};
+pub const DEFAULT_LIST_LIMIT: usize = 100;
 
 /// Result of disk space check
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,6 +25,15 @@ pub enum DiskSpaceStatus {
     Critical,
     /// Disk space is critically low, GC should stop
     Stop,
+}
+
+/// Paginated list result for cursor-based pagination
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaginatedListResult {
+    pub entries: Vec<(H256, RecycleRecord)>,
+    pub next_cursor: Option<String>,
+    pub has_more: bool,
+    pub page_size: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -366,7 +376,7 @@ impl RecycleBinStore {
         let mut iter = self.store.iter()?;
         iter.seek_to_first();
 
-        let max_count = limit.unwrap_or(usize::MAX);
+        let max_count = limit.unwrap_or(DEFAULT_LIST_LIMIT);
 
         for item in iter {
             if results.len() >= max_count {
@@ -389,6 +399,69 @@ impl RecycleBinStore {
         }
 
         Ok(results)
+    }
+
+    /// List entries with cursor-based pagination
+    pub fn list_entries_cursor(
+        &self,
+        filter: Option<RecycleFilter>,
+        cursor: Option<H256>,
+        page_size: usize,
+    ) -> Result<PaginatedListResult> {
+        let mut entries = Vec::new();
+        let mut iter = self.store.iter()?;
+
+        // Set starting position
+        if let Some(cursor_key) = cursor {
+            iter.seek(cursor_key.as_bytes().to_vec())?;
+        } else {
+            iter.seek_to_first();
+        }
+
+        // Skip the cursor key (since it was the last entry from previous page)
+        if cursor.is_some() {
+            iter.next();
+        }
+
+        // Read specified number of records
+        let mut last_key: Option<H256> = None;
+        let mut count = 0;
+        let mut has_more = false;
+
+        while count < page_size {
+            match iter.next() {
+                Some(item) => {
+                    let (key, value_bytes): (H256, Vec<u8>) = item?;
+                    let record: RecycleRecord = bcs::from_bytes(&value_bytes)?;
+
+                    // Apply filter conditions
+                    if let Some(ref f) = filter {
+                        if !f.matches(&record) {
+                            continue;
+                        }
+                    }
+
+                    entries.push((key, record.clone()));
+                    last_key = Some(key);
+                    count += 1;
+                }
+                None => {
+                    break;
+                }
+            }
+        }
+
+        // Check if there are more entries
+        if count == page_size {
+            has_more = iter.next().is_some();
+        }
+
+        Ok(PaginatedListResult {
+            entries,
+            next_cursor: last_key.map(|k| format!("0x{}", hex::encode(k.as_bytes()))),
+            has_more,
+            page_size,
+        })
     }
 
     /// List all entries in the recycle bin with optional filtering
