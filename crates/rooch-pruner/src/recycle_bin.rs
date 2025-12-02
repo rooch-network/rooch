@@ -354,8 +354,8 @@ impl RecycleBinStore {
         }
     }
 
-    /// Internal method to list entries with keys
-    fn list_entries_with_keys(
+    /// List entries with keys for external use
+    pub fn list_entries_with_keys(
         &self,
         filter: Option<RecycleFilter>,
         limit: Option<usize>,

@@ -289,6 +289,19 @@ pub struct RecycleListCommand {
 
 impl RecycleListCommand {
     pub async fn execute(self) -> RoochResult<String> {
+        // Display structure for table format
+        #[derive(Debug)]
+        struct TableDisplayEntry<'a> {
+            hash: String,
+            record: &'a rooch_pruner::recycle_bin::RecycleRecord,
+        }
+
+        // JSON output structure
+        #[derive(Debug, serde::Serialize)]
+        struct JsonOutputEntry {
+            hash: String,
+            record: rooch_pruner::recycle_bin::RecycleRecord,
+        }
         let (_root_meta, rooch_db, _start) = open_rooch_db_readonly(
             self.base_data_dir.clone(),
             Some(rooch_types::rooch_network::RoochChainID::Builtin(
@@ -319,24 +332,41 @@ impl RecycleListCommand {
 
         // Phase filtering removed - RecycleRecord no longer has phase field
 
-        // Get filtered entries
-        let entries = recycle_store.list_entries(Some(filter), self.limit)?;
+        // Get filtered entries with keys
+        let entries_with_keys = recycle_store.list_entries_with_keys(Some(filter), self.limit)?;
 
-        if entries.is_empty() {
+        if entries_with_keys.is_empty() {
             println!("No entries found matching the specified criteria.");
             return Ok("No entries found".to_string());
         }
 
+        // Prepare display data with hash information
+        let display_entries: Vec<TableDisplayEntry> = entries_with_keys
+            .iter()
+            .map(|(hash, record)| TableDisplayEntry {
+                hash: format!("0x{}", hex::encode(hash.as_bytes())),
+                record,
+            })
+            .collect();
+
         // Output based on format
         match self.format.as_str() {
             "json" => {
-                let json_output = serde_json::to_string_pretty(&entries)?;
+                let json_entries: Vec<JsonOutputEntry> = entries_with_keys
+                    .iter()
+                    .map(|(hash, record)| JsonOutputEntry {
+                        hash: format!("0x{}", hex::encode(hash.as_bytes())),
+                        record: record.clone(),
+                    })
+                    .collect();
+
+                let json_output = serde_json::to_string_pretty(&json_entries)?;
                 match self.export {
                     Some(path) => {
                         std::fs::write(&path, json_output).map_err(|e| {
                             rooch_types::error::RoochError::UnexpectedError(e.to_string())
                         })?;
-                        println!("Exported {} entries to {:?}", entries.len(), path);
+                        println!("Exported {} entries to {:?}", json_entries.len(), path);
                     }
                     None => {
                         println!("{}", json_output);
@@ -346,41 +376,38 @@ impl RecycleListCommand {
             _ => {
                 // table format
                 println!("=== Recycle Bin Entries ===");
-                println!("Total entries: {}", entries.len());
+                println!("Total entries: {}", display_entries.len());
                 println!();
 
                 if self.hashes_only {
-                    for record in &entries {
-                        // Show a sample of bytes data as identifier
-                        let bytes_preview = if record.bytes.len() >= 4 {
-                            &record.bytes[0..4]
-                        } else {
-                            &record.bytes
-                        };
-                        println!("0x{}", hex::encode(bytes_preview));
+                    for entry in &display_entries {
+                        // Show the real hash value
+                        println!("{}", entry.hash);
                     }
-                } else { 
-                    println!("{:<12} {:<10} {:<10}", "Size", "Age", "Type");
-                    println!("{}", "-".repeat(32));
+                } else {
+                    // New table format with Hash column (66 chars for hash + other columns)
+                    println!("{:<66} {:<10} {:<6} {:<10}", "Hash", "Size", "Age", "Type");
+                    println!("{}", "-".repeat(94));
 
-                    for record in &entries {
+                    for entry in &display_entries {
                         let age_seconds = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
                             .unwrap()
                             .as_secs()
-                            - record.created_at; // Use created_at instead of deleted_at
-                        let age_hours = age_seconds / 3600;
-                        let age_str = if age_hours < 24 {
-                            format!("{}h", age_hours)
+                            - entry.record.created_at; // Use created_at instead of deleted_at
+                        let age_str = if age_seconds < 3600 {
+                            format!("{}m", age_seconds / 60)
+                        } else if age_seconds < 86400 {
+                            format!("{}h", age_seconds / 3600)
                         } else {
-                            format!("{}d", age_hours / 24)
+                            format!("{}d", age_seconds / 86400)
                         };
 
                         // Node type can be derived from bytes if needed
-                        let node_type = if record.bytes.is_empty() {
+                        let node_type = if entry.record.bytes.is_empty() {
                             "Null"
                         } else {
-                            match record.bytes[0] {
+                            match entry.record.bytes[0] {
                                 0 => "Null",
                                 1 => "Internal",
                                 2 => "Leaf",
@@ -388,18 +415,16 @@ impl RecycleListCommand {
                             }
                         };
 
-                        
-
                         println!(
-                            "{:<12} {:<10} {:<10}",
-                            record.original_size, age_str, node_type
+                            "{:<66} {:<10} {:<6} {:<10}",
+                            entry.hash, entry.record.original_size, age_str, node_type
                         );
                     }
                 }
             }
         }
 
-        Ok(format!("Listed {} entries", entries.len()))
+        Ok(format!("Listed {} entries", display_entries.len()))
     }
 }
 
@@ -558,4 +583,3 @@ impl RecycleCleanCommand {
         Ok("Cleanup operation completed".to_string())
     }
 }
-
