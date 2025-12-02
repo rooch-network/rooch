@@ -80,7 +80,12 @@ export class TestBox {
   private initRoochConfig() {
     console.error('🔧 Running rooch init with config-dir:', this.roochDir)
     try {
-      const initResult = this.roochCommand(['init', '--config-dir', this.roochDir, '--skip-password'])
+      const initResult = this.roochCommand([
+        'init',
+        '--config-dir',
+        this.roochDir,
+        '--skip-password',
+      ])
       console.error('🔧 rooch init result:', initResult.substring(0, 200))
     } catch (error: any) {
       console.error('🔧 rooch init failed:', error.message)
@@ -449,10 +454,12 @@ export class TestBox {
     // Convert args to array format
     const roochArgs: string[] = typeof args === 'string' ? args.split(/\s+/) : args
 
+    const env = { ...process.env, ROOCH_CONFIG_DIR: this.roochDir, ...extraEnv }
+
     return {
       cmd: roochBin,
       args: roochArgs,
-      env: Object.keys(extraEnv).length ? { ...process.env, ...extraEnv } : process.env,
+      env,
     }
   }
 
@@ -475,17 +482,110 @@ export class TestBox {
     }
   }
 
+  // Check TCP endpoint connectivity with retry logic
+  async waitForTcpEndpoint(port: number, maxAttempts: number = 60): Promise<void> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const net = require('net')
+          const socket = new net.Socket()
+
+          socket.setTimeout(2000, () => {
+            socket.destroy()
+            reject(new Error('Connection timeout'))
+          })
+
+          socket.connect(port, 'localhost', () => {
+            socket.destroy()
+            resolve()
+          })
+
+          socket.on('error', (error: Error) => {
+            socket.destroy()
+            reject(error)
+          })
+        })
+        log(`✅ TCP port ${port} is ready after ${attempt} attempt(s)`)
+        return
+      } catch (error: any) {
+        if (attempt === maxAttempts) {
+          throw new Error(
+            `TCP port ${port} not ready after ${maxAttempts} attempts: ${error.message}`,
+          )
+        }
+        log(`⏳ TCP port ${port} not ready (attempt ${attempt}/${maxAttempts}): ${error.message}`)
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
+    }
+  }
+
+  // Check HTTP endpoint availability with retry logic
+  async waitForHttpEndpoint(url: string, maxAttempts: number = 30): Promise<void> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'rooch_getChainID',
+            params: [],
+          }),
+          signal: AbortSignal.timeout(5000),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.result) {
+            log(`✅ HTTP endpoint ${url} is ready after ${attempt} attempt(s)`)
+            return
+          }
+        }
+        throw new Error(`Invalid response: ${response.status}`)
+      } catch (error: any) {
+        if (attempt === maxAttempts) {
+          throw new Error(
+            `HTTP endpoint ${url} not ready after ${maxAttempts} attempts: ${error.message}`,
+          )
+        }
+        log(
+          `⏳ HTTP endpoint ${url} not ready (attempt ${attempt}/${maxAttempts}): ${error.message}`,
+        )
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+      }
+    }
+  }
+
+  // Perform both TCP and HTTP health checks for server readiness
+  async performHealthChecks(port: number): Promise<void> {
+    try {
+      // First check TCP connectivity
+      await this.waitForTcpEndpoint(port)
+
+      // Then check HTTP endpoint
+      const httpUrl = `http://localhost:${port}`
+      await this.waitForHttpEndpoint(httpUrl)
+
+      log(`🎉 Server health checks passed - port ${port} is fully ready`)
+    } catch (error: any) {
+      throw new Error(`Health checks failed for port ${port}: ${error.message}`)
+    }
+  }
+
   // TODO: support container
   async roochAsyncCommand(
     args: string[] | string,
     waitFor: string,
     envs: string[] = [],
-    timeoutMs: number = 30000, // 30 seconds default timeout
+    timeoutMs: number = 300000, // 5 minutes default timeout for server startup
   ): Promise<string> {
     return new Promise((resolve, reject) => {
+      const maxBufferedOutput = 20_000 // keep only the tail to avoid unbounded memory growth
       const { cmd, args: cmdArgs, env } = this.buildRoochCommand(args, envs)
       console.log('🔍 Executing command:', cmd, cmdArgs.join(' '))
       console.log('🔍 Full command string:', `${cmd} ${cmdArgs.join(' ')}`)
+      console.log(`🔍 Using timeout: ${timeoutMs}ms for waitFor: ${waitFor}`)
       const logDir = process.env.TESTBOX_LOG_DIR || this.roochDir
       fs.mkdirSync(logDir, { recursive: true })
       const stdoutPath = path.join(logDir, 'rooch-server.stdout.log')
@@ -498,6 +598,16 @@ export class TestBox {
 
       let output = ''
       let pidOutput = ''
+      let settled = false
+
+      const stopBuffering = () => {
+        settled = true
+        output = output.slice(-maxBufferedOutput)
+      }
+
+      const cleanup = () => {
+        clearTimeout(timeout)
+      }
 
       // Set up timeout
       const timeout = setTimeout(() => {
@@ -525,16 +635,46 @@ export class TestBox {
         }
       })
 
+      const handleData = (data: Buffer) => {
+        if (!settled) {
+          output = (output + data.toString()).slice(-maxBufferedOutput)
+        }
+
+        if (!settled && output.includes(waitFor)) {
+          log(`Found expected output: ${waitFor}`)
+          stopBuffering()
+
+          // Add health checks if this looks like a server startup
+          if (waitFor.includes('JSON-RPC HTTP Server start listening')) {
+            // Extract port from the startup message
+            const portMatch = output.match(/JSON-RPC HTTP Server start listening 0\.0\.0\.0:(\d+)/)
+            const port = portMatch ? parseInt(portMatch[1]) : 50051 // Default port
+
+            log(`🔍 Starting health checks for port ${port}...`)
+
+            // Run health checks in background
+            this.performHealthChecks(port)
+              .then(() => {
+                log(`✅ Server is ready for use`)
+                cleanup()
+                resolve(pidOutput.trim())
+              })
+              .catch((error) => {
+                cleanup()
+                reject(new Error(`Health checks failed: ${error.message}`))
+              })
+          } else {
+            // For non-server commands, resolve immediately
+            cleanup()
+            resolve(pidOutput.trim())
+          }
+        }
+      }
+
       child.stdout.on('data', (data) => {
-        output += data.toString()
         stdoutStream.write(data)
         log(`[rooch stdout]: ${data.toString().trim()}`)
-
-        if (output.includes(waitFor)) {
-          clearTimeout(timeout)
-          log(`Found expected output: ${waitFor}`)
-          resolve(pidOutput.trim())
-        }
+        handleData(data)
       })
 
       child.stderr.on('data', (data) => {
@@ -542,19 +682,20 @@ export class TestBox {
         stderrStream.write(data)
         log(`[rooch stderr]: ${errStr.trim()}`)
         process.stderr.write(data)
+        handleData(data)
       })
 
       child.on('error', (error) => {
-        clearTimeout(timeout)
+        cleanup()
         log(`Process error: ${error.message}`)
         reject(error)
       })
 
       child.on('close', (code) => {
-        clearTimeout(timeout)
+        cleanup()
         stdoutStream.end()
         stderrStream.end()
-        if (!output.includes(waitFor)) {
+        if (!settled && !output.includes(waitFor)) {
           reject(
             new Error(
               `Process exited with code ${code}. Expected output not found: ${waitFor}\nFull output: ${output}`,
@@ -756,18 +897,42 @@ export class TestBox {
  * handle bind failures and retry with a new port.
  * @returns Promise that resolves to an available port number
  */
-export async function getUnusedPort(): Promise<number> {
+export async function getUnusedPort(maxAttempts = 3): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer()
-    server.on('error', (_err: any) => {
+
+    server.on('error', (err: any) => {
       server.close()
-      getUnusedPort().then(resolve).catch(reject)
+
+      // Surface sandbox restrictions immediately instead of recursing forever
+      if (err?.code === 'EPERM') {
+        reject(
+          new Error(
+            'Port binding not permitted (EPERM). The test harness likely blocks opening local ports; rerun with network permissions or disable the sandbox.',
+          ),
+        )
+        return
+      }
+
+      if (maxAttempts <= 1) {
+        reject(new Error(`Failed to allocate unused port: ${err?.message || err}`))
+        return
+      }
+
+      getUnusedPort(maxAttempts - 1).then(resolve).catch(reject)
     })
+
     server.on('listening', () => {
       const address = server.address() as net.AddressInfo
       server.close()
       resolve(address.port)
     })
-    server.listen(0)
+
+    try {
+      server.listen(0)
+    } catch (err: any) {
+      server.close()
+      reject(new Error(`Failed to initiate port listener: ${err?.message || err}`))
+    }
   })
 }
