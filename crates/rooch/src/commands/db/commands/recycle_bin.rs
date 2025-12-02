@@ -435,17 +435,10 @@ pub struct RecycleCleanCommand {
     #[clap(long)]
     pub older_than: Option<String>,
 
-    // phase filtering removed - RecycleRecord no longer has phase field
-    // node_type filtering removed - RecycleRecord no longer has node_type field
-
     // Performance options
     /// Batch size for deletion operations
     #[clap(long, default_value_t = 1000)]
     pub batch_size: usize,
-
-    /// Use parallel processing
-    #[clap(long)]
-    pub parallel: bool,
 }
 
 impl RecycleCleanCommand {
@@ -498,7 +491,6 @@ impl RecycleCleanCommand {
         // phase and node_type filtering removed - RecycleRecord simplified
         // preserve_count functionality removed - not implemented
         println!("  Batch size: {}", self.batch_size);
-        println!("  Parallel processing: {}", self.parallel);
 
         // Build the filter based on command line options
         let mut filter = RecycleFilter {

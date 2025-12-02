@@ -321,17 +321,17 @@ impl GCCommand {
             .ok();
             writeln!(
                 output,
-                "  Use 'rooch db recycle-list' to view recycle bin entries"
+                "  Use 'rooch db recycle list' to view recycle bin entries"
             )
             .ok();
             writeln!(
                 output,
-                "  Use 'rooch db recycle-dump <hash>' to view specific deleted nodes"
+                "  Use 'rooch db recycle dump <hash>' to view specific deleted nodes"
             )
             .ok();
             writeln!(
                 output,
-                "  Use 'rooch db recycle-restore <hash>' to recover specific nodes"
+                "  Use 'rooch db recycle restore <hash>' to recover specific nodes"
             )
             .ok();
             writeln!(output).ok();

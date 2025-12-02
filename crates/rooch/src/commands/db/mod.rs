@@ -18,6 +18,7 @@ use crate::commands::db::commands::get_sequencer_info::GetSequencerInfoCommand;
 use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
 use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
+use crate::commands::db::commands::recycle::RecycleCommand;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use crate::commands::db::commands::rocksdb_gc::RocksDBGcCommand;
@@ -114,12 +115,7 @@ impl CommandAction<String> for DB {
             }
             DBCommand::CheckRefcount(check) => check.execute().await,
             DBCommand::GC(gc) => gc.execute().await,
-            DBCommand::RecycleDump(dump) => dump.execute().await,
-            DBCommand::RecycleRestore(restore) => restore.execute().await,
-            // RecycleStatCommand removed - output unreliable data
-            DBCommand::RecycleList(list) => list.execute().await,
-            DBCommand::RecycleClean(clean) => clean.execute().await,
-            DBCommand::RecycleExport(export) => export.execute().await,
+            DBCommand::Recycle(recycle) => recycle.execute().await,
         }
     }
 }
@@ -150,10 +146,5 @@ pub enum DBCommand {
     GenerateDBCheckPoint(GenerateDBCheckPointCommand),
     CheckRefcount(CheckRefcountCommand),
     GC(GCCommand),
-    RecycleDump(crate::commands::db::commands::recycle_bin::RecycleDumpCommand),
-    RecycleRestore(crate::commands::db::commands::recycle_bin::RecycleRestoreCommand),
-    // RecycleStatCommand removed - output unreliable data
-    RecycleList(crate::commands::db::commands::recycle_bin::RecycleListCommand),
-    RecycleClean(crate::commands::db::commands::recycle_bin::RecycleCleanCommand),
-    RecycleExport(crate::commands::db::commands::recycle_bin::RecycleExportCommand),
+    Recycle(RecycleCommand),
 }

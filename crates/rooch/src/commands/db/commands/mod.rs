@@ -27,6 +27,7 @@ pub mod get_sequencer_info;
 pub mod get_tx_by_order;
 pub mod import_state;
 pub mod list_anomaly;
+pub mod recycle;
 pub mod recycle_bin;
 pub mod repair;
 pub mod revert;
