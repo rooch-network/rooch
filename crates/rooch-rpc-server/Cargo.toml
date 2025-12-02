@@ -60,4 +60,3 @@ rooch-open-rpc = { workspace = true }
 rooch-open-rpc-spec-builder = { workspace = true }
 rooch-notify = { workspace = true }
 rooch-store = { workspace = true }
-rooch-pruner = { workspace = true }

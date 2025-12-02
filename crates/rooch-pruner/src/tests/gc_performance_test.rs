@@ -11,9 +11,9 @@ mod tests {
     use crate::garbage_collector::GarbageCollector;
     use crate::marker::{InMemoryMarker, MarkerStrategy, NodeMarker};
     use anyhow::Result;
-    use moveos_store::MoveOSStore;
     use moveos_types::h256::H256;
-    use std::sync::Arc;
+    use rooch_config::RoochOpt;
+    use rooch_db::RoochDB;
     use std::time::{Duration, Instant};
     use tempfile::TempDir;
     use tracing::info;
@@ -74,7 +74,6 @@ mod tests {
 
             let temp_dir = TempDir::new()?;
             let db_path = temp_dir.path().to_path_buf();
-            let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
             let config = GCConfig {
                 dry_run: true,
@@ -88,7 +87,9 @@ mod tests {
                 ..GCConfig::default()
             };
 
-            let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
+            let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+            let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+            let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();
             let report = gc.execute_gc()?;
@@ -121,7 +122,6 @@ mod tests {
 
             let temp_dir = TempDir::new()?;
             let db_path = temp_dir.path().to_path_buf();
-            let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
             let config = GCConfig {
                 dry_run: true,
@@ -135,7 +135,9 @@ mod tests {
                 ..GCConfig::default()
             };
 
-            let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
+            let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+            let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+            let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();
             let report = gc.execute_gc()?;
@@ -163,7 +165,6 @@ mod tests {
 
             let temp_dir = TempDir::new()?;
             let db_path = temp_dir.path().to_path_buf();
-            let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
             let config = GCConfig {
                 dry_run: true,
@@ -177,7 +178,9 @@ mod tests {
                 ..GCConfig::default()
             };
 
-            let gc = GarbageCollector::new(Arc::new(store), config, db_path)?;
+            let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+            let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+            let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();
             let report = gc.execute_gc()?;

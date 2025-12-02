@@ -19,8 +19,8 @@ mod tests {
             config.strong_backup,
             "Strong backup should be enabled by default"
         );
-        assert_eq!(
-            config.space_check_enabled, true,
+        assert!(
+            config.space_check_enabled,
             "Space checking should be enabled by default"
         );
         assert_eq!(
@@ -306,7 +306,6 @@ mod tests {
         let filter = RecycleFilter {
             older_than: Some(1640995200),
             newer_than: None,
-            phase: None,
             min_size: None,
             max_size: None,
         };

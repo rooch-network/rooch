@@ -108,15 +108,47 @@ impl RecycleDumpCommand {
         if let Some(record) = recycle_store.get_record(&node_hash)? {
             #[derive(Debug, serde::Serialize)]
             struct DumpOut {
-                record: rooch_pruner::recycle_bin::RecycleRecord,
+                #[serde(flatten)]
+                record_fields: RecycleRecordFields,
                 #[serde(skip_serializing_if = "Option::is_none")]
                 decoded: Option<DecodedNodeSummary>,
             }
+
+            #[derive(Debug, serde::Serialize)]
+            struct RecycleRecordFields {
+                original_size: usize,
+                created_at: u64,
+                #[serde(with = "hex_bytes")]
+                bytes: Vec<u8>,
+            }
+
+            // Module for hex serialization of Vec<u8>
+            mod hex_bytes {
+                use hex;
+                use serde::Serializer;
+
+                pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+                {
+                    let hex_string = format!("0x{}", hex::encode(bytes));
+                    serializer.serialize_str(&hex_string)
+                }
+            }
+
             let mut decoded = None;
             if self.decode {
                 decoded = decode_node(&record.bytes);
             }
-            let out = DumpOut { record, decoded };
+
+            let out = DumpOut {
+                record_fields: RecycleRecordFields {
+                    original_size: record.original_size,
+                    created_at: record.created_at,
+                    bytes: record.bytes,
+                },
+                decoded,
+            };
             let output = serde_json::to_string_pretty(&out)?;
 
             match self.output {
@@ -329,7 +361,7 @@ impl RecycleListCommand {
         // Parse time filter
         if let Some(older_than) = &self.older_than {
             let cutoff_time = parse_time_duration(older_than)
-                .map_err(|e| rooch_types::error::RoochError::CommandArgumentError(e))?;
+                .map_err(rooch_types::error::RoochError::CommandArgumentError)?;
             filter.older_than = Some(cutoff_time);
         }
 
@@ -406,7 +438,7 @@ impl RecycleListCommand {
                 let json_string = serde_json::to_string_pretty(&json_output)?;
                 match self.export {
                     Some(ref path) => {
-                        std::fs::write(&path, json_string).map_err(|e| {
+                        std::fs::write(path, json_string).map_err(|e| {
                             rooch_types::error::RoochError::UnexpectedError(e.to_string())
                         })?;
                         println!(
@@ -423,7 +455,6 @@ impl RecycleListCommand {
             _ => {
                 // table format
                 println!("=== Recycle Bin Entries ===");
-                println!("Total entries: {}", display_entries.len());
                 println!();
 
                 if self.hashes_only {
@@ -531,11 +562,9 @@ impl RecycleCleanCommand {
         // Safety check: require either --dry-run or --force
         if !self.dry_run && !self.force {
             eprintln!("Error: Either --dry-run or --force is required");
-            eprintln!("");
             eprintln!("This is a PERMANENT deletion operation. Consider:");
             eprintln!("  1. Run with --dry-run first to see what would be deleted");
             eprintln!("  2. Run with --force after reviewing the dry-run output");
-            eprintln!("");
             eprintln!("Example:");
             eprintln!("  rooch db recycle-clean --dry-run --older-than 7d");
             eprintln!("  rooch db recycle-clean --force --older-than 7d");
@@ -560,7 +589,6 @@ impl RecycleCleanCommand {
 
         println!("=== Recycle Bin Cleanup Plan ===");
         println!("{}", stats);
-        println!("");
 
         if stats.strong_backup {
             println!("🔒 Strong Backup Mode: ENABLED");
@@ -588,7 +616,7 @@ impl RecycleCleanCommand {
         // Parse time filter
         if let Some(older_than) = &self.older_than {
             let cutoff_time = parse_time_duration(older_than)
-                .map_err(|e| rooch_types::error::RoochError::CommandArgumentError(e))?;
+                .map_err(rooch_types::error::RoochError::CommandArgumentError)?;
             filter.older_than = Some(cutoff_time);
         }
 
@@ -597,7 +625,6 @@ impl RecycleCleanCommand {
         // Execute the cleanup
         if self.dry_run {
             println!("\n📋 DRY RUN MODE - No actual deletion will occur");
-            println!("");
 
             // Use list_entries to show what would be deleted
             let entries =

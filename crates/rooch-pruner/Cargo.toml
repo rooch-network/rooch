@@ -12,10 +12,8 @@ version.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 smt = { workspace = true }
-prometheus = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-thiserror = { workspace = true }
 serde = { workspace = true }
 hex = { workspace = true }
 

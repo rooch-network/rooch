@@ -116,7 +116,7 @@ async fn test_bloom_capacity_boundaries() {
     ))); // Very small
     let start_time = std::time::Instant::now();
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), small_bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), small_bloom.clone());
     let _scanned_size = builder.build(vec![root_hash], 1).unwrap();
 
     let small_bloom_duration = start_time.elapsed();
@@ -133,7 +133,7 @@ async fn test_bloom_capacity_boundaries() {
     ))); // Large
     let start_time = std::time::Instant::now();
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), large_bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), large_bloom.clone());
     let _scanned_size = builder.build(vec![root_hash], 1).unwrap();
 
     let large_bloom_duration = start_time.elapsed();

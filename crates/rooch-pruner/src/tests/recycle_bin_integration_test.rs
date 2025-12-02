@@ -116,7 +116,7 @@ async fn test_recycle_bin_delete_entries() -> Result<()> {
     let recycle_bin = RecycleBinStore::new(recycle_store.clone())?;
 
     // Create and put multiple records
-    let keys = vec![
+    let keys = [
         H256::random(),
         H256::random(),
         H256::random(),
@@ -191,9 +191,11 @@ async fn test_recycle_bin_record_operations() -> Result<()> {
     let retrieved2 = recycle_bin.get_record(&key2)?.unwrap();
 
     assert_eq!(retrieved1.bytes, record1.bytes);
-    assert_eq!(retrieved1.tx_order, record1.tx_order);
+    // tx_order field removed from RecycleRecord
+    assert_eq!(retrieved1.created_at, record1.created_at);
     assert_eq!(retrieved2.bytes, record2.bytes);
-    assert_eq!(retrieved2.tx_order, record2.tx_order);
+    // tx_order field removed from RecycleRecord
+    assert_eq!(retrieved2.created_at, record2.created_at);
 
     Ok(())
 }

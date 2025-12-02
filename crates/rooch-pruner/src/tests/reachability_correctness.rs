@@ -34,7 +34,7 @@ async fn test_build_reach_basic_coverage() {
     )));
     let reachable_roots = vec![root_hash];
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!("BuildReach scanned {} nodes", scanned_size);
@@ -91,7 +91,7 @@ async fn test_build_reach_multiple_roots() {
     )));
     let reachable_roots = vec![root1, root2];
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!(
@@ -130,7 +130,7 @@ async fn test_build_reach_empty_roots() {
     )));
     let reachable_roots = vec![]; // Empty roots
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!("BuildReach scanned {} nodes with empty roots", scanned_size);
@@ -170,7 +170,7 @@ async fn test_build_reach_duplicate_roots() {
     )));
     let reachable_roots = vec![root_hash, root_hash, root_hash]; // Same root 3 times
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!(
@@ -220,7 +220,7 @@ async fn test_build_reach_bloom_deduplication() {
 
     // Run BuildReach
     let reachable_roots = vec![root_hash];
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!(
@@ -269,7 +269,7 @@ async fn test_build_reach_consistency() {
         )));
         let reachable_roots = vec![root_hash];
 
-        let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+        let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
         let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
         let reachable_count = BloomInspector::count_contained_hashes(&bloom, &all_node_hashes);
@@ -331,7 +331,7 @@ async fn test_build_reach_error_handling() {
     )));
     let reachable_roots = vec![fake_root1, fake_root2, fake_root3];
 
-    let builder = crate::reachability::ReachableBuilder::new(store.clone(), bloom.clone());
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
     let scanned_size = builder.build(reachable_roots, 1).unwrap();
 
     println!(
