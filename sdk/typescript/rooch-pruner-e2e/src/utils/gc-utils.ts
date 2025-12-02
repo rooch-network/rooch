@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { TestBox, PrometheusClient } from '@rooch-test-suite'
+import { TestBox } from '@roochnetwork/test-suite'
 
 // GC test configuration
 export interface GCTestConfig {
@@ -91,6 +91,46 @@ export interface GCResult {
   report?: GCJsonReport // Only present if JSON parsing succeeds
 }
 
+// Stress test configuration for long-running tests
+export interface GCStressTestConfig {
+  enabled: boolean // Enable stress test mode
+  durationSeconds: number // How long to run the test (seconds)
+  tps: number // Target transactions per second
+  batchSize: number // Number of operations per batch
+  reportIntervalSeconds: number // How often to report progress (seconds)
+  useRecycleBin: boolean // Whether to use recycle bin for GC (default: false for stress tests)
+  mixRatio: {
+    // Operation mix ratio (should sum to 1.0)
+    create: number // Create new objects
+    update: number // Update existing objects
+    delete: number // Delete objects
+    counter: number // Counter operations
+  }
+}
+
+export function loadGCStressTestConfig(): GCStressTestConfig {
+  const enabled = process.env.GC_STRESS_MODE === 'true'
+  const durationSeconds = parseInt(process.env.GC_STRESS_DURATION || '3600', 10) // Default: 1 hour
+  const tps = parseFloat(process.env.GC_STRESS_TPS || '10') // Default: 10 tx/sec
+
+  return {
+    enabled,
+    durationSeconds,
+    tps,
+    batchSize: parseInt(process.env.GC_STRESS_BATCH_SIZE || '10', 10),
+    reportIntervalSeconds: parseInt(process.env.GC_STRESS_REPORT_INTERVAL || '60', 10), // Default: 1 min
+    // Default: false for stress tests to see real disk space reclaim
+    // Set to 'true' if you want to test recycle bin functionality
+    useRecycleBin: process.env.GC_STRESS_USE_RECYCLE_BIN === 'true',
+    mixRatio: {
+      create: parseFloat(process.env.GC_STRESS_MIX_CREATE || '0.4'), // 40% create
+      update: parseFloat(process.env.GC_STRESS_MIX_UPDATE || '0.3'), // 30% update
+      delete: parseFloat(process.env.GC_STRESS_MIX_DELETE || '0.2'), // 20% delete
+      counter: parseFloat(process.env.GC_STRESS_MIX_COUNTER || '0.1'), // 10% counter
+    },
+  }
+}
+
 export function loadGCTestConfig(): GCTestConfig {
   return {
     // Data generation - optimized for faster tests
@@ -116,7 +156,10 @@ export function loadGCTestConfig(): GCTestConfig {
   }
 }
 
-export function executeGC(testbox: TestBox, options: { dryRun?: boolean }): GCResult {
+export function executeGC(
+  testbox: TestBox,
+  options: { dryRun?: boolean; useRecycleBin?: boolean },
+): GCResult {
   // The data directory path should match what the server uses
   const dataDir = `${testbox.roochDir}/data`
 
@@ -128,14 +171,17 @@ export function executeGC(testbox: TestBox, options: { dryRun?: boolean }): GCRe
     '--data-dir',
     dataDir, // Must match the data directory used by the server
     ...(options.dryRun ? ['--dry-run'] : ['--skip-confirm']),
-    '--recycle-bin',
+    ...(options.useRecycleBin !== false ? ['--recycle-bin'] : []), // Default: use recycle bin
     '--json', // Request JSON output but don't depend on it
   ]
 
-  console.log('🔧 GC Command Args:', `rooch ${args.join(' ')}`)
+  // Set RUST_LOG=error to suppress info logs that break JSON output
+  const envs = ['RUST_LOG=error']
+
+  console.log('🔧 GC Command Args:', `RUST_LOG=error rooch ${args.join(' ')}`)
 
   try {
-    const output = testbox.roochCommand(args)
+    const output = testbox.roochCommand(args, envs)
     // Try to parse JSON, but don't fail if parsing fails
     const report = tryParseGCJson(output)
     return { success: true, output, report }
@@ -175,6 +221,51 @@ export function tryParseGCJson(output: string): GCJsonReport | undefined {
     // Parsing failed, return undefined
   }
   return undefined
+}
+
+// Print GC report in a formatted way
+export function printGCReport(report: GCJsonReport): void {
+  console.log('\n📊 GC Report:')
+  console.log('==========================================')
+  console.log(`Execution Mode: ${report.executionMode}`)
+  console.log(`Protected Roots: ${report.protectedRoots.count}`)
+  console.log(`Mark Phase:`)
+  console.log(`  - Nodes Marked: ${report.markStats.markedCount}`)
+  console.log(`  - Duration: ${report.markStats.durationMs}ms`)
+  console.log(`  - Strategy: ${report.markStats.memoryStrategy}`)
+  console.log(`Sweep Phase:`)
+  console.log(`  - Scanned: ${report.sweepStats.scannedCount}`)
+  console.log(`  - Kept: ${report.sweepStats.keptCount}`)
+  console.log(`  - Deleted: ${report.sweepStats.deletedCount}`)
+  console.log(`  - Recycle Bin Entries: ${report.sweepStats.recycleBinEntries}`)
+  console.log(`  - Duration: ${report.sweepStats.durationMs}ms`)
+  console.log(`Summary:`)
+  console.log(`  - Memory Strategy: ${report.memoryStrategyUsed}`)
+  console.log(`  - Total Duration: ${report.durationMs}ms`)
+  console.log(`  - Space Reclaimed: ${report.spaceReclaimed.toFixed(2)}%`)
+  console.log('==========================================\n')
+}
+
+// Purge recycle bin to actually free disk space
+export function purgeRecycleBin(testbox: TestBox): { success: boolean; output: string } {
+  const dataDir = `${testbox.roochDir}/data`
+
+  const args = ['db', 'recycle', 'purge', '--chain-id', 'local', '--data-dir', dataDir, '--yes']
+
+  // Set RUST_LOG=error to suppress logs
+  const envs = ['RUST_LOG=error']
+
+  console.log('🗑️  Purging recycle bin to free disk space...')
+  console.log('🔧 Command:', `RUST_LOG=error rooch ${args.join(' ')}`)
+
+  try {
+    const output = testbox.roochCommand(args, envs)
+    console.log('✅ Recycle bin purged successfully')
+    return { success: true, output }
+  } catch (error: any) {
+    console.error('❌ Failed to purge recycle bin:', error?.message || String(error))
+    return { success: false, output: error?.message || String(error) }
+  }
 }
 
 // Legacy parse function for backward compatibility
@@ -279,8 +370,12 @@ export async function publishPackage(
   packagePath: string,
   namedAddresses: string,
 ): Promise<void> {
-  const args = ['move', 'publish', '-p', packagePath, '--named-addresses', namedAddresses]
-  await testbox.roochCommand(args)
+  console.log(`📦 Publishing package at ${packagePath}`)
+  const ok = await testbox.cmdPublishPackage(packagePath, { namedAddresses })
+  if (!ok) {
+    throw new Error(`Failed to publish package at ${packagePath}`)
+  }
+  console.log(`✅ Successfully published package`)
 }
 
 export async function generateTestData(
@@ -292,19 +387,180 @@ export async function generateTestData(
     `🔧 Generating test data: ${config.objectCount} objects, ${config.updateCount} updates, ${config.counterIters} counter operations`,
   )
 
-  // For now, skip complex object operations and just generate some basic transactions
-  // We'll use simple account operations or built-in functions
+  // Use deterministic seeds so object IDs are known
+  const seedBase = Date.now() % 1_000_000
+  const seeds: number[] = []
 
-  // Generate some basic state by creating accounts or using built-in functions
-  // Since we don't have custom contracts, we'll use minimal operations that create state
+  // Counter operations - create more versions
+  console.log(`  📝 Counter operations: ${config.counterIters}`)
+  for (let i = 0; i < config.counterIters; i++) {
+    await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+    if (i % 10 === 0) await delay(10)
+  }
 
-  console.log('📝 Generating basic state changes...')
-  // Try to use some built-in functions or simple operations
+  // Object creation
+  console.log(`  ➕ Create operations: ${config.objectCount}`)
+  for (let i = 0; i < config.objectCount; i++) {
+    const seed = seedBase + i
+    seeds.push(seed)
+    await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_named`, [
+      `u64:${seed}`,
+      `u64:${i * 100}`,
+    ])
+    if (i % 20 === 0) await delay(5)
+  }
 
-  // For demonstration, we'll just wait a bit to simulate data generation
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+  // Update operations
+  console.log(`  ✏️  Update operations: ${config.updateCount}`)
+  for (let i = 0; i < config.updateCount && i < seeds.length; i++) {
+    await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::update_named`, [
+      `u64:${seeds[i]}`,
+      `u64:${i * 200}`,
+    ])
+    if (i % 15 === 0) await delay(5)
+  }
 
-  console.log('✅ Test data generation completed (simplified)')
+  // Delete operations
+  console.log(`  🗑️  Delete operations: ${config.deleteCount}`)
+  for (let i = 0; i < config.deleteCount && i < seeds.length; i++) {
+    await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::remove_named`, [
+      `u64:${seeds[seeds.length - 1 - i]}`,
+    ])
+    if (i % 15 === 0) await delay(5)
+  }
+
+  console.log('✅ Test data generation completed')
+}
+
+// Generate test data continuously for stress testing
+export async function generateContinuousData(
+  testbox: TestBox,
+  config: GCStressTestConfig,
+  defaultAddress: string,
+  stopSignal: { stop: boolean }, // Shared object to signal stop
+): Promise<{
+  totalTxs: number
+  byType: { create: number; update: number; delete: number; counter: number }
+}> {
+  const stats = {
+    totalTxs: 0,
+    byType: { create: 0, update: 0, delete: 0, counter: 0 },
+  }
+
+  const startTime = Date.now()
+  const endTime = startTime + config.durationSeconds * 1000
+  let lastReportTime = startTime
+  const createdSeeds: number[] = []
+  let seedCounter = Date.now() % 1_000_000
+
+  console.log(`🚀 Starting continuous data generation for ${config.durationSeconds}s`)
+  console.log(`   Target TPS: ${config.tps}`)
+  console.log(`   Batch Size: ${config.batchSize}`)
+  console.log(
+    `   Mix Ratio: Create ${(config.mixRatio.create * 100).toFixed(0)}%, Update ${(config.mixRatio.update * 100).toFixed(0)}%, Delete ${(config.mixRatio.delete * 100).toFixed(0)}%, Counter ${(config.mixRatio.counter * 100).toFixed(0)}%`,
+  )
+
+  while (Date.now() < endTime && !stopSignal.stop) {
+    const batchStartTime = Date.now()
+
+    // Execute a batch of transactions
+    for (let i = 0; i < config.batchSize && !stopSignal.stop; i++) {
+      const rand = Math.random()
+      let cumulativeProbability = 0
+
+      try {
+        // Determine operation type based on mix ratio
+        if (rand < (cumulativeProbability += config.mixRatio.create)) {
+          // Create operation
+          const seed = seedCounter++
+          createdSeeds.push(seed)
+          await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_named`, [
+            `u64:${seed}`,
+            `u64:${Math.floor(Math.random() * 1000)}`,
+          ])
+          stats.byType.create++
+        } else if (rand < (cumulativeProbability += config.mixRatio.update)) {
+          // Update operation (only if we have created objects)
+          if (createdSeeds.length > 0) {
+            const randomIndex = Math.floor(Math.random() * createdSeeds.length)
+            const seed = createdSeeds[randomIndex]
+            await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::update_named`, [
+              `u64:${seed}`,
+              `u64:${Math.floor(Math.random() * 1000)}`,
+            ])
+            stats.byType.update++
+          } else {
+            // Fallback to counter if no objects to update
+            await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+            stats.byType.counter++
+          }
+        } else if (rand < (cumulativeProbability += config.mixRatio.delete)) {
+          // Delete operation (only if we have created objects)
+          if (createdSeeds.length > 0) {
+            const randomIndex = Math.floor(Math.random() * createdSeeds.length)
+            const seed = createdSeeds.splice(randomIndex, 1)[0]
+            await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::remove_named`, [
+              `u64:${seed}`,
+            ])
+            stats.byType.delete++
+          } else {
+            // Fallback to counter if no objects to delete
+            await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+            stats.byType.counter++
+          }
+        } else {
+          // Counter operation
+          await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+          stats.byType.counter++
+        }
+
+        stats.totalTxs++
+      } catch (error) {
+        console.error(`⚠️ Transaction failed:`, error.message)
+        // Continue with next transaction
+      }
+    }
+
+    // Report progress periodically
+    const now = Date.now()
+    if (now - lastReportTime >= config.reportIntervalSeconds * 1000) {
+      const elapsedSeconds = (now - startTime) / 1000
+      const remainingSeconds = (endTime - now) / 1000
+      const actualTPS = stats.totalTxs / elapsedSeconds
+
+      console.log(
+        `\n📊 Progress Report (${elapsedSeconds.toFixed(0)}s elapsed, ${remainingSeconds.toFixed(0)}s remaining):`,
+      )
+      console.log(`   Total Transactions: ${stats.totalTxs}`)
+      console.log(`   Actual TPS: ${actualTPS.toFixed(2)}`)
+      console.log(`   Created: ${stats.byType.create}, Updated: ${stats.byType.update}`)
+      console.log(`   Deleted: ${stats.byType.delete}, Counter: ${stats.byType.counter}`)
+      console.log(`   Active Objects: ${createdSeeds.length}`)
+
+      lastReportTime = now
+    }
+
+    // Calculate delay to achieve target TPS
+    const batchDuration = Date.now() - batchStartTime
+    const targetBatchDuration = (config.batchSize / config.tps) * 1000
+    const delayMs = Math.max(0, targetBatchDuration - batchDuration)
+
+    if (delayMs > 0) {
+      await delay(delayMs)
+    }
+  }
+
+  const totalDuration = (Date.now() - startTime) / 1000
+  const actualTPS = stats.totalTxs / totalDuration
+
+  console.log(`\n✅ Continuous data generation completed:`)
+  console.log(`   Duration: ${totalDuration.toFixed(2)}s`)
+  console.log(`   Total Transactions: ${stats.totalTxs}`)
+  console.log(`   Actual TPS: ${actualTPS.toFixed(2)}`)
+  console.log(`   Create: ${stats.byType.create}, Update: ${stats.byType.update}`)
+  console.log(`   Delete: ${stats.byType.delete}, Counter: ${stats.byType.counter}`)
+
+  return stats
 }
 
 // Removed runGCTestCycle - server lifecycle should be managed by test code directly
@@ -313,14 +569,20 @@ export const delay = (ms: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export default {
+const gcUtils = {
   loadGCTestConfig,
+  loadGCStressTestConfig,
   executeGC,
   executeGCCommand,
   tryParseGCJson,
+  printGCReport,
+  purgeRecycleBin,
   parseGCReport,
   runMoveFunction,
   publishPackage,
   generateTestData,
+  generateContinuousData,
   delay,
 }
+
+export default gcUtils
