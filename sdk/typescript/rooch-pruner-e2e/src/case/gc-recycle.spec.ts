@@ -5,12 +5,14 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { TestBox } from '@roochnetwork/test-suite'
 import {
   loadGCTestConfig,
+  loadGCStressTestConfig,
   executeGC,
   GCResult,
   generateTestData,
+  generateContinuousData,
   publishPackage,
   runMoveFunction,
-  GCJsonReport,
+  printGCReport,
 } from '../utils/gc-utils.js'
 import * as path from 'path'
 
@@ -90,16 +92,9 @@ async function verifyServerHealth(testbox: TestBox, maxRetries = 5): Promise<voi
   }
 }
 
-async function getCounterValue(testbox: TestBox, defaultAddress: string): Promise<number> {
-  // For now, just return a mock value since quick_start_counter doesn't have a value function
-  // We'll track counter by counting increase operations
-  return 0
-}
-
 describe('GC Recycle E2E Tests', () => {
   let testbox: TestBox
   let defaultAddress: string
-  let initialCounterValue = 0
 
   beforeAll(async () => {
     console.log('🚀 Initializing GC Recycle E2E Test Suite')
@@ -133,20 +128,25 @@ describe('GC Recycle E2E Tests', () => {
       throw error
     }
 
-    // Test Move command connectivity before publishing
-    console.log('🔗 Testing Move command connectivity...')
-    try {
-      // Try a simple state command first
-      testbox.roochCommand(['state', '--config-dir', testbox.roochDir])
-      console.log('✅ Move command connectivity verified')
-    } catch (error) {
-      console.warn('⚠️ Move command test failed, but continuing:', error)
-    }
+    // Publish required contracts
+    console.log('📦 Publishing contracts...')
 
-    // Skip complex contract publishing for now - focus on GC functionality
-    // We'll use simple built-in functions to generate state
-    console.log('⚠️ Skipping contract publishing to focus on GC functionality')
-    console.log('📝 Will use built-in Move functions to generate test data')
+    await publishPackage(
+      testbox,
+      counterPackagePath,
+      'quick_start_counter=default,std=0x1,moveos_std=0x2,rooch_framework=0x3',
+    )
+
+    await publishPackage(
+      testbox,
+      prunerPackagePath,
+      'pruner_test=default,std=0x1,moveos_std=0x2,rooch_framework=0x3',
+    )
+
+    // Initialize counter module
+    console.log('🔢 Initializing counter module...')
+    await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+    console.log('✅ Counter initialized')
 
     console.log('✅ TestBox initialized successfully')
   }, 600000) // 10 minutes for initialization
@@ -183,17 +183,16 @@ describe('GC Recycle E2E Tests', () => {
         expect(result.output).toBeDefined()
         expect(result.output.length).toBeGreaterThan(0)
 
-        // If JSON was parsed successfully, verify structure
+        // If JSON was parsed successfully, verify structure and display report
         if (result.report) {
           expect(result.report.executionMode).toBe('dry-run')
           expect(result.report.markStats.markedCount).toBeGreaterThan(0)
-          console.log(
-            `✅ JSON parsed successfully - marked ${result.report.markStats.markedCount} nodes`,
-          )
+          printGCReport(result.report)
         } else {
           // If JSON wasn't parsed, at least verify output contains expected text
           expect(result.output).toMatch(/(dry-run|Dry Run|DRY RUN)/)
-          console.log('✅ GC command executed (JSON parsing failed but command succeeded)')
+          console.log('⚠️ GC command executed but JSON parsing failed')
+          console.log('Raw output (first 500 chars):', result.output.substring(0, 500))
         }
 
         console.log('✅ GC Dry Run test passed')
@@ -228,11 +227,12 @@ describe('GC Recycle E2E Tests', () => {
         expect(gcResult.success).toBe(true)
         console.log('✅ GC execution completed')
 
-        // Log GC result details
+        // Display detailed GC report
         if (gcResult.report) {
-          console.log(
-            `📊 GC Report: ${gcResult.report.markStats.markedCount} marked, ${gcResult.report.sweepStats.deletedCount} deleted`,
-          )
+          printGCReport(gcResult.report)
+        } else {
+          console.log('⚠️ GC executed but JSON report not available')
+          console.log('Raw output (first 500 chars):', gcResult.output.substring(0, 500))
         }
       } finally {
         // Always restart server
@@ -242,6 +242,40 @@ describe('GC Recycle E2E Tests', () => {
       // Verify server health after restart
       await verifyServerHealth(testbox)
 
+      // Verify database integrity by executing actual transactions
+      console.log('🔍 Verifying database integrity with actual transactions...')
+
+      // Execute counter operations to verify contract state is intact
+      console.log('  📝 Testing counter operations...')
+      await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+      await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+      console.log('  ✅ Counter operations successful')
+
+      // Create new objects to verify object storage works
+      console.log('  ➕ Testing object creation...')
+      const verificationSeed = Date.now() % 1_000_000
+      await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::create_named`, [
+        `u64:${verificationSeed}`,
+        `u64:999`,
+      ])
+      console.log('  ✅ Object creation successful')
+
+      // Update the newly created object
+      console.log('  ✏️  Testing object update...')
+      await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::update_named`, [
+        `u64:${verificationSeed}`,
+        `u64:1000`,
+      ])
+      console.log('  ✅ Object update successful')
+
+      // Delete the test object
+      console.log('  🗑️  Testing object deletion...')
+      await runMoveFunction(testbox, `${defaultAddress}::object_lifecycle::remove_named`, [
+        `u64:${verificationSeed}`,
+      ])
+      console.log('  ✅ Object deletion successful')
+
+      console.log('✅ Database integrity verified - all operations work correctly after GC')
       console.log('✅ GC Execution and service restart test passed')
     }, 180000)
 
@@ -276,4 +310,134 @@ describe('GC Recycle E2E Tests', () => {
       console.log('✅ Recycle bin verification test passed')
     }, 60000)
   })
+})
+
+// Stress Test Suite - Only runs when GC_STRESS_MODE=true
+describe.skipIf(!process.env.GC_STRESS_MODE)('GC Stress Test - Long Running', () => {
+  let testbox: TestBox
+  let defaultAddress: string
+  const stressConfig = loadGCStressTestConfig()
+
+  beforeAll(async () => {
+    console.log('🚀 Initializing GC Stress Test Suite')
+    console.log(`📊 Stress Test Configuration:`)
+    console.log(
+      `   Duration: ${stressConfig.durationSeconds}s (${(stressConfig.durationSeconds / 60).toFixed(1)} minutes)`,
+    )
+    console.log(`   Target TPS: ${stressConfig.tps}`)
+    console.log(`   Batch Size: ${stressConfig.batchSize}`)
+    console.log(
+      `   Mix Ratio: Create ${(stressConfig.mixRatio.create * 100).toFixed(0)}%, Update ${(stressConfig.mixRatio.update * 100).toFixed(0)}%, Delete ${(stressConfig.mixRatio.delete * 100).toFixed(0)}%, Counter ${(stressConfig.mixRatio.counter * 100).toFixed(0)}%`,
+    )
+
+    process.env.TESTBOX_KEEP_TMP = 'true'
+
+    testbox = new TestBox()
+
+    console.log('🔧 Starting Rooch server...')
+    await testbox.loadRoochEnv('local', 0)
+    await delay(30000)
+    await verifyServerHealth(testbox)
+
+    try {
+      defaultAddress = await testbox.defaultCmdAddress()
+      console.log(`📍 Default address: ${defaultAddress}`)
+    } catch (error) {
+      console.error('❌ Failed to get default address:', error)
+      throw error
+    }
+
+    console.log('📦 Publishing contracts...')
+    await publishPackage(
+      testbox,
+      counterPackagePath,
+      'quick_start_counter=default,std=0x1,moveos_std=0x2,rooch_framework=0x3',
+    )
+    await publishPackage(
+      testbox,
+      prunerPackagePath,
+      'pruner_test=default,std=0x1,moveos_std=0x2,rooch_framework=0x3',
+    )
+
+    // Initialize counter module
+    console.log('🔢 Initializing counter module...')
+    await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+    console.log('✅ Counter initialized')
+
+    console.log('✅ Stress Test environment initialized')
+  }, 600000) // 10 minutes timeout
+
+  afterAll(async () => {
+    console.log('🧹 Cleanup stress test environment')
+    if (testbox) {
+      testbox.stop()
+    }
+  })
+
+  it(
+    'Stress Test - Continuous data generation and GC',
+    async () => {
+      console.log('\n🧪 Test: Long-running stress test with continuous data generation')
+
+      const stopSignal = { stop: false }
+
+      try {
+        // Generate continuous data
+        const stats = await generateContinuousData(
+          testbox,
+          stressConfig,
+          defaultAddress,
+          stopSignal,
+        )
+
+        console.log(`\n📈 Final Statistics:`)
+        console.log(`   Total Transactions: ${stats.totalTxs}`)
+        console.log(`   Create: ${stats.byType.create}`)
+        console.log(`   Update: ${stats.byType.update}`)
+        console.log(`   Delete: ${stats.byType.delete}`)
+        console.log(`   Counter: ${stats.byType.counter}`)
+
+        // Stop server for GC
+        await stopServerForGC(testbox)
+
+        // Execute GC with recycle bin
+        console.log('\n🗑️ Executing GC after stress test...')
+        const gcResult = executeGC(testbox, { dryRun: false })
+
+        expect(gcResult.success).toBe(true)
+        console.log('✅ GC execution completed')
+
+        // Display detailed GC report
+        if (gcResult.report) {
+          printGCReport(gcResult.report)
+
+          // Verify GC found work to do
+          expect(gcResult.report.markStats.markedCount).toBeGreaterThan(0)
+          expect(gcResult.report.sweepStats.scannedCount).toBeGreaterThan(0)
+
+          console.log(
+            `🎯 GC Performance: Deleted ${gcResult.report.sweepStats.deletedCount} nodes, reclaimed ${gcResult.report.spaceReclaimed.toFixed(2)}% space`,
+          )
+        } else {
+          console.log('⚠️ GC executed but JSON report not available')
+        }
+
+        // Restart server and verify
+        await restartServer(testbox)
+        await verifyServerHealth(testbox)
+
+        // Verify database integrity with sample transactions
+        console.log('🔍 Verifying database integrity after stress test and GC...')
+        await runMoveFunction(testbox, `${defaultAddress}::quick_start_counter::increase`, [])
+        console.log('✅ Database integrity verified')
+
+        console.log('✅ Stress test completed successfully')
+      } catch (error) {
+        stopSignal.stop = true
+        throw error
+      }
+    },
+    // Timeout: test duration + 20 minutes for setup and GC
+    (stressConfig.durationSeconds + 1200) * 1000,
+  )
 })
