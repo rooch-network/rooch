@@ -264,11 +264,6 @@ pub struct RecycleListCommand {
     #[clap(long, short = 'n')]
     pub chain_id: rooch_types::rooch_network::BuiltinChainID,
 
-    // Filtering options
-    /// Filter by deletion phase (Incremental/SweepExpired/StopTheWorld/Manual)
-    #[clap(long)]
-    pub phase: Option<String>,
-
     /// Filter by age (e.g., "1h", "24h", "7d")
     #[clap(long)]
     pub older_than: Option<String>,
@@ -364,12 +359,9 @@ impl RecycleListCommand {
                         };
                         println!("0x{}", hex::encode(bytes_preview));
                     }
-                } else {
-                    println!(
-                        "{:<20} {:<12} {:<10} {:<20} {:<10}",
-                        "Phase", "Size", "Age", "Deleted At", "Type"
-                    );
-                    println!("{}", "-".repeat(80));
+                } else { 
+                    println!("{:<12} {:<10} {:<10}", "Size", "Age", "Type");
+                    println!("{}", "-".repeat(32));
 
                     for record in &entries {
                         let age_seconds = SystemTime::now()
@@ -396,7 +388,7 @@ impl RecycleListCommand {
                             }
                         };
 
-                        println!("{:<12} {:<10} {:<10}", "Size", "Age", "Type");
+                        
 
                         println!(
                             "{:<12} {:<10} {:<10}",
