@@ -189,25 +189,25 @@ mod tests {
 
         // Test time filtering
         let filter = RecycleFilter {
-            older_than: Some(base_time + 200), // Record is older than this
+            older_than: Some(base_time + 200), // Record should match (created_at < older_than)
             newer_than: None,
             min_size: None,
             max_size: None,
         };
         assert!(
             filter.matches(&record),
-            "Record should match older_than filter"
+            "Record should match older_than filter when created_at < older_than"
         );
 
         let filter = RecycleFilter {
-            older_than: Some(base_time + 50), // Record is newer than this
+            older_than: Some(base_time - 50), // Record should not match (created_at > older_than)
             newer_than: None,
             min_size: None,
             max_size: None,
         };
         assert!(
             !filter.matches(&record),
-            "Record should not match when it's newer than filter"
+            "Record should not match when created_at > older_than"
         );
 
         // Test newer_than filtering

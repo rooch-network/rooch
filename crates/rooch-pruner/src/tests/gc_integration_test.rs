@@ -13,6 +13,7 @@ mod tests {
     use crate::safety_verifier::SafetyVerifier;
     use anyhow::Result;
     use moveos_types::h256::H256;
+    use moveos_types::startup_info::StartupInfo;
     use rooch_config::RoochOpt;
     use rooch_db::RoochDB;
     use std::time::Duration;
@@ -29,6 +30,14 @@ mod tests {
         // Create a mock RoochDB
         let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
         let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+
+        // Create and save startup info for the test
+        let test_state_root = H256::random();
+        let startup_info = StartupInfo::new(test_state_root, 0);
+        rooch_db
+            .moveos_store
+            .config_store
+            .save_startup_info(startup_info)?;
 
         // Configure GC for dry run
         let config = GCConfig {
@@ -257,6 +266,14 @@ mod tests {
         let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
         let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
 
+        // Create and save startup info for the test
+        let test_state_root = H256::random();
+        let startup_info = StartupInfo::new(test_state_root, 0);
+        rooch_db
+            .moveos_store
+            .config_store
+            .save_startup_info(startup_info)?;
+
         // Test with force execution enabled (should work)
         let config = GCConfig {
             dry_run: true,
@@ -285,6 +302,14 @@ mod tests {
         // Create a mock RoochDB
         let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
         let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+
+        // Create and save startup info for the test
+        let test_state_root = H256::random();
+        let startup_info = StartupInfo::new(test_state_root, 0);
+        rooch_db
+            .moveos_store
+            .config_store
+            .save_startup_info(startup_info)?;
 
         let config = GCConfig {
             skip_confirm: true,

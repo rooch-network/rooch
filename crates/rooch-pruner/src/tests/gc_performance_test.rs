@@ -12,6 +12,7 @@ mod tests {
     use crate::marker::{InMemoryMarker, MarkerStrategy, NodeMarker};
     use anyhow::Result;
     use moveos_types::h256::H256;
+    use moveos_types::startup_info::StartupInfo;
     use rooch_config::RoochOpt;
     use rooch_db::RoochDB;
     use std::time::{Duration, Instant};
@@ -89,6 +90,15 @@ mod tests {
 
             let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
             let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+
+            // Create and save startup info for the test
+            let test_state_root = H256::random();
+            let startup_info = StartupInfo::new(test_state_root, 0);
+            rooch_db
+                .moveos_store
+                .config_store
+                .save_startup_info(startup_info)?;
+
             let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();
@@ -137,6 +147,15 @@ mod tests {
 
             let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
             let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+
+            // Create and save startup info for the test
+            let test_state_root = H256::random();
+            let startup_info = StartupInfo::new(test_state_root, 0);
+            rooch_db
+                .moveos_store
+                .config_store
+                .save_startup_info(startup_info)?;
+
             let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();
@@ -180,6 +199,15 @@ mod tests {
 
             let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
             let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+
+            // Create and save startup info for the test
+            let test_state_root = H256::random();
+            let startup_info = StartupInfo::new(test_state_root, 0);
+            rooch_db
+                .moveos_store
+                .config_store
+                .save_startup_info(startup_info)?;
+
             let gc = GarbageCollector::new(rooch_db, config)?;
 
             let start_time = Instant::now();

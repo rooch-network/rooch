@@ -6,6 +6,7 @@ use anyhow::Result;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[tokio::test]
 async fn test_recycle_bin_list_entries() -> Result<()> {
@@ -44,9 +45,13 @@ async fn test_recycle_bin_list_entries() -> Result<()> {
     let limited_entries = recycle_bin.list_entries(None, Some(2))?;
     assert_eq!(limited_entries.len(), 2);
 
-    // Test list with time filter
+    // Test list with time filter - use future timestamp to match current records
+    let future_timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() + 1000;
     let filter = RecycleFilter {
-        older_than: Some(1640995200 + 100), // Filter for older records
+        older_than: Some(future_timestamp), // Filter for older records (future timestamp)
         newer_than: None,
         min_size: None,
         max_size: None,
@@ -133,9 +138,13 @@ async fn test_recycle_bin_delete_entries() -> Result<()> {
     let all_entries = recycle_bin.list_entries(None, None)?;
     assert_eq!(all_entries.len(), 4);
 
-    // Delete entries by time filter (older than current time)
+    // Delete entries by time filter (older than future time)
+    let future_timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() + 10000;
     let filter = RecycleFilter {
-        older_than: Some(1640995200 + 1000), // Time-based filter
+        older_than: Some(future_timestamp), // Time-based filter with future timestamp
         newer_than: None,
         min_size: None,
         max_size: None,
