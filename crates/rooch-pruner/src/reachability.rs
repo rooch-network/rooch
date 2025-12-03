@@ -189,7 +189,7 @@ impl ReachableBuilder {
             let bytes_results = self.moveos_store.node_store.multi_get(&pending_nodes)?;
 
             // Process each node and extract children
-            for (i, bytes_option) in bytes_results.into_iter().enumerate() {
+            for bytes_option in bytes_results.into_iter() {
                 // Traverse the node to find children
                 // Include both Global‐State and Table-State JMT nodes
                 if let Some(bytes) = bytes_option {
