@@ -29,6 +29,9 @@ fn optimal_bloom_size(estimated_nodes: usize, target_fp_rate: f64) -> (usize, u8
     // Clamp hash functions to reasonable range
     let hash_fns = optimal_hash_fns.clamp(1, 16);
 
+    // Validate hash functions are in reasonable range
+    assert!((1..=16).contains(&hash_fns));
+
     (bit_count, hash_fns)
 }
 
@@ -170,7 +173,7 @@ mod tests {
         let (bits, fns) = optimal_bloom_size(1000, 0.01);
         assert!(bits >= 1024); // Minimum 1KB
         assert!(bits.is_power_of_two()); // Should be power of 2
-        assert!(fns >= 1 && fns <= 16); // Reasonable hash function range
+        assert!((1..=16).contains(&fns)); // Reasonable hash function range
 
         // Larger dataset should use more bits
         let (bits_large, _) = optimal_bloom_size(100_000, 0.01);
@@ -223,7 +226,7 @@ mod tests {
 
         // Test false positive rate estimation
         let fp_rate = marker.estimated_false_positive_rate();
-        assert!(fp_rate >= 0.0 && fp_rate <= 1.0);
+        assert!((0.0..=1.0).contains(&fp_rate));
 
         // Test reset
         marker.reset().unwrap();

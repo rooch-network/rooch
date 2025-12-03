@@ -7,7 +7,7 @@ use crate::utils::open_rooch_db_readonly;
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_pruner::recycle_bin::RecycleBinConfig;
-use rooch_pruner::{GCConfig, GarbageCollector, MarkerStrategy};
+use rooch_pruner::{GCConfig, GarbageCollector};
 use rooch_types::error::RoochResult;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -80,15 +80,6 @@ pub struct GCCommand {
     #[clap(long)]
     pub force_compaction: bool,
 
-    /// Marker strategy for tracking reachable nodes
-    ///
-    /// Available options:
-    /// - auto: Automatically select based on available memory
-    /// - memory: Use in-memory HashSet (faster, uses more RAM)
-    /// - persistent: Use temporary RocksDB column family (slower, less RAM)
-    #[clap(long = "marker-strategy", default_value = "auto")]
-    pub marker_strategy: String,
-
     /// Number of recent state roots to protect from garbage collection
     ///
     /// Higher values provide better historical data protection but may use more memory
@@ -114,21 +105,8 @@ pub struct GCCommand {
 }
 
 impl GCCommand {
-    /// Parse marker strategy from string input
-    fn parse_marker_strategy(&self) -> Result<MarkerStrategy, String> {
-        match self.marker_strategy.as_str() {
-            "auto" => Ok(MarkerStrategy::Auto),
-            "memory" => Ok(MarkerStrategy::InMemory),
-            "persistent" => Ok(MarkerStrategy::Persistent),
-            _ => Err("Invalid marker strategy. Use: auto, memory, or persistent".to_string()),
-        }
-    }
-
     /// Validate command parameters
     fn validate(&self) -> Result<(), String> {
-        // Validate marker strategy
-        self.parse_marker_strategy()?;
-
         // Validate batch size
         if self.batch_size == 0 {
             return Err("Batch size must be greater than 0".to_string());
@@ -149,8 +127,6 @@ impl GCCommand {
 
     /// Create GC configuration from command parameters
     fn create_gc_config(&self) -> Result<GCConfig, String> {
-        let marker_strategy = self.parse_marker_strategy()?;
-
         // Create recycle bin configuration with strong backup defaults
         let recycle_bin_config = RecycleBinConfig {
             strong_backup: true, // Always enabled - immutable default
@@ -176,28 +152,20 @@ impl GCCommand {
             dry_run: self.dry_run,
             workers: self.workers,
             use_recycle_bin: self.use_recycle_bin,
+            recycle_bin: recycle_bin_config,
             force_compaction: self.force_compaction,
             skip_confirm: self.skip_confirm,
 
             // Core GC Configuration
             scan_batch: 10000, // Default scan batch size
             batch_size: self.batch_size,
-            bloom_bits: 8589934592, // 2^33 bits (1GB)
+            bloom_bits: 1 << 33, // 2^33 bits (1GB)
             protected_roots_count,
 
-            // Marker Strategy Configuration
-            marker_strategy,
-            marker_batch_size: 10000,
-            marker_bloom_bits: 1048576, // 2^20 bits (1MB)
+            // Marker Configuration - now uses only Bloom filter parameters
+            marker_bloom_bits: 1 << 20, // 2^20 bits (1MB)
             marker_bloom_hash_fns: 4,
-            marker_memory_threshold_mb: 1024, // 1GB
-            marker_auto_strategy: true,
-            marker_force_persistent: false,
-            marker_temp_cf_name: "gc_marker_temp".to_string(),
-            marker_error_recovery: true,
-
-            // Recycle Bin Configuration
-            recycle_bin: recycle_bin_config,
+            marker_target_fp_rate: 0.01, // 1% false positive rate
         };
 
         Ok(config)
