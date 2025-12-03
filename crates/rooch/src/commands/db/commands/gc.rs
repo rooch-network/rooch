@@ -115,7 +115,7 @@ impl GCCommand {
         // Validate worker count
         if self.workers == 0 {
             return Err("Worker count must be greater than 0".to_string());
-        } 
+        }
 
         Ok(())
     }
