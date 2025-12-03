@@ -15,14 +15,9 @@ target/
 *~
 .DS_Store
 
-# Documentation and markdown (except essential docs)
-*.md
 docs/
 
 # Test files and test data
-tests/
-**/*.tests
-*.test
 coverage/
 .nyc_output
 
@@ -49,10 +44,6 @@ temp/
 .sass-cache/
 .eslintcache
 .rooch/
-
-# Move build artifacts
-move/
-**/*.move
 
 # Docker files (except the one we need)
 Dockerfile*
