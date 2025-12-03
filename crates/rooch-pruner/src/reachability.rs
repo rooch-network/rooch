@@ -418,6 +418,9 @@ impl ReachableBuilder {
         let local_overflow_threshold = batch_size * 2;
         let mut local_queue_estimate = 0usize;
         let mut processed_count = 0u64;
+        let mut idle_cycles = 0u64;
+
+        info!("Worker {} started", worker_id);
 
         loop {
             // Check termination flag
@@ -442,51 +445,86 @@ impl ReachableBuilder {
             if pending.is_empty() {
                 let stolen = self.steal_batch(global, stealers, worker_id, batch_size / 2);
                 if stolen.is_empty() {
-                    // No work available, mark as idle and check for global termination
-                    let active = active_workers.fetch_sub(1, Ordering::SeqCst);
-                    if active == 1 {
-                        // Potential last worker - double check to avoid race condition
-                        // Between decrementing counter and checking, another worker might have
-                        // found work and incremented the counter
-                        std::thread::yield_now();
+                    // No work available, enter idle state
+                    idle_cycles += 1;
 
-                        // Final verification: try stealing once more from global queue
-                        match global.steal() {
-                            Steal::Empty => {
-                                // Global queue is truly empty, safe to terminate
-                                termination_flag.store(true, Ordering::SeqCst);
-                                break;
-                            }
-                            Steal::Success(hash) => {
-                                // Found work! Reactivate immediately
-                                active_workers.fetch_add(1, Ordering::SeqCst);
+                    // Mark as idle
+                    let prev_active = active_workers.fetch_sub(1, Ordering::SeqCst);
+
+                    // Wait for work with timeout-based termination detection
+                    let mut found_work = false;
+                    let start_wait = std::time::Instant::now();
+                    let max_wait = std::time::Duration::from_secs(5); // Wait up to 5 seconds
+
+                    while start_wait.elapsed() < max_wait {
+                        if termination_flag.load(Ordering::Relaxed) {
+                            break;
+                        }
+
+                        // Try to steal work
+                        let retry_stolen = self.steal_batch(global, stealers, worker_id, 1);
+                        if !retry_stolen.is_empty() {
+                            // Found work, reactivate
+                            active_workers.fetch_add(1, Ordering::SeqCst);
+                            for hash in retry_stolen {
                                 if !marker.is_marked(&hash) {
                                     pending.push(hash);
                                 }
-                                continue; // Process the work
                             }
-                            Steal::Retry => {
-                                // Contention on global queue, retry
-                                active_workers.fetch_add(1, Ordering::SeqCst);
-                                continue;
+                            found_work = true;
+                            break;
+                        }
+
+                        // Check termination condition: all workers idle and no work in global queue
+                        let current_active = active_workers.load(Ordering::SeqCst);
+                        if current_active == 0 {
+                            // All workers are idle, check if global queue is empty
+                            match global.steal() {
+                                Steal::Empty => {
+                                    // Double check - give other workers a chance to add work
+                                    std::thread::sleep(std::time::Duration::from_millis(10));
+                                    if active_workers.load(Ordering::SeqCst) == 0 {
+                                        match global.steal() {
+                                            Steal::Empty => {
+                                                // Truly empty, signal termination
+                                                termination_flag.store(true, Ordering::SeqCst);
+                                                break;
+                                            }
+                                            Steal::Success(hash) => {
+                                                active_workers.fetch_add(1, Ordering::SeqCst);
+                                                if !marker.is_marked(&hash) {
+                                                    pending.push(hash);
+                                                }
+                                                found_work = true;
+                                                break;
+                                            }
+                                            Steal::Retry => continue,
+                                        }
+                                    }
+                                }
+                                Steal::Success(hash) => {
+                                    active_workers.fetch_add(1, Ordering::SeqCst);
+                                    if !marker.is_marked(&hash) {
+                                        pending.push(hash);
+                                    }
+                                    found_work = true;
+                                    break;
+                                }
+                                Steal::Retry => {}
                             }
                         }
+
+                        // Brief sleep to avoid busy-waiting
+                        std::thread::sleep(std::time::Duration::from_millis(1));
                     }
 
-                    // Not the last worker, wait briefly and try again
-                    std::thread::yield_now();
-                    let retry_stolen = self.steal_batch(global, stealers, worker_id, 1);
-                    if retry_stolen.is_empty() {
-                        // Still no work, terminate
-                        break;
-                    } else {
-                        // Found work, reactivate
-                        active_workers.fetch_add(1, Ordering::SeqCst);
-                        for hash in retry_stolen {
-                            if !marker.is_marked(&hash) {
-                                pending.push(hash);
-                            }
+                    if !found_work {
+                        // Timeout reached without finding work
+                        if prev_active == 1 || active_workers.load(Ordering::SeqCst) == 0 {
+                            // We might be the last worker, signal termination
+                            termination_flag.store(true, Ordering::SeqCst);
                         }
+                        break;
                     }
                 } else {
                     for hash in stolen {
@@ -501,6 +539,9 @@ impl ReachableBuilder {
                 }
             }
 
+            // Reset idle cycles when we have work
+            idle_cycles = 0;
+
             // 3. Process batch and distribute children
             self.process_batch_parallel(
                 &pending,
@@ -514,8 +555,8 @@ impl ReachableBuilder {
             processed_count += pending.len() as u64;
             pending.clear();
 
-            // Log progress periodically
-            if processed_count % 50000 == 0 && processed_count > 0 {
+            // Log progress periodically (every 100K nodes for less noise)
+            if processed_count % 100000 == 0 && processed_count > 0 {
                 info!(
                     "Worker {}: processed {} nodes, local_queue_estimate={}",
                     worker_id, processed_count, local_queue_estimate
@@ -524,8 +565,8 @@ impl ReachableBuilder {
         }
 
         info!(
-            "Worker {} completed: processed {} nodes total",
-            worker_id, processed_count
+            "Worker {} completed: processed {} nodes total, idle_cycles={}",
+            worker_id, processed_count, idle_cycles
         );
         Ok(())
     }
