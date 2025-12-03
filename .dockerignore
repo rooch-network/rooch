@@ -5,7 +5,6 @@
 
 # Build artifacts and dependencies
 target/
-Cargo.lock
 **/*.rs.bk
 
 # IDE and editor files
@@ -38,10 +37,6 @@ yarn-error.log*
 # Kubernetes configs (not needed in container)
 kube/
 
-# Scripts and maintenance files
-scripts/
-*.sh
-!docker-build-rooch.sh
 
 # Logs and temporary files
 *.log

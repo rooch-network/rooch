@@ -64,7 +64,7 @@ RUN set -eux; \
 
 WORKDIR /rooch
 COPY ./ .
-RUN cargo build --release
+RUN cargo build --release --locked
 
 FROM ubuntu:jammy
 RUN set -eux; \
