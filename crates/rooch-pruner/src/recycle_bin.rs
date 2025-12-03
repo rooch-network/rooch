@@ -9,7 +9,7 @@ use raw_store::{CodecKVStore, CodecWriteBatch};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use sysinfo::Disks;
+use sysinfo::{Disks, Disk};
 use tracing::{debug, error, warn};
 
 pub const DEFAULT_LIST_LIMIT: usize = 100;

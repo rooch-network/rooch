@@ -1,0 +1,102 @@
+# Git and version control
+.git
+.gitignore
+.gitattributes
+
+# Build artifacts and dependencies
+target/
+Cargo.lock
+**/*.rs.bk
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation and markdown (except essential docs)
+*.md
+!CLAUDE.md
+docs/
+
+# Test files and test data
+tests/
+**/*.tests
+*.test
+coverage/
+.nyc_output
+
+# Node.js and TypeScript (not needed for Rust build)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tgz
+*.tar.gz
+
+# Kubernetes configs (not needed in container)
+kube/
+
+# Scripts and maintenance files
+scripts/
+*.sh
+!docker-build-rooch.sh
+
+# Logs and temporary files
+*.log
+logs/
+tmp/
+temp/
+
+# Cache and data directories
+.cache/
+.sass-cache/
+.eslintcache
+.rooch/
+
+# Move build artifacts
+move/
+**/*.move
+
+# Docker files (except the one we need)
+Dockerfile*
+!Dockerfile.build
+.dockerignore
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+
+# Large data files and backups
+*.zip
+*.tar
+*.gz
+*.bz2
+*.xz
+*.7z
+
+# Configuration files
+.env
+.env.*
+config/
+*.toml
+!Cargo.toml
+*.yaml
+!docker-compose*.yaml
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Profiling and performance data
+perf.data*
+*.prof
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
