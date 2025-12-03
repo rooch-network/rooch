@@ -104,3 +104,49 @@ Run the benchmark with Bitcoin RPC config, it will download the blocks from Bitc
 ```shell
 ROOCH_BENCH_TX_TYPE=btc_tx ROOCH_BENCH_BTC_RPC_URL=http://localhost:8332 ROOCH_BENCH_BTC_RPC_USERNAME=YourBTCUser ROOCH_BENCH_BTC_RPC_PASSWORD=YourBTCPass cargo bench -p rooch-benchmarks --bench bench_tx_exec
 ```
+
+## GC Mark Phase Benchmark
+
+Benchmark suite for testing GC (Garbage Collector) Mark Phase performance, focusing on:
+- **AtomicBloomFilter vs Mutex BloomFilter**: Lock-free atomic operations vs mutex-based implementation
+- **Parallel vs Single-threaded**: Work-stealing parallel algorithm efficiency
+- **Worker count impact**: Performance with different thread counts
+- **Batch size impact**: Batch processing size effect on I/O performance
+- **Multi-root scenarios**: Parallel traversal of multiple root nodes
+
+### Run GC Benchmarks
+
+```bash
+# Run all GC benchmarks
+cargo bench --bench bench_gc
+
+# Run specific benchmark groups
+cargo bench --bench bench_gc -- mark_phase_scaling        # Data scaling (10K, 50K, 100K nodes)
+cargo bench --bench bench_gc -- mark_phase_workers        # Worker count (1, 2, 4, 8)
+cargo bench --bench bench_gc -- mark_phase_batch_size     # Batch size (100-10000)
+cargo bench --bench bench_gc -- atomic_bloom_comparison   # AtomicBloom vs Mutex Bloom
+cargo bench --bench bench_gc -- mark_phase_multi_root     # Multi-root parallel
+```
+
+### GC Benchmark Groups
+
+1. **mark_phase_scaling** - Tests performance at different data scales (10K, 50K, 100K nodes)
+2. **mark_phase_workers** - Tests worker count impact (1, 2, 4, 8 workers) with 100K nodes
+3. **mark_phase_batch_size** - Tests batch size optimization (100-10000) with 100K nodes and 4 workers
+4. **atomic_bloom_comparison** - Compares AtomicBloomFilterMarker vs BloomFilterMarker with 50K nodes
+5. **mark_phase_multi_root** - Tests 4 independent trees (10K nodes each) in single-thread vs 4-worker parallel
+
+### View Results
+
+Benchmark results are saved in `target/criterion/<benchmark_name>/report/index.html`
+
+```bash
+open target/criterion/mark_phase_scaling/report/index.html
+```
+
+### Key Optimizations
+
+- **AtomicBloomFilterMarker**: Uses `AtomicU8` and atomic operations instead of Mutex, reducing lock contention
+- **Work-Stealing**: Implements work-stealing using `crossbeam-deque` for better load balancing
+- **Batch I/O**: Uses `multi_get()` to batch-read nodes, reducing database access count
+- **Overflow Strategy**: Overflows to global queue when local queue is full, enabling work stealing
