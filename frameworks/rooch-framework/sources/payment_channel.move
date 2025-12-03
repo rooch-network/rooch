@@ -718,12 +718,12 @@ module rooch_framework::payment_channel {
     /// Internal helper: Open a channel between sender and receiver
     /// This function does not require a signer, allowing facilitator to proxy the operation
     /// Can be used by both traditional open_channel and x402 apply_receipt
+    /// Note: sender_addr and receiver_addr can be the same address for account internal operations
     fun internal_open_channel(
         sender_addr: address,
         receiver_addr: address,
         coin_type: String,
     ): ObjectID {
-        assert!(sender_addr != receiver_addr, ErrorNotReceiver);
         assert!(did::exists_did_for_address(sender_addr), ErrorSenderMustIsDID);
         
         let channel_id = calc_channel_object_id(sender_addr, receiver_addr, coin_type);

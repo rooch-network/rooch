@@ -1060,4 +1060,42 @@ module rooch_framework::payment_channel_test {
         assert!(payment_channel::get_balance_in_hub<RGas>(alice_addr) == TEST_AMOUNT_50, 8005);
         assert!(payment_channel::get_balance_in_hub<RGas>(bob_addr) == TEST_AMOUNT_50, 8006);
     }
+
+    #[test]
+    fun test_9_1_open_channel_same_sender_receiver() {
+        // Setup: Initialize test environment with Alice
+        genesis::init_for_test();
+        timestamp::fast_forward_milliseconds_for_test(1000);
+
+        // Setup Alice (both sender and receiver) with DID
+        let (alice_signer, _alice_public_key) = setup_did_account(1);
+        let alice_addr = signer::address_of(&alice_signer);
+
+        // Mint some RGas for Alice
+        let rgas_coin = gas_coin::mint_for_test(1000);
+        account_coin_store::deposit<RGas>(alice_addr, rgas_coin);
+
+        let vm_id_fragment = string::utf8(b"account-key");
+
+        // Set the sender context to Alice
+        tx_context::set_ctx_sender_for_testing(alice_addr);
+
+        // Test: Open a channel where sender and receiver are the same address
+        // This should succeed after removing the restriction
+        let channel_id = payment_channel::open_channel_with_sub_channel<RGas>(
+            &alice_signer,
+            alice_addr, // Same address as sender
+            vm_id_fragment
+        );
+
+        // Verify channel was created successfully
+        assert!(object::exists_object_with_type<payment_channel::PaymentChannel>(channel_id), 9001);
+
+        // Verify channel info shows same sender and receiver
+        let (sender, receiver, coin_type, status) = payment_channel::get_channel_info(channel_id);
+        assert!(sender == alice_addr, 9002);
+        assert!(receiver == alice_addr, 9003);
+        assert!(status == 0, 9004); // STATUS_ACTIVE = 0
+        assert!(coin_type == type_info::type_name<RGas>(), 9005);
+    }
 }
