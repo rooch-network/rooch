@@ -8,6 +8,7 @@ use crate::{STATE_NODE_COLUMN_FAMILY_NAME, STATE_NODE_RECYCLE_COLUMN_FAMILY_NAME
 use anyhow::Result;
 use moveos_types::h256::H256;
 use raw_store::rocks::batch::WriteBatch;
+use raw_store::traits::KVStore;
 use raw_store::WriteOp;
 use raw_store::{derive_store, CodecKVStore};
 use smt::{NodeReader, NodeWriter};
@@ -25,6 +26,11 @@ derive_store!(
 impl NodeDBStore {
     pub fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
         self.put_raw(key.as_bytes().to_vec(), node)
+    }
+
+    pub fn multi_get(&self, keys: &[H256]) -> Result<Vec<Option<Vec<u8>>>> {
+        let key_bytes: Vec<Vec<u8>> = keys.iter().map(|k| k.as_bytes().to_vec()).collect();
+        self.store.multiple_get(key_bytes)
     }
 
     pub fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
