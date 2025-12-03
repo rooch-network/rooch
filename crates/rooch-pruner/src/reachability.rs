@@ -129,20 +129,19 @@ impl ReachableBuilder {
     pub fn build_with_marker(
         &self,
         live_roots: Vec<H256>,
-        workers: usize,
+        _workers: usize,
         marker: &dyn NodeMarker,
+        batch_size: usize,
     ) -> Result<u64> {
         let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));
 
-        // Use Rayon for parallel processing with maximum parallelism
-        live_roots
-            .into_par_iter()
-            .with_max_len(workers)
-            .for_each(|root| {
-                if let Err(e) = self.dfs_from_root_with_marker(root, &counter, marker) {
-                    tracing::error!("DFS error with marker: {}", e);
-                }
-            });
+        // For now, use single-threaded batch processing with optimized I/O
+        // Future enhancement: implement full work-stealing parallelism
+        for root in live_roots {
+            if let Err(e) = self.dfs_from_root_with_marker_batch(root, &counter, marker, batch_size) {
+                tracing::error!("DFS error with marker: {}", e);
+            }
+        }
 
         let scanned = counter.load(std::sync::atomic::Ordering::Relaxed);
         tracing::info!(
@@ -154,53 +153,72 @@ impl ReachableBuilder {
         Ok(scanned)
     }
 
-    /// DFS traversal using NodeMarker for precise marking instead of BloomFilter
-    /// This method is designed for garbage collection where we need exact tracking
-    fn dfs_from_root_with_marker(
+    /// Optimized single-threaded DFS with batch I/O processing
+    fn dfs_from_root_with_marker_batch(
         &self,
         root_hash: H256,
         counter: &Arc<std::sync::atomic::AtomicU64>,
         marker: &dyn NodeMarker,
+        batch_size: usize,
     ) -> Result<()> {
-        use std::sync::atomic;
         let mut stack = VecDeque::new();
         stack.push_back(root_hash);
         let mut curr_count: u32 = 0;
 
-        while let Some(node_hash) = stack.pop_back() {
-            // Check if node is already marked using NodeMarker
-            if marker.is_marked(&node_hash) {
+        while !stack.is_empty() {
+            // Collect up to batch_size nodes for batch processing
+            let mut pending_nodes = Vec::with_capacity(batch_size);
+            while pending_nodes.len() < batch_size && !stack.is_empty() {
+                let node_hash = stack.pop_back().unwrap();
+
+                // Check if node is already marked using NodeMarker
+                if marker.is_marked(&node_hash) {
+                    continue;
+                }
+
+                // Mark the node as reachable
+                let newly_marked = marker.mark(node_hash)?;
+                if !newly_marked {
+                    // Already marked by another thread (race condition)
+                    continue;
+                }
+
+                pending_nodes.push(node_hash);
+            }
+
+            if pending_nodes.is_empty() {
                 continue;
             }
 
-            // Mark the node as reachable
-            let newly_marked = marker.mark(node_hash)?;
-            if !newly_marked {
-                // Already marked by another thread (race condition)
-                continue;
-            }
+            // Batch read all pending nodes
+            let bytes_results = self.moveos_store.node_store.multi_get(&pending_nodes)?;
 
-            // Traverse the node to find children
-            // Include both Global‐State and Table-State JMT nodes
-            if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
-                // If this leaf embeds another table root, push it to the stack for further traversal.
-                if let Some(child_root) = try_extract_child_root(&bytes) {
-                    stack.push_back(child_root);
-                } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
-                    // For internal nodes, add all children to the stack
-                    for child_hash in internal.all_child() {
-                        stack.push_back(child_hash.into());
+            // Process each node and extract children
+            for (i, bytes_option) in bytes_results.into_iter().enumerate() {
+                let _node_hash = pending_nodes[i];
+
+                // Traverse the node to find children
+                // Include both Global‐State and Table-State JMT nodes
+                if let Some(bytes) = bytes_option {
+                    // If this leaf embeds another table root, push it to the stack for further traversal.
+                    if let Some(child_root) = try_extract_child_root(&bytes) {
+                        stack.push_back(child_root);
+                    } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
+                        // For internal nodes, add all children to the stack
+                        for child_hash in internal.all_child() {
+                            stack.push_back(child_hash.into());
+                        }
                     }
                 }
-            }
 
-            curr_count += 1;
-            counter.fetch_add(1, atomic::Ordering::Relaxed);
+                curr_count += 1;
+                counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
 
             // Log progress every 10,000 nodes
             if curr_count % 10000 == 0 {
                 info!(
-                    "ReachableBuilder dfs_from_root_with_marker looping, curr_count {}, marker: {}",
+                    "ReachableBuilder dfs_from_root_with_marker_batch looping, curr_count {}, marker: {}",
                     curr_count,
                     marker.marker_type()
                 );
@@ -208,13 +226,14 @@ impl ReachableBuilder {
         }
 
         info!(
-            "ReachableBuilder dfs_from_root_with_marker done, root_hash {:?}, recursive child size {}, total marked: {}",
-            root_hash,
-            curr_count,
-            marker.marked_count()
+            "ReachableBuilder dfs_from_root_with_marker_batch done, root_hash {:?}, recursive child size {}, total marked: {}",
+            root_hash, curr_count, marker.marked_count()
         );
         Ok(())
     }
+
+    /// DFS traversal using NodeMarker for precise marking instead of BloomFilter
+    /// This method is designed for garbage collection where we need exact tracking
 
     /// Hybrid build method that uses both BloomFilter and NodeMarker
     /// BloomFilter is used for initial fast filtering, NodeMarker for precise tracking

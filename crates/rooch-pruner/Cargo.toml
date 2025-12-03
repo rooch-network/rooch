@@ -18,6 +18,7 @@ serde = { workspace = true }
 hex = { workspace = true }
 
 rayon = { workspace = true }
+crossbeam-deque = "0.8"
 
 num_cpus = { workspace = true }
 parking_lot = { workspace = true }

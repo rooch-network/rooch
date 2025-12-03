@@ -411,6 +411,7 @@ impl GarbageCollector {
             protected_roots.to_vec(),
             self.config.workers,
             marker.as_ref(),
+            self.config.batch_size,
         )?;
 
         let mark_stats = MarkStats {

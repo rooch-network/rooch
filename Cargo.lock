@@ -11115,6 +11115,7 @@ dependencies = [
  "bcs",
  "bcs-ext",
  "criterion",
+ "crossbeam-deque",
  "hex",
  "moveos-common",
  "moveos-store",
