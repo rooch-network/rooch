@@ -59,13 +59,6 @@ impl CommandAction<OpenOutput> for OpenCommand {
         // Resolve receiver address
         let receiver: RoochAddress = context.resolve_address(self.receiver)?.into();
 
-        // Validate that sender and receiver are different
-        if sender == receiver {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                "Sender and receiver cannot be the same address".to_string(),
-            ));
-        }
-
         // Parse or discover VM ID fragments
         let vm_id_fragment: String = if let Some(fragments_str) = &self.vm_id_fragment {
             // User provided fragments
