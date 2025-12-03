@@ -71,14 +71,6 @@ Desktop.ini
 *.xz
 *.7z
 
-# Configuration files
-.env
-.env.*
-config/
-*.toml
-!Cargo.toml
-*.yaml
-!docker-compose*.yaml
 
 # Database files
 *.db
