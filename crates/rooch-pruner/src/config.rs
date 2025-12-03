@@ -3,7 +3,6 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::marker::MarkerStrategy;
 use super::recycle_bin::RecycleBinConfig;
 
 /// Unified Garbage Collector configuration
@@ -44,33 +43,15 @@ pub struct GCConfig {
     /// Number of recent state roots to protect from GC (default: 1 for backward compatibility)
     pub protected_roots_count: usize,
 
-    // === Marker Strategy Configuration ===
-    /// Marker strategy selection (auto/memory/persistent)
-    pub marker_strategy: MarkerStrategy,
-
-    /// PersistentMarker batch size for efficient bulk writes
-    pub marker_batch_size: usize,
-
-    /// PersistentMarker bloom filter bits (must be power of two, default: 2^20 = 1MB)
+    // === Marker Configuration ===
+    /// Bloom filter size in bits (must be power of two, optional - uses dynamic calculation if 0)
     pub marker_bloom_bits: usize,
 
-    /// PersistentMarker bloom filter hash functions (default: 4)
+    /// Bloom filter hash functions (default: 4)
     pub marker_bloom_hash_fns: u8,
 
-    /// Memory threshold for selecting PersistentMarker vs InMemoryMarker (MB)
-    pub marker_memory_threshold_mb: usize,
-
-    /// Enable automatic strategy selection based on dataset size
-    pub marker_auto_strategy: bool,
-
-    /// Force PersistentMarker usage regardless of dataset size
-    pub marker_force_persistent: bool,
-
-    /// Temporary column family name for PersistentMarker
-    pub marker_temp_cf_name: String,
-
-    /// Enable enhanced error recovery for PersistentMarker
-    pub marker_error_recovery: bool,
+    /// Target false positive rate for Bloom filter (default: 0.01 = 1%)
+    pub marker_target_fp_rate: f64,
 }
 
 impl Default for GCConfig {
@@ -91,15 +72,9 @@ impl Default for GCConfig {
             protected_roots_count: 1,
 
             // === Marker Configuration ===
-            marker_strategy: crate::marker::MarkerStrategy::Auto,
-            marker_batch_size: 10000,
-            marker_bloom_bits: 1 << 20, // 1M bits
+            marker_bloom_bits: 0, // 0 = use dynamic calculation
             marker_bloom_hash_fns: 4,
-            marker_memory_threshold_mb: 2048, // 2GB
-            marker_auto_strategy: true,
-            marker_force_persistent: false,
-            marker_temp_cf_name: "gc_marker_temp".to_string(),
-            marker_error_recovery: true,
+            marker_target_fp_rate: 0.01, // 1% false positive rate
         }
     }
 }

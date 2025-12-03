@@ -3,7 +3,7 @@
 
 use crate::config::GCConfig;
 use crate::historical_state::{HistoricalStateCollector, HistoricalStateConfig};
-use crate::marker::{create_marker_with_config, MarkerStrategy, NodeMarker};
+use crate::marker::{create_marker, NodeMarker};
 use crate::reachability::ReachableBuilder;
 use crate::recycle_bin::RecycleBinStore;
 use crate::safety_verifier::SafetyVerifier;
@@ -30,8 +30,8 @@ pub struct GCReport {
     pub sweep_stats: SweepStats,
     /// Total execution duration
     pub duration: Duration,
-    /// Memory strategy that was actually used
-    pub memory_strategy_used: MarkerStrategy,
+    /// Memory strategy that was actually used (now always "BloomFilter")
+    pub memory_strategy_used: String,
 }
 
 /// Mark phase statistics
@@ -109,22 +109,14 @@ impl GarbageCollector {
         let protected_roots = self.get_protected_roots()?;
         info!("Protected roots: {:?}", protected_roots);
 
-        // Phase 3: Estimate node count and select optimal strategy
+        // Phase 3: Estimate node count for marker configuration
         let estimated_nodes = self.estimate_node_count(&protected_roots)?;
-        let memory_strategy = if self.config.marker_strategy == MarkerStrategy::Auto {
-            crate::marker::select_marker_strategy(estimated_nodes)
-        } else {
-            self.config.marker_strategy
-        };
 
-        info!(
-            "Estimated nodes: {}, using {} strategy",
-            estimated_nodes, memory_strategy
-        );
+        info!("Estimated nodes: {}", estimated_nodes);
 
         // Phase 4: Mark phase - identify all reachable nodes
         let (mark_stats, marker) =
-            self.mark_phase(&protected_roots, memory_strategy, estimated_nodes)?;
+            self.mark_phase(&protected_roots, estimated_nodes)?;
 
         // Phase 5: User confirmation (after mark, before sweep; skip in dry-run or if skip_confirm is enabled)
         if !self.config.dry_run {
@@ -152,7 +144,7 @@ impl GarbageCollector {
             mark_stats,
             sweep_stats,
             duration: total_duration,
-            memory_strategy_used: memory_strategy,
+            memory_strategy_used: "BloomFilter".to_string(),
         };
 
         info!("=== Garbage Collection Completed ===");
@@ -399,26 +391,20 @@ impl GarbageCollector {
     fn mark_phase(
         &self,
         protected_roots: &[H256],
-        memory_strategy: MarkerStrategy,
         estimated_nodes: usize,
     ) -> Result<(MarkStats, Box<dyn NodeMarker>)> {
         info!("=== Mark Phase ===");
         let start_time = Instant::now();
 
-        // Create appropriate marker
-        let marker = create_marker_with_config(
-            memory_strategy,
-            estimated_nodes,
-            &self.config,
-            Some(self.rooch_db.moveos_store.clone()),
-        )?;
+        // Create Bloom filter marker with optimal parameters
+        let marker = create_marker(estimated_nodes, self.config.marker_target_fp_rate);
         info!("Created {} marker", marker.marker_type());
 
         // Create ReachableBuilder with a bloom filter for additional optimization
         let bloom = Arc::new(Mutex::new(BloomFilter::new(1 << 20, 4)));
         let reachable_builder = ReachableBuilder::new(self.rooch_db.moveos_store.clone(), bloom);
 
-        // Capture strategy name before marker is moved
+        // Capture marker type for stats
         let strategy_name = marker.marker_type().to_string();
 
         // Execute reachability analysis
@@ -746,7 +732,7 @@ mod tests {
         assert_eq!(config.batch_size, 10_000);
         assert!(config.use_recycle_bin);
         assert!(!config.force_compaction);
-        assert_eq!(config.marker_strategy, MarkerStrategy::Auto);
+        // Marker strategy is now always BloomFilter
         assert!(!config.skip_confirm);
     }
 
@@ -771,12 +757,12 @@ mod tests {
             mark_stats,
             sweep_stats,
             duration: Duration::from_secs(30),
-            memory_strategy_used: MarkerStrategy::InMemory,
+            memory_strategy_used: "BloomFilter".to_string(),
         };
 
         assert_eq!(report.protected_roots, roots);
         assert_eq!(report.mark_stats.marked_count, 1000);
         assert_eq!(report.sweep_stats.deleted_count, 1000);
-        assert_eq!(report.memory_strategy_used, MarkerStrategy::InMemory);
+        assert_eq!(report.memory_strategy_used, "BloomFilter");
     }
 }

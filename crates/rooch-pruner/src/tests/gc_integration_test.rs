@@ -9,7 +9,7 @@
 mod tests {
     use crate::config::GCConfig;
     use crate::garbage_collector::GarbageCollector;
-    use crate::marker::{MarkerStrategy, NodeMarker};
+    use crate::marker::{BloomFilterMarker, NodeMarker};
     use crate::safety_verifier::SafetyVerifier;
     use anyhow::Result;
     use moveos_types::h256::H256;
@@ -46,7 +46,6 @@ mod tests {
             workers: 1,
             use_recycle_bin: true,
             force_compaction: false,
-            marker_strategy: MarkerStrategy::InMemory,
             skip_confirm: true,
             protected_roots_count: 1,
             ..GCConfig::default()
@@ -115,7 +114,7 @@ mod tests {
         assert_eq!(default_config.batch_size, 10_000);
         assert!(default_config.use_recycle_bin);
         assert!(!default_config.force_compaction);
-        assert_eq!(default_config.marker_strategy, MarkerStrategy::Auto);
+        // Marker strategy is now always BloomFilter, no longer configurable
         // force_execution removed; skip check
 
         // Test custom configuration
@@ -125,7 +124,6 @@ mod tests {
             workers: 2,
             use_recycle_bin: false,
             force_compaction: true,
-            marker_strategy: MarkerStrategy::InMemory,
             skip_confirm: true,
             protected_roots_count: 1,
             ..GCConfig::default()
@@ -136,7 +134,6 @@ mod tests {
         assert_eq!(custom_config.workers, 2);
         assert!(!custom_config.use_recycle_bin);
         assert!(custom_config.force_compaction);
-        assert_eq!(custom_config.marker_strategy, MarkerStrategy::InMemory);
         // force_execution removed; skip check
 
         info!("✅ GC configuration test completed");
@@ -146,18 +143,18 @@ mod tests {
         Ok(())
     }
 
-    /// Test InMemory marker functionality
+    /// Test BloomFilter marker functionality
     #[test]
     fn test_in_memory_marker() -> Result<()> {
-        let marker = crate::marker::InMemoryMarker::new();
+        let marker = BloomFilterMarker::with_estimated_nodes(100_000, 0.01);
 
         let hash1 = H256::random();
         let hash2 = H256::random();
         let hash3 = H256::random();
 
-        // Test marking
-        assert!(marker.mark(hash1)?); // First time should return true
-        assert!(!(marker.mark(hash1)?)); // Duplicate should return false
+        // Test marking (Bloom Filter always returns true due to false positive possibility)
+        assert!(marker.mark(hash1)?); // Should return true
+        assert!(marker.mark(hash1)?); // Bloom Filter can't detect duplicates, always returns true
         assert!(marker.mark(hash2)?); // Different hash should return true
         assert!(marker.mark(hash3)?); // Another different hash
 
@@ -167,8 +164,8 @@ mod tests {
         assert!(marker.is_marked(&hash3));
         assert!(!marker.is_marked(&H256::random()));
 
-        // Test count
-        assert_eq!(marker.marked_count(), 3);
+        // Test count (Bloom Filter counts all mark calls, including duplicates)
+        assert_eq!(marker.marked_count(), 4); // 4 mark calls total
 
         // Test reset
         marker.reset()?;
@@ -182,27 +179,19 @@ mod tests {
         Ok(())
     }
 
-    /// Test memory strategy display formatting
+    /// Test marker type
     #[test]
-    fn test_strategy_display() {
-        let auto_str = format!("{}", MarkerStrategy::Auto);
-        let memory_str = format!("{}", MarkerStrategy::InMemory);
-        let persistent_str = format!("{}", MarkerStrategy::Persistent);
+    fn test_marker_type() {
+        let marker = BloomFilterMarker::with_estimated_nodes(1000, 0.01);
+        assert_eq!(marker.marker_type(), "BloomFilter");
 
-        assert_eq!(auto_str, "Auto");
-        assert_eq!(memory_str, "InMemory");
-        assert_eq!(persistent_str, "Persistent");
-
-        info!("✅ Strategy display test completed");
-        info!("  Auto: {}", auto_str);
-        info!("  InMemory: {}", memory_str);
-        info!("  Persistent: {}", persistent_str);
+        info!("✅ Marker type test completed");
     }
 
     /// Stress test with multiple markers
     #[test]
     fn test_multiple_marker_performance() -> Result<()> {
-        let marker = crate::marker::InMemoryMarker::new();
+        let marker = BloomFilterMarker::with_estimated_nodes(100_000, 0.01);
 
         // Test with many hashes
         let num_hashes = 100_000;
@@ -230,10 +219,10 @@ mod tests {
 
         let check_duration = start_time.elapsed() - mark_duration;
 
-        // Verify results
-        assert_eq!(marked_count, num_hashes);
-        assert_eq!(found_count, num_hashes);
-        assert_eq!(marker.marked_count(), num_hashes as u64);
+        // Verify results (Bloom Filter characteristics)
+        assert_eq!(marked_count, num_hashes); // All mark calls should return true for Bloom Filter
+        assert!(found_count >= num_hashes); // May find more due to false positives in queries
+        assert_eq!(marker.marked_count(), num_hashes as u64); // Counter equals total mark calls
 
         // Performance assertions (should be fast)
         assert!(mark_duration < Duration::from_secs(5));
@@ -322,7 +311,7 @@ mod tests {
 
         // Verify report structure
         assert!(!report.protected_roots.is_empty()); // Should have some roots
-        assert_eq!(report.mark_stats.memory_strategy, "InMemory"); // Default strategy
+        assert_eq!(report.mark_stats.memory_strategy, "BloomFilter"); // Unified strategy
         assert!(report.mark_stats.duration >= Duration::from_secs(0));
         assert!(report.duration >= Duration::from_secs(0));
 
