@@ -19,12 +19,10 @@ use std::thread;
 use tracing::info;
 
 /// Build reachable set by parallel DFS over live roots.
-/// Writes seen node hashes into optional ReachSeenDBStore to avoid re-traversal on crash resume.
 ///
 /// Design notes:
-/// * A global BloomFilter is used for hot-path deduplication.
-/// * When `bloom` is saturated, overflow hashes are flushed into RocksDB CF `reach_seen`.
-/// * Builder can be resumed by seeding Bloom with hashes already in `reach_seen`.
+/// * A global BloomFilter is used for hot-path deduplication in the legacy `build()` method.
+/// * For GC operations, use `build_with_marker()` or `build_with_marker_parallel()` with `NodeMarker` for precise tracking.
 pub struct ReachableBuilder {
     moveos_store: MoveOSStore,
     bloom: Arc<Mutex<BloomFilter>>,
@@ -42,13 +40,6 @@ impl ReachableBuilder {
     /// Build reachable set starting from `live_roots`.
     /// Returns number of unique reachable nodes scanned.
     pub fn build(&self, live_roots: Vec<H256>, workers: usize) -> Result<u64> {
-        // // Seed bloom with previously seen hashes if reach_seen cf is enabled
-        // if let Some(reach_store) = &self.reach_seen {
-        //     // iterate keys (may be large). For first version we skip preloading to keep simple.
-        //     // TODO: preload if necessary.
-        //     let _ = reach_store; // silence unused
-        // }
-
         let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));
 
         live_roots
@@ -61,11 +52,6 @@ impl ReachableBuilder {
             });
 
         let scanned = counter.load(std::sync::atomic::Ordering::Relaxed);
-        // record metrics
-        // self.metrics
-        //     .pruner_reachable_nodes_scanned
-        //     .with_label_values(&["build"])
-        //     .observe(scanned as f64);
 
         Ok(scanned)
     }
@@ -90,13 +76,7 @@ impl ReachableBuilder {
                 bloom_guard.insert(&node_hash);
             }
 
-            // // optional spill to reach_seen
-            // if let Some(reach_store) = &self.reach_seen {
-            //     // ignore errors
-            //     let _ = reach_store.kv_put(node_hash, Vec::new());
-            // }
-
-            // Inside dfs loop, traverse children and leaf add to stack
+            // Traverse children and leaf add to stack
             // Include both Global‐State and Table-State JMT
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
                 // If this leaf embeds another table root, push it to the stack for further traversal.
@@ -136,6 +116,16 @@ impl ReachableBuilder {
         marker: &dyn NodeMarker,
         batch_size: usize,
     ) -> Result<u64> {
+        // Validate batch_size to prevent infinite loop or excessive memory allocation
+        const MAX_BATCH_SIZE: usize = 100_000;
+        anyhow::ensure!(batch_size > 0, "batch_size must be positive");
+        anyhow::ensure!(
+            batch_size <= MAX_BATCH_SIZE,
+            "batch_size {} exceeds maximum allowed size {}",
+            batch_size,
+            MAX_BATCH_SIZE
+        );
+
         let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));
 
         // For now, use single-threaded batch processing with optimized I/O
@@ -343,6 +333,16 @@ impl ReachableBuilder {
         marker: &dyn NodeMarker,
         batch_size: usize,
     ) -> Result<u64> {
+        // Validate batch_size to prevent infinite loop or excessive memory allocation
+        const MAX_BATCH_SIZE: usize = 100_000;
+        anyhow::ensure!(batch_size > 0, "batch_size must be positive");
+        anyhow::ensure!(
+            batch_size <= MAX_BATCH_SIZE,
+            "batch_size {} exceeds maximum allowed size {}",
+            batch_size,
+            MAX_BATCH_SIZE
+        );
+
         // Fallback to single-threaded for small worker counts
         if workers <= 1 {
             return self.build_with_marker(live_roots, 1, marker, batch_size);

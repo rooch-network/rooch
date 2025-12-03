@@ -74,6 +74,13 @@ pub struct AtomicBloomFilterMarker {
 impl AtomicBloomFilterMarker {
     /// Create a new AtomicBloomFilterMarker with specified parameters
     pub fn new(bloom_bits: usize, bloom_hash_fns: u8) -> Self {
+        // Validate that bloom_bits is a power of 2 for efficient mask-based indexing
+        assert!(
+            bloom_bits > 0 && bloom_bits.is_power_of_two(),
+            "bloom_bits must be a power of 2, got {}",
+            bloom_bits
+        );
+
         // Calculate bytes needed for the bloom filter
         let bytes = (bloom_bits + 7) / 8;
         let bits = (0..bytes).map(|_| AtomicU8::new(0)).collect();
@@ -134,6 +141,12 @@ impl AtomicBloomFilterMarker {
 
     /// Insert a hash into the atomic Bloom filter
     pub fn insert(&self, hash: &H256) {
+        // SAFETY: H256 is guaranteed to be [u8; 32] with proper alignment.
+        // We're casting to [u64; 4] which has the same size (32 bytes = 4 * 8 bytes).
+        // This is safe because:
+        // 1. Both types have the same size (32 bytes)
+        // 2. We only read the data, never mutate through this pointer
+        // 3. The lifetime is bound to the hash reference
         let words: &[u64; 4] =
             unsafe { &*(hash.as_fixed_bytes() as *const [u8; 32] as *const [u64; 4]) };
         for i in 0..self.k {
@@ -145,6 +158,8 @@ impl AtomicBloomFilterMarker {
 
     /// Query whether a hash may exist (returns false if definitely not present)
     pub fn contains(&self, hash: &H256) -> bool {
+        // SAFETY: Same as in insert() - converting [u8; 32] to [u64; 4] for efficient hash computation.
+        // This cast is safe because we only read the data and do not mutate it.
         let words: &[u64; 4] =
             unsafe { &*(hash.as_fixed_bytes() as *const [u8; 32] as *const [u64; 4]) };
         for i in 0..self.k {
