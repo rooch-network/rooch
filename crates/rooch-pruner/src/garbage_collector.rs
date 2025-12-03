@@ -115,8 +115,7 @@ impl GarbageCollector {
         info!("Estimated nodes: {}", estimated_nodes);
 
         // Phase 4: Mark phase - identify all reachable nodes
-        let (mark_stats, marker) =
-            self.mark_phase(&protected_roots, estimated_nodes)?;
+        let (mark_stats, marker) = self.mark_phase(&protected_roots, estimated_nodes)?;
 
         // Phase 5: User confirmation (after mark, before sweep; skip in dry-run or if skip_confirm is enabled)
         if !self.config.dry_run {

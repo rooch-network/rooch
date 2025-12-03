@@ -287,15 +287,10 @@ fn create_optimized_config(node_count: usize) -> PruneConfig {
         scan_batch,
         bloom_bits,
         protected_roots_count: 1,
-        // Marker configuration
-        marker_batch_size: 10000,
+        // Marker configuration (now simplified)
         marker_bloom_bits: 1048576,
         marker_bloom_hash_fns: 4,
-        marker_memory_threshold_mb: 1024,
-        marker_auto_strategy: true,
-        marker_force_persistent: false,
-        marker_temp_cf_name: "gc_marker_temp".to_string(),
-        marker_error_recovery: true,
+        marker_target_fp_rate: 0.01,
         ..PruneConfig::default()
     }
 }

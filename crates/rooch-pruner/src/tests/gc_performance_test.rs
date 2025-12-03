@@ -67,39 +67,39 @@ mod tests {
         let node_count = 50_000;
         info!("Testing BloomFilter marker with {} nodes", node_count);
 
-            let temp_dir = TempDir::new()?;
-            let db_path = temp_dir.path().to_path_buf();
+        let temp_dir = TempDir::new()?;
+        let db_path = temp_dir.path().to_path_buf();
 
-            let config = GCConfig {
-                dry_run: true,
-                batch_size: 10_000,
-                workers: 1,
-                use_recycle_bin: true,
-                force_compaction: false,
-                skip_confirm: true,
-                protected_roots_count: 1,
-                ..GCConfig::default()
-            };
+        let config = GCConfig {
+            dry_run: true,
+            batch_size: 10_000,
+            workers: 1,
+            use_recycle_bin: true,
+            force_compaction: false,
+            skip_confirm: true,
+            protected_roots_count: 1,
+            ..GCConfig::default()
+        };
 
-            let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
-            let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+        let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+        let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
 
-            // Create and save startup info for the test
-            let test_state_root = H256::random();
-            let startup_info = StartupInfo::new(test_state_root, 0);
-            rooch_db
-                .moveos_store
-                .config_store
-                .save_startup_info(startup_info)?;
+        // Create and save startup info for the test
+        let test_state_root = H256::random();
+        let startup_info = StartupInfo::new(test_state_root, 0);
+        rooch_db
+            .moveos_store
+            .config_store
+            .save_startup_info(startup_info)?;
 
-            let gc = GarbageCollector::new(rooch_db, config)?;
+        let gc = GarbageCollector::new(rooch_db, config)?;
 
-            let start_time = Instant::now();
-            let report = gc.execute_gc()?;
-            let duration = start_time.elapsed();
+        let start_time = Instant::now();
+        let report = gc.execute_gc()?;
+        let duration = start_time.elapsed();
 
-            // Performance assertions
-            assert!(duration < Duration::from_secs(30)); // Should complete within 30 seconds
+        // Performance assertions
+        assert!(duration < Duration::from_secs(30)); // Should complete within 30 seconds
 
         info!("  BloomFilter marker completed in {:?}", duration);
         info!("  Marked {} nodes", report.mark_stats.marked_count);

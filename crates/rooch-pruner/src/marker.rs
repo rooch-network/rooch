@@ -55,7 +55,6 @@ pub trait NodeMarker: Send + Sync {
     fn marker_type(&self) -> &'static str;
 }
 
-
 /// Bloom filter-based marker for GC operations
 ///
 /// Uses a Bloom filter for memory-efficient node marking.
@@ -107,7 +106,6 @@ impl BloomFilterMarker {
         let fp_rate = (1.0 - (-k * n / m).exp()).powi(k as i32);
         fp_rate.min(1.0) // Cap at 100%
     }
-
 }
 
 impl NodeMarker for BloomFilterMarker {
@@ -156,7 +154,10 @@ impl NodeMarker for BloomFilterMarker {
 
 /// Create a marker instance with optimal parameters for the estimated node count
 pub fn create_marker(estimated_nodes: usize, target_fp_rate: f64) -> Box<dyn NodeMarker> {
-    Box::new(BloomFilterMarker::with_estimated_nodes(estimated_nodes, target_fp_rate))
+    Box::new(BloomFilterMarker::with_estimated_nodes(
+        estimated_nodes,
+        target_fp_rate,
+    ))
 }
 
 #[cfg(test)]
