@@ -4,6 +4,7 @@ This directory contains the release notes for each framework release.
 
 ## Release Notes
 
+- [Rooch Move Framework v25](./25/README.md)
 - [Rooch Move Framework v24](./24/README.md)
 - [Rooch Move Framework v23](./23/README.md)
 - [Rooch Move Framework v22](./22/README.md)
