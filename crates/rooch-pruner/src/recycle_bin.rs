@@ -9,7 +9,7 @@ use raw_store::{CodecKVStore, CodecWriteBatch};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use sysinfo::Disks;
+use sysinfo::{Disk, Disks};
 use tracing::{debug, error, warn};
 
 pub const DEFAULT_LIST_LIMIT: usize = 100;
@@ -230,22 +230,39 @@ impl RecycleBinStore {
         }
 
         // Find the disk that contains our database directory
-        for disk in &disks {
-            if let Ok(canonical_db_path) = self.db_path.canonicalize() {
-                // Check if the database directory is on this disk by comparing mount points
-                if canonical_db_path.starts_with(disk.mount_point()) {
-                    let total_space = disk.total_space();
-                    let available_space = disk.available_space();
-                    debug!(
-                        "Monitoring disk space for database: {} (mount point: {}, total: {}GB, available: {}GB)",
-                        self.db_path.display(),
-                        disk.mount_point().display(),
-                        total_space / (1024 * 1024 * 1024),
-                        available_space / (1024 * 1024 * 1024)
-                    );
-                    return Ok((total_space, available_space));
+        // Use the most specific mount point (longest canonical path) to handle nested mounts
+        let mut best_disk: Option<&Disk> = None;
+        let mut best_mount_len = 0;
+
+        if let Ok(canonical_db_path) = self.db_path.canonicalize() {
+            for disk in &disks {
+                // Canonicalize the mount point for consistent comparison
+                if let Ok(canonical_mount_point) = disk.mount_point().canonicalize() {
+                    // Check if the database directory is on this disk by comparing mount points
+                    if canonical_db_path.starts_with(&canonical_mount_point) {
+                        let mount_point_len = canonical_mount_point.components().count();
+                        // Update if this mount point is more specific (more path components)
+                        if mount_point_len > best_mount_len {
+                            best_disk = Some(disk);
+                            best_mount_len = mount_point_len;
+                        }
+                    }
                 }
             }
+        }
+
+        // Return the best disk found
+        if let Some(disk) = best_disk {
+            let total_space = disk.total_space();
+            let available_space = disk.available_space();
+            debug!(
+                "Monitoring disk space for database: {} (mount point: {}, total: {}GB, available: {}GB)",
+                self.db_path.display(),
+                disk.mount_point().display(),
+                total_space / (1024 * 1024 * 1024),
+                available_space / (1024 * 1024 * 1024)
+            );
+            return Ok((total_space, available_space));
         }
 
         // Fallback: use the first disk if we can't find the specific disk

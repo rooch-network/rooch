@@ -17,4 +17,4 @@ pub mod util; // Utility functions for node traversal
 pub use config::GCConfig;
 pub use garbage_collector::{GCReport, GarbageCollector, MarkStats, SweepStats};
 pub use historical_state::{HistoricalStateCollector, HistoricalStateConfig};
-pub use marker::{MarkerStrategy, NodeMarker};
+pub use marker::{BloomFilterMarker, NodeMarker};

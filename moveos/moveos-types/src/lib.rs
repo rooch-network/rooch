@@ -10,7 +10,6 @@ pub mod module_binding;
 pub mod move_std;
 pub mod move_types;
 pub mod moveos_std;
-pub mod prune;
 pub mod serde;
 pub mod startup_info;
 pub mod state;

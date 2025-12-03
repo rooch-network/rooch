@@ -3,7 +3,7 @@
 
 use crate::config::GCConfig;
 use crate::historical_state::{HistoricalStateCollector, HistoricalStateConfig};
-use crate::marker::{create_marker_with_config, MarkerStrategy, NodeMarker};
+use crate::marker::{create_marker, NodeMarker};
 use crate::reachability::ReachableBuilder;
 use crate::recycle_bin::RecycleBinStore;
 use crate::safety_verifier::SafetyVerifier;
@@ -30,8 +30,8 @@ pub struct GCReport {
     pub sweep_stats: SweepStats,
     /// Total execution duration
     pub duration: Duration,
-    /// Memory strategy that was actually used
-    pub memory_strategy_used: MarkerStrategy,
+    /// Memory strategy that was actually used (now always "BloomFilter")
+    pub memory_strategy_used: String,
 }
 
 /// Mark phase statistics
@@ -74,6 +74,10 @@ pub struct GarbageCollector {
 }
 
 impl GarbageCollector {
+    /// Average size of a SMT node in bytes (key + value + overhead)
+    /// Used for estimating node count from data size statistics
+    const AVG_NODE_SIZE_BYTES: u64 = 200;
+
     /// Create a new GarbageCollector with the given store, configuration, and database path
     pub fn new(rooch_db: RoochDB, config: GCConfig) -> Result<Self> {
         let recycle_bin =
@@ -105,22 +109,13 @@ impl GarbageCollector {
         let protected_roots = self.get_protected_roots()?;
         info!("Protected roots: {:?}", protected_roots);
 
-        // Phase 3: Estimate node count and select optimal strategy
+        // Phase 3: Estimate node count for marker configuration
         let estimated_nodes = self.estimate_node_count(&protected_roots)?;
-        let memory_strategy = if self.config.marker_strategy == MarkerStrategy::Auto {
-            crate::marker::select_marker_strategy(estimated_nodes)
-        } else {
-            self.config.marker_strategy
-        };
 
-        info!(
-            "Estimated nodes: {}, using {} strategy",
-            estimated_nodes, memory_strategy
-        );
+        info!("Estimated nodes: {}", estimated_nodes);
 
         // Phase 4: Mark phase - identify all reachable nodes
-        let (mark_stats, marker) =
-            self.mark_phase(&protected_roots, memory_strategy, estimated_nodes)?;
+        let (mark_stats, marker) = self.mark_phase(&protected_roots, estimated_nodes)?;
 
         // Phase 5: User confirmation (after mark, before sweep; skip in dry-run or if skip_confirm is enabled)
         if !self.config.dry_run {
@@ -148,7 +143,7 @@ impl GarbageCollector {
             mark_stats,
             sweep_stats,
             duration: total_duration,
-            memory_strategy_used: memory_strategy,
+            memory_strategy_used: "BloomFilter".to_string(),
         };
 
         info!("=== Garbage Collection Completed ===");
@@ -307,55 +302,64 @@ impl GarbageCollector {
         ))
     }
 
+    /// Get live data size from RocksDB statistics using estimate-live-data-size property
+    fn get_live_data_size(
+        &self,
+        node_store: &moveos_store::state_store::NodeDBStore,
+    ) -> Result<Option<u64>> {
+        // Follow established pattern from rocksdb_stats.rs for RocksDB property access
+        if let Some(wrapper) = node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                if let Ok(Some(data_size)) =
+                    raw_db.property_int_value_cf(&cf, "rocksdb.estimate-live-data-size")
+                {
+                    if data_size > 0 {
+                        info!("RocksDB live data size available: {} bytes", data_size);
+                        return Ok(Some(data_size));
+                    }
+                }
+            }
+        }
+        debug!("Unable to get live data size from RocksDB statistics");
+        Ok(None)
+    }
+
     /// Estimate the number of nodes to process for strategy selection
     /// Uses RocksDB statistics for O(1) performance instead of key traversal
     fn estimate_node_count(&self, _protected_roots: &[H256]) -> Result<usize> {
         let node_store = self.rooch_db.moveos_store.get_state_node_store();
 
-        // Try to use RocksDB's built-in statistics - O(1) time complexity
-        if let Some(estimate) = self.get_node_count_from_rocksdb_stats(node_store)? {
-            info!(
-                "Estimated node count using RocksDB statistics: {}",
-                estimate
-            );
-            return Ok(estimate);
-        }
-
-        // Fallback: iterate once to count keys (stop-the-world GC tolerates full scan)
-        if let Some(wrapper) = node_store.get_store().store().db() {
-            let raw_db = wrapper.inner();
-            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
-                let mut iter = raw_db.raw_iterator_cf(&cf);
-                iter.seek_to_first();
-                let mut count = 0usize;
-                while iter.valid() {
-                    if let Some(k) = iter.key() {
-                        if k.len() == 32 {
-                            count += 1;
-                        } else {
-                            warn!("Skipping non-32B node key in count len={}", k.len());
-                        }
-                    }
-                    iter.next();
-                }
+        // 1. Try to use estimate-live-data-size for more reliable estimation
+        if let Some(data_size) = self.get_live_data_size(node_store)? {
+            let estimate = (data_size / Self::AVG_NODE_SIZE_BYTES) as usize;
+            if estimate > 0 {
                 info!(
-                    "Estimated node count via iterator fallback: {} (RocksDB stats unavailable)",
-                    count
+                    "Estimated node count using live data size ({} bytes / {} avg size): {}",
+                    data_size,
+                    Self::AVG_NODE_SIZE_BYTES,
+                    estimate
                 );
-                return Ok(count.max(1)); // avoid zero for downstream sizing
+                return Ok(estimate);
             }
         }
 
+        // 2. Fallback to approximate-num-keys
+        if let Some(count) = self.get_approximate_num_keys(node_store)? {
+            info!("Estimated node count using approximate-num-keys: {}", count);
+            return Ok(count);
+        }
+
+        // 3. Use default estimate when all statistics are unavailable
         warn!(
-            "Unable to determine node count (stats and raw iterator unavailable), using default estimate: {}",
+            "Unable to determine node count from RocksDB statistics, using default estimate: {}",
             1_000_000
         );
-
         Ok(1_000_000)
     }
 
-    /// Get node count from RocksDB statistics API using approximate-num-keys property
-    fn get_node_count_from_rocksdb_stats(
+    /// Get approximate key count from RocksDB statistics API using approximate-num-keys property
+    fn get_approximate_num_keys(
         &self,
         node_store: &moveos_store::state_store::NodeDBStore,
     ) -> Result<Option<usize>> {
@@ -386,26 +390,20 @@ impl GarbageCollector {
     fn mark_phase(
         &self,
         protected_roots: &[H256],
-        memory_strategy: MarkerStrategy,
         estimated_nodes: usize,
     ) -> Result<(MarkStats, Box<dyn NodeMarker>)> {
         info!("=== Mark Phase ===");
         let start_time = Instant::now();
 
-        // Create appropriate marker
-        let marker = create_marker_with_config(
-            memory_strategy,
-            estimated_nodes,
-            &self.config,
-            Some(self.rooch_db.moveos_store.clone()),
-        )?;
+        // Create Bloom filter marker with optimal parameters
+        let marker = create_marker(estimated_nodes, self.config.marker_target_fp_rate);
         info!("Created {} marker", marker.marker_type());
 
         // Create ReachableBuilder with a bloom filter for additional optimization
         let bloom = Arc::new(Mutex::new(BloomFilter::new(1 << 20, 4)));
         let reachable_builder = ReachableBuilder::new(self.rooch_db.moveos_store.clone(), bloom);
 
-        // Capture strategy name before marker is moved
+        // Capture marker type for stats
         let strategy_name = marker.marker_type().to_string();
 
         // Execute reachability analysis
@@ -733,7 +731,7 @@ mod tests {
         assert_eq!(config.batch_size, 10_000);
         assert!(config.use_recycle_bin);
         assert!(!config.force_compaction);
-        assert_eq!(config.marker_strategy, MarkerStrategy::Auto);
+        // Marker strategy is now always BloomFilter
         assert!(!config.skip_confirm);
     }
 
@@ -758,12 +756,12 @@ mod tests {
             mark_stats,
             sweep_stats,
             duration: Duration::from_secs(30),
-            memory_strategy_used: MarkerStrategy::InMemory,
+            memory_strategy_used: "BloomFilter".to_string(),
         };
 
         assert_eq!(report.protected_roots, roots);
         assert_eq!(report.mark_stats.marked_count, 1000);
         assert_eq!(report.sweep_stats.deleted_count, 1000);
-        assert_eq!(report.memory_strategy_used, MarkerStrategy::InMemory);
+        assert_eq!(report.memory_strategy_used, "BloomFilter");
     }
 }

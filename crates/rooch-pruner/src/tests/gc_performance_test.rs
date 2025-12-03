@@ -9,7 +9,7 @@
 mod tests {
     use crate::config::GCConfig;
     use crate::garbage_collector::GarbageCollector;
-    use crate::marker::{InMemoryMarker, MarkerStrategy, NodeMarker};
+    use crate::marker::{BloomFilterMarker, NodeMarker};
     use anyhow::Result;
     use moveos_types::h256::H256;
     use moveos_types::startup_info::StartupInfo;
@@ -27,7 +27,7 @@ mod tests {
         for node_count in test_sizes {
             info!("Testing memory scaling with {} nodes", node_count);
 
-            let marker = InMemoryMarker::new();
+            let marker = BloomFilterMarker::with_estimated_nodes(100_000, 0.01);
             let hashes: Vec<H256> = (0..node_count).map(|_| H256::random()).collect();
 
             let start_time = Instant::now();
@@ -63,56 +63,48 @@ mod tests {
 
     /// Test different marker strategies performance
     #[test]
-    fn test_marker_strategy_performance() -> Result<()> {
+    fn test_marker_performance() -> Result<()> {
         let node_count = 50_000;
-        let strategies = vec![
-            MarkerStrategy::InMemory,
-            // Note: Persistent strategy would require real database setup
-        ];
+        info!("Testing BloomFilter marker with {} nodes", node_count);
 
-        for strategy in strategies {
-            info!("Testing {:?} strategy with {} nodes", strategy, node_count);
+        let temp_dir = TempDir::new()?;
+        let db_path = temp_dir.path().to_path_buf();
 
-            let temp_dir = TempDir::new()?;
-            let db_path = temp_dir.path().to_path_buf();
+        let config = GCConfig {
+            dry_run: true,
+            batch_size: 10_000,
+            workers: 1,
+            use_recycle_bin: true,
+            force_compaction: false,
+            skip_confirm: true,
+            protected_roots_count: 1,
+            ..GCConfig::default()
+        };
 
-            let config = GCConfig {
-                dry_run: true,
-                marker_strategy: strategy,
-                batch_size: 10_000,
-                workers: 1,
-                use_recycle_bin: true,
-                force_compaction: false,
-                skip_confirm: true,
-                protected_roots_count: 1,
-                ..GCConfig::default()
-            };
+        let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
+        let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
 
-            let rooch_opt = RoochOpt::new_with_default(Some(db_path.clone()), None, None)?;
-            let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
+        // Create and save startup info for the test
+        let test_state_root = H256::random();
+        let startup_info = StartupInfo::new(test_state_root, 0);
+        rooch_db
+            .moveos_store
+            .config_store
+            .save_startup_info(startup_info)?;
 
-            // Create and save startup info for the test
-            let test_state_root = H256::random();
-            let startup_info = StartupInfo::new(test_state_root, 0);
-            rooch_db
-                .moveos_store
-                .config_store
-                .save_startup_info(startup_info)?;
+        let gc = GarbageCollector::new(rooch_db, config)?;
 
-            let gc = GarbageCollector::new(rooch_db, config)?;
+        let start_time = Instant::now();
+        let report = gc.execute_gc()?;
+        let duration = start_time.elapsed();
 
-            let start_time = Instant::now();
-            let report = gc.execute_gc()?;
-            let duration = start_time.elapsed();
+        // Performance assertions
+        assert!(duration < Duration::from_secs(30)); // Should complete within 30 seconds
 
-            // Performance assertions
-            assert!(duration < Duration::from_secs(30)); // Should complete within 30 seconds
-
-            info!("  {:?} strategy completed in {:?}", strategy, duration);
-            info!("  Marked {} nodes", report.mark_stats.marked_count);
-            info!("  Memory strategy used: {:?}", report.memory_strategy_used);
-            info!("  Mark phase duration: {:?}", report.mark_stats.duration);
-        }
+        info!("  BloomFilter marker completed in {:?}", duration);
+        info!("  Marked {} nodes", report.mark_stats.marked_count);
+        info!("  Memory strategy used: {:?}", report.memory_strategy_used);
+        info!("  Mark phase duration: {:?}", report.mark_stats.duration);
 
         info!("✅ Marker strategy performance test completed");
         Ok(())
@@ -139,7 +131,7 @@ mod tests {
                 workers: 1,
                 use_recycle_bin: true,
                 force_compaction: false,
-                marker_strategy: MarkerStrategy::InMemory,
+                // marker_strategy removed
                 skip_confirm: true,
                 protected_roots_count: 1,
                 ..GCConfig::default()
@@ -191,7 +183,7 @@ mod tests {
                 workers,
                 use_recycle_bin: true,
                 force_compaction: false,
-                marker_strategy: MarkerStrategy::InMemory,
+                // marker_strategy removed
                 skip_confirm: true,
                 protected_roots_count: 1,
                 ..GCConfig::default()
@@ -232,7 +224,7 @@ mod tests {
 
         info!("Starting stress test with {} nodes", node_count);
 
-        let marker = InMemoryMarker::new();
+        let marker = BloomFilterMarker::with_estimated_nodes(100_000, 0.01);
         let hashes: Vec<H256> = (0..node_count).map(|_| H256::random()).collect();
 
         let start_time = Instant::now();
@@ -301,7 +293,7 @@ mod tests {
 
         info!("Testing memory efficiency with {} nodes", node_count);
 
-        let marker = InMemoryMarker::new();
+        let marker = BloomFilterMarker::with_estimated_nodes(100_000, 0.01);
         let hashes: Vec<H256> = (0..node_count).map(|_| H256::random()).collect();
 
         // Mark all hashes
@@ -343,7 +335,7 @@ mod tests {
 
         info!("Testing concurrent marking with {} threads", thread_count);
 
-        let marker = Arc::new(InMemoryMarker::new());
+        let marker = Arc::new(BloomFilterMarker::with_estimated_nodes(100_000, 0.01));
         let start_time = Instant::now();
 
         let mut handles = vec![];
@@ -426,7 +418,7 @@ mod tests {
                 pattern_name, node_count
             );
 
-            let marker = InMemoryMarker::new();
+            let marker = BloomFilterMarker::with_estimated_nodes(100_000, 0.01);
 
             let start_time = Instant::now();
             for hash in &hashes {
