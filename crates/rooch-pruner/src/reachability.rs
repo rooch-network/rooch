@@ -108,11 +108,12 @@ impl ReachableBuilder {
 
     /// Build reachable set using a custom NodeMarker instead of BloomFilter
     /// This is designed for garbage collection scenarios where we need precise marking
+    /// Uses single-threaded batch processing for optimal I/O performance.
+    /// For multi-threaded execution, use `build_with_marker_parallel` instead.
     /// Returns number of unique reachable nodes scanned.
     pub fn build_with_marker(
         &self,
         live_roots: Vec<H256>,
-        _workers: usize,
         marker: &dyn NodeMarker,
         batch_size: usize,
     ) -> Result<u64> {
@@ -189,8 +190,6 @@ impl ReachableBuilder {
 
             // Process each node and extract children
             for (i, bytes_option) in bytes_results.into_iter().enumerate() {
-                let _node_hash = pending_nodes[i];
-
                 // Traverse the node to find children
                 // Include both Global‐State and Table-State JMT nodes
                 if let Some(bytes) = bytes_option {
@@ -345,7 +344,7 @@ impl ReachableBuilder {
 
         // Fallback to single-threaded for small worker counts
         if workers <= 1 {
-            return self.build_with_marker(live_roots, 1, marker, batch_size);
+            return self.build_with_marker(live_roots, marker, batch_size);
         }
 
         info!(
@@ -446,12 +445,35 @@ impl ReachableBuilder {
                     // No work available, mark as idle and check for global termination
                     let active = active_workers.fetch_sub(1, Ordering::SeqCst);
                     if active == 1 {
-                        // Last worker going idle, signal termination
-                        termination_flag.store(true, Ordering::SeqCst);
-                        break;
+                        // Potential last worker - double check to avoid race condition
+                        // Between decrementing counter and checking, another worker might have
+                        // found work and incremented the counter
+                        std::thread::yield_now();
+
+                        // Final verification: try stealing once more from global queue
+                        match global.steal() {
+                            Steal::Empty => {
+                                // Global queue is truly empty, safe to terminate
+                                termination_flag.store(true, Ordering::SeqCst);
+                                break;
+                            }
+                            Steal::Success(hash) => {
+                                // Found work! Reactivate immediately
+                                active_workers.fetch_add(1, Ordering::SeqCst);
+                                if !marker.is_marked(&hash) {
+                                    pending.push(hash);
+                                }
+                                continue; // Process the work
+                            }
+                            Steal::Retry => {
+                                // Contention on global queue, retry
+                                active_workers.fetch_add(1, Ordering::SeqCst);
+                                continue;
+                            }
+                        }
                     }
 
-                    // Wait briefly and try again
+                    // Not the last worker, wait briefly and try again
                     std::thread::yield_now();
                     let retry_stolen = self.steal_batch(global, stealers, worker_id, 1);
                     if retry_stolen.is_empty() {

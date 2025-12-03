@@ -422,7 +422,6 @@ impl GarbageCollector {
             info!("Using single-threaded reachability analysis");
             reachable_builder.build_with_marker(
                 protected_roots.to_vec(),
-                self.config.workers,
                 marker.as_ref(),
                 self.config.batch_size,
             )?

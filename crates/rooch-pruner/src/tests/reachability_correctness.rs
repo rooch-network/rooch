@@ -382,7 +382,7 @@ async fn test_parallel_vs_single_thread_consistency() {
         crate::reachability::ReachableBuilder::new((*store).clone(), bloom_single.clone());
     let marker_single = AtomicBloomFilterMarker::new(1 << 20, 4);
     let count_single = builder_single
-        .build_with_marker(vec![root_hash], 1, &marker_single, 1000)
+        .build_with_marker(vec![root_hash], &marker_single, 1000)
         .unwrap();
 
     println!("Single-threaded: {} nodes marked", count_single);
