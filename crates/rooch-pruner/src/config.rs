@@ -41,10 +41,6 @@ pub struct GCConfig {
     /// Bloom filter size in bits (must be power of two for fast modulo)
     pub bloom_bits: usize,
 
-    /// Number of recent tx_orders to protect from GC (default 30000)
-    /// Set to 0 to allow aggressive GC (only protects the latest root - for testing only)
-    pub protection_orders: u64,
-
     /// Number of recent state roots to protect from GC (default: 1 for backward compatibility)
     pub protected_roots_count: usize,
 
@@ -92,7 +88,6 @@ impl Default for GCConfig {
             scan_batch: 1000,
             batch_size: 10_000,
             bloom_bits: 1 << 20, // 1M bits
-            protection_orders: 30000,
             protected_roots_count: 1,
 
             // === Marker Configuration ===

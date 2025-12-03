@@ -286,7 +286,6 @@ fn create_optimized_config(node_count: usize) -> PruneConfig {
     PruneConfig {
         scan_batch,
         bloom_bits,
-        protection_orders: 30000,
         protected_roots_count: 1,
         // Marker configuration
         marker_batch_size: 10000,

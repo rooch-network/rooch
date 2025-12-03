@@ -74,6 +74,10 @@ pub struct GarbageCollector {
 }
 
 impl GarbageCollector {
+    /// Average size of a SMT node in bytes (key + value + overhead)
+    /// Used for estimating node count from data size statistics
+    const AVG_NODE_SIZE_BYTES: u64 = 200;
+
     /// Create a new GarbageCollector with the given store, configuration, and database path
     pub fn new(rooch_db: RoochDB, config: GCConfig) -> Result<Self> {
         let recycle_bin =
@@ -307,55 +311,64 @@ impl GarbageCollector {
         ))
     }
 
+    /// Get live data size from RocksDB statistics using estimate-live-data-size property
+    fn get_live_data_size(
+        &self,
+        node_store: &moveos_store::state_store::NodeDBStore,
+    ) -> Result<Option<u64>> {
+        // Follow established pattern from rocksdb_stats.rs for RocksDB property access
+        if let Some(wrapper) = node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                if let Ok(Some(data_size)) =
+                    raw_db.property_int_value_cf(&cf, "rocksdb.estimate-live-data-size")
+                {
+                    if data_size > 0 {
+                        info!("RocksDB live data size available: {} bytes", data_size);
+                        return Ok(Some(data_size));
+                    }
+                }
+            }
+        }
+        debug!("Unable to get live data size from RocksDB statistics");
+        Ok(None)
+    }
+
     /// Estimate the number of nodes to process for strategy selection
     /// Uses RocksDB statistics for O(1) performance instead of key traversal
     fn estimate_node_count(&self, _protected_roots: &[H256]) -> Result<usize> {
         let node_store = self.rooch_db.moveos_store.get_state_node_store();
 
-        // Try to use RocksDB's built-in statistics - O(1) time complexity
-        if let Some(estimate) = self.get_node_count_from_rocksdb_stats(node_store)? {
-            info!(
-                "Estimated node count using RocksDB statistics: {}",
-                estimate
-            );
-            return Ok(estimate);
-        }
-
-        // Fallback: iterate once to count keys (stop-the-world GC tolerates full scan)
-        if let Some(wrapper) = node_store.get_store().store().db() {
-            let raw_db = wrapper.inner();
-            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
-                let mut iter = raw_db.raw_iterator_cf(&cf);
-                iter.seek_to_first();
-                let mut count = 0usize;
-                while iter.valid() {
-                    if let Some(k) = iter.key() {
-                        if k.len() == 32 {
-                            count += 1;
-                        } else {
-                            warn!("Skipping non-32B node key in count len={}", k.len());
-                        }
-                    }
-                    iter.next();
-                }
+        // 1. Try to use estimate-live-data-size for more reliable estimation
+        if let Some(data_size) = self.get_live_data_size(node_store)? {
+            let estimate = (data_size / Self::AVG_NODE_SIZE_BYTES) as usize;
+            if estimate > 0 {
                 info!(
-                    "Estimated node count via iterator fallback: {} (RocksDB stats unavailable)",
-                    count
+                    "Estimated node count using live data size ({} bytes / {} avg size): {}",
+                    data_size,
+                    Self::AVG_NODE_SIZE_BYTES,
+                    estimate
                 );
-                return Ok(count.max(1)); // avoid zero for downstream sizing
+                return Ok(estimate);
             }
         }
 
+        // 2. Fallback to approximate-num-keys
+        if let Some(count) = self.get_approximate_num_keys(node_store)? {
+            info!("Estimated node count using approximate-num-keys: {}", count);
+            return Ok(count);
+        }
+
+        // 3. Use default estimate when all statistics are unavailable
         warn!(
-            "Unable to determine node count (stats and raw iterator unavailable), using default estimate: {}",
+            "Unable to determine node count from RocksDB statistics, using default estimate: {}",
             1_000_000
         );
-
         Ok(1_000_000)
     }
 
-    /// Get node count from RocksDB statistics API using approximate-num-keys property
-    fn get_node_count_from_rocksdb_stats(
+    /// Get approximate key count from RocksDB statistics API using approximate-num-keys property
+    fn get_approximate_num_keys(
         &self,
         node_store: &moveos_store::state_store::NodeDBStore,
     ) -> Result<Option<usize>> {

@@ -92,8 +92,8 @@ pub struct GCCommand {
     /// Number of recent state roots to protect from garbage collection
     ///
     /// Higher values provide better historical data protection but may use more memory
-    /// Default: 1 (backward compatible with existing behavior)
-    #[clap(long = "protected-roots-count", default_value_t = 1)]
+    /// Default: 0 (auto-detect based on network: Local=1, Dev=1000, Test=1000, Main=30000)
+    #[clap(long = "protected-roots-count", default_value_t = 0)]
     pub protected_roots_count: usize,
 
     /// Skip interactive confirmation prompts (use with caution)
@@ -160,6 +160,17 @@ impl GCCommand {
             space_check_enabled: !self.force_recycle_despite_space_warning,
         };
 
+        // Resolve protected_roots_count: 0 means auto-detect based on network
+        let protected_roots_count = if self.protected_roots_count == 0 {
+            // Use network-aware defaults from HistoricalStateConfig
+            use rooch_pruner::historical_state::HistoricalStateConfig;
+            use rooch_types::framework::chain_id::ChainID;
+            let chain_id = ChainID::from(self.chain_id);
+            HistoricalStateConfig::new_with_network(&chain_id).protected_roots_count
+        } else {
+            self.protected_roots_count
+        };
+
         let config = GCConfig {
             // Runtime Configuration
             dry_run: self.dry_run,
@@ -171,9 +182,8 @@ impl GCCommand {
             // Core GC Configuration
             scan_batch: 10000, // Default scan batch size
             batch_size: self.batch_size,
-            bloom_bits: 8589934592,   // 2^33 bits (1GB)
-            protection_orders: 30000, // Default protection orders
-            protected_roots_count: self.protected_roots_count,
+            bloom_bits: 8589934592, // 2^33 bits (1GB)
+            protected_roots_count,
 
             // Marker Strategy Configuration
             marker_strategy,
