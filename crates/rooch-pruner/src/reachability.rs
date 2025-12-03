@@ -141,7 +141,8 @@ impl ReachableBuilder {
         // For now, use single-threaded batch processing with optimized I/O
         // Future enhancement: implement full work-stealing parallelism
         for root in live_roots {
-            if let Err(e) = self.dfs_from_root_with_marker_batch(root, &counter, marker, batch_size) {
+            if let Err(e) = self.dfs_from_root_with_marker_batch(root, &counter, marker, batch_size)
+            {
                 tracing::error!("DFS error with marker: {}", e);
             }
         }
@@ -206,7 +207,9 @@ impl ReachableBuilder {
                     // If this leaf embeds another table root, push it to the stack for further traversal.
                     if let Some(child_root) = try_extract_child_root(&bytes) {
                         stack.push_back(child_root);
-                    } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
+                    } else if let Ok(Node::Internal(internal)) =
+                        Node::<H256, Vec<u8>>::decode(&bytes)
+                    {
                         // For internal nodes, add all children to the stack
                         for child_hash in internal.all_child() {
                             stack.push_back(child_hash.into());
@@ -357,13 +360,8 @@ impl ReachableBuilder {
         }
 
         // Create local worker queues and stealers
-        let local_queues: Vec<Worker<H256>> = (0..workers)
-            .map(|_| Worker::new_fifo())
-            .collect();
-        let stealers: Vec<Stealer<H256>> = local_queues
-            .iter()
-            .map(|w| w.stealer())
-            .collect();
+        let local_queues: Vec<Worker<H256>> = (0..workers).map(|_| Worker::new_fifo()).collect();
+        let stealers: Vec<Stealer<H256>> = local_queues.iter().map(|w| w.stealer()).collect();
 
         // Termination detection
         let active_workers = Arc::new(AtomicUsize::new(workers));

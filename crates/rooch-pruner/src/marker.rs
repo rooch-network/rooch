@@ -76,9 +76,7 @@ impl AtomicBloomFilterMarker {
     pub fn new(bloom_bits: usize, bloom_hash_fns: u8) -> Self {
         // Calculate bytes needed for the bloom filter
         let bytes = (bloom_bits + 7) / 8;
-        let bits = (0..bytes)
-            .map(|_| AtomicU8::new(0))
-            .collect();
+        let bits = (0..bytes).map(|_| AtomicU8::new(0)).collect();
 
         Self {
             bits,

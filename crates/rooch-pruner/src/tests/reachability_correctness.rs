@@ -378,7 +378,8 @@ async fn test_parallel_vs_single_thread_consistency() {
         1 << 20,
         4,
     )));
-    let builder_single = crate::reachability::ReachableBuilder::new((*store).clone(), bloom_single.clone());
+    let builder_single =
+        crate::reachability::ReachableBuilder::new((*store).clone(), bloom_single.clone());
     let marker_single = AtomicBloomFilterMarker::new(1 << 20, 4);
     let count_single = builder_single
         .build_with_marker(vec![root_hash], 1, &marker_single, 1000)
@@ -391,7 +392,8 @@ async fn test_parallel_vs_single_thread_consistency() {
         1 << 20,
         4,
     )));
-    let builder_parallel = crate::reachability::ReachableBuilder::new((*store).clone(), bloom_parallel.clone());
+    let builder_parallel =
+        crate::reachability::ReachableBuilder::new((*store).clone(), bloom_parallel.clone());
     let marker_parallel = AtomicBloomFilterMarker::new(1 << 20, 4);
     let count_parallel = builder_parallel
         .build_with_marker_parallel(vec![root_hash], 4, &marker_parallel, 1000)
@@ -560,17 +562,18 @@ async fn test_parallel_work_stealing_effectiveness() {
             .build_with_marker_parallel(vec![root_hash], num_workers, &marker, 50)
             .unwrap();
 
-        println!(
-            "Workers={}: {} nodes marked",
-            num_workers, count
-        );
+        println!("Workers={}: {} nodes marked", num_workers, count);
 
         assert!(
             marker.is_marked(&root_hash),
             "Root should be marked with {} workers",
             num_workers
         );
-        assert!(count > 0, "Should have marked nodes with {} workers", num_workers);
+        assert!(
+            count > 0,
+            "Should have marked nodes with {} workers",
+            num_workers
+        );
     }
 
     println!("✅ Work stealing effectiveness test PASSED");
@@ -602,17 +605,18 @@ async fn test_parallel_with_marker_batch_processing() {
             .build_with_marker_parallel(vec![root_hash], 4, &marker, batch_size)
             .unwrap();
 
-        println!(
-            "Batch size {}: {} nodes marked",
-            batch_size, count
-        );
+        println!("Batch size {}: {} nodes marked", batch_size, count);
 
         assert!(
             marker.is_marked(&root_hash),
             "Root should be marked with batch_size={}",
             batch_size
         );
-        assert!(count > 0, "Should have marked nodes with batch_size={}", batch_size);
+        assert!(
+            count > 0,
+            "Should have marked nodes with batch_size={}",
+            batch_size
+        );
     }
 
     println!("✅ Parallel batch processing test PASSED");

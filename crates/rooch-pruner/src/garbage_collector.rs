@@ -408,7 +408,10 @@ impl GarbageCollector {
 
         // Execute reachability analysis with parallel or single-threaded mode
         let reachable_count = if self.config.workers > 1 {
-            info!("Using parallel reachability analysis with {} workers", self.config.workers);
+            info!(
+                "Using parallel reachability analysis with {} workers",
+                self.config.workers
+            );
             reachable_builder.build_with_marker_parallel(
                 protected_roots.to_vec(),
                 self.config.workers,
