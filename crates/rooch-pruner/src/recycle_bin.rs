@@ -9,7 +9,7 @@ use raw_store::{CodecKVStore, CodecWriteBatch};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use sysinfo::{Disks, Disk};
+use sysinfo::{Disk, Disks};
 use tracing::{debug, error, warn};
 
 pub const DEFAULT_LIST_LIMIT: usize = 100;
@@ -230,19 +230,22 @@ impl RecycleBinStore {
         }
 
         // Find the disk that contains our database directory
-        // Use the most specific mount point (longest path) to handle nested mounts
+        // Use the most specific mount point (longest canonical path) to handle nested mounts
         let mut best_disk: Option<&Disk> = None;
         let mut best_mount_len = 0;
 
         if let Ok(canonical_db_path) = self.db_path.canonicalize() {
             for disk in &disks {
-                // Check if the database directory is on this disk by comparing mount points
-                if canonical_db_path.starts_with(disk.mount_point()) {
-                    let mount_point_str = disk.mount_point().to_str().unwrap_or("");
-                    // Update if this mount point is more specific (longer)
-                    if mount_point_str.len() > best_mount_len {
-                        best_disk = Some(disk);
-                        best_mount_len = mount_point_str.len();
+                // Canonicalize the mount point for consistent comparison
+                if let Ok(canonical_mount_point) = disk.mount_point().canonicalize() {
+                    // Check if the database directory is on this disk by comparing mount points
+                    if canonical_db_path.starts_with(&canonical_mount_point) {
+                        let mount_point_len = canonical_mount_point.components().count();
+                        // Update if this mount point is more specific (more path components)
+                        if mount_point_len > best_mount_len {
+                            best_disk = Some(disk);
+                            best_mount_len = mount_point_len;
+                        }
                     }
                 }
             }
