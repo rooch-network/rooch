@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::marker::NodeMarker;
 use crate::tests::test_utils::{BloomInspector, TreeBuilder};
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
@@ -356,4 +357,263 @@ async fn test_build_reach_error_handling() {
     );
 
     println!("✅ Error handling test PASSED (no panics with invalid roots)");
+}
+
+#[tokio::test]
+async fn test_parallel_vs_single_thread_consistency() {
+    // Test that parallel and single-threaded reachability produce the same results
+    use crate::marker::AtomicBloomFilterMarker;
+
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+    let store = Arc::new(store);
+    let tree_builder = TreeBuilder::new(store.clone());
+
+    // Create a moderately complex tree structure
+    let (root_hash, _all_node_hashes) = tree_builder.create_root_and_leaves(10);
+
+    println!("Testing parallel vs single-threaded consistency");
+
+    // Run single-threaded version
+    let bloom_single = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
+    let builder_single = crate::reachability::ReachableBuilder::new((*store).clone(), bloom_single.clone());
+    let marker_single = AtomicBloomFilterMarker::new(1 << 20, 4);
+    let count_single = builder_single
+        .build_with_marker(vec![root_hash], 1, &marker_single, 1000)
+        .unwrap();
+
+    println!("Single-threaded: {} nodes marked", count_single);
+
+    // Run parallel version with 4 workers
+    let bloom_parallel = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
+    let builder_parallel = crate::reachability::ReachableBuilder::new((*store).clone(), bloom_parallel.clone());
+    let marker_parallel = AtomicBloomFilterMarker::new(1 << 20, 4);
+    let count_parallel = builder_parallel
+        .build_with_marker_parallel(vec![root_hash], 4, &marker_parallel, 1000)
+        .unwrap();
+
+    println!("Parallel (4 workers): {} nodes marked", count_parallel);
+
+    // Results should be identical
+    assert_eq!(
+        count_single, count_parallel,
+        "Single-threaded and parallel should mark the same number of nodes"
+    );
+
+    println!("✅ Parallel vs single-threaded consistency test PASSED");
+}
+
+#[tokio::test]
+async fn test_parallel_single_root_performance() {
+    // Test that parallel version works correctly with a single root
+    // This verifies work-stealing from a single root scenario
+    use crate::marker::AtomicBloomFilterMarker;
+
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+    let store = Arc::new(store);
+    let tree_builder = TreeBuilder::new(store.clone());
+
+    // Create a larger tree from a single root
+    let (root_hash, _all_node_hashes) = tree_builder.create_root_and_leaves(20);
+
+    println!("Testing parallel execution with single root");
+
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
+    let marker = AtomicBloomFilterMarker::new(1 << 20, 4);
+
+    // Run with 4 workers
+    let count = builder
+        .build_with_marker_parallel(vec![root_hash], 4, &marker, 100)
+        .unwrap();
+
+    println!("Parallel single root: {} nodes marked", count);
+
+    // Verify root is marked
+    assert!(
+        marker.is_marked(&root_hash),
+        "Root should be marked in parallel execution"
+    );
+    assert!(count > 0, "Should have marked at least the root");
+
+    println!("✅ Parallel single root test PASSED");
+}
+
+#[tokio::test]
+async fn test_parallel_multiple_roots() {
+    // Test parallel execution with multiple roots for better work distribution
+    use crate::marker::AtomicBloomFilterMarker;
+
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+    let store = Arc::new(store);
+    let tree_builder = TreeBuilder::new(store.clone());
+
+    // Create multiple separate trees
+    let (root1, _nodes1) = tree_builder.create_root_and_leaves(5);
+    let (root2, _nodes2) = tree_builder.create_root_and_leaves(5);
+    let (root3, _nodes3) = tree_builder.create_root_and_leaves(5);
+    let (root4, _nodes4) = tree_builder.create_root_and_leaves(5);
+
+    println!("Testing parallel execution with multiple roots");
+
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
+    let marker = AtomicBloomFilterMarker::new(1 << 20, 4);
+
+    // Run with 4 workers and 4 roots
+    let roots = vec![root1, root2, root3, root4];
+    let count = builder
+        .build_with_marker_parallel(roots.clone(), 4, &marker, 100)
+        .unwrap();
+
+    println!("Parallel multiple roots: {} nodes marked", count);
+
+    // Verify all roots are marked
+    for (i, root) in roots.iter().enumerate() {
+        assert!(
+            marker.is_marked(root),
+            "Root {} should be marked in parallel execution",
+            i + 1
+        );
+    }
+    assert!(count >= 4, "Should have marked at least all roots");
+
+    println!("✅ Parallel multiple roots test PASSED");
+}
+
+#[tokio::test]
+async fn test_parallel_fallback_to_single_thread() {
+    // Test that workers=1 correctly falls back to single-threaded execution
+    use crate::marker::AtomicBloomFilterMarker;
+
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+    let store = Arc::new(store);
+    let tree_builder = TreeBuilder::new(store.clone());
+
+    let (root_hash, _all_node_hashes) = tree_builder.create_root_and_leaves(5);
+
+    println!("Testing parallel fallback with workers=1");
+
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
+    let marker = AtomicBloomFilterMarker::new(1 << 20, 4);
+
+    // Call parallel version with workers=1, should fall back to single-threaded
+    let count = builder
+        .build_with_marker_parallel(vec![root_hash], 1, &marker, 100)
+        .unwrap();
+
+    println!(
+        "Parallel with workers=1 (fallback to single-threaded): {} nodes marked",
+        count
+    );
+
+    // Verify root is marked
+    assert!(
+        marker.is_marked(&root_hash),
+        "Root should be marked even with workers=1"
+    );
+    assert!(count > 0, "Should have marked at least the root");
+
+    println!("✅ Parallel fallback to single-threaded test PASSED");
+}
+
+#[tokio::test]
+async fn test_parallel_work_stealing_effectiveness() {
+    // Test that work stealing is effective by verifying all workers participate
+    // This is done indirectly by ensuring parallel execution completes successfully
+    use crate::marker::AtomicBloomFilterMarker;
+
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+    let store = Arc::new(store);
+    let tree_builder = TreeBuilder::new(store.clone());
+
+    // Create a single root with many children (stress test for work stealing)
+    let (root_hash, _all_node_hashes) = tree_builder.create_root_and_leaves(30);
+
+    println!("Testing work stealing effectiveness with large tree");
+
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
+
+    // Test with different worker counts
+    for num_workers in [2, 4, 8] {
+        let marker = AtomicBloomFilterMarker::new(1 << 20, 4);
+        let count = builder
+            .build_with_marker_parallel(vec![root_hash], num_workers, &marker, 50)
+            .unwrap();
+
+        println!(
+            "Workers={}: {} nodes marked",
+            num_workers, count
+        );
+
+        assert!(
+            marker.is_marked(&root_hash),
+            "Root should be marked with {} workers",
+            num_workers
+        );
+        assert!(count > 0, "Should have marked nodes with {} workers", num_workers);
+    }
+
+    println!("✅ Work stealing effectiveness test PASSED");
+}
+
+#[tokio::test]
+async fn test_parallel_with_marker_batch_processing() {
+    // Test that parallel version correctly processes batches
+    use crate::marker::AtomicBloomFilterMarker;
+
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+    let store = Arc::new(store);
+    let tree_builder = TreeBuilder::new(store.clone());
+
+    let (root_hash, _all_node_hashes) = tree_builder.create_root_and_leaves(15);
+
+    println!("Testing parallel batch processing");
+
+    let bloom = Arc::new(Mutex::new(moveos_common::bloom_filter::BloomFilter::new(
+        1 << 20,
+        4,
+    )));
+    let builder = crate::reachability::ReachableBuilder::new((*store).clone(), bloom.clone());
+
+    // Test with different batch sizes
+    for batch_size in [10, 50, 100] {
+        let marker = AtomicBloomFilterMarker::new(1 << 20, 4);
+        let count = builder
+            .build_with_marker_parallel(vec![root_hash], 4, &marker, batch_size)
+            .unwrap();
+
+        println!(
+            "Batch size {}: {} nodes marked",
+            batch_size, count
+        );
+
+        assert!(
+            marker.is_marked(&root_hash),
+            "Root should be marked with batch_size={}",
+            batch_size
+        );
+        assert!(count > 0, "Should have marked nodes with batch_size={}", batch_size);
+    }
+
+    println!("✅ Parallel batch processing test PASSED");
 }

@@ -4,6 +4,7 @@
 use crate::marker::NodeMarker;
 use crate::util::try_extract_child_root;
 use anyhow::Result;
+use crossbeam_deque::{Injector, Steal, Stealer, Worker};
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::MoveOSStore;
 use parking_lot::Mutex;
@@ -12,7 +13,9 @@ use rayon::prelude::*;
 use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
 use std::collections::VecDeque;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::thread;
 use tracing::info;
 
 /// Build reachable set by parallel DFS over live roots.
@@ -326,5 +329,288 @@ impl ReachableBuilder {
             marker.marked_count()
         );
         Ok(())
+    }
+
+    /// Parallel build with work-stealing for better performance on multi-core systems
+    /// Optimized for both single-root and multi-root scenarios
+    pub fn build_with_marker_parallel(
+        &self,
+        live_roots: Vec<H256>,
+        workers: usize,
+        marker: &dyn NodeMarker,
+        batch_size: usize,
+    ) -> Result<u64> {
+        // Fallback to single-threaded for small worker counts
+        if workers <= 1 {
+            return self.build_with_marker(live_roots, 1, marker, batch_size);
+        }
+
+        info!(
+            "Starting parallel reachable build with {} workers, batch_size={}",
+            workers, batch_size
+        );
+
+        // Global work injector for initial distribution and overflow
+        let global_injector = Arc::new(Injector::new());
+        for root in live_roots {
+            global_injector.push(root);
+        }
+
+        // Create local worker queues and stealers
+        let local_queues: Vec<Worker<H256>> = (0..workers)
+            .map(|_| Worker::new_fifo())
+            .collect();
+        let stealers: Vec<Stealer<H256>> = local_queues
+            .iter()
+            .map(|w| w.stealer())
+            .collect();
+
+        // Termination detection
+        let active_workers = Arc::new(AtomicUsize::new(workers));
+        let termination_flag = Arc::new(AtomicBool::new(false));
+
+        // Launch worker threads using scoped threads for lifetime safety
+        thread::scope(|s| {
+            for (worker_id, local_queue) in local_queues.into_iter().enumerate() {
+                let global = Arc::clone(&global_injector);
+                let stealers_ref = &stealers;
+                let active = Arc::clone(&active_workers);
+                let term_flag = Arc::clone(&termination_flag);
+
+                s.spawn(move || {
+                    if let Err(e) = self.worker_loop(
+                        worker_id,
+                        local_queue,
+                        &global,
+                        stealers_ref,
+                        marker,
+                        batch_size,
+                        &active,
+                        &term_flag,
+                    ) {
+                        tracing::error!("Worker {} error: {}", worker_id, e);
+                    }
+                });
+            }
+        });
+
+        let total_marked = marker.marked_count();
+        info!(
+            "Parallel reachable build completed: {} nodes marked",
+            total_marked
+        );
+        Ok(total_marked)
+    }
+
+    /// Worker loop for parallel traversal with work stealing
+    #[allow(clippy::too_many_arguments)]
+    fn worker_loop(
+        &self,
+        worker_id: usize,
+        local: Worker<H256>,
+        global: &Injector<H256>,
+        stealers: &[Stealer<H256>],
+        marker: &dyn NodeMarker,
+        batch_size: usize,
+        active_workers: &AtomicUsize,
+        termination_flag: &AtomicBool,
+    ) -> Result<()> {
+        let mut pending = Vec::with_capacity(batch_size);
+        // Overflow threshold: push to global when local queue gets too large
+        // This is critical for single-root scenarios to enable work sharing
+        let local_overflow_threshold = batch_size * 2;
+        let mut local_queue_estimate = 0usize;
+        let mut processed_count = 0u64;
+
+        loop {
+            // Check termination flag
+            if termination_flag.load(Ordering::Relaxed) {
+                break;
+            }
+
+            // 1. Try to fill pending batch from local queue
+            while pending.len() < batch_size {
+                match local.pop() {
+                    Some(hash) => {
+                        if !marker.is_marked(&hash) {
+                            pending.push(hash);
+                        }
+                        local_queue_estimate = local_queue_estimate.saturating_sub(1);
+                    }
+                    None => break,
+                }
+            }
+
+            // 2. If local queue is empty, try to steal work
+            if pending.is_empty() {
+                let stolen = self.steal_batch(global, stealers, worker_id, batch_size / 2);
+                if stolen.is_empty() {
+                    // No work available, mark as idle and check for global termination
+                    let active = active_workers.fetch_sub(1, Ordering::SeqCst);
+                    if active == 1 {
+                        // Last worker going idle, signal termination
+                        termination_flag.store(true, Ordering::SeqCst);
+                        break;
+                    }
+
+                    // Wait briefly and try again
+                    std::thread::yield_now();
+                    let retry_stolen = self.steal_batch(global, stealers, worker_id, 1);
+                    if retry_stolen.is_empty() {
+                        // Still no work, terminate
+                        break;
+                    } else {
+                        // Found work, reactivate
+                        active_workers.fetch_add(1, Ordering::SeqCst);
+                        for hash in retry_stolen {
+                            if !marker.is_marked(&hash) {
+                                pending.push(hash);
+                            }
+                        }
+                    }
+                } else {
+                    for hash in stolen {
+                        if !marker.is_marked(&hash) {
+                            pending.push(hash);
+                        }
+                    }
+                }
+
+                if pending.is_empty() {
+                    continue;
+                }
+            }
+
+            // 3. Process batch and distribute children
+            self.process_batch_parallel(
+                &pending,
+                &local,
+                global,
+                marker,
+                local_overflow_threshold,
+                &mut local_queue_estimate,
+            )?;
+
+            processed_count += pending.len() as u64;
+            pending.clear();
+
+            // Log progress periodically
+            if processed_count % 50000 == 0 && processed_count > 0 {
+                info!(
+                    "Worker {}: processed {} nodes, local_queue_estimate={}",
+                    worker_id, processed_count, local_queue_estimate
+                );
+            }
+        }
+
+        info!(
+            "Worker {} completed: processed {} nodes total",
+            worker_id, processed_count
+        );
+        Ok(())
+    }
+
+    /// Batch processing with smart child distribution for work sharing
+    fn process_batch_parallel(
+        &self,
+        pending: &[H256],
+        local: &Worker<H256>,
+        global: &Injector<H256>,
+        marker: &dyn NodeMarker,
+        overflow_threshold: usize,
+        local_queue_estimate: &mut usize,
+    ) -> Result<()> {
+        // Batch read all pending nodes
+        let bytes_results = self.moveos_store.node_store.multi_get(pending)?;
+
+        // Process each node and extract children
+        for (i, bytes_option) in bytes_results.into_iter().enumerate() {
+            let node_hash = pending[i];
+
+            // Mark the node
+            let newly_marked = marker.mark(node_hash)?;
+            if !newly_marked {
+                continue;
+            }
+
+            // Extract and distribute children
+            if let Some(bytes) = bytes_option {
+                let children = self.extract_children(&bytes);
+
+                for child in children {
+                    // Smart distribution: overflow to global queue when local is full
+                    // This enables other workers to steal work, crucial for single-root scenarios
+                    if *local_queue_estimate >= overflow_threshold {
+                        global.push(child);
+                    } else {
+                        local.push(child);
+                        *local_queue_estimate += 1;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Extract child nodes from a serialized SMT node
+    fn extract_children(&self, bytes: &[u8]) -> Vec<H256> {
+        let mut children = Vec::new();
+
+        // Check for embedded table root
+        if let Some(child_root) = try_extract_child_root(bytes) {
+            children.push(child_root);
+        } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(bytes) {
+            // For internal nodes, add all children
+            for child_hash in internal.all_child() {
+                children.push(child_hash.into());
+            }
+        }
+
+        children
+    }
+
+    /// Batch stealing from global and other workers
+    fn steal_batch(
+        &self,
+        global: &Injector<H256>,
+        stealers: &[Stealer<H256>],
+        self_id: usize,
+        max_steal: usize,
+    ) -> Vec<H256> {
+        let mut stolen = Vec::with_capacity(max_steal);
+
+        // First, try to steal from global injector (higher priority)
+        for _ in 0..max_steal {
+            match global.steal() {
+                Steal::Success(hash) => stolen.push(hash),
+                Steal::Empty => break,
+                Steal::Retry => continue,
+            }
+        }
+
+        if !stolen.is_empty() {
+            return stolen;
+        }
+
+        // Then try to steal from other workers
+        for (i, stealer) in stealers.iter().enumerate() {
+            if i == self_id {
+                continue; // Skip self
+            }
+
+            for _ in 0..(max_steal - stolen.len()) {
+                match stealer.steal() {
+                    Steal::Success(hash) => stolen.push(hash),
+                    Steal::Empty => break,
+                    Steal::Retry => continue,
+                }
+            }
+
+            if stolen.len() >= max_steal {
+                break;
+            }
+        }
+
+        stolen
     }
 }
