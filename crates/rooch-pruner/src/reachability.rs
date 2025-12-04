@@ -15,6 +15,7 @@ use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
+use std::time::{Duration, Instant};
 use tracing::info;
 
 /// Build reachable set by parallel DFS over live roots.
@@ -400,6 +401,7 @@ impl ReachableBuilder {
         let mut local_queue_estimate = 0usize;
         let mut processed_count = 0u64;
         let mut idle_cycles = 0u64;
+        let mut last_progress = Instant::now();
 
         info!("Worker {} started", worker_id);
 
@@ -407,6 +409,20 @@ impl ReachableBuilder {
             // Check termination flag
             if termination_flag.load(Ordering::Relaxed) {
                 break;
+            }
+
+            // Emit a heartbeat if we've been waiting a while without progress to help debug stalls
+            if last_progress.elapsed() > Duration::from_secs(30) {
+                info!(
+                    "Worker {} heartbeat: processed={}, pending_len={}, local_queue_estimate={}, active_workers={}, termination_flag={}",
+                    worker_id,
+                    processed_count,
+                    pending.len(),
+                    local_queue_estimate,
+                    active_workers.load(Ordering::SeqCst),
+                    termination_flag.load(Ordering::Relaxed),
+                );
+                last_progress = Instant::now();
             }
 
             // 1. Try to fill pending batch from local queue
@@ -534,6 +550,7 @@ impl ReachableBuilder {
             )?;
 
             processed_count += pending.len() as u64;
+            last_progress = Instant::now();
             pending.clear();
 
             // Log progress periodically (every 100K nodes for less noise)
@@ -562,8 +579,17 @@ impl ReachableBuilder {
         overflow_threshold: usize,
         local_queue_estimate: &mut usize,
     ) -> Result<()> {
+        let multi_get_start = Instant::now();
         // Batch read all pending nodes
         let bytes_results = self.moveos_store.node_store.multi_get(pending)?;
+        let multi_get_elapsed = multi_get_start.elapsed();
+        if multi_get_elapsed > Duration::from_secs(5) {
+            info!(
+                "Slow multi_get: batch_size={}, elapsed={:?}",
+                pending.len(),
+                multi_get_elapsed
+            );
+        }
 
         // Process each node and extract children
         for (i, bytes_option) in bytes_results.into_iter().enumerate() {
