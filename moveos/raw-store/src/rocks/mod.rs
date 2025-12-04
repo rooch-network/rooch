@@ -37,6 +37,7 @@ pub struct RocksDB {
     db: DB,
     table_opts: BlockBasedOptions,
     pub(crate) cfs: Vec<ColumnFamilyName>,
+    rocksdb_config: RocksdbConfig,
 }
 
 impl RocksDB {
@@ -119,6 +120,7 @@ impl RocksDB {
                 &rocksdb_opts,
                 path,
                 final_column_families.clone(),
+                &rocksdb_config,
             )?
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
@@ -126,6 +128,7 @@ impl RocksDB {
             db,
             table_opts,
             cfs: final_column_families,
+            rocksdb_config,
         })
     }
 
@@ -154,19 +157,24 @@ impl RocksDB {
         opts: &Options,
         path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
+        rocksdb_config: &RocksdbConfig,
     ) -> Result<DB> {
         let inner = DB::open_cf_descriptors(
             opts,
             path,
             column_families.iter().map(|cf_name| {
-                let cf_opts = Self::generate_cf_options(cf_name, table_opts);
+                let cf_opts = Self::generate_cf_options(cf_name, table_opts, rocksdb_config);
                 ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;
         Ok(inner)
     }
 
-    pub fn generate_cf_options(cf_name: &str, table_opts: &BlockBasedOptions) -> Options {
+    pub fn generate_cf_options(
+        cf_name: &str,
+        table_opts: &BlockBasedOptions,
+        rocksdb_config: &RocksdbConfig,
+    ) -> Options {
         let mut cf_opts = Options::default();
         cf_opts.set_level_compaction_dynamic_level_bytes(true);
         cf_opts.set_compression_per_level(&[
@@ -194,7 +202,8 @@ impl RocksDB {
             cf_opts.set_max_bytes_for_level_base(2 * 1024 * 1024 * 1024);
             cf_opts.set_level_compaction_dynamic_level_bytes(false);
             cf_opts.set_max_bytes_for_level_multiplier(8f64);
-            cf_opts.set_compaction_readahead_size(2 * 1024 * 1024);
+            cf_opts
+                .set_compaction_readahead_size(rocksdb_config.compaction_readahead_size as usize);
         }
         cf_opts
     }
@@ -228,7 +237,7 @@ impl RocksDB {
         // Best way to delete everything from column family: https://github.com/facebook/rocksdb/issues/1295
         for name in names {
             self.db.drop_cf(name)?;
-            let opt = Self::generate_cf_options(name, &self.table_opts);
+            let opt = Self::generate_cf_options(name, &self.table_opts, &self.rocksdb_config);
             self.db.create_cf(name, &opt)?;
         }
         Ok(())
@@ -290,6 +299,8 @@ impl RocksDB {
         db_opts.set_max_write_buffer_number(config.max_write_buffer_numer as c_int);
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
+        db_opts.set_allow_mmap_reads(config.allow_mmap_reads);
+        db_opts.set_advise_random_on_open(config.advise_random_on_open);
         if config.enable_statistics {
             db_opts.enable_statistics();
             db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);

@@ -3,7 +3,10 @@
 
 use crate::config::GCConfig;
 use crate::historical_state::{HistoricalStateCollector, HistoricalStateConfig};
-use crate::marker::{create_marker, NodeMarker};
+use crate::marker::{
+    estimate_bloom_parameters, AtomicBloomFilterMarker, BloomFilterMarker, MarkerStrategy,
+    NodeMarker,
+};
 use crate::reachability::ReachableBuilder;
 use crate::recycle_bin::RecycleBinStore;
 use crate::safety_verifier::SafetyVerifier;
@@ -395,9 +398,59 @@ impl GarbageCollector {
         info!("=== Mark Phase ===");
         let start_time = Instant::now();
 
-        // Create Bloom filter marker with optimal parameters
-        let marker = create_marker(estimated_nodes, self.config.marker_target_fp_rate);
-        info!("Created {} marker", marker.marker_type());
+        // Create Bloom filter marker with either user-provided sizing or auto-sizing (capped)
+        const MAX_AUTO_MARKER_BITS: usize = 1 << 33; // 1GB in bits; guard against runaway allocations
+
+        let (marker_bits, marker_hash_fns, marker_source) = if self.config.marker_bloom_bits > 0 {
+            let mut bits = self.config.marker_bloom_bits;
+            if !bits.is_power_of_two() {
+                let adjusted = bits.next_power_of_two();
+                warn!(
+                    "marker_bloom_bits {} is not power of two; rounded up to {}",
+                    bits, adjusted
+                );
+                bits = adjusted;
+            }
+            (bits, self.config.marker_bloom_hash_fns, "configured")
+        } else {
+            let (auto_bits, auto_hash_fns) =
+                estimate_bloom_parameters(estimated_nodes, self.config.marker_target_fp_rate);
+            let capped_bits = if auto_bits > MAX_AUTO_MARKER_BITS {
+                warn!(
+                    "Estimated marker size {} bits exceeds cap {}; capping to avoid huge allocations. Set marker-bloom-bits to override.",
+                    auto_bits, MAX_AUTO_MARKER_BITS
+                );
+                MAX_AUTO_MARKER_BITS
+            } else {
+                auto_bits
+            };
+            (
+                capped_bits,
+                auto_hash_fns,
+                if capped_bits == auto_bits {
+                    "estimated"
+                } else {
+                    "capped"
+                },
+            )
+        };
+
+        let marker: Box<dyn NodeMarker> = match self.config.marker_strategy {
+            MarkerStrategy::Atomic => {
+                Box::new(AtomicBloomFilterMarker::new(marker_bits, marker_hash_fns))
+            }
+            MarkerStrategy::Locked => {
+                Box::new(BloomFilterMarker::new(marker_bits, marker_hash_fns))
+            }
+        };
+        info!(
+            "Created {} marker (strategy={}, bits={}, hash_fns={}, source={})",
+            marker.marker_type(),
+            self.config.marker_strategy,
+            marker_bits,
+            marker_hash_fns,
+            marker_source
+        );
 
         // Create ReachableBuilder with a bloom filter for additional optimization
         let bloom = Arc::new(Mutex::new(BloomFilter::new(1 << 20, 4)));

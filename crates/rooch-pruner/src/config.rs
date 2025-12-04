@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::recycle_bin::RecycleBinConfig;
+use crate::marker::MarkerStrategy;
 
 /// Unified Garbage Collector configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,6 +53,10 @@ pub struct GCConfig {
 
     /// Target false positive rate for Bloom filter (default: 0.01 = 1%)
     pub marker_target_fp_rate: f64,
+
+    /// Marker strategy (atomic vs locked Bloom filter)
+    #[serde(default)]
+    pub marker_strategy: MarkerStrategy,
 }
 
 impl Default for GCConfig {
@@ -75,6 +80,7 @@ impl Default for GCConfig {
             marker_bloom_bits: 0, // 0 = use dynamic calculation
             marker_bloom_hash_fns: 4,
             marker_target_fp_rate: 0.01, // 1% false positive rate
+            marker_strategy: MarkerStrategy::Locked,
         }
     }
 }

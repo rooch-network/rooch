@@ -174,7 +174,7 @@ pub fn open_inner_rocks(
             &rocksdb_opts,
             path,
             column_families.iter().map(|cf_name| {
-                let cf_opts = RocksDB::generate_cf_options(cf_name, &table_opts);
+                let cf_opts = RocksDB::generate_cf_options(cf_name, &table_opts, &config);
                 ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;

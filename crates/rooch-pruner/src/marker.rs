@@ -5,8 +5,33 @@ use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_types::h256::H256;
 use parking_lot::Mutex;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
+
+/// Marker implementation choice
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum MarkerStrategy {
+    Atomic,
+    Locked,
+}
+
+impl Default for MarkerStrategy {
+    fn default() -> Self {
+        MarkerStrategy::Locked
+    }
+}
+
+impl fmt::Display for MarkerStrategy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MarkerStrategy::Atomic => write!(f, "atomic"),
+            MarkerStrategy::Locked => write!(f, "locked"),
+        }
+    }
+}
 
 /// Calculate optimal Bloom filter parameters for given node count and target false positive rate
 ///
@@ -33,6 +58,13 @@ fn optimal_bloom_size(estimated_nodes: usize, target_fp_rate: f64) -> (usize, u8
     assert!((1..=16).contains(&hash_fns));
 
     (bit_count, hash_fns)
+}
+
+/// Compute Bloom filter parameters for a target false-positive rate.
+///
+/// Exposed so callers can size the marker before actually allocating memory.
+pub fn estimate_bloom_parameters(estimated_nodes: usize, target_fp_rate: f64) -> (usize, u8) {
+    optimal_bloom_size(estimated_nodes, target_fp_rate)
 }
 
 /// Trait for marking reachable nodes during garbage collection
@@ -312,11 +344,21 @@ impl NodeMarker for BloomFilterMarker {
 }
 
 /// Create a marker instance with optimal parameters for the estimated node count
-pub fn create_marker(estimated_nodes: usize, target_fp_rate: f64) -> Box<dyn NodeMarker> {
-    Box::new(AtomicBloomFilterMarker::with_estimated_nodes(
-        estimated_nodes,
-        target_fp_rate,
-    ))
+pub fn create_marker(
+    strategy: MarkerStrategy,
+    estimated_nodes: usize,
+    target_fp_rate: f64,
+) -> Box<dyn NodeMarker> {
+    match strategy {
+        MarkerStrategy::Atomic => Box::new(AtomicBloomFilterMarker::with_estimated_nodes(
+            estimated_nodes,
+            target_fp_rate,
+        )),
+        MarkerStrategy::Locked => Box::new(BloomFilterMarker::with_estimated_nodes(
+            estimated_nodes,
+            target_fp_rate,
+        )),
+    }
 }
 
 #[cfg(test)]

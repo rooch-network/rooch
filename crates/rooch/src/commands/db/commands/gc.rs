@@ -6,6 +6,7 @@ use crate::utils::open_rooch_db;
 use crate::utils::open_rooch_db_readonly;
 use async_trait::async_trait;
 use clap::Parser;
+use clap::ValueEnum;
 use rooch_pruner::recycle_bin::RecycleBinConfig;
 use rooch_pruner::{GCConfig, GarbageCollector};
 use rooch_types::error::RoochResult;
@@ -102,6 +103,16 @@ pub struct GCCommand {
     /// Output results in JSON format for better parsing by automated tools
     #[clap(long)]
     pub json: bool,
+
+    /// Marker strategy for reachability (atomic or locked Bloom)
+    #[clap(long, value_enum, default_value_t = MarkerStrategyArg::Locked)]
+    pub marker_strategy: MarkerStrategyArg,
+}
+
+#[derive(Copy, Clone, Debug, ValueEnum)]
+pub enum MarkerStrategyArg {
+    Atomic,
+    Locked,
 }
 
 impl GCCommand {
@@ -157,10 +168,11 @@ impl GCCommand {
             bloom_bits: 1 << 33, // 2^33 bits (1GB)
             protected_roots_count,
 
-            // Marker Configuration - now uses only Bloom filter parameters
-            marker_bloom_bits: 1 << 20, // 2^20 bits (1MB)
+            // Marker Configuration - allow auto sizing by default
+            marker_bloom_bits: 0, // 0 => auto-size; use --marker-bloom-bits in config to override
             marker_bloom_hash_fns: 4,
             marker_target_fp_rate: 0.01, // 1% false positive rate
+            marker_strategy: self.marker_strategy.into(),
         };
 
         Ok(config)
@@ -471,5 +483,14 @@ impl CommandAction<String> for GCCommand {
         };
 
         Ok(output)
+    }
+}
+
+impl From<MarkerStrategyArg> for rooch_pruner::marker::MarkerStrategy {
+    fn from(arg: MarkerStrategyArg) -> Self {
+        match arg {
+            MarkerStrategyArg::Atomic => rooch_pruner::marker::MarkerStrategy::Atomic,
+            MarkerStrategyArg::Locked => rooch_pruner::marker::MarkerStrategy::Locked,
+        }
     }
 }

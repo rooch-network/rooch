@@ -57,6 +57,24 @@ pub struct RocksdbConfig {
         help = "rocksdb enable statistics"
     )]
     pub enable_statistics: bool,
+    #[clap(
+        name = "rocksdb-compaction-readahead-size",
+        long,
+        help = "rocksdb compaction readahead size in bytes"
+    )]
+    pub compaction_readahead_size: u64,
+    #[clap(
+        name = "rocksdb-allow-mmap-reads",
+        long,
+        help = "enable mmap reads for rocksdb"
+    )]
+    pub allow_mmap_reads: bool,
+    #[clap(
+        name = "rocksdb-advise-random-on-open",
+        long,
+        help = "call advise random on open for rocksdb files"
+    )]
+    pub advise_random_on_open: bool,
 }
 
 impl RocksdbConfig {
@@ -84,6 +102,9 @@ impl Default for RocksdbConfig {
             block_cache_size: 1u64 << 32,
             block_size: 4 * 1024,
             enable_statistics: false,
+            compaction_readahead_size: 2 * 1024 * 1024,
+            allow_mmap_reads: false,
+            advise_random_on_open: true,
         }
     }
 }
