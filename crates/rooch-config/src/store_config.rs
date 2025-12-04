@@ -155,6 +155,9 @@ impl StoreConfig {
             block_cache_size: self.block_cache_size.unwrap_or(block_cache_size),
             block_size: self.block_size.unwrap_or(default.block_size),
             enable_statistics: self.enable_statistics,
+            compaction_readahead_size: default.compaction_readahead_size,
+            allow_mmap_reads: default.allow_mmap_reads,
+            advise_random_on_open: default.advise_random_on_open,
         }
     }
 

@@ -42,6 +42,7 @@ tempfile = { workspace = true }
 rand = { workspace = true }
 bcs = { workspace = true }
 bcs-ext = { workspace = true }
+prometheus = { workspace = true }
 
 [[bench]]
 name = "bench_bloom_comparison"

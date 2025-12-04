@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::marker::NodeMarker;
-use crate::util::try_extract_child_root;
+use crate::util::extract_child_nodes;
 use anyhow::Result;
 use crossbeam_deque::{Injector, Steal, Stealer, Worker};
 use moveos_common::bloom_filter::BloomFilter;
@@ -10,12 +10,12 @@ use moveos_store::MoveOSStore;
 use parking_lot::Mutex;
 use primitive_types::H256;
 use rayon::prelude::*;
-use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
+use std::time::{Duration, Instant};
 use tracing::info;
 
 /// Build reachable set by parallel DFS over live roots.
@@ -79,13 +79,8 @@ impl ReachableBuilder {
             // Traverse children and leaf add to stack
             // Include both Global‐State and Table-State JMT
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
-                // If this leaf embeds another table root, push it to the stack for further traversal.
-                if let Some(child_root) = try_extract_child_root(&bytes) {
-                    stack.push_back(child_root);
-                } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
-                    for child_hash in internal.all_child() {
-                        stack.push_back(child_hash.into());
-                    }
+                for child in extract_child_nodes(&bytes) {
+                    stack.push_back(child);
                 }
             }
 
@@ -193,16 +188,8 @@ impl ReachableBuilder {
                 // Traverse the node to find children
                 // Include both Global‐State and Table-State JMT nodes
                 if let Some(bytes) = bytes_option {
-                    // If this leaf embeds another table root, push it to the stack for further traversal.
-                    if let Some(child_root) = try_extract_child_root(&bytes) {
-                        stack.push_back(child_root);
-                    } else if let Ok(Node::Internal(internal)) =
-                        Node::<H256, Vec<u8>>::decode(&bytes)
-                    {
-                        // For internal nodes, add all children to the stack
-                        for child_hash in internal.all_child() {
-                            stack.push_back(child_hash.into());
-                        }
+                    for child in extract_child_nodes(&bytes) {
+                        stack.push_back(child);
                     }
                 }
 
@@ -291,14 +278,8 @@ impl ReachableBuilder {
 
             // Traverse the node to find children
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
-                // If this leaf embeds another table root, push it to the stack for further traversal.
-                if let Some(child_root) = try_extract_child_root(&bytes) {
-                    stack.push_back(child_root);
-                } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
-                    // For internal nodes, add all children to the stack
-                    for child_hash in internal.all_child() {
-                        stack.push_back(child_hash.into());
-                    }
+                for child in extract_child_nodes(&bytes) {
+                    stack.push_back(child);
                 }
             }
 
@@ -415,10 +396,12 @@ impl ReachableBuilder {
         let mut pending = Vec::with_capacity(batch_size);
         // Overflow threshold: push to global when local queue gets too large
         // This is critical for single-root scenarios to enable work sharing
-        let local_overflow_threshold = batch_size * 2;
+        // Smaller threshold to encourage earlier sharing; keep a floor to avoid thrashing.
+        let local_overflow_threshold = std::cmp::max(256, batch_size / 2);
         let mut local_queue_estimate = 0usize;
         let mut processed_count = 0u64;
         let mut idle_cycles = 0u64;
+        let mut last_progress = Instant::now();
 
         info!("Worker {} started", worker_id);
 
@@ -426,6 +409,20 @@ impl ReachableBuilder {
             // Check termination flag
             if termination_flag.load(Ordering::Relaxed) {
                 break;
+            }
+
+            // Emit a heartbeat if we've been waiting a while without progress to help debug stalls
+            if last_progress.elapsed() > Duration::from_secs(30) {
+                info!(
+                    "Worker {} heartbeat: processed={}, pending_len={}, local_queue_estimate={}, active_workers={}, termination_flag={}",
+                    worker_id,
+                    processed_count,
+                    pending.len(),
+                    local_queue_estimate,
+                    active_workers.load(Ordering::SeqCst),
+                    termination_flag.load(Ordering::Relaxed),
+                );
+                last_progress = Instant::now();
             }
 
             // 1. Try to fill pending batch from local queue
@@ -553,6 +550,7 @@ impl ReachableBuilder {
             )?;
 
             processed_count += pending.len() as u64;
+            last_progress = Instant::now();
             pending.clear();
 
             // Log progress periodically (every 100K nodes for less noise)
@@ -581,8 +579,17 @@ impl ReachableBuilder {
         overflow_threshold: usize,
         local_queue_estimate: &mut usize,
     ) -> Result<()> {
+        let multi_get_start = Instant::now();
         // Batch read all pending nodes
         let bytes_results = self.moveos_store.node_store.multi_get(pending)?;
+        let multi_get_elapsed = multi_get_start.elapsed();
+        if multi_get_elapsed > Duration::from_secs(5) {
+            info!(
+                "Slow multi_get: batch_size={}, elapsed={:?}",
+                pending.len(),
+                multi_get_elapsed
+            );
+        }
 
         // Process each node and extract children
         for (i, bytes_option) in bytes_results.into_iter().enumerate() {
@@ -615,19 +622,7 @@ impl ReachableBuilder {
 
     /// Extract child nodes from a serialized SMT node
     fn extract_children(&self, bytes: &[u8]) -> Vec<H256> {
-        let mut children = Vec::new();
-
-        // Check for embedded table root
-        if let Some(child_root) = try_extract_child_root(bytes) {
-            children.push(child_root);
-        } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(bytes) {
-            // For internal nodes, add all children
-            for child_hash in internal.all_child() {
-                children.push(child_hash.into());
-            }
-        }
-
-        children
+        extract_child_nodes(bytes)
     }
 
     /// Batch stealing from global and other workers

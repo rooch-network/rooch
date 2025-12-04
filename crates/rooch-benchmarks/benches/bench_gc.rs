@@ -91,6 +91,7 @@ fn bench_mark_phase_workers(c: &mut Criterion) {
     let store = Arc::new(store);
     let builder = TreeBuilder::new(store.clone());
     let (root_hash, _all_hashes) = builder.create_tree(100_000).unwrap();
+    let batch_size = 5_000; // tuned batch size for worker scaling tests
 
     // Test different worker counts
     let worker_counts = vec![1, 2, 4, 8];
@@ -106,11 +107,16 @@ fn bench_mark_phase_workers(c: &mut Criterion) {
                     let marker = AtomicBloomFilterMarker::new(1 << 20, 4);
                     let count = if workers == 1 {
                         reachable_builder
-                            .build_with_marker(vec![root_hash], &marker, 1000)
+                            .build_with_marker(vec![root_hash], &marker, batch_size)
                             .unwrap()
                     } else {
                         reachable_builder
-                            .build_with_marker_parallel(vec![root_hash], workers, &marker, 1000)
+                            .build_with_marker_parallel(
+                                vec![root_hash],
+                                workers,
+                                &marker,
+                                batch_size,
+                            )
                             .unwrap()
                     };
                     black_box(count);

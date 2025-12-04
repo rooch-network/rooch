@@ -311,7 +311,8 @@ mod tests {
 
         // Verify report structure
         assert!(!report.protected_roots.is_empty()); // Should have some roots
-        assert_eq!(report.mark_stats.memory_strategy, "AtomicBloomFilter"); // Unified strategy (now using AtomicBloomFilter)
+                                                     // Default marker strategy is locked BloomFilter
+        assert_eq!(report.mark_stats.memory_strategy, "BloomFilter");
         assert!(report.mark_stats.duration >= Duration::from_secs(0));
         assert!(report.duration >= Duration::from_secs(0));
 
