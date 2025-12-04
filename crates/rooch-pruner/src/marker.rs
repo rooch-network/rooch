@@ -11,17 +11,12 @@ use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
 
 /// Marker implementation choice
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum MarkerStrategy {
     Atomic,
+    #[default]
     Locked,
-}
-
-impl Default for MarkerStrategy {
-    fn default() -> Self {
-        MarkerStrategy::Locked
-    }
 }
 
 impl fmt::Display for MarkerStrategy {
@@ -454,7 +449,7 @@ mod tests {
 
     #[test]
     fn test_create_marker() {
-        let marker = create_marker(100_000, 0.01);
+        let marker = create_marker(MarkerStrategy::Atomic, 100_000, 0.01);
         assert_eq!(marker.marker_type(), "AtomicBloomFilter");
 
         // Test basic operations
