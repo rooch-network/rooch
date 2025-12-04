@@ -117,11 +117,6 @@ impl GCCommand {
             return Err("Worker count must be greater than 0".to_string());
         }
 
-        // Validate protected roots count
-        if self.protected_roots_count == 0 {
-            return Err("Protected roots count must be greater than 0".to_string());
-        }
-
         Ok(())
     }
 

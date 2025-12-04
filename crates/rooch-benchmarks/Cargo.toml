@@ -45,6 +45,8 @@ move-vm-types = { workspace = true }
 moveos = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
+moveos-common = { workspace = true }
+parking_lot = { workspace = true }
 move-bytecode-utils = { workspace = true }
 raw-store = { workspace = true }
 moveos-config = { workspace = true }
@@ -68,6 +70,7 @@ rooch-test-transaction-builder = { workspace = true }
 rooch-framework = { workspace = true }
 rooch-framework-tests = { workspace = true }
 rooch-genesis = { workspace = true }
+rooch-pruner = { workspace = true }
 
 [dev-dependencies]
 
@@ -97,3 +100,7 @@ name = "bench_smt"
 [[bench]]
 harness = false
 name = "bench_indexer"
+
+[[bench]]
+harness = false
+name = "bench_gc"

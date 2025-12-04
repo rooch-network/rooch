@@ -406,12 +406,26 @@ impl GarbageCollector {
         // Capture marker type for stats
         let strategy_name = marker.marker_type().to_string();
 
-        // Execute reachability analysis
-        let reachable_count = reachable_builder.build_with_marker(
-            protected_roots.to_vec(),
-            self.config.workers,
-            marker.as_ref(),
-        )?;
+        // Execute reachability analysis with parallel or single-threaded mode
+        let reachable_count = if self.config.workers > 1 {
+            info!(
+                "Using parallel reachability analysis with {} workers",
+                self.config.workers
+            );
+            reachable_builder.build_with_marker_parallel(
+                protected_roots.to_vec(),
+                self.config.workers,
+                marker.as_ref(),
+                self.config.batch_size,
+            )?
+        } else {
+            info!("Using single-threaded reachability analysis");
+            reachable_builder.build_with_marker(
+                protected_roots.to_vec(),
+                marker.as_ref(),
+                self.config.batch_size,
+            )?
+        };
 
         let mark_stats = MarkStats {
             marked_count: reachable_count,
