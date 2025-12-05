@@ -516,49 +516,79 @@ impl GarbageCollector {
             return self.simulate_sweep_phase();
         }
 
-        // Get candidate nodes for deletion
-        let candidate_nodes = self.get_candidate_nodes_for_deletion()?;
-        stats.scanned_count = candidate_nodes.len() as u64;
-
-        if candidate_nodes.is_empty() {
-            info!("No candidate nodes found for deletion");
-            stats.duration = start_time.elapsed();
-            return Ok(stats);
-        }
-
-        info!(
-            "Found {} candidate nodes for deletion",
-            candidate_nodes.len()
-        );
-
-        // Determine which nodes are actually deletable by checking against reachable marker
-        let (nodes_to_delete, nodes_to_keep) =
-            self.filter_nodes_by_reachability(&candidate_nodes, reachable_marker)?;
-
-        stats.kept_count = nodes_to_keep.len() as u64;
-        info!("Nodes to keep (reachable): {}", nodes_to_keep.len());
-
-        // Process deletions in batches
         let node_store = self.rooch_db.moveos_store.get_state_node_store();
         let batch_size = self.config.batch_size;
 
-        info!(
-            "Deleting {} unreachable nodes in batches of {}",
-            nodes_to_delete.len(),
-            batch_size
-        );
+        // Stream the sweep instead of holding all candidates in memory to avoid OOM on large datasets.
+        // Iterate RocksDB keys directly, check reachability, and delete unreachable nodes in batches.
+        if let Some(wrapper) = node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                // Use raw iterator to stream keys; avoid materializing all candidates.
+                let mut iter = raw_db.raw_iterator_cf(&cf);
+                iter.seek_to_first();
 
-        for chunk in nodes_to_delete.chunks(batch_size) {
-            self.process_deletion_batch_real(node_store, chunk, &mut stats)?;
+                let mut delete_buf = Vec::with_capacity(batch_size);
+                let mut last_log = Instant::now();
 
-            // Periodically log progress for large deletions
-            if stats.deleted_count % 10000 == 0 && stats.deleted_count > 0 {
-                info!("Deleted {} nodes so far...", stats.deleted_count);
+                while iter.valid() {
+                    if let Some(k) = iter.key() {
+                        stats.scanned_count += 1;
+                        if k.len() == 32 {
+                            let node_hash = H256::from_slice(k);
+                            if reachable_marker.is_marked(&node_hash) {
+                                stats.kept_count += 1;
+                            } else {
+                                delete_buf.push(node_hash);
+                                if delete_buf.len() >= batch_size {
+                                    self.process_deletion_batch_real(
+                                        node_store,
+                                        &delete_buf,
+                                        &mut stats,
+                                    )?;
+                                    delete_buf.clear();
+                                }
+                            }
+                        } else {
+                            warn!("Skipping non-32B node key len={}", k.len());
+                        }
+                    }
+
+                    // Periodic progress for long sweeps
+                    if last_log.elapsed() > Duration::from_secs(30) {
+                        info!(
+                            "Sweep progress: scanned={}, kept={}, deleted={}, pending_delete_batch={}",
+                            stats.scanned_count,
+                            stats.kept_count,
+                            stats.deleted_count,
+                            delete_buf.len()
+                        );
+                        last_log = Instant::now();
+                    }
+
+                    iter.next();
+                }
+
+                // Check for iterator errors after traversal
+                if let Err(e) = iter.status() {
+                    return Err(anyhow::anyhow!("Iterator error during sweep: {}", e));
+                }
+
+                // Flush remaining deletions
+                if !delete_buf.is_empty() {
+                    self.process_deletion_batch_real(node_store, &delete_buf, &mut stats)?;
+                }
+            } else {
+                warn!(
+                    "STATE_NODE_COLUMN_FAMILY_NAME handle missing; sweep skipped to avoid data loss"
+                );
             }
+        } else {
+            warn!("RocksDB instance unavailable; sweep skipped to avoid data loss");
         }
 
         // Flush after all deletions are complete
-        if !nodes_to_delete.is_empty() {
+        if stats.deleted_count > 0 {
             info!("Flushing state node store after sweep phase");
             node_store.flush_only()?;
         }
@@ -581,65 +611,6 @@ impl GarbageCollector {
         }
 
         Ok(stats)
-    }
-
-    /// Get candidate nodes for deletion by scanning the database
-    fn get_candidate_nodes_for_deletion(&self) -> Result<Vec<H256>> {
-        let node_store = self.rooch_db.moveos_store.get_state_node_store();
-        let mut candidates = Vec::new();
-
-        // Prefer RocksDB raw iterator to avoid serde decode errors
-        if let Some(wrapper) = node_store.get_store().store().db() {
-            let raw_db = wrapper.inner();
-            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
-                let mut iter = raw_db.raw_iterator_cf(&cf);
-                iter.seek_to_first();
-                while iter.valid() {
-                    if let Some(k) = iter.key() {
-                        if k.len() == 32 {
-                            candidates.push(H256::from_slice(k));
-                        } else {
-                            warn!("Skipping non-32B node key len={}", k.len());
-                        }
-                    }
-                    iter.next();
-                }
-                debug!(
-                    "Collected {} candidate nodes via state_node iterator",
-                    candidates.len()
-                );
-                return Ok(candidates);
-            }
-        }
-
-        warn!("Iterator not supported for node store, returning empty candidate list");
-
-        Ok(candidates)
-    }
-
-    /// Filter nodes based on reachability using the marker built during mark phase
-    fn filter_nodes_by_reachability(
-        &self,
-        candidates: &[H256],
-        marker: &dyn NodeMarker,
-    ) -> Result<(Vec<H256>, Vec<H256>)> {
-        let mut nodes_to_delete = Vec::new();
-        let mut nodes_to_keep = Vec::new();
-
-        for &node in candidates {
-            if marker.is_marked(&node) {
-                nodes_to_keep.push(node);
-            } else {
-                nodes_to_delete.push(node);
-            }
-        }
-
-        info!(
-            "Filtering results: {} deletable, {} reachable",
-            nodes_to_delete.len(),
-            nodes_to_keep.len()
-        );
-        Ok((nodes_to_delete, nodes_to_keep))
     }
 
     /// Process real deletion batch using actual API
