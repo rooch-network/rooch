@@ -569,6 +569,11 @@ impl GarbageCollector {
                     iter.next();
                 }
 
+                // Check for iterator errors after traversal
+                if let Err(e) = iter.status() {
+                    return Err(anyhow::anyhow!("Iterator error during sweep: {}", e));
+                }
+
                 // Flush remaining deletions
                 if !delete_buf.is_empty() {
                     self.process_deletion_batch_real(node_store, &delete_buf, &mut stats)?;

@@ -183,21 +183,24 @@ impl ReachableBuilder {
                 continue;
             }
 
-            // Batch read all pending nodes
-            let bytes_results = self.multi_get_with_readopts(&pending_nodes)?;
+            // Batch read all pending nodes, chunked to avoid long stalls on busy disks.
+            const MULTI_GET_CHUNK: usize = 512;
+            for chunk in pending_nodes.chunks(MULTI_GET_CHUNK) {
+                let bytes_results = self.multi_get_with_readopts(chunk)?;
 
-            // Process each node and extract children
-            for bytes_option in bytes_results.into_iter() {
-                // Traverse the node to find children
-                // Include both Global‐State and Table-State JMT nodes
-                if let Some(bytes) = bytes_option {
-                    for child in extract_child_nodes(&bytes) {
-                        stack.push_back(child);
+                // Process each node and extract children
+                for bytes_option in bytes_results.into_iter() {
+                    // Traverse the node to find children
+                    // Include both Global‐State and Table-State JMT nodes
+                    if let Some(bytes) = bytes_option {
+                        for child in extract_child_nodes(&bytes) {
+                            stack.push_back(child);
+                        }
                     }
-                }
 
-                curr_count += 1;
-                counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    curr_count += 1;
+                    counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
             }
 
             // Log progress every 10,000 nodes
