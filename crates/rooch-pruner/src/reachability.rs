@@ -579,40 +579,43 @@ impl ReachableBuilder {
         overflow_threshold: usize,
         local_queue_estimate: &mut usize,
     ) -> Result<()> {
-        let multi_get_start = Instant::now();
-        // Batch read all pending nodes
-        let bytes_results = self.moveos_store.node_store.multi_get(pending)?;
-        let multi_get_elapsed = multi_get_start.elapsed();
-        if multi_get_elapsed > Duration::from_secs(5) {
-            info!(
-                "Slow multi_get: batch_size={}, elapsed={:?}",
-                pending.len(),
-                multi_get_elapsed
-            );
-        }
-
-        // Process each node and extract children
-        for (i, bytes_option) in bytes_results.into_iter().enumerate() {
-            let node_hash = pending[i];
-
-            // Mark the node
-            let newly_marked = marker.mark(node_hash)?;
-            if !newly_marked {
-                continue;
+        // Large `multi_get` calls on busy disks can stall; chunk requests to keep latency bounded.
+        const MULTI_GET_CHUNK: usize = 512;
+        for chunk in pending.chunks(MULTI_GET_CHUNK) {
+            let multi_get_start = Instant::now();
+            let bytes_results = self.moveos_store.node_store.multi_get(chunk)?;
+            let multi_get_elapsed = multi_get_start.elapsed();
+            if multi_get_elapsed > Duration::from_secs(5) {
+                info!(
+                    "Slow multi_get: chunk_size={}, elapsed={:?}",
+                    chunk.len(),
+                    multi_get_elapsed
+                );
             }
 
-            // Extract and distribute children
-            if let Some(bytes) = bytes_option {
-                let children = self.extract_children(&bytes);
+            // Process each node in the chunk and extract children
+            for (i, bytes_option) in bytes_results.into_iter().enumerate() {
+                let node_hash = chunk[i];
 
-                for child in children {
-                    // Smart distribution: overflow to global queue when local is full
-                    // This enables other workers to steal work, crucial for single-root scenarios
-                    if *local_queue_estimate >= overflow_threshold {
-                        global.push(child);
-                    } else {
-                        local.push(child);
-                        *local_queue_estimate += 1;
+                // Mark the node
+                let newly_marked = marker.mark(node_hash)?;
+                if !newly_marked {
+                    continue;
+                }
+
+                // Extract and distribute children
+                if let Some(bytes) = bytes_option {
+                    let children = self.extract_children(&bytes);
+
+                    for child in children {
+                        // Smart distribution: overflow to global queue when local is full
+                        // This enables other workers to steal work, crucial for single-root scenarios
+                        if *local_queue_estimate >= overflow_threshold {
+                            global.push(child);
+                        } else {
+                            local.push(child);
+                            *local_queue_estimate += 1;
+                        }
                     }
                 }
             }
