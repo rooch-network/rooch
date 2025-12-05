@@ -6,12 +6,15 @@ use crate::util::extract_child_nodes;
 use anyhow::Result;
 use crossbeam_deque::{Injector, Steal, Stealer, Worker};
 use moveos_common::bloom_filter::BloomFilter;
-use moveos_store::MoveOSStore;
+use moveos_store::{MoveOSStore, STATE_NODE_COLUMN_FAMILY_NAME};
 use parking_lot::Mutex;
 use primitive_types::H256;
+use raw_store::SchemaStore;
 use rayon::prelude::*;
+use rocksdb::ReadOptions;
 use smt::NodeReader;
 use std::collections::VecDeque;
+use std::iter;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -181,7 +184,7 @@ impl ReachableBuilder {
             }
 
             // Batch read all pending nodes
-            let bytes_results = self.moveos_store.node_store.multi_get(&pending_nodes)?;
+            let bytes_results = self.multi_get_with_readopts(&pending_nodes)?;
 
             // Process each node and extract children
             for bytes_option in bytes_results.into_iter() {
@@ -583,7 +586,7 @@ impl ReachableBuilder {
         const MULTI_GET_CHUNK: usize = 512;
         for chunk in pending.chunks(MULTI_GET_CHUNK) {
             let multi_get_start = Instant::now();
-            let bytes_results = self.moveos_store.node_store.multi_get(chunk)?;
+            let bytes_results = self.multi_get_with_readopts(chunk)?;
             let multi_get_elapsed = multi_get_start.elapsed();
             if multi_get_elapsed > Duration::from_secs(5) {
                 info!(
@@ -626,6 +629,36 @@ impl ReachableBuilder {
     /// Extract child nodes from a serialized SMT node
     fn extract_children(&self, bytes: &[u8]) -> Vec<H256> {
         extract_child_nodes(bytes)
+    }
+
+    /// Batch read with tuned ReadOptions for GC scans; falls back to default multi_get if raw DB is unavailable.
+    fn multi_get_with_readopts(&self, keys: &[H256]) -> Result<Vec<Option<Vec<u8>>>> {
+        if let Some(wrapper) = self.moveos_store.node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                let mut opts = ReadOptions::default();
+                opts.fill_cache(false);
+                // Modest readahead helps smooth sequential-ish access patterns.
+                opts.set_readahead_size(8 * 1024 * 1024);
+
+                let cf_handles = iter::repeat(&cf).take(keys.len());
+                let key_pairs: Vec<_> = keys
+                    .iter()
+                    .zip(cf_handles)
+                    .map(|(h, cf)| (cf, h.as_bytes()))
+                    .collect();
+
+                let results = raw_db.multi_get_cf_opt(key_pairs, &opts);
+                let mut out = Vec::with_capacity(results.len());
+                for r in results {
+                    out.push(r?);
+                }
+                return Ok(out);
+            }
+        }
+
+        // Fallback path when raw DB is unavailable (e.g., in-memory tests)
+        self.moveos_store.node_store.multi_get(keys)
     }
 
     /// Batch stealing from global and other workers
