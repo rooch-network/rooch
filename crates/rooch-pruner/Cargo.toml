@@ -35,6 +35,7 @@ moveos-types = { workspace = true }
 raw-store = { workspace = true }
 bcs = { workspace = true }
 sysinfo = { workspace = true }
+rocksdb = { workspace = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

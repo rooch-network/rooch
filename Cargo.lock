@@ -11130,6 +11130,7 @@ dependencies = [
  "rand 0.8.5",
  "raw-store",
  "rayon",
+ "rocksdb",
  "rooch-config",
  "rooch-db",
  "rooch-store",

@@ -6,12 +6,15 @@ use crate::util::extract_child_nodes;
 use anyhow::Result;
 use crossbeam_deque::{Injector, Steal, Stealer, Worker};
 use moveos_common::bloom_filter::BloomFilter;
-use moveos_store::MoveOSStore;
+use moveos_store::{MoveOSStore, STATE_NODE_COLUMN_FAMILY_NAME};
 use parking_lot::Mutex;
 use primitive_types::H256;
+use raw_store::SchemaStore;
 use rayon::prelude::*;
+use rocksdb::ReadOptions;
 use smt::NodeReader;
 use std::collections::VecDeque;
+use std::iter;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -180,21 +183,24 @@ impl ReachableBuilder {
                 continue;
             }
 
-            // Batch read all pending nodes
-            let bytes_results = self.moveos_store.node_store.multi_get(&pending_nodes)?;
+            // Batch read all pending nodes, chunked to avoid long stalls on busy disks.
+            const MULTI_GET_CHUNK: usize = 512;
+            for chunk in pending_nodes.chunks(MULTI_GET_CHUNK) {
+                let bytes_results = self.multi_get_with_readopts(chunk)?;
 
-            // Process each node and extract children
-            for bytes_option in bytes_results.into_iter() {
-                // Traverse the node to find children
-                // Include both Global‐State and Table-State JMT nodes
-                if let Some(bytes) = bytes_option {
-                    for child in extract_child_nodes(&bytes) {
-                        stack.push_back(child);
+                // Process each node and extract children
+                for bytes_option in bytes_results.into_iter() {
+                    // Traverse the node to find children
+                    // Include both Global‐State and Table-State JMT nodes
+                    if let Some(bytes) = bytes_option {
+                        for child in extract_child_nodes(&bytes) {
+                            stack.push_back(child);
+                        }
                     }
-                }
 
-                curr_count += 1;
-                counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    curr_count += 1;
+                    counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
             }
 
             // Log progress every 10,000 nodes
@@ -579,40 +585,43 @@ impl ReachableBuilder {
         overflow_threshold: usize,
         local_queue_estimate: &mut usize,
     ) -> Result<()> {
-        let multi_get_start = Instant::now();
-        // Batch read all pending nodes
-        let bytes_results = self.moveos_store.node_store.multi_get(pending)?;
-        let multi_get_elapsed = multi_get_start.elapsed();
-        if multi_get_elapsed > Duration::from_secs(5) {
-            info!(
-                "Slow multi_get: batch_size={}, elapsed={:?}",
-                pending.len(),
-                multi_get_elapsed
-            );
-        }
-
-        // Process each node and extract children
-        for (i, bytes_option) in bytes_results.into_iter().enumerate() {
-            let node_hash = pending[i];
-
-            // Mark the node
-            let newly_marked = marker.mark(node_hash)?;
-            if !newly_marked {
-                continue;
+        // Large `multi_get` calls on busy disks can stall; chunk requests to keep latency bounded.
+        const MULTI_GET_CHUNK: usize = 512;
+        for chunk in pending.chunks(MULTI_GET_CHUNK) {
+            let multi_get_start = Instant::now();
+            let bytes_results = self.multi_get_with_readopts(chunk)?;
+            let multi_get_elapsed = multi_get_start.elapsed();
+            if multi_get_elapsed > Duration::from_secs(5) {
+                info!(
+                    "Slow multi_get: chunk_size={}, elapsed={:?}",
+                    chunk.len(),
+                    multi_get_elapsed
+                );
             }
 
-            // Extract and distribute children
-            if let Some(bytes) = bytes_option {
-                let children = self.extract_children(&bytes);
+            // Process each node in the chunk and extract children
+            for (i, bytes_option) in bytes_results.into_iter().enumerate() {
+                let node_hash = chunk[i];
 
-                for child in children {
-                    // Smart distribution: overflow to global queue when local is full
-                    // This enables other workers to steal work, crucial for single-root scenarios
-                    if *local_queue_estimate >= overflow_threshold {
-                        global.push(child);
-                    } else {
-                        local.push(child);
-                        *local_queue_estimate += 1;
+                // Mark the node
+                let newly_marked = marker.mark(node_hash)?;
+                if !newly_marked {
+                    continue;
+                }
+
+                // Extract and distribute children
+                if let Some(bytes) = bytes_option {
+                    let children = self.extract_children(&bytes);
+
+                    for child in children {
+                        // Smart distribution: overflow to global queue when local is full
+                        // This enables other workers to steal work, crucial for single-root scenarios
+                        if *local_queue_estimate >= overflow_threshold {
+                            global.push(child);
+                        } else {
+                            local.push(child);
+                            *local_queue_estimate += 1;
+                        }
                     }
                 }
             }
@@ -623,6 +632,36 @@ impl ReachableBuilder {
     /// Extract child nodes from a serialized SMT node
     fn extract_children(&self, bytes: &[u8]) -> Vec<H256> {
         extract_child_nodes(bytes)
+    }
+
+    /// Batch read with tuned ReadOptions for GC scans; falls back to default multi_get if raw DB is unavailable.
+    fn multi_get_with_readopts(&self, keys: &[H256]) -> Result<Vec<Option<Vec<u8>>>> {
+        if let Some(wrapper) = self.moveos_store.node_store.get_store().store().db() {
+            let raw_db = wrapper.inner();
+            if let Some(cf) = raw_db.cf_handle(STATE_NODE_COLUMN_FAMILY_NAME) {
+                let mut opts = ReadOptions::default();
+                opts.fill_cache(false);
+                // Modest readahead helps smooth sequential-ish access patterns.
+                opts.set_readahead_size(8 * 1024 * 1024);
+
+                let cf_handles = iter::repeat(&cf).take(keys.len());
+                let key_pairs: Vec<_> = keys
+                    .iter()
+                    .zip(cf_handles)
+                    .map(|(h, cf)| (cf, h.as_bytes()))
+                    .collect();
+
+                let results = raw_db.multi_get_cf_opt(key_pairs, &opts);
+                let mut out = Vec::with_capacity(results.len());
+                for r in results {
+                    out.push(r?);
+                }
+                return Ok(out);
+            }
+        }
+
+        // Fallback path when raw DB is unavailable (e.g., in-memory tests)
+        self.moveos_store.node_store.multi_get(keys)
     }
 
     /// Batch stealing from global and other workers
