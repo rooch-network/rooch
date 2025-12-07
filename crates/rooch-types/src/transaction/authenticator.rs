@@ -432,7 +432,10 @@ mod tests {
                 scheme_name
             );
 
-            println!("✅ {} Session Authenticator format verified", scheme_name);
+            println!(
+                "[PASS] {} Session Authenticator format verified",
+                scheme_name
+            );
         }
     }
 
@@ -504,7 +507,7 @@ mod tests {
                 scheme_name
             );
 
-            println!("✅ {} DID Authenticator format verified", scheme_name);
+            println!("[PASS] {} DID Authenticator format verified", scheme_name);
         }
     }
 
@@ -550,7 +553,7 @@ mod tests {
         let deserialized: DIDAuthPayload = bcs::from_bytes(&serialized).unwrap();
         assert_eq!(did_auth.payload, deserialized);
 
-        println!("✅ Bitcoin message envelope format verified");
+        println!("[PASS] Bitcoin message envelope format verified");
     }
 
     #[test]
@@ -580,7 +583,9 @@ mod tests {
         // Verify public key consistency
         assert_eq!(session_pubkey, kp.public().as_ref());
 
-        println!("✅ Signature format consistency verified between Session and DID authenticators");
+        println!(
+            "[PASS] Signature format consistency verified between Session and DID authenticators"
+        );
     }
 
     #[test]
@@ -606,7 +611,7 @@ mod tests {
         let serialized2 = bcs::to_bytes(&auth2).unwrap();
         assert_eq!(serialized1, serialized2);
 
-        println!("✅ Authenticator serialization stability verified");
+        println!("[PASS] Authenticator serialization stability verified");
     }
 
     #[test]
@@ -626,7 +631,7 @@ mod tests {
         let different_digest = bitcoin_message_digest(different_message);
         assert_ne!(digest, different_digest);
 
-        println!("✅ Bitcoin message digest verified");
+        println!("[PASS] Bitcoin message digest verified");
     }
 
     // Helper function to create test transaction data

@@ -25,7 +25,7 @@ mod tests {
             let verifier = SafetyVerifier::new(temp_dir.path());
             let report = verifier.verify_database_access()?;
             assert!(!report.database_available);
-            info!("  ✅ {}: {}", "empty_directory", report.message);
+            info!("  [PASS] {}: {}", "empty_directory", report.message);
         }
 
         // Test 2: Directory with other files but no LOCK
@@ -36,7 +36,7 @@ mod tests {
             let verifier = SafetyVerifier::new(temp_dir.path());
             let report = verifier.verify_database_access()?;
             assert!(!report.database_available);
-            info!("  ✅ {}: {}", "missing_lock_file", report.message);
+            info!("  [PASS] {}: {}", "missing_lock_file", report.message);
         }
 
         // Test 3: Directory with LOCK file
@@ -48,7 +48,7 @@ mod tests {
             let verifier = SafetyVerifier::new(temp_dir.path());
             let report = verifier.verify_database_access()?;
             assert!(report.database_available);
-            info!("  ✅ {}: {}", "locked_database", report.message);
+            info!("  [PASS] {}: {}", "locked_database", report.message);
         }
 
         // Test 4: Nonexistent path
@@ -59,10 +59,10 @@ mod tests {
             let report = verifier.verify_database_access()?;
             assert!(!report.database_available);
             assert!(report.message.contains("does not exist"));
-            info!("  ✅ {}: {}", "nonexistent_path", report.message);
+            info!("  [PASS] {}: {}", "nonexistent_path", report.message);
         }
 
-        info!("✅ All safety verification boundary tests completed");
+        info!("[PASS] All safety verification boundary tests completed");
         Ok(())
     }
 
@@ -102,7 +102,7 @@ mod tests {
             thread_count, success_count
         );
 
-        info!("✅ Concurrent safety verification test completed");
+        info!("[PASS] Concurrent safety verification test completed");
         info!(
             "  All {} threads successfully verified database availability",
             thread_count
@@ -142,7 +142,7 @@ mod tests {
         );
         assert_eq!(success_count, check_count, "All checks should succeed");
 
-        info!("✅ Safety verification performance test completed");
+        info!("[PASS] Safety verification performance test completed");
         info!(
             "  Performed {} checks in {:?} ({:.0} checks/sec)",
             check_count, duration, throughput
@@ -170,7 +170,7 @@ mod tests {
 
             // No LOCK file should mean database unavailable
             assert!(!report.database_available);
-            info!("  ✅ Normal directory: {}", report.message);
+            info!("  [PASS] Normal directory: {}", report.message);
         }
 
         // Test 2: Directory with LOCK file
@@ -183,10 +183,10 @@ mod tests {
             let report = verifier.verify_database_access()?;
 
             assert!(report.database_available);
-            info!("  ✅ Directory with LOCK: {}", report.message);
+            info!("  [PASS] Directory with LOCK: {}", report.message);
         }
 
-        info!("✅ File permission scenarios test completed");
+        info!("[PASS] File permission scenarios test completed");
         Ok(())
     }
 
@@ -201,7 +201,7 @@ mod tests {
         assert!(!report.database_available);
         assert!(report.message.contains("does not exist"));
 
-        info!("✅ Safety verification error handling test completed");
+        info!("[PASS] Safety verification error handling test completed");
         info!("  Very long path handled correctly: {}", report.message);
 
         Ok(())
@@ -227,7 +227,7 @@ mod tests {
         assert!(report2.database_available);
         assert!(report2.message.contains("available for exclusive access"));
 
-        info!("✅ Safety verification normal operations test completed");
+        info!("[PASS] Safety verification normal operations test completed");
         info!("  Normal verification cycle works correctly");
 
         Ok(())

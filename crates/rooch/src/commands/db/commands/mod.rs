@@ -35,6 +35,7 @@ pub mod rocksdb_gc;
 pub mod rocksdb_stats;
 pub mod rollback;
 pub mod stat_changeset;
+pub mod state_prune_wrapper;
 pub mod verify_order;
 
 fn open_rocks(

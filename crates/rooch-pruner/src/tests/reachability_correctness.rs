@@ -64,7 +64,7 @@ async fn test_build_reach_basic_coverage() {
     );
     assert!(root_in_bloom, "Root should be reachable");
 
-    println!("✅ Basic BuildReach coverage test PASSED");
+    println!("[PASS] Basic BuildReach coverage test PASSED");
 }
 
 #[tokio::test]
@@ -110,7 +110,7 @@ async fn test_build_reach_multiple_roots() {
     assert!(root2_reachable, "Second root should be reachable");
     assert!(scanned_size >= 1, "Should have scanned at least one node");
 
-    println!("✅ Multiple roots BuildReach test PASSED");
+    println!("[PASS] Multiple roots BuildReach test PASSED");
 }
 
 #[tokio::test]
@@ -150,7 +150,7 @@ async fn test_build_reach_empty_roots() {
         "Bloom filter should be empty with no reachable nodes"
     );
 
-    println!("✅ Empty roots BuildReach test PASSED");
+    println!("[PASS] Empty roots BuildReach test PASSED");
 }
 
 #[tokio::test]
@@ -190,7 +190,7 @@ async fn test_build_reach_duplicate_roots() {
     );
     assert!(scanned_size > 0, "Should have scanned some nodes");
 
-    println!("✅ Duplicate roots BuildReach test PASSED");
+    println!("[PASS] Duplicate roots BuildReach test PASSED");
 }
 
 #[tokio::test]
@@ -240,7 +240,7 @@ async fn test_build_reach_bloom_deduplication() {
     );
     assert!(scanned_size > 0, "Should have scanned some nodes");
 
-    println!("✅ Bloom deduplication test PASSED");
+    println!("[PASS] Bloom deduplication test PASSED");
 }
 
 #[tokio::test]
@@ -310,7 +310,7 @@ async fn test_build_reach_consistency() {
         "Should have scanned at least the root"
     );
 
-    println!("✅ BuildReach consistency test PASSED");
+    println!("[PASS] BuildReach consistency test PASSED");
 }
 
 #[tokio::test]
@@ -356,7 +356,7 @@ async fn test_build_reach_error_handling() {
         fake1_in_bloom, fake2_in_bloom, fake3_in_bloom
     );
 
-    println!("✅ Error handling test PASSED (no panics with invalid roots)");
+    println!("[PASS] Error handling test PASSED (no panics with invalid roots)");
 }
 
 #[tokio::test]
@@ -407,7 +407,7 @@ async fn test_parallel_vs_single_thread_consistency() {
         "Single-threaded and parallel should mark the same number of nodes"
     );
 
-    println!("✅ Parallel vs single-threaded consistency test PASSED");
+    println!("[PASS] Parallel vs single-threaded consistency test PASSED");
 }
 
 #[tokio::test]
@@ -446,7 +446,7 @@ async fn test_parallel_single_root_performance() {
     );
     assert!(count > 0, "Should have marked at least the root");
 
-    println!("✅ Parallel single root test PASSED");
+    println!("[PASS] Parallel single root test PASSED");
 }
 
 #[tokio::test]
@@ -491,7 +491,7 @@ async fn test_parallel_multiple_roots() {
     }
     assert!(count >= 4, "Should have marked at least all roots");
 
-    println!("✅ Parallel multiple roots test PASSED");
+    println!("[PASS] Parallel multiple roots test PASSED");
 }
 
 #[tokio::test]
@@ -531,7 +531,7 @@ async fn test_parallel_fallback_to_single_thread() {
     );
     assert!(count > 0, "Should have marked at least the root");
 
-    println!("✅ Parallel fallback to single-threaded test PASSED");
+    println!("[PASS] Parallel fallback to single-threaded test PASSED");
 }
 
 #[tokio::test]
@@ -576,7 +576,7 @@ async fn test_parallel_work_stealing_effectiveness() {
         );
     }
 
-    println!("✅ Work stealing effectiveness test PASSED");
+    println!("[PASS] Work stealing effectiveness test PASSED");
 }
 
 #[tokio::test]
@@ -619,5 +619,5 @@ async fn test_parallel_with_marker_batch_processing() {
         );
     }
 
-    println!("✅ Parallel batch processing test PASSED");
+    println!("[PASS] Parallel batch processing test PASSED");
 }

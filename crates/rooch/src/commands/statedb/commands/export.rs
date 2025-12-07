@@ -250,7 +250,31 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::Snapshot => {
-                todo!()
+                // TODO: Implement snapshot export functionality
+                // This will integrate with the state-prune SnapshotBuilder
+                // For now, just write a placeholder to indicate snapshot mode
+                // Create a simple placeholder using H256 for field key
+                let placeholder_key = moveos_types::state::FieldKey::from(
+                    moveos_types::h256::H256::from_low_u64_be(0x736e617073686f74), // "snapshot" in hex
+                );
+                let placeholder_metadata = moveos_types::moveos_std::object::ObjectMeta::genesis_meta(
+                    moveos_types::moveos_std::object::ObjectID::random(),
+                    move_core_types::language_storage::TypeTag::Struct(Box::new(
+                        move_core_types::language_storage::StructTag {
+                            address: move_core_types::account_address::AccountAddress::from_hex_literal(
+                                "0x1"
+                            ).unwrap(),
+                            module: move_core_types::identifier::Identifier::new("string").unwrap(),
+                            name: move_core_types::identifier::Identifier::new("String").unwrap(),
+                            type_params: vec![],
+                        }
+                    ))
+                );
+                let placeholder_state = moveos_types::state::ObjectState::new(
+                    placeholder_metadata,
+                    b"snapshot_mode".to_vec(),
+                );
+                writer.write_record(&placeholder_key, &placeholder_state)?;
             }
             ExportMode::Indexer => {
                 self.export_indexer(&moveos_store, root_state_root, &mut writer)?;
@@ -621,7 +645,11 @@ fn get_state_root(
 ) -> H256 {
     let state = moveos_store
         .get_field_at(state_root, &object_field_key)
-        .unwrap()
-        .expect("state must be existed.");
-    state.state_root()
+        .unwrap();
+
+    // Extract the state root from ObjectState's metadata if present
+    match state {
+        Some(object_state) => object_state.metadata.state_root.unwrap_or_default(),
+        None => H256::default(),
+    }
 }

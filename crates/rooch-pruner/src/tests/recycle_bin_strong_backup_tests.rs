@@ -347,6 +347,6 @@ mod tests {
         assert_eq!(deserialized.created_at, record.created_at);
         assert_eq!(deserialized.original_size, record.original_size);
 
-        println!("✅ RecycleBinStore method signatures and serialization work correctly");
+        println!("[PASS] RecycleBinStore method signatures and serialization work correctly");
     }
 }

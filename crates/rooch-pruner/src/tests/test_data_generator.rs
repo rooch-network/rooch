@@ -214,7 +214,7 @@ mod tests {
                   strategy, report.mark_stats.marked_count);
         }
 
-        info!("✅ Marker strategy selection test completed");
+        info!("[PASS] Marker strategy selection test completed");
         Ok(())
     }
 
@@ -268,7 +268,7 @@ mod tests {
             assert!(duration < Duration::from_secs(5), "GC should complete within 5 seconds");
         }
 
-        info!("✅ GC performance test completed");
+        info!("[PASS] GC performance test completed");
         Ok(())
     }
 
@@ -315,7 +315,7 @@ mod tests {
         assert!(report.duration >= Duration::from_secs(0), "Total duration should be non-negative");
         assert!(report.duration >= report.mark_stats.duration, "Total should include mark time");
 
-        info!("✅ GC report structure test completed");
+        info!("[PASS] GC report structure test completed");
         info!("Report summary:");
         info!("  Protected roots: {}", report.protected_roots.len());
         info!("  Marked nodes: {}", report.mark_stats.marked_count);
@@ -349,7 +349,7 @@ mod tests {
             // This should fail because of safety verification
             let result = gc.execute_gc();
             assert!(result.is_err(), "Should fail without force execution");
-            info!("  ✅ Safety verification blocked execution as expected");
+            info!("  [PASS] Safety verification blocked execution as expected");
         }
 
         // Test 2: Force execution (should work)
@@ -371,10 +371,10 @@ mod tests {
             // This should succeed even without safety verification (dry-run mode)
             let result = gc.execute_gc();
             assert!(result.is_ok(), "Should succeed with force execution");
-            info!("  ✅ Force execution allowed GC to proceed");
+            info!("  [PASS] Force execution allowed GC to proceed");
         }
 
-        info!("✅ GC error handling test completed");
+        info!("[PASS] GC error handling test completed");
         Ok(())
     }
 }

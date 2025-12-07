@@ -364,6 +364,25 @@ impl StateStore for RoochStore {
     fn check_state_change_set(&self, tx_orders: Vec<u64>) -> Result<Vec<u64>> {
         self.get_state_store().check_state_change_set(tx_orders)
     }
+
+    fn get_changesets_range(
+        &self,
+        from_order: u64,
+        to_order: u64,
+    ) -> Result<Vec<(u64, StateChangeSetExt)>> {
+        self.get_state_store()
+            .get_changesets_range(from_order, to_order)
+    }
+
+    fn get_changesets_range_with_limit(
+        &self,
+        from_order: u64,
+        to_order: u64,
+        limit: usize,
+    ) -> Result<Vec<(u64, StateChangeSetExt)>> {
+        self.get_state_store()
+            .get_changesets_range_with_limit(from_order, to_order, limit)
+    }
 }
 
 impl DAMetaStore for RoochStore {
