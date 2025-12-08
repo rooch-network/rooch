@@ -172,10 +172,11 @@ impl SnapshotBuilder {
     }
 
     /// Extract child nodes from current node
+    #[allow(clippy::ptr_arg)]
     fn extract_child_nodes(
         &self,
         _parent_hash: &H256,
-        _nodes_to_process: &mut [H256],
+        _nodes_to_process: &mut Vec<H256>,
     ) -> Result<()> {
         // TODO: Implement child node extraction based on SMT node structure
         // This will depend on the specific SMT implementation in Rooch

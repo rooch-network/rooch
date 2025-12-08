@@ -284,9 +284,8 @@ impl SnapshotMeta {
 
     /// Validate snapshot metadata
     pub fn validate(&self) -> Result<()> {
-        if self.tx_order == 0 {
-            return Err(anyhow::anyhow!("Transaction order cannot be 0"));
-        }
+        // tx_order = 0 is allowed for snapshots (represents "unspecified" or "latest")
+        // For other contexts where tx_order must be > 0, additional validation should be performed
 
         if self.state_root == H256::zero() {
             return Err(anyhow::anyhow!("State root cannot be zero"));

@@ -3,7 +3,6 @@
 
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_config::RoochOpt;
 use rooch_types::error::RoochResult;
 use std::path::PathBuf;
 
@@ -45,7 +44,7 @@ pub struct ReplayCommand {
 
 #[async_trait]
 impl CommandAction<String> for ReplayCommand {
-    async fn execute(self, _opt: RoochOpt) -> RoochResult<String> {
+    async fn execute(self) -> RoochResult<String> {
         // TODO: Implement replay logic
         // This will be implemented in Phase 2 when we create IncrementalReplayer
 

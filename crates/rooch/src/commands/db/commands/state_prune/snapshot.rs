@@ -4,7 +4,6 @@
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::h256::H256;
-use rooch_config::RoochOpt;
 use rooch_types::error::RoochResult;
 use std::path::PathBuf;
 
@@ -42,7 +41,7 @@ pub struct SnapshotCommand {
 
 #[async_trait]
 impl CommandAction<String> for SnapshotCommand {
-    async fn execute(self, _opt: RoochOpt) -> RoochResult<String> {
+    async fn execute(self) -> RoochResult<String> {
         // TODO: Implement snapshot creation logic
         // This will be implemented in Phase 2 when we create SnapshotBuilder
 

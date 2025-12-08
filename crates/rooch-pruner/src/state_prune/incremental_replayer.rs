@@ -36,7 +36,7 @@ impl IncrementalReplayer {
     /// Replay changesets onto snapshot
     pub async fn replay_changesets(
         &self,
-        snapshot_path: &PathBuf,
+        input_snapshot_path: &PathBuf,
         from_order: u64,
         to_order: u64,
         output_dir: &Path,
@@ -49,13 +49,13 @@ impl IncrementalReplayer {
         // Initialize metadata
         let mut metadata = StatePruneMetadata::new(
             crate::state_prune::OperationType::Replay {
-                snapshot_path: snapshot_path.clone(),
+                snapshot_path: input_snapshot_path.clone(),
                 from_order,
                 to_order,
                 output_dir: output_dir.to_path_buf(),
             },
             serde_json::json!({
-                "snapshot_path": snapshot_path,
+                "input_snapshot_path": input_snapshot_path,
                 "from_order": from_order,
                 "to_order": to_order,
                 "config": self.config
@@ -65,8 +65,8 @@ impl IncrementalReplayer {
         metadata.mark_in_progress("Loading snapshot".to_string(), 5.0);
 
         // Load snapshot metadata and state store
-        let _snapshot_meta = self.load_snapshot_metadata(snapshot_path)?;
-        let snapshot_store = self.load_snapshot_store(snapshot_path)?;
+        let _snapshot_meta = self.load_snapshot_metadata(input_snapshot_path)?;
+        let snapshot_store = self.load_snapshot_store(input_snapshot_path)?;
 
         metadata.mark_in_progress("Loading changesets".to_string(), 10.0);
 
