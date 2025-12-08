@@ -4,7 +4,6 @@
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::best_rollback::BestRollbackCommand;
 use crate::commands::db::commands::changeset::ChangesetCommand;
-use crate::commands::db::commands::check_refcount::CheckRefcountCommand;
 use crate::commands::db::commands::cp_cf::CpCfCommand;
 use crate::commands::db::commands::delete_benchmark::DeleteBenchmarkCommand;
 use crate::commands::db::commands::drop::DropCommand;
@@ -113,7 +112,6 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
-            DBCommand::CheckRefcount(check) => check.execute().await,
             DBCommand::GC(gc) => gc.execute().await,
             DBCommand::Recycle(recycle) => recycle.execute().await,
         }
@@ -144,7 +142,6 @@ pub enum DBCommand {
     RocksdbGc(RocksDBGcCommand),
     DeleteBenchmark(DeleteBenchmarkCommand),
     GenerateDBCheckPoint(GenerateDBCheckPointCommand),
-    CheckRefcount(CheckRefcountCommand),
     GC(GCCommand),
     Recycle(RecycleCommand),
 }
