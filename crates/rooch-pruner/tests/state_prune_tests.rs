@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state_prune::{ProgressTracker, ReplayReport, SnapshotBuilderConfig, StatePruneMetadata};
 use moveos_types::h256::H256;
-use rooch_config::state_prune::{SnapshotMeta, StatePruneConfig};
+use rooch_config::state_prune::{ReplayReport, SnapshotMeta, StatePruneConfig};
+use rooch_pruner::state_prune::{ProgressTracker, SnapshotBuilderConfig, StatePruneMetadata};
 
 #[cfg(test)]
 mod tests {
