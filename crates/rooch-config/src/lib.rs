@@ -352,8 +352,7 @@ impl RoochOpt {
             (Some(interval), None) => {
                 // Only deprecated parameter is used
                 eprintln!(
-                    "WARNING: --traffic-per-second is deprecated. Use --requests-per-second instead. \
-                     Current value {} means {} requests per second.",
+                    "WARNING: --traffic-per-second is deprecated. Use --requests-per-second instead. Current value {} means {} requests per second.",
                     interval,
                     1.0 / interval
                 );
@@ -372,8 +371,7 @@ impl RoochOpt {
             (Some(interval), Some(rps)) => {
                 // Both parameters are used - this is an error
                 anyhow::bail!(
-                    "Cannot specify both --traffic-per-second ({}) and --requests-per-second ({}) simultaneously. \
-                     Use --requests-per-second instead.",
+                    "Cannot specify both --traffic-per-second ({}) and --requests-per-second ({}) simultaneously. Use --requests-per-second instead.",
                     interval, rps
                 )
             }
