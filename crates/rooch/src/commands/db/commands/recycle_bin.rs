@@ -651,9 +651,18 @@ impl RecycleCleanCommand {
 
             // Additional safety confirmation
             if !self.force {
-                if !crate::utils::prompt_yes_no("Are you sure you want to permanently delete all entries matching the specified criteria?") {
-                    tracing::info!("Operation cancelled by user.");
-                    return Ok("Operation cancelled by user".to_string());
+                tracing::warn!("This operation will PERMANENTLY delete all matching recycle bin entries.");
+                tracing::warn!("Type 'DELETE' to confirm permanent deletion:");
+                
+                use crate::utils::read_line;
+                match read_line() {
+                    Ok(input) if input.trim() == "DELETE" => {
+                        tracing::info!("Confirmation received, proceeding with deletion.");
+                    }
+                    _ => {
+                        tracing::info!("Confirmation failed. Operation cancelled by user.");
+                        return Ok("Operation cancelled by user".to_string());
+                    }
                 }
             }
 
