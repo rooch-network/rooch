@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::utils::{open_rooch_db, open_rooch_db_readonly};
+use crate::utils::{open_rooch_db, open_rooch_db_readonly, read_line};
 use clap::Parser;
 use moveos_types::state::{FieldKey, ObjectState};
 use raw_store::CodecKVStore;
@@ -654,7 +654,6 @@ impl RecycleCleanCommand {
                 tracing::warn!("This operation will PERMANENTLY delete all matching recycle bin entries.");
                 tracing::warn!("Type 'DELETE-RECYCLE-BIN' to confirm permanent deletion:");
                 
-                use crate::utils::read_line;
                 match read_line() {
                     Ok(input) if input.trim() == "DELETE-RECYCLE-BIN" => {
                         tracing::info!("Confirmation received, proceeding with deletion.");
