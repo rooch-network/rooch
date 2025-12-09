@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use moveos_types::h256::H256;
-use rooch_config::state_prune::{ReplayReport, SnapshotMeta, StatePruneConfig};
-use rooch_pruner::state_prune::{ProgressTracker, SnapshotBuilderConfig, StatePruneMetadata};
+use rooch_config::state_prune::{ReplayReport, SnapshotMeta};
+use rooch_pruner::state_prune::{
+    OperationStatus, OperationType, ProgressTracker, SnapshotBuilderConfig, StatePruneMetadata,
+};
 
 #[cfg(test)]
 mod tests {
@@ -82,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_replay_report_creation() {
-        let report = ReplayReport::new();
+        let mut report = ReplayReport::new();
 
         assert_eq!(report.changesets_processed, 0);
         assert_eq!(report.nodes_updated, 0);
@@ -99,7 +101,8 @@ mod tests {
 
         // Test verification
         report.verification_passed = true;
-        assert!(report.is_success());
+        // Still false because errors remain
+        assert!(!report.is_success());
     }
 
     #[test]
@@ -122,43 +125,36 @@ mod tests {
     fn test_snapshot_meta_validation() {
         let state_root = H256::random();
 
-        // Valid meta should pass
-        let mut valid_meta = SnapshotMeta::new(1, state_root, 100, 200);
+        // Valid meta should pass (tx_order can be 0 per validation rules)
+        let valid_meta = SnapshotMeta::new(0, state_root, 100, 200);
         assert!(valid_meta.validate().is_ok());
 
-        // Invalid tx_order
-        let mut invalid_meta = SnapshotMeta::new(0, state_root, 100, 200);
-        assert!(invalid_meta.validate().is_err());
-
         // Invalid state root
-        invalid_meta = SnapshotMeta::new(1, H256::zero(), 100, 200);
+        let invalid_meta = SnapshotMeta::new(1, H256::zero(), 100, 200);
         assert!(invalid_meta.validate().is_err());
     }
 
     #[test]
     fn test_snapshot_meta_file_operations() {
-        let temp_dir = std::env::temp_dir();
-        let test_file = temp_dir.join("test_snapshot_meta.json");
+        let temp_dir = tempfile::tempdir().unwrap();
+        let test_file = temp_dir.path();
 
         let state_root = H256::random();
         let snapshot_meta = SnapshotMeta::new(12345, state_root, 1000, 5000);
 
         // Test save and load
-        snapshot_meta.save_to_file(&test_file).unwrap();
-        let loaded_meta = SnapshotMeta::load_from_file(&test_file).unwrap();
+        let saved_path = snapshot_meta.save_to_file(&test_file).unwrap();
+        let loaded_meta = SnapshotMeta::load_from_file(&saved_path).unwrap();
 
         assert_eq!(loaded_meta.tx_order, snapshot_meta.tx_order);
         assert_eq!(loaded_meta.state_root, snapshot_meta.state_root);
         assert_eq!(loaded_meta.global_size, snapshot_meta.global_size);
         assert_eq!(loaded_meta.node_count, snapshot_meta.node_count);
-
-        // Cleanup
-        std::fs::remove_file(&test_file).unwrap();
     }
 
     #[test]
     fn test_state_prune_metadata_creation() {
-        let operation_type = crate::state_prune::OperationType::Snapshot {
+        let operation_type = OperationType::Snapshot {
             tx_order: 1000,
             state_root: format!("{:x}", H256::random()),
             output_dir: std::path::PathBuf::from("/test/output"),
@@ -170,19 +166,16 @@ mod tests {
 
         let metadata = StatePruneMetadata::new(operation_type, config);
 
-        assert_eq!(metadata.started_at > 0);
+        assert!(metadata.started_at > 0);
         assert_eq!(metadata.completed_at, 0);
-        assert!(matches!(
-            metadata.status,
-            crate::state_prune::OperationStatus::Pending
-        ));
+        assert!(matches!(metadata.status, OperationStatus::Pending));
         assert!(metadata.errors.is_empty());
     }
 
     #[test]
     fn test_state_prune_metadata_lifecycle() {
         let mut metadata = StatePruneMetadata::new(
-            crate::state_prune::OperationType::Snapshot {
+            OperationType::Snapshot {
                 tx_order: 0,
                 state_root: format!("{:x}", H256::random()),
                 output_dir: std::path::PathBuf::from("/test"),
@@ -192,7 +185,7 @@ mod tests {
 
         // Test progress tracking
         metadata.mark_in_progress("Test step".to_string(), 50.0);
-        if let crate::state_prune::OperationStatus::InProgress { progress, .. } = metadata.status {
+        if let OperationStatus::InProgress { progress, .. } = metadata.status {
             assert_eq!(progress, 50.0);
         } else {
             panic!("Expected InProgress status");
@@ -205,7 +198,7 @@ mod tests {
 
         // Test failure
         let mut failed_metadata = StatePruneMetadata::new(
-            crate::state_prune::OperationType::Snapshot {
+            OperationType::Snapshot {
                 tx_order: 0,
                 state_root: format!("{:x}", H256::random()),
                 output_dir: std::path::PathBuf::from("/test"),
@@ -224,7 +217,7 @@ mod tests {
         let test_file = temp_dir.join("test_metadata.json");
 
         let metadata = StatePruneMetadata::new(
-            crate::state_prune::OperationType::Snapshot {
+            OperationType::Snapshot {
                 tx_order: 1000,
                 state_root: format!("{:x}", H256::random()),
                 output_dir: std::path::PathBuf::from("/test"),
@@ -237,7 +230,10 @@ mod tests {
         let loaded_metadata = StatePruneMetadata::load_from_file(&test_file).unwrap();
 
         assert_eq!(loaded_metadata.started_at, metadata.started_at);
-        assert_eq!(loaded_metadata.status, metadata.status);
+        assert_eq!(
+            std::mem::discriminant(&loaded_metadata.status),
+            std::mem::discriminant(&metadata.status)
+        );
 
         // Cleanup
         std::fs::remove_file(&test_file).unwrap();

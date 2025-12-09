@@ -56,14 +56,11 @@ impl CommandAction<String> for ReplayCommand {
         // Create replay configuration
         let replay_config = ReplayConfig {
             default_batch_size: self.batch_size,
-            max_batch_size: self.batch_size * 10,
-            min_batch_size: self.batch_size / 10,
             verify_final_state_root: self.verify_root,
             validate_after_batch: false, // Simplified for basic implementation
             enable_checkpoints: false, // Simplified for basic implementation
-            checkpoint_interval_minutes: 10,
-            parallel_processing: false, // Simplified for basic implementation
-            max_parallel_tasks: 1,
+            checkpoint_interval: self.batch_size, // placeholder: every batch_size changesets
+            max_retry_attempts: 3,
         };
 
         // Create incremental replayer

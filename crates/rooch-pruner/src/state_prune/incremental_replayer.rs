@@ -383,7 +383,8 @@ mod tests {
     #[test]
     fn test_incremental_replayer_creation() {
         let config = ReplayConfig::default();
-        let replayer = IncrementalReplayer::new(config);
+        let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let replayer = IncrementalReplayer::new(config, store);
         assert!(replayer.is_ok());
     }
 
@@ -394,7 +395,8 @@ mod tests {
             ..Default::default()
         };
 
-        let replayer = IncrementalReplayer::new(config);
+        let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let replayer = IncrementalReplayer::new(config, store);
         assert!(replayer.is_err());
     }
 }
