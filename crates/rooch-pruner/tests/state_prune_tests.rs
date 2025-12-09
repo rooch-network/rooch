@@ -105,12 +105,7 @@ mod tests {
     #[test]
     fn test_snapshot_meta_creation() {
         let state_root = H256::random();
-        let snapshot_meta = SnapshotMeta::new(
-            1000,
-            state_root,
-            50000,
-            250000,
-        );
+        let snapshot_meta = SnapshotMeta::new(1000, state_root, 50000, 250000);
 
         assert_eq!(snapshot_meta.tx_order, 1000);
         assert_eq!(snapshot_meta.state_root, state_root);
@@ -146,12 +141,7 @@ mod tests {
         let test_file = temp_dir.join("test_snapshot_meta.json");
 
         let state_root = H256::random();
-        let snapshot_meta = SnapshotMeta::new(
-            12345,
-            state_root,
-            1000,
-            5000,
-        );
+        let snapshot_meta = SnapshotMeta::new(12345, state_root, 1000, 5000);
 
         // Test save and load
         snapshot_meta.save_to_file(&test_file).unwrap();
@@ -182,7 +172,10 @@ mod tests {
 
         assert_eq!(metadata.started_at > 0);
         assert_eq!(metadata.completed_at, 0);
-        assert!(matches!(metadata.status, crate::state_prune::OperationStatus::Pending));
+        assert!(matches!(
+            metadata.status,
+            crate::state_prune::OperationStatus::Pending
+        ));
         assert!(metadata.errors.is_empty());
     }
 

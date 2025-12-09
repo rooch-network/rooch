@@ -4,6 +4,7 @@
 use crate::state_prune::{
     OperationType, ProgressTracker, SnapshotBuilderConfig, StatePruneMetadata,
 };
+use crate::util::extract_child_nodes;
 use anyhow::Result;
 use moveos_types::h256::H256;
 use rooch_config::state_prune::SnapshotMeta;
@@ -13,7 +14,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
-use tracing::info;
+use tracing::{debug, info};
 
 /// Snapshot builder for creating state snapshots containing only active nodes
 pub struct SnapshotBuilder {
@@ -175,14 +176,20 @@ impl SnapshotBuilder {
     #[allow(clippy::ptr_arg)]
     fn extract_child_nodes(
         &self,
-        _parent_hash: &H256,
-        _nodes_to_process: &mut Vec<H256>,
+        parent_hash: &H256,
+        nodes_to_process: &mut Vec<H256>,
     ) -> Result<()> {
-        // TODO: Implement child node extraction based on SMT node structure
-        // This will depend on the specific SMT implementation in Rooch
+        // Get node data from the store
+        if let Some(node_data) = self.moveos_store.node_store.get(parent_hash)? {
+            // Extract child nodes using the existing utility function
+            let child_hashes = extract_child_nodes(&node_data);
 
-        // For now, this is a placeholder that will be implemented
-        // when we have access to the SMT node parsing logic
+            // Add all child nodes to processing queue
+            for child_hash in child_hashes {
+                nodes_to_process.push(child_hash);
+                debug!("Added child node {} for processing", child_hash);
+            }
+        }
 
         Ok(())
     }
@@ -226,12 +233,11 @@ impl SnapshotBuilder {
         Ok(())
     }
 
-    /// Create snapshot store (temporary implementation)
-    fn create_snapshot_store(&self, _db_path: &Path) -> Result<Box<dyn NodeStore>> {
-        // TODO: Implement actual snapshot database creation
-        // For now, return a placeholder
-
-        Ok(Box::new(PlaceholderNodeStore))
+    /// Create snapshot store (simplified file-based implementation)
+    fn create_snapshot_store(&self, output_dir: &Path) -> Result<Box<dyn NodeStore>> {
+        let nodes_dir = output_dir.join("nodes");
+        std::fs::create_dir_all(&nodes_dir)?;
+        Ok(Box::new(FileNodeStore::new(nodes_dir)))
     }
 }
 
@@ -270,12 +276,26 @@ trait NodeStore {
     fn put(&self, key: H256, value: Vec<u8>) -> Result<()>;
 }
 
-/// Placeholder node store implementation
-struct PlaceholderNodeStore;
+/// Simple file-based snapshot node store
+struct FileNodeStore {
+    nodes_dir: PathBuf,
+}
 
-impl NodeStore for PlaceholderNodeStore {
-    fn put(&self, _key: H256, _value: Vec<u8>) -> Result<()> {
-        // TODO: Implement actual node storage
+impl FileNodeStore {
+    fn new(nodes_dir: PathBuf) -> Self {
+        Self { nodes_dir }
+    }
+
+    fn node_file_path(&self, key: H256) -> PathBuf {
+        self.nodes_dir
+            .join(format!("{}.bin", hex::encode(key.as_bytes())))
+    }
+}
+
+impl NodeStore for FileNodeStore {
+    fn put(&self, key: H256, value: Vec<u8>) -> Result<()> {
+        let file_path = self.node_file_path(key);
+        std::fs::write(file_path, value)?;
         Ok(())
     }
 }

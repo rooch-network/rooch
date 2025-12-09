@@ -189,3 +189,49 @@ impl StateDBStore {
         Ok(results)
     }
 }
+
+impl StateStore for StateDBStore {
+    fn save_state_change_set(
+        &self,
+        tx_order: u64,
+        state_change_set: StateChangeSetExt,
+    ) -> Result<()> {
+        self.save_state_change_set(tx_order, state_change_set)
+    }
+
+    fn get_state_change_set(&self, tx_order: u64) -> Result<Option<StateChangeSetExt>> {
+        self.get_state_change_set(tx_order)
+    }
+
+    fn multi_get_state_change_set(
+        &self,
+        tx_orders: Vec<u64>,
+    ) -> Result<Vec<Option<StateChangeSetExt>>> {
+        self.multi_get_state_change_set(tx_orders)
+    }
+
+    fn remove_state_change_set(&self, tx_order: u64) -> Result<()> {
+        self.remove_state_change_set(tx_order)
+    }
+
+    fn check_state_change_set(&self, tx_orders: Vec<u64>) -> Result<Vec<u64>> {
+        self.check_state_change_set(tx_orders)
+    }
+
+    fn get_changesets_range(
+        &self,
+        from_order: u64,
+        to_order: u64,
+    ) -> Result<Vec<(u64, StateChangeSetExt)>> {
+        self.get_changesets_range(from_order, to_order)
+    }
+
+    fn get_changesets_range_with_limit(
+        &self,
+        from_order: u64,
+        to_order: u64,
+        limit: usize,
+    ) -> Result<Vec<(u64, StateChangeSetExt)>> {
+        self.get_changesets_range_with_limit(from_order, to_order, limit)
+    }
+}
