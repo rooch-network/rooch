@@ -166,8 +166,16 @@ pub struct RoochOpt {
     /// Set the interval after which one element of the quota is replenished in seconds.
     /// It is floating point number, for example, 0.5 means 2 requests per second.
     /// **The interval must not be zero.**
+    ///
+    /// DEPRECATED: Use --requests-per-second instead. This parameter will be removed in a future version.
     #[clap(long)]
     pub traffic_per_second: Option<f64>,
+
+    /// Set the number of requests allowed per second.
+    /// It is floating point number, for example, 10.0 means 10 requests per second.
+    /// **The value must not be zero.**
+    #[clap(long)]
+    pub requests_per_second: Option<f64>,
 
     #[clap(long, default_value_t, value_enum)]
     pub service_type: ServiceType,
@@ -210,6 +218,7 @@ impl RoochOpt {
             service_status: ServiceStatus::default(),
             traffic_per_second: None,
             traffic_burst_size: None,
+            requests_per_second: None,
             base: None,
             service_type: ServiceType::default(),
         };
@@ -334,6 +343,45 @@ impl RoochOpt {
 
     pub fn da_config(&self) -> &DAConfig {
         &self.da
+    }
+
+    /// Get the traffic rate limit interval in seconds, handling both deprecated and new parameters
+    /// Returns the interval in seconds between replenishing one quota element
+    pub fn get_traffic_rate_limit_interval(&self) -> Result<f64> {
+        match (self.traffic_per_second, self.requests_per_second) {
+            (Some(interval), None) => {
+                // Only deprecated parameter is used
+                eprintln!(
+                    "WARNING: --traffic-per-second is deprecated. Use --requests-per-second instead. \
+                     Current value {} means {} requests per second.",
+                    interval,
+                    1.0 / interval
+                );
+                if interval <= 0.0 {
+                    anyhow::bail!("traffic-per-second interval must be greater than zero");
+                }
+                Ok(interval)
+            }
+            (None, Some(rps)) => {
+                // Only new parameter is used
+                if rps <= 0.0 {
+                    anyhow::bail!("requests-per-second must be greater than zero");
+                }
+                Ok(1.0 / rps)
+            }
+            (Some(interval), Some(rps)) => {
+                // Both parameters are used - this is an error
+                anyhow::bail!(
+                    "Cannot specify both --traffic-per-second ({}) and --requests-per-second ({}) simultaneously. \
+                     Use --requests-per-second instead.",
+                    interval, rps
+                )
+            }
+            (None, None) => {
+                // No parameters specified - caller should handle default logic
+                anyhow::bail!("No traffic rate limit parameter specified")
+            }
+        }
     }
 }
 
@@ -460,6 +508,76 @@ pub fn retrieve_map_config_value(
 mod tests {
     use super::*;
     use std::env;
+
+    #[test]
+    fn test_get_traffic_rate_limit_interval_with_requests_per_second() {
+        let mut opt = RoochOpt::default();
+
+        // Test with requests per second
+        opt.requests_per_second = Some(10.0);
+        let interval = opt.get_traffic_rate_limit_interval().unwrap();
+        assert_eq!(interval, 0.1); // 10 requests per second = 0.1 second interval
+
+        // Test with different values
+        opt.requests_per_second = Some(100.0);
+        let interval = opt.get_traffic_rate_limit_interval().unwrap();
+        assert_eq!(interval, 0.01); // 100 requests per second = 0.01 second interval
+
+        // Test with fractional values
+        opt.requests_per_second = Some(0.5);
+        let interval = opt.get_traffic_rate_limit_interval().unwrap();
+        assert_eq!(interval, 2.0); // 0.5 requests per second = 2 second interval
+    }
+
+    #[test]
+    fn test_get_traffic_rate_limit_interval_with_deprecated_traffic_per_second() {
+        let mut opt = RoochOpt::default();
+
+        // Test with deprecated traffic per second (interval)
+        opt.traffic_per_second = Some(0.1);
+        let interval = opt.get_traffic_rate_limit_interval().unwrap();
+        assert_eq!(interval, 0.1); // Should return the interval directly
+    }
+
+    #[test]
+    fn test_get_traffic_rate_limit_interval_both_parameters_error() {
+        let mut opt = RoochOpt::default();
+
+        // Test with both parameters specified - should error
+        opt.traffic_per_second = Some(0.1);
+        opt.requests_per_second = Some(10.0);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Cannot specify both"));
+    }
+
+    #[test]
+    fn test_get_traffic_rate_limit_interval_no_parameters_error() {
+        let opt = RoochOpt::default();
+
+        // Test with no parameters specified - should error
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("No traffic rate limit parameter specified"));
+    }
+
+    #[test]
+    fn test_get_traffic_rate_limit_interval_zero_values_error() {
+        let mut opt = RoochOpt::default();
+
+        // Test with zero requests per second
+        opt.requests_per_second = Some(0.0);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("must be greater than zero"));
+
+        // Test with zero traffic per second
+        opt.requests_per_second = None;
+        opt.traffic_per_second = Some(0.0);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("must be greater than zero"));
+    }
 
     mod retrieve_map_config_value_tests {
         use super::*;

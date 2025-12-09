@@ -470,10 +470,22 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     if network.chain_id != BuiltinChainID::Local.chain_id() {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(200);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(0.1f64);
+        traffic_per_second = match opt.get_traffic_rate_limit_interval() {
+            Ok(interval) => interval,
+            Err(_) => {
+                // No parameter specified, use default for non-local networks (10 req/s = 0.1s interval)
+                0.1f64
+            }
+        };
     } else {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(0.001f64);
+        traffic_per_second = match opt.get_traffic_rate_limit_interval() {
+            Ok(interval) => interval,
+            Err(_) => {
+                // No parameter specified, use default for local network (1000 req/s = 0.001s interval)
+                0.001f64
+            }
+        };
     };
 
     // init limit

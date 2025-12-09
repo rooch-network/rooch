@@ -296,7 +296,7 @@ async fn start_server(w: &mut World, scenario: String) {
         }
     }
     w.opt.traffic_burst_size = Some(5000u32);
-    w.opt.traffic_per_second = Some(0.001f64);
+    w.opt.requests_per_second = Some(1000.0f64);
 
     let mut server_opt = ServerOpt::new();
     //TODO we should load keypair from cli config
