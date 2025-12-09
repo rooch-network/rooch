@@ -163,11 +163,12 @@ pub struct RoochOpt {
     #[clap(long)]
     pub traffic_burst_size: Option<u32>,
 
-    /// Set the interval after which one element of the quota is replenished in seconds.
-    /// It is floating point number, for example, 0.5 means 2 requests per second.
+    /// Set the interval in seconds between quota replenishments.
+    /// This defines how long to wait before adding one request credit back to the quota.
+    /// Examples: 0.1s = 10 requests/second, 1.0s = 1 request/second, 0.01s = 100 requests/second.
     /// **The interval must not be zero.**
-    #[clap(long)]
-    pub traffic_per_second: Option<f64>,
+    #[clap(long = "traffic-replenish-interval-s")]
+    pub traffic_replenish_interval_s: Option<f64>,
 
     #[clap(long, default_value_t, value_enum)]
     pub service_type: ServiceType,
@@ -208,7 +209,7 @@ impl RoochOpt {
             da: DAConfig::default(),
             proposer: ProposerConfig::default(),
             service_status: ServiceStatus::default(),
-            traffic_per_second: None,
+            traffic_replenish_interval_s: None,
             traffic_burst_size: None,
             base: None,
             service_type: ServiceType::default(),

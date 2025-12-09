@@ -23,6 +23,6 @@ docker run -d --name rooch-mainnet --restart unless-stopped -v /data:/root -p 67
     --btc-rpc-password "$BTC_MAIN_RPC_PWD" \
     --da "{\"da-backend\": {\"backends\": [{\"open-da\": {\"scheme\": \"gcs\", \"config\": {\"bucket\": \"$OPENDA_GCP_MAINNET_BUCKET\", \"credential\": \"$OPENDA_GCP_MAINNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_MAINNET_ENDPOINT\",\"turbo_api_key\":\"$TURBO_DA_MAINNET_API_KEY\"}}}]}}" \
     --traffic-burst-size 200 \
-    --traffic-per-second 0.1 \
+    --traffic-replenish-interval-s 0.1 \
     --rocksdb-row-cache-size 2147483648 \
     --rocksdb-block-cache-size 34359738368

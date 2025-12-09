@@ -466,26 +466,26 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .allow_headers([axum::http::header::CONTENT_TYPE]);
 
     let traffic_burst_size: u32;
-    let traffic_per_second: f64;
+    let traffic_replenish_interval_s: f64;
 
     if network.chain_id != BuiltinChainID::Local.chain_id() {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(200);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(0.1f64);
+        traffic_replenish_interval_s = opt.traffic_replenish_interval_s.unwrap_or(0.1f64);
     } else {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(0.001f64);
+        traffic_replenish_interval_s = opt.traffic_replenish_interval_s.unwrap_or(0.001f64);
     };
 
     // init limit
     // Allow bursts with up to x requests per IP address
-    // and replenishes one element every x seconds
+    // and replenishes one element every x seconds based on the interval
     // We Box it because Axum 0.6 requires all Layers to be Clone
     // and thus we need a static reference to it
     let governor_conf = Arc::new(
         GovernorConfigBuilder::default()
             .key_extractor(SmartIpKeyExtractor)
             .use_headers()
-            .per_millisecond((traffic_per_second * 1000f64) as u64)
+            .per_millisecond((traffic_replenish_interval_s * 1000f64) as u64)
             .burst_size(traffic_burst_size)
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))

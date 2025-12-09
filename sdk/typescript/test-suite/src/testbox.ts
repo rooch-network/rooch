@@ -233,13 +233,13 @@ export class TestBox {
       }
 
       // Only add default rate limit config if not already specified in serverArgs
-      // Note: traffic-per-second is the interval (in seconds) to replenish one quota element
+      // Note: traffic-replenish-interval-s is the interval (in seconds) between quota replenishments
       // e.g., 0.1 means replenish 1 quota every 0.1s = 10 requests/second
-      const hasTrafficPerSecond = serverArgs.includes('--traffic-per-second')
+      const hasTrafficReplenishInterval = serverArgs.includes('--traffic-replenish-interval-s')
       const hasTrafficBurstSize = serverArgs.includes('--traffic-burst-size')
 
-      if (!hasTrafficPerSecond) {
-        cmds.push('--traffic-per-second', '0.01')
+      if (!hasTrafficReplenishInterval) {
+        cmds.push('--traffic-replenish-interval-s', '0.01')
       }
       if (!hasTrafficBurstSize) {
         cmds.push('--traffic-burst-size', '5000')

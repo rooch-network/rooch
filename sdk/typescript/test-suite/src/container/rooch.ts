@@ -23,7 +23,7 @@ export class RoochContainer extends GenericContainer {
   private btcEndBlockHeight?: number
   private btcSyncBlockInterval?: number
   private trafficBurstSize?: number
-  private trafficPerSecond?: number
+  private trafficReplenishIntervalS?: number
   private localBinaryPath?: string
   private skipInitialization = false
 
@@ -84,8 +84,8 @@ export class RoochContainer extends GenericContainer {
     return this
   }
 
-  public withTrafficPerSecond(perSecond: number): this {
-    this.trafficPerSecond = perSecond
+  public withTrafficReplenishIntervalS(intervalS: number): this {
+    this.trafficReplenishIntervalS = intervalS
     return this
   }
 
@@ -156,7 +156,7 @@ export class RoochContainer extends GenericContainer {
       this.btcEndBlockHeight,
       this.btcSyncBlockInterval,
       this.trafficBurstSize,
-      this.trafficPerSecond,
+      this.trafficReplenishIntervalS,
       this.localBinaryPath,
     )
   }
@@ -195,8 +195,8 @@ export class RoochContainer extends GenericContainer {
       cmd += ` --btc-sync-block-interval ${this.btcSyncBlockInterval.toString()}`
     }
 
-    if (this.trafficPerSecond !== undefined) {
-      cmd += ` --traffic-per-second ${this.trafficPerSecond.toString()}`
+    if (this.trafficReplenishIntervalS !== undefined) {
+      cmd += ` --traffic-replenish-interval-s ${this.trafficReplenishIntervalS.toString()}`
     }
 
     if (this.trafficBurstSize !== undefined) {
@@ -222,7 +222,7 @@ export class StartedRoochContainer extends AbstractStartedContainer {
     private readonly btcEndBlockHeight?: number,
     private readonly btcSyncBlockInterval?: number,
     private readonly trafficBurstSize?: number,
-    private readonly trafficPerSecond?: number,
+    private readonly trafficReplenishIntervalS?: number,
     private readonly localBinaryPath?: string,
   ) {
     super(startedTestContainer)
@@ -267,8 +267,8 @@ export class StartedRoochContainer extends AbstractStartedContainer {
   public getTrafficBurstSize(): number | undefined {
     return this.trafficBurstSize
   }
-  public getTrafficPerSecond(): number | undefined {
-    return this.trafficPerSecond
+  public getTrafficReplenishIntervalS(): number | undefined {
+    return this.trafficReplenishIntervalS
   }
 
   public getLocalBinaryPath(): string | undefined {
