@@ -170,6 +170,13 @@ pub struct RoochOpt {
     #[clap(long = "traffic-replenish-interval-s")]
     pub traffic_replenish_interval_s: Option<f64>,
 
+    /// DEPRECATED: Use --traffic-replenish-interval-s instead for clarity.
+    /// Set the interval after which one element of the quota is replenished in seconds.
+    /// It is floating point number, for example, 0.5 means 2 requests per second.
+    /// **The interval must not be zero.**
+    #[clap(long)]
+    pub traffic_per_second: Option<f64>,
+
     #[clap(long, default_value_t, value_enum)]
     pub service_type: ServiceType,
 
@@ -210,6 +217,7 @@ impl RoochOpt {
             proposer: ProposerConfig::default(),
             service_status: ServiceStatus::default(),
             traffic_replenish_interval_s: None,
+            traffic_per_second: None,
             traffic_burst_size: None,
             base: None,
             service_type: ServiceType::default(),
@@ -335,6 +343,18 @@ impl RoochOpt {
 
     pub fn da_config(&self) -> &DAConfig {
         &self.da
+    }
+
+    /// Get the traffic replenish interval, preferring the new parameter.
+    /// Returns the interval value and a boolean indicating if the deprecated parameter was used.
+    pub fn get_traffic_replenish_interval(&self) -> (Option<f64>, bool) {
+        if self.traffic_replenish_interval_s.is_some() {
+            (self.traffic_replenish_interval_s, false)
+        } else if self.traffic_per_second.is_some() {
+            (self.traffic_per_second, true)
+        } else {
+            (None, false)
+        }
     }
 }
 

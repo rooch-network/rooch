@@ -470,10 +470,26 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     if network.chain_id != BuiltinChainID::Local.chain_id() {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(200);
-        traffic_replenish_interval_s = opt.traffic_replenish_interval_s.unwrap_or(0.1f64);
+        let (interval, deprecated_used) = opt.get_traffic_replenish_interval();
+        if let Some(interval_val) = interval {
+            traffic_replenish_interval_s = interval_val;
+            if deprecated_used {
+                eprintln!("⚠️  WARNING: --traffic-per-second is deprecated. Use --traffic-replenish-interval-s instead for clarity.");
+            }
+        } else {
+            traffic_replenish_interval_s = 0.1f64;
+        }
     } else {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
-        traffic_replenish_interval_s = opt.traffic_replenish_interval_s.unwrap_or(0.001f64);
+        let (interval, deprecated_used) = opt.get_traffic_replenish_interval();
+        if let Some(interval_val) = interval {
+            traffic_replenish_interval_s = interval_val;
+            if deprecated_used {
+                eprintln!("⚠️  WARNING: --traffic-per-second is deprecated. Use --traffic-replenish-interval-s instead for clarity.");
+            }
+        } else {
+            traffic_replenish_interval_s = 0.001f64;
+        }
     };
 
     // init limit

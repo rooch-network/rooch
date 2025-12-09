@@ -296,6 +296,7 @@ async fn start_server(w: &mut World, scenario: String) {
         }
     }
     w.opt.traffic_burst_size = Some(5000u32);
+    // Test new parameter (takes precedence over old one)
     w.opt.traffic_replenish_interval_s = Some(0.001f64);
 
     let mut server_opt = ServerOpt::new();

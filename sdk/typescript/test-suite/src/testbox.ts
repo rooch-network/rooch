@@ -236,9 +236,11 @@ export class TestBox {
       // Note: traffic-replenish-interval-s is the interval (in seconds) between quota replenishments
       // e.g., 0.1 means replenish 1 quota every 0.1s = 10 requests/second
       const hasTrafficReplenishInterval = serverArgs.includes('--traffic-replenish-interval-s')
+      const hasTrafficPerSecond = serverArgs.includes('--traffic-per-second')
       const hasTrafficBurstSize = serverArgs.includes('--traffic-burst-size')
 
-      if (!hasTrafficReplenishInterval) {
+      // Prefer the new parameter, fall back to old one for compatibility
+      if (!hasTrafficReplenishInterval && !hasTrafficPerSecond) {
         cmds.push('--traffic-replenish-interval-s', '0.01')
       }
       if (!hasTrafficBurstSize) {

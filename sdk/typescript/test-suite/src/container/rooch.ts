@@ -90,6 +90,15 @@ export class RoochContainer extends GenericContainer {
   }
 
   /**
+   * DEPRECATED: Use withTrafficReplenishIntervalS instead for clarity.
+   * Set the traffic per second (interval) for rate limiting.
+   */
+  public withTrafficPerSecond(perSecond: number): this {
+    this.trafficReplenishIntervalS = perSecond
+    return this
+  }
+
+  /**
    * Skip the initialization steps if you're using a pre-initialized config
    */
   public withSkipInitialization(skip: boolean = true): this {
@@ -268,6 +277,14 @@ export class StartedRoochContainer extends AbstractStartedContainer {
     return this.trafficBurstSize
   }
   public getTrafficReplenishIntervalS(): number | undefined {
+    return this.trafficReplenishIntervalS
+  }
+
+  /**
+   * DEPRECATED: Use getTrafficReplenishIntervalS instead for clarity.
+   * Get the traffic per second (interval) for rate limiting.
+   */
+  public getTrafficPerSecond(): number | undefined {
     return this.trafficReplenishIntervalS
   }
 
