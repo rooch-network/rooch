@@ -652,11 +652,11 @@ impl RecycleCleanCommand {
             // Additional safety confirmation
             if !self.force {
                 tracing::warn!("This operation will PERMANENTLY delete all matching recycle bin entries.");
-                tracing::warn!("Type 'DELETE' to confirm permanent deletion:");
+                tracing::warn!("Type 'DELETE-RECYCLE-BIN' to confirm permanent deletion:");
                 
                 use crate::utils::read_line;
                 match read_line() {
-                    Ok(input) if input.trim() == "DELETE" => {
+                    Ok(input) if input.trim() == "DELETE-RECYCLE-BIN" => {
                         tracing::info!("Confirmation received, proceeding with deletion.");
                     }
                     _ => {
