@@ -165,7 +165,7 @@ impl RecycleDumpCommand {
                 }
             }
         } else {
-            eprintln!("No recycle bin record found for hash: {}", self.hash);
+            tracing::warn!("No recycle bin record found for hash: {}", self.hash);
             Ok("No record found".to_string())
         }
     }
@@ -231,8 +231,8 @@ pub struct RecycleRestoreCommand {
 impl RecycleRestoreCommand {
     pub async fn execute(self) -> RoochResult<String> {
         if !self.force {
-            eprintln!("Error: --force is required for restore operation");
-            eprintln!("This operation will overwrite existing state_node data.");
+            tracing::error!("Error: --force is required for restore operation");
+            tracing::error!("This operation will overwrite existing state_node data.");
             return Ok("Operation cancelled".to_string());
         }
 
@@ -277,7 +277,7 @@ impl RecycleRestoreCommand {
 
             Ok("Node restored successfully".to_string())
         } else {
-            eprintln!("No recycle bin record found for hash: {}", self.hash);
+            tracing::warn!("No recycle bin record found for hash: {}", self.hash);
             Ok("No record found".to_string())
         }
     }
@@ -561,17 +561,17 @@ impl RecycleCleanCommand {
     pub async fn execute(self) -> RoochResult<String> {
         // Safety check: require either --dry-run or --force
         if !self.dry_run && !self.force {
-            eprintln!("Error: Either --dry-run or --force is required");
-            eprintln!("This is a PERMANENT deletion operation. Consider:");
-            eprintln!("  1. Run with --dry-run first to see what would be deleted");
-            eprintln!("  2. Run with --force after reviewing the dry-run output");
-            eprintln!("Example:");
-            eprintln!("  rooch db recycle-clean --dry-run --older-than 7d");
-            eprintln!("  rooch db recycle-clean --force --older-than 7d");
+            tracing::error!("Error: Either --dry-run or --force is required");
+            tracing::error!("This is a PERMANENT deletion operation. Consider:");
+            tracing::error!("  1. Run with --dry-run first to see what would be deleted");
+            tracing::error!("  2. Run with --force after reviewing the dry-run output");
+            tracing::error!("Example:");
+            tracing::error!("  rooch db recycle-clean --dry-run --older-than 7d");
+            tracing::error!("  rooch db recycle-clean --force --older-than 7d");
             return Ok("Operation cancelled for safety".to_string());
         }
 
-        let (_root_meta, rooch_db, _start) = open_rooch_db_readonly(
+        let (_root_meta, rooch_db, _start) = open_rooch_db(
             self.base_data_dir.clone(),
             Some(rooch_types::rooch_network::RoochChainID::Builtin(
                 self.chain_id,
@@ -587,23 +587,23 @@ impl RecycleCleanCommand {
         // Get current statistics
         let stats = recycle_store.get_stats();
 
-        println!("=== Recycle Bin Cleanup Plan ===");
-        println!("{}", stats);
+        tracing::info!("=== Recycle Bin Cleanup Plan ===");
+        tracing::info!("{}", stats);
 
         if stats.strong_backup {
-            println!("🔒 Strong Backup Mode: ENABLED");
-            println!("⚠️  WARNING: This is a PERMANENT deletion operation");
-            println!("📦 Deleted records cannot be recovered after cleanup");
+            tracing::info!("🔒 Strong Backup Mode: ENABLED");
+            tracing::warn!("⚠️  WARNING: This is a PERMANENT deletion operation");
+            tracing::warn!("📦 Deleted records cannot be recovered after cleanup");
         }
 
         // Show what would be affected
-        println!("\n=== Cleanup Parameters ===");
+        tracing::info!("=== Cleanup Parameters ===");
         if let Some(older_than) = &self.older_than {
-            println!("  Delete records older than: {}", older_than);
+            tracing::info!("  Delete records older than: {}", older_than);
         }
         // phase and node_type filtering removed - RecycleRecord simplified
         // preserve_count functionality removed - not implemented
-        println!("  Batch size: {}", self.batch_size);
+        tracing::info!("  Batch size: {}", self.batch_size);
 
         // Build the filter based on command line options
         let mut filter = RecycleFilter {
@@ -624,17 +624,17 @@ impl RecycleCleanCommand {
 
         // Execute the cleanup
         if self.dry_run {
-            println!("\n📋 DRY RUN MODE - No actual deletion will occur");
+            tracing::info!("📋 DRY RUN MODE - No actual deletion will occur");
 
             // Use list_entries to show what would be deleted
             let entries =
                 recycle_store.list_entries(Some(filter.clone()), Some(self.batch_size))?;
 
-            println!("=== Records that would be deleted ===");
-            println!("Found {} matching records", entries.len());
+            tracing::info!("=== Records that would be deleted ===");
+            tracing::info!("Found {} matching records", entries.len());
 
             for (i, record) in entries.iter().take(10).enumerate() {
-                println!(
+                tracing::info!(
                     "  {}. {} bytes (created at: {})",
                     i + 1,
                     record.original_size,
@@ -643,22 +643,16 @@ impl RecycleCleanCommand {
             }
 
             if entries.len() > 10 {
-                println!("  ... and {} more", entries.len() - 10);
+                tracing::info!("  ... and {} more", entries.len() - 10);
             }
         } else {
-            println!("\n🚨 LIVE DELETION MODE - Records will be permanently deleted!");
-            println!("   This operation is IRREVERSIBLE!");
+            tracing::warn!("🚨 LIVE DELETION MODE - Records will be permanently deleted!");
+            tracing::warn!("   This operation is IRREVERSIBLE!");
 
             // Additional safety confirmation
             if !self.force {
-                eprintln!("\nType 'DELETE-RECYCLE-BIN' to confirm permanent deletion:");
-                use std::io::{self, Write};
-                let mut input = String::new();
-                io::stdout().flush().unwrap();
-                io::stdin().read_line(&mut input).unwrap();
-
-                if input.trim() != "DELETE-RECYCLE-BIN" {
-                    eprintln!("Confirmation failed. Operation cancelled.");
+                if !crate::utils::prompt_yes_no("Are you sure you want to permanently delete all entries matching the specified criteria?") {
+                    tracing::info!("Operation cancelled by user.");
                     return Ok("Operation cancelled by user".to_string());
                 }
             }
@@ -666,13 +660,13 @@ impl RecycleCleanCommand {
             // Execute the actual deletion
             let deleted_count = recycle_store.delete_entries(&filter, self.batch_size)?;
 
-            println!("✅ Cleanup completed!");
-            println!("🗑️  Deleted {} records", deleted_count);
+            tracing::info!("✅ Cleanup completed!");
+            tracing::info!("🗑️  Deleted {} records", deleted_count);
 
             // Show updated statistics
             let new_stats = recycle_store.get_stats();
-            println!("\n=== Updated Statistics ===");
-            println!("{}", new_stats);
+            tracing::info!("=== Updated Statistics ===");
+            tracing::info!("{}", new_stats);
         }
 
         Ok("Cleanup operation completed".to_string())
