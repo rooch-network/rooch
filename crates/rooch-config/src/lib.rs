@@ -359,12 +359,18 @@ impl RoochOpt {
                 if interval <= 0.0 {
                     anyhow::bail!("traffic-per-second interval must be greater than zero");
                 }
+                if interval.is_nan() || interval.is_infinite() {
+                    anyhow::bail!("traffic-per-second interval must be a valid finite number");
+                }
                 Ok(interval)
             }
             (None, Some(rps)) => {
                 // Only new parameter is used
                 if rps <= 0.0 {
                     anyhow::bail!("requests-per-second must be greater than zero");
+                }
+                if rps.is_nan() || rps.is_infinite() {
+                    anyhow::bail!("requests-per-second must be a valid finite number");
                 }
                 Ok(1.0 / rps)
             }
@@ -546,7 +552,10 @@ mod tests {
         opt.requests_per_second = Some(10.0);
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Cannot specify both"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot specify both"));
     }
 
     #[test]
@@ -556,7 +565,10 @@ mod tests {
         // Test with no parameters specified - should error
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("No traffic rate limit parameter specified"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("No traffic rate limit parameter specified"));
     }
 
     #[test]
@@ -567,14 +579,95 @@ mod tests {
         opt.requests_per_second = Some(0.0);
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("must be greater than zero"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be greater than zero"));
 
         // Test with zero traffic per second
         opt.requests_per_second = None;
         opt.traffic_per_second = Some(0.0);
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("must be greater than zero"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be greater than zero"));
+    }
+
+    #[test]
+    fn test_get_traffic_rate_limit_interval_negative_values_error() {
+        let mut opt = RoochOpt::default();
+
+        // Test with negative requests per second
+        opt.requests_per_second = Some(-10.0);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be greater than zero"));
+
+        // Test with negative traffic per second
+        opt.requests_per_second = None;
+        opt.traffic_per_second = Some(-0.1);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be greater than zero"));
+    }
+
+    #[test]
+    fn test_get_traffic_rate_limit_interval_special_float_values_error() {
+        let mut opt = RoochOpt::default();
+
+        // Test with NaN for requests per second
+        opt.requests_per_second = Some(f64::NAN);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be a valid finite number"));
+
+        // Test with infinity for requests per second
+        opt.requests_per_second = Some(f64::INFINITY);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be a valid finite number"));
+
+        // Test with negative infinity for requests per second
+        opt.requests_per_second = Some(f64::NEG_INFINITY);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be a valid finite number"));
+
+        // Test with NaN for traffic per second
+        opt.requests_per_second = None;
+        opt.traffic_per_second = Some(f64::NAN);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be a valid finite number"));
+
+        // Test with infinity for traffic per second
+        opt.traffic_per_second = Some(f64::INFINITY);
+        let result = opt.get_traffic_rate_limit_interval();
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be a valid finite number"));
     }
 
     mod retrieve_map_config_value_tests {

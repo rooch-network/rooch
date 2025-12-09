@@ -472,7 +472,14 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(200);
         traffic_per_second = match opt.get_traffic_rate_limit_interval() {
             Ok(interval) => interval,
-            Err(_) => {
+            Err(e) => {
+                if !e
+                    .to_string()
+                    .contains("No traffic rate limit parameter specified")
+                {
+                    // Propagate validation errors
+                    return Err(e);
+                }
                 // No parameter specified, use default for non-local networks (10 req/s = 0.1s interval)
                 0.1f64
             }
@@ -481,7 +488,14 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
         traffic_per_second = match opt.get_traffic_rate_limit_interval() {
             Ok(interval) => interval,
-            Err(_) => {
+            Err(e) => {
+                if !e
+                    .to_string()
+                    .contains("No traffic rate limit parameter specified")
+                {
+                    // Propagate validation errors
+                    return Err(e);
+                }
                 // No parameter specified, use default for local network (1000 req/s = 0.001s interval)
                 0.001f64
             }
