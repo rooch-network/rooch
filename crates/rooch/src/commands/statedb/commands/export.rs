@@ -250,31 +250,7 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::Snapshot => {
-                // TODO: Implement snapshot export functionality
-                // This will integrate with the state-prune SnapshotBuilder
-                // For now, just write a placeholder to indicate snapshot mode
-                // Create a simple placeholder using H256 for field key
-                let placeholder_key = moveos_types::state::FieldKey::from(
-                    moveos_types::h256::H256::from_low_u64_be(0x736e617073686f74), // "snapshot" in hex
-                );
-                let placeholder_metadata = moveos_types::moveos_std::object::ObjectMeta::genesis_meta(
-                    moveos_types::moveos_std::object::ObjectID::random(),
-                    move_core_types::language_storage::TypeTag::Struct(Box::new(
-                        move_core_types::language_storage::StructTag {
-                            address: move_core_types::account_address::AccountAddress::from_hex_literal(
-                                "0x1"
-                            ).unwrap(),
-                            module: move_core_types::identifier::Identifier::new("string").unwrap(),
-                            name: move_core_types::identifier::Identifier::new("String").unwrap(),
-                            type_params: vec![],
-                        }
-                    ))
-                );
-                let placeholder_state = moveos_types::state::ObjectState::new(
-                    placeholder_metadata,
-                    b"snapshot_mode".to_vec(),
-                );
-                writer.write_record(&placeholder_key, &placeholder_state)?;
+                self.export_snapshot(&moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Indexer => {
                 self.export_indexer(&moveos_store, root_state_root, &mut writer)?;
@@ -378,6 +354,40 @@ impl ExportCommand {
         }
 
         self.internal_export_indexer(moveos_store, root_state_root, writer, object_ids)?;
+        Ok(())
+    }
+
+    /// Export only the current active state tree (no history) to FieldKey:ObjectState records.
+    fn export_snapshot(
+        &self,
+        moveos_store: &MoveOSStore,
+        state_root: H256,
+        writer: &mut ExportWriter,
+    ) -> Result<()> {
+        let start = Instant::now();
+        let mut iter = moveos_store
+            .get_state_store()
+            .iter(state_root, None)
+            .map_err(|e| anyhow::anyhow!("snapshot iterator creation failed: {}", e))?;
+
+        let mut count: u64 = 0;
+        while let Some((k, v)) = iter
+            .next()
+            .transpose()
+            .map_err(|e| anyhow::anyhow!("snapshot iteration error at {}: {}", count, e))?
+        {
+            writer.write_record(&k, &v)?;
+            count += 1;
+            if count % 100_000 == 0 {
+                tracing::info!("Exported {} state entries for snapshot...", count);
+            }
+        }
+        writer.flush()?;
+        tracing::info!(
+            "Snapshot export completed: {} entries, duration={:?}",
+            count,
+            start.elapsed()
+        );
         Ok(())
     }
 

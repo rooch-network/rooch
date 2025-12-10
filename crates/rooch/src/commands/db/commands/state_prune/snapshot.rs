@@ -53,10 +53,12 @@ impl CommandAction<String> for SnapshotCommand {
         // Determine state root
         let state_root = if let Some(root_str) = self.state_root {
             H256::from_slice(&hex::decode(root_str).map_err(|e| rooch_types::error::RoochError::from(anyhow::anyhow!("Invalid state_root hex: {}", e)))?)
+        } else if let Some(startup_info) = moveos_store.get_config_store().get_startup_info()? {
+            startup_info.state_root
         } else {
-            // TODO: Get latest state root from tx_order if provided
-            // For now, use current state root
-            H256::random() // Placeholder
+            return Err(rooch_types::error::RoochError::from(anyhow::anyhow!(
+                "Unable to determine state_root: provide --state-root or ensure startup_info exists"
+            )));
         };
 
         // Create snapshot builder configuration
