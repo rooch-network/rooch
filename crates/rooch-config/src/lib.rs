@@ -515,10 +515,11 @@ mod tests {
 
     #[test]
     fn test_get_traffic_rate_limit_interval_with_requests_per_second() {
-        let mut opt = RoochOpt::default();
-
         // Test with requests per second
-        opt.requests_per_second = Some(10.0);
+        let mut opt = RoochOpt {
+            requests_per_second: Some(10.0),
+            ..Default::default()
+        };
         let interval = opt.get_traffic_rate_limit_interval().unwrap();
         assert_eq!(interval, 0.1); // 10 requests per second = 0.1 second interval
 
@@ -535,21 +536,25 @@ mod tests {
 
     #[test]
     fn test_get_traffic_rate_limit_interval_with_deprecated_traffic_per_second() {
-        let mut opt = RoochOpt::default();
+        let opt = RoochOpt {
+            traffic_per_second: Some(0.1),
+            ..Default::default()
+        };
 
         // Test with deprecated traffic per second (interval)
-        opt.traffic_per_second = Some(0.1);
         let interval = opt.get_traffic_rate_limit_interval().unwrap();
         assert_eq!(interval, 0.1); // Should return the interval directly
     }
 
     #[test]
     fn test_get_traffic_rate_limit_interval_both_parameters_error() {
-        let mut opt = RoochOpt::default();
+        let opt = RoochOpt {
+            traffic_per_second: Some(0.1),
+            requests_per_second: Some(10.0),
+            ..Default::default()
+        };
 
         // Test with both parameters specified - should error
-        opt.traffic_per_second = Some(0.1);
-        opt.requests_per_second = Some(10.0);
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -573,10 +578,11 @@ mod tests {
 
     #[test]
     fn test_get_traffic_rate_limit_interval_zero_values_error() {
-        let mut opt = RoochOpt::default();
-
         // Test with zero requests per second
-        opt.requests_per_second = Some(0.0);
+        let opt = RoochOpt {
+            requests_per_second: Some(0.0),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -585,8 +591,10 @@ mod tests {
             .contains("must be greater than zero"));
 
         // Test with zero traffic per second
-        opt.requests_per_second = None;
-        opt.traffic_per_second = Some(0.0);
+        let opt = RoochOpt {
+            traffic_per_second: Some(0.0),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -597,10 +605,11 @@ mod tests {
 
     #[test]
     fn test_get_traffic_rate_limit_interval_negative_values_error() {
-        let mut opt = RoochOpt::default();
-
         // Test with negative requests per second
-        opt.requests_per_second = Some(-10.0);
+        let opt = RoochOpt {
+            requests_per_second: Some(-10.0),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -609,8 +618,10 @@ mod tests {
             .contains("must be greater than zero"));
 
         // Test with negative traffic per second
-        opt.requests_per_second = None;
-        opt.traffic_per_second = Some(-0.1);
+        let opt = RoochOpt {
+            traffic_per_second: Some(-0.1),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -621,10 +632,11 @@ mod tests {
 
     #[test]
     fn test_get_traffic_rate_limit_interval_special_float_values_error() {
-        let mut opt = RoochOpt::default();
-
         // Test with NaN for requests per second
-        opt.requests_per_second = Some(f64::NAN);
+        let opt = RoochOpt {
+            requests_per_second: Some(f64::NAN),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -633,7 +645,10 @@ mod tests {
             .contains("must be a valid finite number"));
 
         // Test with infinity for requests per second
-        opt.requests_per_second = Some(f64::INFINITY);
+        let opt = RoochOpt {
+            requests_per_second: Some(f64::INFINITY),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -642,7 +657,10 @@ mod tests {
             .contains("must be a valid finite number"));
 
         // Test with negative infinity for requests per second
-        opt.requests_per_second = Some(f64::NEG_INFINITY);
+        let opt = RoochOpt {
+            requests_per_second: Some(f64::NEG_INFINITY),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -651,8 +669,10 @@ mod tests {
             .contains("must be a valid finite number"));
 
         // Test with NaN for traffic per second
-        opt.requests_per_second = None;
-        opt.traffic_per_second = Some(f64::NAN);
+        let opt = RoochOpt {
+            traffic_per_second: Some(f64::NAN),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
@@ -661,7 +681,10 @@ mod tests {
             .contains("must be a valid finite number"));
 
         // Test with infinity for traffic per second
-        opt.traffic_per_second = Some(f64::INFINITY);
+        let opt = RoochOpt {
+            traffic_per_second: Some(f64::INFINITY),
+            ..Default::default()
+        };
         let result = opt.get_traffic_rate_limit_interval();
         assert!(result.is_err());
         assert!(result
