@@ -1,14 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::utils::open_rooch_db_readonly;
+use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_types::error::RoochResult;
-use std::path::PathBuf;
 use rooch_config::state_prune::ReplayConfig;
+use rooch_config::RoochOpt;
 use rooch_pruner::state_prune::IncrementalReplayer;
-use crate::commands::statedb::commands::statedb::StateDB;
+use rooch_types::error::RoochResult;
 use serde_json;
+use std::path::PathBuf;
 
 /// Replay incremental changesets onto a snapshot
 #[derive(Debug, Parser)]
@@ -48,29 +50,40 @@ pub struct ReplayCommand {
 
 #[async_trait]
 impl CommandAction<String> for ReplayCommand {
-    async fn execute(self) -> RoochResult<String> {
+    async fn execute(self, opt: RoochOpt) -> RoochResult<String> {
         // Initialize state database
-        let statedb = StateDB::new()?;
-        let moveos_store = statedb.moveos_store();
+        let (_root, rooch_db, _start_time) =
+            open_rooch_db_readonly(opt.store_config_base_data_dir(), Some(opt.chain_id.id));
+        let moveos_store = rooch_db.moveos_store();
 
         // Create replay configuration
         let replay_config = ReplayConfig {
             default_batch_size: self.batch_size,
             verify_final_state_root: self.verify_root,
             validate_after_batch: false, // Simplified for basic implementation
-            enable_checkpoints: false, // Simplified for basic implementation
+            enable_checkpoints: false,   // Simplified for basic implementation
             checkpoint_interval: self.batch_size, // placeholder: every batch_size changesets
             max_retry_attempts: 3,
         };
 
         // Create incremental replayer
-        let replayer = IncrementalReplayer::new(replay_config, moveos_store)
-            .map_err(|e| rooch_types::error::RoochError::from(anyhow::anyhow!("Failed to create replayer: {}", e)))?;
+        let replayer = IncrementalReplayer::new(replay_config, moveos_store).map_err(|e| {
+            rooch_types::error::RoochError::from(anyhow::anyhow!(
+                "Failed to create replayer: {}",
+                e
+            ))
+        })?;
 
         // Execute replay
-        let replay_report = replayer.replay_changesets(&self.snapshot, self.from_order, self.to_order, &self.output)
+        let replay_report = replayer
+            .replay_changesets(&self.snapshot, self.from_order, self.to_order, &self.output)
             .await
-            .map_err(|e| rooch_types::error::RoochError::from(anyhow::anyhow!("Failed to execute replay: {}", e)))?;
+            .map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Failed to execute replay: {}",
+                    e
+                ))
+            })?;
 
         let result = serde_json::json!({
             "command": "replay",

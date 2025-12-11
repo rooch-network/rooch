@@ -4,6 +4,7 @@
 use crate::cli_types::WalletContextOptions;
 use crate::commands::db::commands::state_prune::replay::ReplayCommand;
 use crate::commands::db::commands::state_prune::snapshot::SnapshotCommand;
+use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_config::RoochOpt;
@@ -43,12 +44,8 @@ impl CommandAction<String> for StatePruneCommand {
         let opt = RoochOpt::new_with_args(context_options, vec![])?;
 
         match self.action {
-            StatePruneAction::Snapshot(cmd) => {
-                cmd.execute(opt).await
-            }
-            StatePruneAction::Replay(cmd) => {
-                cmd.execute(opt).await
-            }
+            StatePruneAction::Snapshot(cmd) => cmd.execute(opt).await,
+            StatePruneAction::Replay(cmd) => cmd.execute(opt).await,
         }
     }
 }

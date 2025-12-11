@@ -1,15 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::utils::open_rooch_db_readonly;
+use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::h256::H256;
+use rooch_config::state_prune::StatePruneConfig;
+use rooch_config::RoochOpt;
+use rooch_pruner::state_prune::{
+    OperationType, SnapshotBuilder, SnapshotBuilderConfig, StatePruneMetadata,
+};
 use rooch_types::error::RoochResult;
-use std::path::PathBuf;
-use rooch_config::state_prune::{SnapshotBuilderConfig, StatePruneConfig};
-use rooch_pruner::state_prune::{SnapshotBuilder, OperationType, StatePruneMetadata};
-use crate::commands::statedb::commands::statedb::StateDB;
+use rooch_types::rooch_network::RoochChainID;
 use serde_json;
+use std::path::PathBuf;
 
 /// Create a snapshot containing only active state nodes
 #[derive(Debug, Parser)]
@@ -45,14 +50,20 @@ pub struct SnapshotCommand {
 
 #[async_trait]
 impl CommandAction<String> for SnapshotCommand {
-    async fn execute(self) -> RoochResult<String> {
+    async fn execute(self, opt: RoochOpt) -> RoochResult<String> {
         // Initialize state database
-        let statedb = StateDB::new()?;
-        let moveos_store = statedb.moveos_store();
+        let (_root, rooch_db, _start_time) =
+            open_rooch_db_readonly(opt.store_config_base_data_dir(), Some(opt.chain_id.id));
+        let moveos_store = rooch_db.moveos_store();
 
         // Determine state root
         let state_root = if let Some(root_str) = self.state_root {
-            H256::from_slice(&hex::decode(root_str).map_err(|e| rooch_types::error::RoochError::from(anyhow::anyhow!("Invalid state_root hex: {}", e)))?)
+            H256::from_slice(&hex::decode(root_str).map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Invalid state_root hex: {}",
+                    e
+                ))
+            })?)
         } else if let Some(startup_info) = moveos_store.get_config_store().get_startup_info()? {
             startup_info.state_root
         } else {
@@ -76,12 +87,23 @@ impl CommandAction<String> for SnapshotCommand {
 
         // Create snapshot builder
         let snapshot_builder = SnapshotBuilder::new(snapshot_config, moveos_store.clone())
-            .map_err(|e| rooch_types::error::RoochError::from(anyhow::anyhow!("Failed to create snapshot builder: {}", e)))?;
+            .map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Failed to create snapshot builder: {}",
+                    e
+                ))
+            })?;
 
         // Build snapshot
-        let snapshot_meta = snapshot_builder.build_snapshot(state_root, self.output.clone())
+        let snapshot_meta = snapshot_builder
+            .build_snapshot(state_root, self.output.clone())
             .await
-            .map_err(|e| rooch_types::error::RoochError::from(anyhow::anyhow!("Failed to build snapshot: {}", e)))?;
+            .map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Failed to build snapshot: {}",
+                    e
+                ))
+            })?;
 
         let result = serde_json::json!({
             "command": "snapshot",

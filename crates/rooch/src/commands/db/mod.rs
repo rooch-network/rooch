@@ -24,7 +24,7 @@ use crate::commands::db::commands::revert::RevertCommand;
 use crate::commands::db::commands::rocksdb_gc::RocksDBGcCommand;
 use crate::commands::db::commands::rocksdb_stats::RocksDBStatsCommand;
 use crate::commands::db::commands::stat_changeset::StatChangesetCommand;
-use crate::commands::db::commands::state_prune_wrapper::StatePruneCommand;
+use crate::commands::db::commands::state_prune::StatePruneCommand;
 use crate::commands::db::commands::verify_order::VerifyOrderCommand;
 use async_trait::async_trait;
 use clap::Parser;
