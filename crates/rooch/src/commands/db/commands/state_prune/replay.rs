@@ -6,7 +6,6 @@ use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_config::state_prune::ReplayConfig;
-use rooch_config::RoochOpt;
 use rooch_pruner::state_prune::IncrementalReplayer;
 use rooch_types::error::RoochResult;
 use serde_json;
@@ -15,6 +14,14 @@ use std::path::PathBuf;
 /// Replay incremental changesets onto a snapshot
 #[derive(Debug, Parser)]
 pub struct ReplayCommand {
+    /// Base data directory for the blockchain data
+    #[clap(long = "data-dir", short = 'd')]
+    pub base_data_dir: Option<PathBuf>,
+
+    /// Chain ID to specify which blockchain network
+    #[clap(long, short = 'n')]
+    pub chain_id: rooch_types::rooch_network::BuiltinChainID,
+
     /// Path to the snapshot directory
     #[clap(long, required = true)]
     pub snapshot: PathBuf,
@@ -50,11 +57,15 @@ pub struct ReplayCommand {
 
 #[async_trait]
 impl CommandAction<String> for ReplayCommand {
-    async fn execute(self, opt: RoochOpt) -> RoochResult<String> {
+    async fn execute(self) -> RoochResult<String> {
         // Initialize state database
-        let (_root, rooch_db, _start_time) =
-            open_rooch_db_readonly(opt.store_config_base_data_dir(), Some(opt.chain_id.id));
-        let moveos_store = rooch_db.moveos_store();
+        let (_root, rooch_db, _start_time) = open_rooch_db_readonly(
+            self.base_data_dir,
+            Some(rooch_types::rooch_network::RoochChainID::Builtin(
+                self.chain_id,
+            )),
+        );
+        let moveos_store = rooch_db.moveos_store;
 
         // Create replay configuration
         let replay_config = ReplayConfig {

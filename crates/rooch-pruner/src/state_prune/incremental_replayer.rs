@@ -241,8 +241,8 @@ impl IncrementalReplayer {
             all_nodes.extend(nodes);
 
             // Count object changes
-            total_objects_created += self.count_objects_created(&changeset_ext);
-            total_objects_updated += self.count_objects_updated(&changeset_ext);
+            total_objects_created += self.count_objects_created(changeset_ext);
+            total_objects_updated += self.count_objects_updated(changeset_ext);
         }
 
         // Batch write all nodes atomically

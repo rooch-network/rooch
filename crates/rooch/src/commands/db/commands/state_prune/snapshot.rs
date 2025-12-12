@@ -6,19 +6,22 @@ use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::h256::H256;
-use rooch_config::state_prune::StatePruneConfig;
-use rooch_config::RoochOpt;
-use rooch_pruner::state_prune::{
-    OperationType, SnapshotBuilder, SnapshotBuilderConfig, StatePruneMetadata,
-};
+use rooch_pruner::state_prune::{SnapshotBuilder, SnapshotBuilderConfig};
 use rooch_types::error::RoochResult;
-use rooch_types::rooch_network::RoochChainID;
 use serde_json;
 use std::path::PathBuf;
 
 /// Create a snapshot containing only active state nodes
 #[derive(Debug, Parser)]
 pub struct SnapshotCommand {
+    /// Base data directory for the blockchain data
+    #[clap(long = "data-dir", short = 'd')]
+    pub base_data_dir: Option<PathBuf>,
+
+    /// Chain ID to specify which blockchain network
+    #[clap(long, short = 'n')]
+    pub chain_id: rooch_types::rooch_network::BuiltinChainID,
+
     /// Target tx_order to create snapshot from (default: latest)
     #[clap(long)]
     pub tx_order: Option<u64>,
@@ -50,11 +53,15 @@ pub struct SnapshotCommand {
 
 #[async_trait]
 impl CommandAction<String> for SnapshotCommand {
-    async fn execute(self, opt: RoochOpt) -> RoochResult<String> {
+    async fn execute(self) -> RoochResult<String> {
         // Initialize state database
-        let (_root, rooch_db, _start_time) =
-            open_rooch_db_readonly(opt.store_config_base_data_dir(), Some(opt.chain_id.id));
-        let moveos_store = rooch_db.moveos_store();
+        let (_root, rooch_db, _start_time) = open_rooch_db_readonly(
+            self.base_data_dir,
+            Some(rooch_types::rooch_network::RoochChainID::Builtin(
+                self.chain_id,
+            )),
+        );
+        let moveos_store = rooch_db.moveos_store;
 
         // Determine state root
         let state_root = if let Some(root_str) = self.state_root {

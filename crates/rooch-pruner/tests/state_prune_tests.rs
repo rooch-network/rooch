@@ -143,7 +143,7 @@ mod tests {
         let snapshot_meta = SnapshotMeta::new(12345, state_root, 1000, 5000);
 
         // Test save and load
-        let saved_path = snapshot_meta.save_to_file(&test_file).unwrap();
+        let saved_path = snapshot_meta.save_to_file(test_file).unwrap();
         let loaded_meta = SnapshotMeta::load_from_file(&saved_path).unwrap();
 
         assert_eq!(loaded_meta.tx_order, snapshot_meta.tx_order);
