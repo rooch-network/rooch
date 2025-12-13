@@ -91,6 +91,9 @@ pub struct OperationStatistics {
     /// Total duration in seconds
     pub duration_seconds: u64,
 
+    /// Number of nodes actually written (for snapshot operations)
+    pub nodes_written: Option<u64>,
+
     /// Additional metrics
     pub custom_metrics: serde_json::Value,
 }
@@ -102,6 +105,7 @@ impl Default for OperationStatistics {
             bytes_processed: 0,
             peak_memory_bytes: 0,
             duration_seconds: 0,
+            nodes_written: None,
             custom_metrics: serde_json::Value::Object(serde_json::Map::new()),
         }
     }

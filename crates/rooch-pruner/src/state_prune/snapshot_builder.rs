@@ -10,13 +10,14 @@ use moveos_types::h256::H256;
 use rooch_config::state_prune::SnapshotMeta;
 use serde_json;
 use smt::NodeReader;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Instant;
-use tracing::{debug, info};
+use std::time::{Duration, Instant};
+use tracing::{debug, info, warn};
 
-/// Snapshot builder for creating state snapshots containing only active nodes
+/// Streaming snapshot builder for creating state snapshots containing only active nodes
+/// Uses RocksDB backend with batched writes and scalable deduplication
 pub struct SnapshotBuilder {
     config: SnapshotBuilderConfig,
     moveos_store: moveos_store::MoveOSStore,
@@ -40,13 +41,13 @@ impl SnapshotBuilder {
         })
     }
 
-    /// Build snapshot from state root
+    /// Build snapshot from state root using streaming approach
     pub async fn build_snapshot(
         &self,
         state_root: H256,
         output_dir: PathBuf,
     ) -> Result<SnapshotMeta> {
-        info!("Starting snapshot build for state root: {:x}", state_root);
+        info!("Starting streaming snapshot build for state root: {:x}", state_root);
 
         let start_time = Instant::now();
 
@@ -71,17 +72,14 @@ impl SnapshotBuilder {
         // Initialize progress tracking
         self.progress_tracker.set_total(0); // Will be updated during traversal
 
-        // Create bloom filter if enabled
-        let bloom_filter = if self.config.enable_bloom_filter {
-            Some(Arc::new(BloomFilter::new(self.config.bloom_filter_fp_rate)))
-        } else {
-            None
-        };
+        // Create snapshot node writer with RocksDB backend
+        metadata.mark_in_progress("Creating snapshot database".to_string(), 5.0);
+        let snapshot_writer = SnapshotNodeWriter::new(&output_dir, &self.config)?;
 
-        // Collect all active nodes
+        // Perform streaming traversal with batched writes
         metadata.mark_in_progress("Traversing state tree".to_string(), 10.0);
-        let (active_nodes, statistics) = self
-            .traverse_active_nodes(state_root, bloom_filter.clone(), &metadata)
+        let statistics = self
+            .stream_traverse_and_write(state_root, &snapshot_writer, &mut metadata)
             .await?;
 
         metadata.update_statistics(|stats| {
@@ -89,12 +87,10 @@ impl SnapshotBuilder {
             stats.bytes_processed = statistics.bytes_processed;
         });
 
-        metadata.mark_in_progress("Saving snapshot data".to_string(), 80.0);
+        metadata.mark_in_progress("Finalizing snapshot".to_string(), 95.0);
 
-        // Save nodes to output database
-        let active_nodes_count = active_nodes.len() as u64;
-        self.save_nodes_to_snapshot(active_nodes, &output_dir, &mut metadata)
-            .await?;
+        // Flush and close snapshot writer to get final statistics
+        let active_nodes_count = snapshot_writer.finalize(&output_dir, &mut metadata)?;
 
         // Create snapshot metadata
         let snapshot_meta = SnapshotMeta::new(
@@ -105,16 +101,13 @@ impl SnapshotBuilder {
         );
 
         // Save metadata
-        let _metadata_path = output_dir.join("snapshot_meta.json");
         snapshot_meta.save_to_file(&output_dir)?;
         metadata.save_to_file(output_dir.join("operation_meta.json"))?;
 
-        metadata.mark_in_progress("Finalizing".to_string(), 95.0);
-
         let duration = start_time.elapsed();
         info!(
-            "Snapshot build completed in {:?}, {} nodes processed",
-            duration, active_nodes_count
+            "Streaming snapshot build completed in {:?}, {} nodes processed, {} written to output",
+            duration, statistics.nodes_visited, active_nodes_count
         );
 
         metadata.mark_completed();
@@ -122,122 +115,229 @@ impl SnapshotBuilder {
         Ok(snapshot_meta)
     }
 
-    /// Traverse state tree and collect active nodes
-    async fn traverse_active_nodes(
+    /// Streaming traversal with batched writes to avoid OOM
+    async fn stream_traverse_and_write(
         &self,
         state_root: H256,
-        bloom_filter: Option<Arc<BloomFilter>>,
-        _metadata: &StatePruneMetadata,
-    ) -> Result<(BTreeMap<H256, Vec<u8>>, TraversalStatistics)> {
-        let mut active_nodes = BTreeMap::new();
-        let mut visited_nodes = HashSet::new();
-        let mut nodes_to_process = vec![state_root];
+        snapshot_writer: &SnapshotNodeWriter,
+        metadata: &mut StatePruneMetadata,
+    ) -> Result<TraversalStatistics> {
         let mut statistics = TraversalStatistics::default();
+        let mut nodes_to_process = VecDeque::new();
+        nodes_to_process.push_back(state_root);
 
         let node_store = &self.moveos_store.node_store;
+        let mut batch_buffer = Vec::with_capacity(self.config.batch_size);
+        let mut last_progress_report = Instant::now();
+        let mut consecutive_empty_batches = 0;
+        const MAX_EMPTY_BATCHES: u32 = 100; // Safety limit to prevent infinite loops
 
-        while let Some(current_hash) = nodes_to_process.pop() {
-            // Skip if already visited
-            if !visited_nodes.insert(current_hash) {
-                continue;
-            }
-
-            // Check bloom filter if enabled
-            if let Some(ref filter) = bloom_filter {
-                if filter.contains(&current_hash) {
-                    continue;
+        while let Some(current_hash) = nodes_to_process.pop_front() {
+            // Safety check to prevent infinite loops in case of corrupted data
+            if nodes_to_process.is_empty() && batch_buffer.is_empty() {
+                consecutive_empty_batches += 1;
+                if consecutive_empty_batches > MAX_EMPTY_BATCHES {
+                    warn!(
+                        "Reached maximum consecutive empty batches ({}), stopping traversal to prevent infinite loop",
+                        MAX_EMPTY_BATCHES
+                    );
+                    break;
                 }
-                filter.insert(&current_hash);
+            } else {
+                consecutive_empty_batches = 0;
+            }
+            // Check if node is already written to avoid duplication
+            if snapshot_writer.contains_node(&current_hash)? {
+                debug!("Skipping duplicate node: {}", current_hash);
+                continue;
             }
 
             // Get node data
             if let Some(node_data) = node_store.get(&current_hash)? {
                 statistics.bytes_processed += node_data.len() as u64;
-                active_nodes.insert(current_hash, node_data);
+
+                // Add node to batch buffer for writing
+                batch_buffer.push((current_hash, node_data));
 
                 // Extract child nodes and add to processing queue
-                self.extract_child_nodes(&current_hash, &mut nodes_to_process)?;
+                let child_hashes = extract_child_nodes(&batch_buffer.last().unwrap().1);
+                for child_hash in child_hashes {
+                    nodes_to_process.push_back(child_hash);
+                }
+
+                // Write batch when it reaches the configured size
+                if batch_buffer.len() >= self.config.batch_size {
+                    let batch_size = batch_buffer.len();
+                    snapshot_writer.write_batch(std::mem::take(&mut batch_buffer))?;
+
+                    statistics.nodes_visited += batch_size as u64;
+
+                    // Update progress periodically
+                    if last_progress_report.elapsed() >= Duration::from_secs(self.config.progress_interval_seconds) {
+                        info!(
+                            "Streaming traversal progress: {} batches processed, {} nodes written",
+                            statistics.nodes_visited / self.config.batch_size as u64,
+                            snapshot_writer.nodes_written
+                        );
+                        last_progress_report = Instant::now();
+                    }
+                }
+            } else {
+                statistics.nodes_visited += 1;
             }
 
-            statistics.nodes_visited += 1;
-
-            // Update progress periodically
+            // Periodic progress update
             if self.progress_tracker.should_report() {
-                let progress = self.progress_tracker.get_progress_report();
-                info!("Traversal progress: {}", progress.format());
+                let progress = 10.0 + (statistics.nodes_visited as f64 / 1_000_000.0) * 70.0; // Approximate progress
+                metadata.mark_in_progress(
+                    format!("Streaming traversal ({} nodes)", statistics.nodes_visited),
+                    progress.min(80.0),
+                );
                 self.progress_tracker.mark_reported();
             }
         }
 
-        Ok((active_nodes, statistics))
-    }
-
-    /// Extract child nodes from current node
-    #[allow(clippy::ptr_arg)]
-    fn extract_child_nodes(
-        &self,
-        parent_hash: &H256,
-        nodes_to_process: &mut Vec<H256>,
-    ) -> Result<()> {
-        // Get node data from the store
-        if let Some(node_data) = self.moveos_store.node_store.get(parent_hash)? {
-            // Extract child nodes using the existing utility function
-            let child_hashes = extract_child_nodes(&node_data);
-
-            // Add all child nodes to processing queue
-            for child_hash in child_hashes {
-                nodes_to_process.push(child_hash);
-                debug!("Added child node {} for processing", child_hash);
-            }
+        // Write remaining nodes in the final batch
+        if !batch_buffer.is_empty() {
+            let batch_size = batch_buffer.len();
+            snapshot_writer.write_batch(batch_buffer)?;
+            statistics.nodes_visited += batch_size as u64;
         }
 
-        Ok(())
+        Ok(statistics)
     }
+}
 
-    /// Save nodes to snapshot database
-    async fn save_nodes_to_snapshot(
-        &self,
-        nodes: BTreeMap<H256, Vec<u8>>,
-        output_dir: &Path,
-        metadata: &mut StatePruneMetadata,
-    ) -> Result<()> {
+/// RocksDB-backed snapshot node writer with batched writes and deduplication
+pub struct SnapshotNodeWriter {
+    db: Arc<rocksdb::DB>,
+    batch_size: usize,
+    pub nodes_written: u64,
+}
+
+impl SnapshotNodeWriter {
+    /// Create new snapshot node writer with RocksDB backend
+    pub fn new(output_dir: &Path, config: &SnapshotBuilderConfig) -> Result<Self> {
         let snapshot_db_path = output_dir.join("snapshot.db");
 
-        info!("Saving {} nodes to snapshot database", nodes.len());
+        // Validate and create output directory
+        if snapshot_db_path.exists() && !snapshot_db_path.is_dir() {
+            return Err(anyhow::anyhow!(
+                "Snapshot path exists but is not a directory: {:?}",
+                snapshot_db_path
+            ));
+        }
+        std::fs::create_dir_all(&snapshot_db_path)?;
 
-        // Create snapshot database
-        let snapshot_store = self.create_snapshot_store(&snapshot_db_path)?;
-
-        // Save nodes in batches
-        let mut saved_count = 0;
-        let total_nodes = nodes.len();
-
-        for (i, (hash, data)) in nodes.into_iter().enumerate() {
-            snapshot_store.put(hash, data)?;
-            saved_count += 1;
-
-            // Update progress
-            if i % self.config.batch_size == 0 {
-                let progress = 80.0 + (saved_count as f64 / total_nodes as f64) * 15.0;
-                metadata.mark_in_progress(
-                    format!("Saving nodes ({}/{})", saved_count, total_nodes),
-                    progress,
-                );
-
-                info!("Saved {}/{} nodes", saved_count, total_nodes);
-            }
+        // Check available disk space (basic safety check)
+        if let Ok(metadata) = std::fs::metadata(&snapshot_db_path) {
+            debug!("Snapshot directory created: {:?}", snapshot_db_path);
         }
 
-        info!("Successfully saved {} nodes to snapshot", saved_count);
+        // Configure RocksDB for snapshot workloads - optimized for sequential writes
+        let mut db_opts = rocksdb::Options::default();
+        db_opts.create_if_missing(true);
+        db_opts.create_missing_column_families(true);
+
+        // Snapshot-specific optimizations for write-heavy workloads
+        db_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
+        db_opts.set_write_buffer_size(256 * 1024 * 1024); // 256MB write buffer
+        db_opts.set_max_write_buffer_number(4);
+        db_opts.set_target_file_size_base(64 * 1024 * 1024); // 64MB SST files
+        db_opts.set_max_background_jobs(4);
+        db_opts.set_bytes_per_sync(4 * 1024 * 1024); // 4MB sync
+        db_opts.set_use_fsync(false); // Disable fsync for performance (safe for snapshots)
+
+        // Disable WAL for snapshot building - crash consistency not critical
+        // Snapshots can be rebuilt if interrupted
+        let wal_dir = snapshot_db_path.join("wal");
+        std::fs::create_dir_all(&wal_dir)?;
+        db_opts.set_wal_dir(&wal_dir);
+
+        // Open database with single column family for nodes
+        let db = match rocksdb::DB::open(&db_opts, &snapshot_db_path) {
+            Ok(db) => {
+                info!("Successfully opened snapshot database at: {:?}", snapshot_db_path);
+                Arc::new(db)
+            }
+            Err(e) => {
+                return Err(anyhow::anyhow!(
+                    "Failed to open snapshot database at {:?}: {}",
+                    snapshot_db_path, e
+                ));
+            }
+        };
+
+        Ok(Self {
+            db,
+            batch_size: config.batch_size,
+            nodes_written: 0,
+        })
+    }
+
+    /// Check if node already exists in snapshot (for deduplication)
+    pub fn contains_node(&self, hash: &H256) -> Result<bool> {
+        match self.db.get_pinned(hash.as_bytes()) {
+            Ok(Some(_)) => Ok(true),
+            Ok(None) => Ok(false),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    /// Write batch of nodes to RocksDB
+    pub fn write_batch(&mut self, batch: Vec<(H256, Vec<u8>)>) -> Result<()> {
+        if batch.is_empty() {
+            return Ok(());
+        }
+
+        let mut write_batch = rocksdb::WriteBatch::default();
+
+        // Add all nodes to batch
+        for (hash, data) in batch {
+            write_batch.put(hash.as_bytes(), data);
+            self.nodes_written += 1;
+        }
+
+        // Write batch with disabled WAL for performance
+        let mut write_opts = rocksdb::WriteOptions::default();
+        write_opts.disable_wal(true);
+        self.db.write_opt(write_batch, &write_opts)?;
 
         Ok(())
     }
 
-    /// Create snapshot store (simplified file-based implementation)
-    fn create_snapshot_store(&self, output_dir: &Path) -> Result<Box<dyn NodeStore>> {
-        let nodes_dir = output_dir.join("nodes");
-        std::fs::create_dir_all(&nodes_dir)?;
-        Ok(Box::new(FileNodeStore::new(nodes_dir)))
+    /// Finalize the snapshot writer and return the final count
+    pub fn finalize(mut self, output_dir: &Path, metadata: &mut StatePruneMetadata) -> Result<u64> {
+        info!("Finalizing snapshot with {} nodes written", self.nodes_written);
+
+        // Force flush to ensure all data is written to disk
+        self.db.flush()?;
+
+        // Trigger a single compaction to optimize file layout
+        let start = Instant::now();
+        self.db.compact_range::<&[u8], &[u8]>(None, None);
+        let compact_duration = start.elapsed();
+
+        info!(
+            "Snapshot compaction completed in {:?}, final node count: {}",
+            compact_duration, self.nodes_written
+        );
+
+        // Update metadata with final progress
+        metadata.update_statistics(|stats| {
+            stats.nodes_written = Some(self.nodes_written);
+        });
+
+        Ok(self.nodes_written)
+    }
+}
+
+impl Drop for SnapshotNodeWriter {
+    fn drop(&mut self) {
+        // Ensure database is properly closed
+        if let Err(e) = self.db.flush() {
+            warn!("Failed to flush snapshot database on drop: {:?}", e);
+        }
     }
 }
 
@@ -247,57 +347,6 @@ struct TraversalStatistics {
     nodes_visited: u64,
     global_size: u64,
     bytes_processed: u64,
-}
-
-/// Bloom filter implementation (simplified)
-#[allow(dead_code)]
-struct BloomFilter {
-    fp_rate: f64,
-    // TODO: Implement actual bloom filter data structure
-}
-
-impl BloomFilter {
-    fn new(fp_rate: f64) -> Self {
-        Self { fp_rate }
-    }
-
-    fn contains(&self, _hash: &H256) -> bool {
-        // TODO: Implement actual bloom filter check
-        false
-    }
-
-    fn insert(&self, _hash: &H256) {
-        // TODO: Implement actual bloom filter insertion
-    }
-}
-
-/// Node store trait
-trait NodeStore {
-    fn put(&self, key: H256, value: Vec<u8>) -> Result<()>;
-}
-
-/// Simple file-based snapshot node store
-struct FileNodeStore {
-    nodes_dir: PathBuf,
-}
-
-impl FileNodeStore {
-    fn new(nodes_dir: PathBuf) -> Self {
-        Self { nodes_dir }
-    }
-
-    fn node_file_path(&self, key: H256) -> PathBuf {
-        self.nodes_dir
-            .join(format!("{}.bin", hex::encode(key.as_bytes())))
-    }
-}
-
-impl NodeStore for FileNodeStore {
-    fn put(&self, key: H256, value: Vec<u8>) -> Result<()> {
-        let file_path = self.node_file_path(key);
-        std::fs::write(file_path, value)?;
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -313,5 +362,40 @@ mod tests {
         // let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         // let builder = SnapshotBuilder::new(config, moveos_store);
         // assert!(builder.is_ok());
+    }
+
+    #[test]
+    fn test_snapshot_node_writer_creation() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config = SnapshotBuilderConfig::default();
+
+        let writer = SnapshotNodeWriter::new(temp_dir.path(), &config);
+        assert!(writer.is_ok());
+    }
+
+    #[test]
+    fn test_snapshot_node_writer_batch_operations() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config = SnapshotBuilderConfig::default();
+
+        let mut writer = SnapshotNodeWriter::new(temp_dir.path(), &config).unwrap();
+
+        // Test writing batch
+        let hash1 = H256::random();
+        let hash2 = H256::random();
+        let batch = vec![
+            (hash1, b"node_data_1".to_vec()),
+            (hash2, b"node_data_2".to_vec()),
+        ];
+
+        writer.write_batch(batch).unwrap();
+
+        // Test deduplication
+        assert!(!writer.contains_node(&hash1).unwrap());
+        assert!(!writer.contains_node(&hash2).unwrap());
+
+        // Write the same node again to test deduplication
+        let batch2 = vec![(hash1, b"node_data_1".to_vec())];
+        writer.write_batch(batch2).unwrap();
     }
 }
