@@ -128,7 +128,7 @@ impl TestExecutionContext {
     fn display_progress(&self) {
         if self.show_progress && self.log_level >= LogLevel::Normal {
             println!(
-                "🧪 [{}/{}] {} - {}",
+                "[TEST] [{}/{}] {} - {}",
                 self.step_number, self.total_steps, self.scenario_name, self.current_step
             );
         }
@@ -140,7 +140,7 @@ impl TestExecutionContext {
             match result {
                 CommandResult::Success(_) => {
                     if self.show_progress {
-                        println!("  ✅ {}", cmd);
+                        println!("  [PASS] {}", cmd);
                     }
                 }
                 CommandResult::Failure {
@@ -148,7 +148,7 @@ impl TestExecutionContext {
                     template_vars_used,
                     ..
                 } => {
-                    eprintln!("  ❌ {}", cmd);
+                    eprintln!("  [FAIL] {}", cmd);
                     eprintln!("     Error: {}", error);
                     if self.log_level >= LogLevel::Verbose && !template_vars_used.is_empty() {
                         eprintln!("     Template vars used: {:?}", template_vars_used);
@@ -492,7 +492,7 @@ async fn run_cli_cmd(config_dir: &Path, tpl_ctx: &mut TemplateContext, mut args:
                 error!("run_cli cmd: {} fail: {:?}", cmd_name, &err_msg);
 
                 // Enhanced error reporting
-                eprintln!("❌ Command failed: {}", full_command);
+                eprintln!("[FAIL] Command failed: {}", full_command);
                 eprintln!("   Error: {}", err);
                 if !template_vars_used.is_empty() {
                     eprintln!("   Template vars used: {:?}", template_vars_used);
@@ -801,7 +801,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
     let template_debug = tpl_ctx.debug_resolve(&orginal_args);
 
     if template_debug.final_value.is_empty() && !orginal_args.is_empty() {
-        eprintln!("❌ Template resolution failed:");
+        eprintln!("[FAIL] Template resolution failed:");
         eprintln!("   Expression: {}", orginal_args);
         eprintln!("   Available vars: {:?}", template_debug.available_vars);
         eprintln!("   Used vars: {:?}", template_debug.used_vars);
@@ -814,7 +814,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
 
     let args = template_debug.final_value;
     let splited_args = split_string_with_quotes(&args).unwrap_or_else(|e| {
-        eprintln!("❌ Failed to parse assertion arguments:");
+        eprintln!("[FAIL] Failed to parse assertion arguments:");
         eprintln!("   Original: {}", orginal_args);
         eprintln!("   After template resolution: {}", args);
         eprintln!("   Parse error: {}", e);
@@ -827,7 +827,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
     );
 
     if splited_args.is_empty() {
-        eprintln!("❌ Empty assertion arguments:");
+        eprintln!("[FAIL] Empty assertion arguments:");
         eprintln!("   Original: {}", orginal_args);
         eprintln!("   After template resolution: {}", args);
         eprintln!("   Template vars used: {:?}", template_debug.used_vars);
@@ -850,7 +850,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                     "==" => {
                         let passed = first == second;
                         if !passed {
-                            eprintln!("❌ Assertion failed:");
+                            eprintln!("[FAIL] Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
                             eprintln!("   Expected: {}", second);
                             eprintln!("   Actual: {}", first);
@@ -862,7 +862,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                     "!=" => {
                         let passed = first != second;
                         if !passed {
-                            eprintln!("❌ Assertion failed:");
+                            eprintln!("[FAIL] Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
                             eprintln!("   Expected: NOT {}", second);
                             eprintln!("   Actual: {}", first);
@@ -874,7 +874,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                     "contains" => {
                         let passed = first.contains(&second);
                         if !passed {
-                            eprintln!("❌ Assertion failed:");
+                            eprintln!("[FAIL] Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
                             eprintln!("   Expected: '{}' to contain '{}'", first, second);
                             eprintln!("   Operator: {}", op);
@@ -886,7 +886,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                         let passed = !first.contains(&second)
                             && !first.to_lowercase().contains(&second.to_lowercase());
                         if !passed {
-                            eprintln!("❌ Assertion failed:");
+                            eprintln!("[FAIL] Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
                             eprintln!("   Expected: '{}' to NOT contain '{}'", first, second);
                             eprintln!("   Operator: {}", op);
@@ -899,7 +899,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             ord == std::cmp::Ordering::Greater
                         });
                         if !passed {
-                            eprintln!("❌ Assertion failed:");
+                            eprintln!("[FAIL] Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
                             eprintln!("   Expected: {} > {}", first, second);
                             eprintln!("   Operator: {}", op);
@@ -911,7 +911,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                         let passed =
                             compare_numbers(&first, &second, |ord| ord == std::cmp::Ordering::Less);
                         if !passed {
-                            eprintln!("❌ Assertion failed:");
+                            eprintln!("[FAIL] Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
                             eprintln!("   Expected: {} < {}", first, second);
                             eprintln!("   Operator: {}", op);
@@ -923,7 +923,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                         let passed =
                             compare_numbers(&first, &second, |ord| ord != std::cmp::Ordering::Less);
                         if !passed {
-                            eprintln!("❌ Assertion failed:");
+                            eprintln!("[FAIL] Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
                             eprintln!("   Expected: {} >= {}", first, second);
                             eprintln!("   Operator: {}", op);
@@ -936,7 +936,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                             ord != std::cmp::Ordering::Greater
                         });
                         if !passed {
-                            eprintln!("❌ Assertion failed:");
+                            eprintln!("[FAIL] Assertion failed:");
                             eprintln!("   Expression: {} {} {}", first, op, second);
                             eprintln!("   Expected: {} <= {}", first, second);
                             eprintln!("   Operator: {}", op);
@@ -945,7 +945,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                         passed
                     }
                     _ => {
-                        eprintln!("❌ Unsupported operator: {}", op);
+                        eprintln!("[FAIL] Unsupported operator: {}", op);
                         eprintln!(
                             "   Supported operators: ==, !=, contains, not_contains, >, <, >=, <="
                         );
@@ -960,7 +960,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                 );
             }
             _ => {
-                eprintln!("❌ Invalid assertion format:");
+                eprintln!("[FAIL] Invalid assertion format:");
                 eprintln!("   Original: {}", orginal_args);
                 eprintln!("   After parsing: {:?}", args);
                 eprintln!("   Expected format: 'value operator value'");
@@ -978,7 +978,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
         .as_ref()
         .map_or(false, |ctx| ctx.show_progress)
     {
-        println!("✅ Assertion passed: {}", orginal_args);
+        println!("[PASS] Assertion passed: {}", orginal_args);
     }
     info!("assert ok!");
 }
@@ -1114,7 +1114,7 @@ where
                 Some(ordering) => op(ordering),
                 None => {
                     eprintln!(
-                        "⚠️  Cannot compare NaN values: {:?} and {:?}",
+                        "[WARN]  Cannot compare NaN values: {:?} and {:?}",
                         first, second
                     );
                     panic!(
@@ -1125,7 +1125,10 @@ where
             }
         }
         _ => {
-            eprintln!("⚠️  Cannot parse as numbers: {:?} and {:?}", first, second);
+            eprintln!(
+                "[WARN]  Cannot parse as numbers: {:?} and {:?}",
+                first, second
+            );
             eprintln!("    Supported formats: integers (u128, i128) or floating point (f64)");
             panic!(
                 "Cannot parse {:?} or {:?} as numbers for comparison",
@@ -1158,7 +1161,7 @@ async fn main() {
     // Initialize logging with enhanced levels
     let log_level = LogLevel::from_env();
     if log_level >= LogLevel::Verbose {
-        println!("🧪 Enhanced Rooch Integration Test Framework");
+        println!("[TEST] Enhanced Rooch Integration Test Framework");
         println!("   Log Level: {:?}", log_level);
         println!(
             "   Template Debug: {}",

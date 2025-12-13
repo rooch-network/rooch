@@ -11136,6 +11136,7 @@ dependencies = [
  "rooch-store",
  "rooch-types",
  "serde 1.0.228",
+ "serde_json",
  "smt",
  "sysinfo",
  "tempfile",

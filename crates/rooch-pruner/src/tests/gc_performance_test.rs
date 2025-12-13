@@ -57,7 +57,7 @@ mod tests {
             marker.reset()?;
         }
 
-        info!("✅ Memory scaling test completed successfully");
+        info!("[PASS] Memory scaling test completed successfully");
         Ok(())
     }
 
@@ -106,7 +106,7 @@ mod tests {
         info!("  Memory strategy used: {:?}", report.memory_strategy_used);
         info!("  Mark phase duration: {:?}", report.mark_stats.duration);
 
-        info!("✅ Marker strategy performance test completed");
+        info!("[PASS] Marker strategy performance test completed");
         Ok(())
     }
 
@@ -162,7 +162,7 @@ mod tests {
             assert!(report.mark_stats.marked_count > 0);
         }
 
-        info!("✅ Batch size performance test completed");
+        info!("[PASS] Batch size performance test completed");
         Ok(())
     }
 
@@ -213,7 +213,7 @@ mod tests {
             assert!(duration < Duration::from_secs(30));
         }
 
-        info!("✅ Worker count scaling test completed");
+        info!("[PASS] Worker count scaling test completed");
         Ok(())
     }
 
@@ -282,7 +282,7 @@ mod tests {
             found_count, node_count, check_duration
         );
 
-        info!("✅ High volume stress test completed successfully");
+        info!("[PASS] High volume stress test completed successfully");
         Ok(())
     }
 
@@ -318,8 +318,8 @@ mod tests {
             assert!(!marker.is_marked(hash));
         }
 
-        info!("✅ Memory efficiency test completed");
-        info!("  ✅ Marker properly reset {} nodes", node_count);
+        info!("[PASS] Memory efficiency test completed");
+        info!("  [PASS] Marker properly reset {} nodes", node_count);
         Ok(())
     }
 
@@ -379,7 +379,7 @@ mod tests {
             total_marked as f64 / duration.as_secs_f64()
         );
 
-        info!("✅ Concurrent marking test completed");
+        info!("[PASS] Concurrent marking test completed");
         Ok(())
     }
 
@@ -440,7 +440,7 @@ mod tests {
             assert!(throughput > 5_000.0); // Should handle at least 5K ops/sec
         }
 
-        info!("✅ Hash pattern performance test completed");
+        info!("[PASS] Hash pattern performance test completed");
         Ok(())
     }
 }

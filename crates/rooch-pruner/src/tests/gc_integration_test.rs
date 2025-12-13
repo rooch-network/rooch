@@ -63,7 +63,7 @@ mod tests {
         assert_eq!(report.sweep_stats.deleted_count, 0); // dry-run should not delete
         assert_eq!(report.sweep_stats.recycle_bin_entries, 0); // dry-run should not recycle
 
-        info!("✅ GC dry-run test completed successfully");
+        info!("[PASS] GC dry-run test completed successfully");
         info!("  Marked nodes: {}", report.mark_stats.marked_count);
         info!("  Memory strategy: {:?}", report.memory_strategy_used);
         info!("  Total duration: {:?}", report.duration);
@@ -88,7 +88,7 @@ mod tests {
         assert!(safety_report.database_available);
         assert!(safety_report.message.contains("available"));
 
-        info!("✅ Safety verification test completed");
+        info!("[PASS] Safety verification test completed");
         info!("  Database available: {}", safety_report.database_available);
         info!("  Message: {}", safety_report.message);
 
@@ -100,7 +100,7 @@ mod tests {
         assert!(!nonexistent_report.database_available);
         assert!(nonexistent_report.message.contains("does not exist"));
 
-        info!("✅ Non-existent directory test completed");
+        info!("[PASS] Non-existent directory test completed");
 
         Ok(())
     }
@@ -136,7 +136,7 @@ mod tests {
         assert!(custom_config.force_compaction);
         // force_execution removed; skip check
 
-        info!("✅ GC configuration test completed");
+        info!("[PASS] GC configuration test completed");
         info!("  Default config: {:?}", default_config);
         info!("  Custom config: {:?}", custom_config);
 
@@ -174,7 +174,7 @@ mod tests {
         assert!(!marker.is_marked(&hash2));
         assert!(!marker.is_marked(&hash3));
 
-        info!("✅ InMemory marker test completed successfully");
+        info!("[PASS] InMemory marker test completed successfully");
 
         Ok(())
     }
@@ -185,7 +185,7 @@ mod tests {
         let marker = BloomFilterMarker::with_estimated_nodes(1000, 0.01);
         assert_eq!(marker.marker_type(), "BloomFilter");
 
-        info!("✅ Marker type test completed");
+        info!("[PASS] Marker type test completed");
     }
 
     /// Stress test with multiple markers
@@ -231,7 +231,7 @@ mod tests {
         let mark_throughput = num_hashes as f64 / mark_duration.as_secs_f64();
         let check_throughput = num_hashes as f64 / check_duration.as_secs_f64();
 
-        info!("✅ Marker performance test completed");
+        info!("[PASS] Marker performance test completed");
         info!(
             "  Marked {} hashes in {:?} ({:.0} ops/sec)",
             num_hashes, mark_duration, mark_throughput
@@ -276,7 +276,7 @@ mod tests {
         // Should succeed in dry-run mode
         assert!(report.duration >= Duration::from_secs(0));
 
-        info!("✅ GC error handling test completed");
+        info!("[PASS] GC error handling test completed");
         info!("  Dry-run mode works correctly");
 
         Ok(())
@@ -316,7 +316,7 @@ mod tests {
         assert!(report.mark_stats.duration >= Duration::from_secs(0));
         assert!(report.duration >= Duration::from_secs(0));
 
-        info!("✅ GC report structure test completed");
+        info!("[PASS] GC report structure test completed");
         info!("  Protected roots: {}", report.protected_roots.len());
         info!("  Memory strategy: {}", report.mark_stats.memory_strategy);
         info!("  Mark duration: {:?}", report.mark_stats.duration);

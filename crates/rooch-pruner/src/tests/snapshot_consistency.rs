@@ -52,7 +52,7 @@ async fn test_snapshot_creation_basic() {
     );
     assert!(scanned_size > 0, "Should have scanned some nodes");
 
-    println!("✅ Basic snapshot creation test PASSED");
+    println!("[PASS] Basic snapshot creation test PASSED");
 }
 
 #[tokio::test]
@@ -92,7 +92,7 @@ async fn test_multiple_snapshot_phases() {
         assert!(scanned_size > 0, "Phase {} should scan some nodes", i + 1);
     }
 
-    println!("✅ Multiple snapshot phases test PASSED");
+    println!("[PASS] Multiple snapshot phases test PASSED");
 }
 
 #[tokio::test]
@@ -148,7 +148,7 @@ async fn test_snapshot_isolation() {
     assert!(scanned_a > 0, "Phase A should scan nodes");
     assert!(scanned_b > 0, "Phase B should scan nodes");
 
-    println!("✅ Snapshot isolation test PASSED");
+    println!("[PASS] Snapshot isolation test PASSED");
 }
 
 #[tokio::test]
@@ -229,7 +229,7 @@ async fn test_snapshot_consistent_state() {
     assert!(scanned_sizes[0] > 0, "Should have scanned nodes");
     assert!(reachable_counts[0] > 0, "Should have reachable nodes");
 
-    println!("✅ Snapshot consistent state test PASSED");
+    println!("[PASS] Snapshot consistent state test PASSED");
 }
 
 #[tokio::test]
@@ -285,7 +285,7 @@ async fn test_snapshot_error_handling() {
     println!("Scanned {} nodes with mixed roots", scanned_mixed);
 
     // Key assertion: All operations should complete without panicking
-    println!("✅ Snapshot error handling test PASSED (no panics with invalid inputs)");
+    println!("[PASS] Snapshot error handling test PASSED (no panics with invalid inputs)");
 }
 
 #[tokio::test]
@@ -331,5 +331,5 @@ async fn test_snapshot_performance_characteristics() {
     assert!(root_reachable, "Root should be reachable");
     assert!(scanned_size > 0, "Should have scanned nodes");
 
-    println!("✅ Snapshot performance characteristics test PASSED");
+    println!("[PASS] Snapshot performance characteristics test PASSED");
 }

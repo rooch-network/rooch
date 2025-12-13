@@ -250,7 +250,7 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::Snapshot => {
-                todo!()
+                self.export_snapshot(&moveos_store, root_state_root, &mut writer)?;
             }
             ExportMode::Indexer => {
                 self.export_indexer(&moveos_store, root_state_root, &mut writer)?;
@@ -354,6 +354,40 @@ impl ExportCommand {
         }
 
         self.internal_export_indexer(moveos_store, root_state_root, writer, object_ids)?;
+        Ok(())
+    }
+
+    /// Export only the current active state tree (no history) to FieldKey:ObjectState records.
+    fn export_snapshot(
+        &self,
+        moveos_store: &MoveOSStore,
+        state_root: H256,
+        writer: &mut ExportWriter,
+    ) -> Result<()> {
+        let start = Instant::now();
+        let mut iter = moveos_store
+            .get_state_store()
+            .iter(state_root, None)
+            .map_err(|e| anyhow::anyhow!("snapshot iterator creation failed: {}", e))?;
+
+        let mut count: u64 = 0;
+        while let Some((k, v)) = iter
+            .next()
+            .transpose()
+            .map_err(|e| anyhow::anyhow!("snapshot iteration error at {}: {}", count, e))?
+        {
+            writer.write_record(&k, &v)?;
+            count += 1;
+            if count % 100_000 == 0 {
+                tracing::info!("Exported {} state entries for snapshot...", count);
+            }
+        }
+        writer.flush()?;
+        tracing::info!(
+            "Snapshot export completed: {} entries, duration={:?}",
+            count,
+            start.elapsed()
+        );
         Ok(())
     }
 
@@ -621,7 +655,11 @@ fn get_state_root(
 ) -> H256 {
     let state = moveos_store
         .get_field_at(state_root, &object_field_key)
-        .unwrap()
-        .expect("state must be existed.");
-    state.state_root()
+        .unwrap();
+
+    // Extract the state root from ObjectState's metadata if present
+    match state {
+        Some(object_state) => object_state.metadata.state_root.unwrap_or_default(),
+        None => H256::default(),
+    }
 }

@@ -25,7 +25,7 @@ mod tests {
         let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
         let gc = GarbageCollector::new(rooch_db, config)?;
 
-        info!("✅ GarbageCollector creation test passed");
+        info!("[PASS] GarbageCollector creation test passed");
         info!("  GC created successfully with new node counting methods");
 
         // Verify the GC has the expected configuration
@@ -50,7 +50,7 @@ mod tests {
         let rooch_db = RoochDB::init_with_mock_metrics_for_test(rooch_opt.store_config())?;
         let _gc = GarbageCollector::new(rooch_db, config)?;
 
-        info!("✅ Compilation and imports test passed");
+        info!("[PASS] Compilation and imports test passed");
         info!("  All imports and types are working correctly");
 
         Ok(())
@@ -68,7 +68,7 @@ mod tests {
             "Column family name should be state_node"
         );
 
-        info!("✅ Constants and types test passed");
+        info!("[PASS] Constants and types test passed");
         info!("  STATE_NODE_COLUMN_FAMILY_NAME = {}", cf_name);
 
         Ok(())

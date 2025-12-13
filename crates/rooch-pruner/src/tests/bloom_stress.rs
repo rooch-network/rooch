@@ -94,7 +94,7 @@ async fn test_bloom_saturation_false_positives() {
         "Should find at least the root as reachable"
     );
 
-    println!("✅ Bloom saturation false positives test PASSED");
+    println!("[PASS] Bloom saturation false positives test PASSED");
 }
 
 #[tokio::test]
@@ -164,7 +164,7 @@ async fn test_bloom_capacity_boundaries() {
         "Large bloom shouldn't be dramatically slower than small bloom"
     );
 
-    println!("✅ Bloom capacity boundaries test PASSED");
+    println!("[PASS] Bloom capacity boundaries test PASSED");
 }
 
 #[tokio::test]
@@ -221,7 +221,7 @@ async fn test_bloom_concurrent_access() {
     // At minimum, root should be reachable (we'll verify root separately)
     assert!(scanned_size > 0, "Should have scanned some nodes");
 
-    println!("✅ Bloom concurrent access test PASSED");
+    println!("[PASS] Bloom concurrent access test PASSED");
 }
 
 #[tokio::test]
@@ -283,5 +283,5 @@ async fn test_bloom_memory_usage() {
         );
     }
 
-    println!("✅ Bloom memory usage test PASSED");
+    println!("[PASS] Bloom memory usage test PASSED");
 }

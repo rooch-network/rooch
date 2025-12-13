@@ -9,6 +9,7 @@ pub mod marker; // Node marking strategies for GC
 pub mod reachability; // Reachability analysis for GC
 pub mod recycle_bin; // Recycle bin for debugging/recovery
 pub mod safety_verifier; // Safety verification for GC operations
+pub mod state_prune; // State prune functionality
 #[cfg(test)]
 mod tests;
 pub mod util; // Utility functions for node traversal
