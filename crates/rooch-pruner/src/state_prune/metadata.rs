@@ -285,3 +285,4 @@ impl From<(&ReplayReport, PathBuf, u64, u64)> for StatePruneMetadata {
         metadata
     }
 }
+

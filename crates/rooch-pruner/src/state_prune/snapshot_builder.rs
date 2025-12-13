@@ -9,7 +9,6 @@ use anyhow::Result;
 use moveos_types::h256::H256;
 use rooch_config::state_prune::SnapshotMeta;
 use serde_json;
-use smt::NodeReader;
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -78,8 +77,9 @@ impl SnapshotBuilder {
 
         // Perform streaming traversal with batched writes
         metadata.mark_in_progress("Traversing state tree".to_string(), 10.0);
+        let mut snapshot_writer_mut = snapshot_writer;
         let statistics = self
-            .stream_traverse_and_write(state_root, &snapshot_writer, &mut metadata)
+            .stream_traverse_and_write(state_root, &mut snapshot_writer_mut, &mut metadata)
             .await?;
 
         metadata.update_statistics(|stats| {
@@ -90,7 +90,7 @@ impl SnapshotBuilder {
         metadata.mark_in_progress("Finalizing snapshot".to_string(), 95.0);
 
         // Flush and close snapshot writer to get final statistics
-        let active_nodes_count = snapshot_writer.finalize(&output_dir, &mut metadata)?;
+        let active_nodes_count = snapshot_writer_mut.finalize(&output_dir, &mut metadata)?;
 
         // Create snapshot metadata
         let snapshot_meta = SnapshotMeta::new(
@@ -119,7 +119,7 @@ impl SnapshotBuilder {
     async fn stream_traverse_and_write(
         &self,
         state_root: H256,
-        snapshot_writer: &SnapshotNodeWriter,
+        snapshot_writer: &mut SnapshotNodeWriter,
         metadata: &mut StatePruneMetadata,
     ) -> Result<TraversalStatistics> {
         let mut statistics = TraversalStatistics::default();
@@ -146,6 +146,7 @@ impl SnapshotBuilder {
             } else {
                 consecutive_empty_batches = 0;
             }
+
             // Check if node is already written to avoid duplication
             if snapshot_writer.contains_node(&current_hash)? {
                 debug!("Skipping duplicate node: {}", current_hash);
@@ -399,3 +400,4 @@ mod tests {
         writer.write_batch(batch2).unwrap();
     }
 }
+
