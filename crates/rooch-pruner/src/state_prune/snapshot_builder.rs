@@ -6,6 +6,7 @@ use crate::state_prune::{
 };
 use crate::util::extract_child_nodes;
 use anyhow::Result;
+use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use rooch_config::state_prune::SnapshotMeta;
 use serde_json;
@@ -19,7 +20,7 @@ use tracing::{debug, info, warn};
 /// Uses RocksDB backend with batched writes and scalable deduplication
 pub struct SnapshotBuilder {
     config: SnapshotBuilderConfig,
-    moveos_store: moveos_store::MoveOSStore,
+    moveos_store: MoveOSStore,
     progress_tracker: ProgressTracker,
 }
 
@@ -27,7 +28,7 @@ impl SnapshotBuilder {
     /// Create new snapshot builder
     pub fn new(
         config: SnapshotBuilderConfig,
-        moveos_store: moveos_store::MoveOSStore,
+        moveos_store: MoveOSStore,
     ) -> Result<Self> {
         config.validate()?;
 
@@ -156,15 +157,15 @@ impl SnapshotBuilder {
             if let Some(node_data) = node_store.get(&current_hash)? {
                 statistics.bytes_processed += node_data.len() as u64;
 
+                // Extract child nodes from the node data before moving it into the buffer
+                let child_hashes = extract_child_nodes(&node_data);
+
                 // Add node to batch buffer for writing
                 batch_buffer.push((current_hash, node_data));
 
-                // Extract child nodes and add to processing queue
-                if let Some((_, ref node_data)) = batch_buffer.last() {
-                    let child_hashes = extract_child_nodes(node_data);
-                    for child_hash in child_hashes {
-                        nodes_to_process.push_back(child_hash);
-                    }
+                // Add child nodes to processing queue
+                for child_hash in child_hashes {
+                    nodes_to_process.push_back(child_hash);
                 }
 
                 // Write batch when it reaches the configured size
@@ -175,7 +176,9 @@ impl SnapshotBuilder {
                     statistics.nodes_visited += batch_size as u64;
 
                     // Update progress periodically
-                    if last_progress_report.elapsed() >= Duration::from_secs(self.config.progress_interval_seconds) {
+                    if last_progress_report.elapsed()
+                        >= Duration::from_secs(self.config.progress_interval_seconds)
+                    {
                         info!(
                             "Streaming traversal progress: {} batches processed, {} nodes written",
                             statistics.nodes_visited / self.config.batch_size as u64,
