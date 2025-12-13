@@ -134,6 +134,9 @@ impl SnapshotBuilder {
         let mut nodes_to_process = vec![state_root];
         let mut statistics = TraversalStatistics::default();
 
+        // Avoid a 0/0 progress report when we haven't yet estimated the total.
+        self.progress_tracker.set_total(1);
+
         let node_store = &self.moveos_store.node_store;
 
         while let Some(current_hash) = nodes_to_process.pop() {
@@ -141,6 +144,13 @@ impl SnapshotBuilder {
             if !visited_nodes.insert(current_hash) {
                 continue;
             }
+
+            // Update a moving total so we never log 0/0 progress. The value is only
+            // an approximation (visited so far + remaining in queue) but gives
+            // operators feedback instead of being stuck at 0%.
+            let estimated_total = visited_nodes.len() + nodes_to_process.len();
+            self.progress_tracker
+                .set_total(estimated_total as u64 + 1);
 
             // Check bloom filter if enabled
             if let Some(ref filter) = bloom_filter {
@@ -160,6 +170,7 @@ impl SnapshotBuilder {
             }
 
             statistics.nodes_visited += 1;
+            self.progress_tracker.increment_processed(1);
 
             // Update progress periodically
             if self.progress_tracker.should_report() {
