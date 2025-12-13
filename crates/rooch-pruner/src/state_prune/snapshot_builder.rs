@@ -73,13 +73,12 @@ impl SnapshotBuilder {
 
         // Create snapshot node writer with RocksDB backend
         metadata.mark_in_progress("Creating snapshot database".to_string(), 5.0);
-        let snapshot_writer = SnapshotNodeWriter::new(&output_dir, &self.config)?;
+        let mut snapshot_writer = SnapshotNodeWriter::new(&output_dir, &self.config)?;
 
         // Perform streaming traversal with batched writes
         metadata.mark_in_progress("Traversing state tree".to_string(), 10.0);
-        let mut snapshot_writer_mut = snapshot_writer;
         let statistics = self
-            .stream_traverse_and_write(state_root, &mut snapshot_writer_mut, &mut metadata)
+            .stream_traverse_and_write(state_root, &mut snapshot_writer, &mut metadata)
             .await?;
 
         metadata.update_statistics(|stats| {
@@ -90,13 +89,13 @@ impl SnapshotBuilder {
         metadata.mark_in_progress("Finalizing snapshot".to_string(), 95.0);
 
         // Flush and close snapshot writer to get final statistics
-        let active_nodes_count = snapshot_writer_mut.finalize(&output_dir, &mut metadata)?;
+        let active_nodes_count = snapshot_writer.finalize(&output_dir, &mut metadata)?;
 
         // Create snapshot metadata
         let snapshot_meta = SnapshotMeta::new(
             0, // tx_order will be set later
             state_root,
-            statistics.global_size,
+            active_nodes_count, // Use active nodes count as global size estimate
             active_nodes_count,
         );
 
@@ -161,9 +160,11 @@ impl SnapshotBuilder {
                 batch_buffer.push((current_hash, node_data));
 
                 // Extract child nodes and add to processing queue
-                let child_hashes = extract_child_nodes(&batch_buffer.last().unwrap().1);
-                for child_hash in child_hashes {
-                    nodes_to_process.push_back(child_hash);
+                if let Some((_, ref node_data)) = batch_buffer.last() {
+                    let child_hashes = extract_child_nodes(node_data);
+                    for child_hash in child_hashes {
+                        nodes_to_process.push_back(child_hash);
+                    }
                 }
 
                 // Write batch when it reaches the configured size
@@ -238,7 +239,6 @@ impl SnapshotNodeWriter {
         // Configure RocksDB for snapshot workloads - optimized for sequential writes
         let mut db_opts = rocksdb::Options::default();
         db_opts.create_if_missing(true);
-        db_opts.create_missing_column_families(true);
 
         // Snapshot-specific optimizations for write-heavy workloads
         db_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
@@ -278,7 +278,7 @@ impl SnapshotNodeWriter {
 
     /// Check if node already exists in snapshot (for deduplication)
     pub fn contains_node(&self, hash: &H256) -> Result<bool> {
-        match self.db.get_pinned(hash.as_bytes()) {
+        match self.db.get(hash.as_bytes()) {
             Ok(Some(_)) => Ok(true),
             Ok(None) => Ok(false),
             Err(e) => Err(e.into()),
@@ -346,7 +346,6 @@ impl Drop for SnapshotNodeWriter {
 #[derive(Debug, Default)]
 struct TraversalStatistics {
     nodes_visited: u64,
-    global_size: u64,
     bytes_processed: u64,
 }
 
@@ -367,19 +366,19 @@ mod tests {
 
     #[test]
     fn test_snapshot_node_writer_creation() {
-        let temp_dir = tempfile::tempdir().unwrap();
+        let _temp_dir = tempfile::tempdir().unwrap();
         let config = SnapshotBuilderConfig::default();
 
-        let writer = SnapshotNodeWriter::new(temp_dir.path(), &config);
-        assert!(writer.is_ok());
+        let _writer = SnapshotNodeWriter::new(_temp_dir.path(), &config);
+        assert!(_writer.is_ok());
     }
 
     #[test]
     fn test_snapshot_node_writer_batch_operations() {
-        let temp_dir = tempfile::tempdir().unwrap();
+        let _temp_dir = tempfile::tempdir().unwrap();
         let config = SnapshotBuilderConfig::default();
 
-        let mut writer = SnapshotNodeWriter::new(temp_dir.path(), &config).unwrap();
+        let mut writer = SnapshotNodeWriter::new(_temp_dir.path(), &config).unwrap();
 
         // Test writing batch
         let hash1 = H256::random();
