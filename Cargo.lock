@@ -1158,6 +1158,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "better_any"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4372b9543397a4b86050cc5e7ee36953edf4bac9518e8a774c2da694977fb6e4"
+
+[[package]]
 name = "better_typeid_derive"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7621,7 +7627,7 @@ name = "move-table-extension"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.95",
- "better_any",
+ "better_any 0.1.1",
  "move-binary-format",
  "move-cli",
  "move-core-types",
@@ -7698,7 +7704,7 @@ name = "move-unit-test"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.95",
- "better_any",
+ "better_any 0.1.1",
  "clap 4.5.17",
  "codespan-reporting",
  "colored",
@@ -7732,7 +7738,7 @@ name = "move-vm-runtime"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.95",
- "better_any",
+ "better_any 0.1.1",
  "fail",
  "hex",
  "move-binary-format",
@@ -7879,7 +7885,7 @@ name = "moveos-object-runtime"
 version = "0.12.1"
 dependencies = [
  "bcs",
- "better_any",
+ "better_any 0.2.1",
  "hex",
  "move-binary-format",
  "move-core-types",
@@ -7897,7 +7903,7 @@ dependencies = [
  "anyhow 1.0.95",
  "base64 0.22.1",
  "bech32 0.11.1",
- "better_any",
+ "better_any 0.2.1",
  "bs58 0.5.1",
  "ciborium",
  "fastcrypto",
