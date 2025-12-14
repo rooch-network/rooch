@@ -10,6 +10,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use rooch_config::state_prune::SnapshotMeta;
 use serde_json;
+use smt::NodeReader;
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -26,10 +27,7 @@ pub struct SnapshotBuilder {
 
 impl SnapshotBuilder {
     /// Create new snapshot builder
-    pub fn new(
-        config: SnapshotBuilderConfig,
-        moveos_store: MoveOSStore,
-    ) -> Result<Self> {
+    pub fn new(config: SnapshotBuilderConfig, moveos_store: MoveOSStore) -> Result<Self> {
         config.validate()?;
 
         let progress_tracker = ProgressTracker::new(config.progress_interval_seconds);
@@ -47,7 +45,10 @@ impl SnapshotBuilder {
         state_root: H256,
         output_dir: PathBuf,
     ) -> Result<SnapshotMeta> {
-        info!("Starting streaming snapshot build for state root: {:x}", state_root);
+        info!(
+            "Starting streaming snapshot build for state root: {:x}",
+            state_root
+        );
 
         let start_time = Instant::now();
 
@@ -235,7 +236,7 @@ impl SnapshotNodeWriter {
         std::fs::create_dir_all(&snapshot_db_path)?;
 
         // Check available disk space (basic safety check)
-        if let Ok(metadata) = std::fs::metadata(&snapshot_db_path) {
+        if let Ok(_metadata) = std::fs::metadata(&snapshot_db_path) {
             debug!("Snapshot directory created: {:?}", snapshot_db_path);
         }
 
@@ -246,13 +247,17 @@ impl SnapshotNodeWriter {
         // Open database with single column family for nodes
         let db = match rocksdb::DB::open(&db_opts, &snapshot_db_path) {
             Ok(db) => {
-                info!("Successfully opened snapshot database at: {:?}", snapshot_db_path);
+                info!(
+                    "Successfully opened snapshot database at: {:?}",
+                    snapshot_db_path
+                );
                 Arc::new(db)
             }
             Err(e) => {
                 return Err(anyhow::anyhow!(
                     "Failed to open snapshot database at {:?}: {}",
-                    snapshot_db_path, e
+                    snapshot_db_path,
+                    e
                 ));
             }
         };
@@ -294,8 +299,11 @@ impl SnapshotNodeWriter {
     }
 
     /// Finalize the snapshot writer and return the final count
-    pub fn finalize(mut self, output_dir: &Path, metadata: &mut StatePruneMetadata) -> Result<u64> {
-        info!("Finalizing snapshot with {} nodes written", self.nodes_written);
+    pub fn finalize(self, _output_dir: &Path, metadata: &mut StatePruneMetadata) -> Result<u64> {
+        info!(
+            "Finalizing snapshot with {} nodes written",
+            self.nodes_written
+        );
 
         // Force flush to ensure all data is written to disk
         self.db.flush()?;
@@ -389,4 +397,3 @@ mod tests {
         }
     }
 }
-

@@ -267,6 +267,7 @@ impl From<(&ReplayReport, PathBuf, u64, u64)> for StatePruneMetadata {
             bytes_processed: replay_report.statistics.data_size_bytes,
             peak_memory_bytes: replay_report.statistics.peak_memory_bytes,
             duration_seconds: replay_report.duration_seconds,
+            nodes_written: None,
             custom_metrics: serde_json::json!({
                 "objects_created": replay_report.statistics.objects_created,
                 "objects_updated": replay_report.statistics.objects_updated,
@@ -285,4 +286,3 @@ impl From<(&ReplayReport, PathBuf, u64, u64)> for StatePruneMetadata {
         metadata
     }
 }
-
