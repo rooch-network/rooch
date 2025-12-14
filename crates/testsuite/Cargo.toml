@@ -28,7 +28,7 @@ rooch-types = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = "2.1"
-cucumber = "0.21.1"
+cucumber = "0.22.0"
 futures = { workspace = true }
 testcontainers = { version = "0.15.0", git = "https://github.com/yubing744/testcontainers-rs", rev = "6b87dc53ab3bc6eb4d15c7e73a3c57dcbf40d0af" }
 tokio = { version = "1.48", features = ["macros", "rt-multi-thread", "sync", "time"] }
