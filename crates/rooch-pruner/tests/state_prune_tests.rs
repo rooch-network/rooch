@@ -4,7 +4,8 @@
 use moveos_types::h256::H256;
 use rooch_config::state_prune::{ReplayReport, SnapshotMeta};
 use rooch_pruner::state_prune::{
-    DeduplicationStrategy, OperationStatus, OperationType, ProgressTracker, SnapshotBuilderConfig, StatePruneMetadata,
+    DeduplicationStrategy, OperationStatus, OperationType, ProgressTracker, SnapshotBuilderConfig,
+    StatePruneMetadata,
 };
 
 #[cfg(test)]
@@ -30,7 +31,10 @@ mod tests {
         assert_eq!(config.memory_pressure_threshold, 0.8);
 
         // Verify default deduplication strategy is RocksDB
-        assert!(matches!(config.deduplication_strategy, DeduplicationStrategy::RocksDB));
+        assert!(matches!(
+            config.deduplication_strategy,
+            DeduplicationStrategy::RocksDB
+        ));
     }
 
     #[test]
