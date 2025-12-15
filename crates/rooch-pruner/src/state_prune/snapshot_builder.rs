@@ -179,10 +179,18 @@ impl SnapshotBuilder {
                 }
 
                 // Adaptive batch size adjustment based on memory pressure
-                if self.config.should_use_adaptive_batching() && last_memory_check.elapsed() >= Duration::from_secs(MEMORY_CHECK_INTERVAL_SECS) {
-                    if let Some(new_batch_size) = self.adjust_batch_size_for_memory_pressure(current_batch_size) {
+                if self.config.should_use_adaptive_batching()
+                    && last_memory_check.elapsed()
+                        >= Duration::from_secs(MEMORY_CHECK_INTERVAL_SECS)
+                {
+                    if let Some(new_batch_size) =
+                        self.adjust_batch_size_for_memory_pressure(current_batch_size)
+                    {
                         if new_batch_size != current_batch_size {
-                            info!("Adjusting batch size from {} to {} due to memory pressure", current_batch_size, new_batch_size);
+                            info!(
+                                "Adjusting batch size from {} to {} due to memory pressure",
+                                current_batch_size, new_batch_size
+                            );
                             current_batch_size = new_batch_size;
                             // Resize buffer if needed
                             if batch_buffer.capacity() < current_batch_size {
@@ -240,7 +248,10 @@ impl SnapshotBuilder {
 
     /// Adjust batch size based on current memory pressure
     /// Returns None if no adjustment needed, Some(new_size) otherwise
-    pub fn adjust_batch_size_for_memory_pressure(&self, current_batch_size: usize) -> Option<usize> {
+    pub fn adjust_batch_size_for_memory_pressure(
+        &self,
+        current_batch_size: usize,
+    ) -> Option<usize> {
         // Get current memory usage
         let current_memory = self.get_current_memory_usage();
 
@@ -255,7 +266,7 @@ impl SnapshotBuilder {
         if memory_ratio > threshold {
             // High memory pressure - reduce batch size
             let reduction_factor = 1.0 - (memory_ratio - threshold).min(0.3); // Reduce by up to 30%
-            let new_batch_size = (current_batch_size as f64 * reduction_factor).max(100) as usize;
+            let new_batch_size = (current_batch_size as f64 * reduction_factor).max(100.0) as usize;
 
             info!(
                 "Memory pressure detected: {:.1}% usage ({}/{} bytes), reducing batch size from {} to {}",
@@ -400,7 +411,10 @@ impl SnapshotNodeWriter {
             .db
             .multi_get(keys)
             .into_iter()
-            .map(|r| r.map(|opt| opt.is_some()))
+            .map(|r| {
+                r.map(|opt| opt.is_some())
+                    .map_err(|e| anyhow::anyhow!("RocksDB error: {}", e))
+            })
             .collect();
 
         results
@@ -419,7 +433,13 @@ impl SnapshotNodeWriter {
         let new_nodes: Vec<_> = nodes
             .iter()
             .zip(existence_flags)
-            .filter_map(|((hash, data), exists)| if exists { None } else { Some((*hash, data.clone())) })
+            .filter_map(|((hash, data), exists)| {
+                if exists {
+                    None
+                } else {
+                    Some((*hash, data.clone()))
+                }
+            })
             .collect();
 
         Ok(new_nodes)
@@ -435,14 +455,20 @@ impl SnapshotNodeWriter {
         let new_nodes = self.filter_new_nodes(&batch)?;
 
         if new_nodes.is_empty() {
-            debug!("All {} nodes in batch were duplicates, skipping write", batch.len());
+            debug!(
+                "All {} nodes in batch were duplicates, skipping write",
+                batch.len()
+            );
             return Ok(());
         }
 
         let duplicate_count = batch.len() - new_nodes.len();
         if duplicate_count > 0 {
-            debug!("Filtered {} duplicate nodes from batch, writing {} unique nodes",
-                   duplicate_count, new_nodes.len());
+            debug!(
+                "Filtered {} duplicate nodes from batch, writing {} unique nodes",
+                duplicate_count,
+                new_nodes.len()
+            );
         }
 
         let mut write_batch = rocksdb::WriteBatch::default();

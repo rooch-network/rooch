@@ -13,8 +13,6 @@ pub mod state_prune; // State prune functionality
 #[cfg(test)]
 mod tests;
 
-#[cfg(test)]
-mod scalable_dedup_test;
 pub mod util; // Utility functions for node traversal
 
 // Re-export commonly used GC types

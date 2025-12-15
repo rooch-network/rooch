@@ -5,7 +5,7 @@ use rooch_config::state_prune::StatePruneConfig;
 use serde::{Deserialize, Serialize};
 
 /// Deduplication strategy for node processing
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DeduplicationStrategy {
     /// Use memory-based HashSet (fastest, but OOM risk)
     Memory,
@@ -144,7 +144,9 @@ impl SnapshotBuilderConfig {
             }
             DeduplicationStrategy::RocksDB => {
                 // RocksDB strategy validation
-                tracing::info!("RocksDB deduplication strategy selected - recommended for large datasets");
+                tracing::info!(
+                    "RocksDB deduplication strategy selected - recommended for large datasets"
+                );
             }
         }
 
@@ -163,6 +165,9 @@ impl SnapshotBuilderConfig {
     /// Check if adaptive batching should be enabled based on strategy
     pub fn should_use_adaptive_batching(&self) -> bool {
         self.enable_adaptive_batching
-            && matches!(self.deduplication_strategy, DeduplicationStrategy::RocksDB | DeduplicationStrategy::Hybrid)
+            && matches!(
+                self.deduplication_strategy,
+                DeduplicationStrategy::RocksDB | DeduplicationStrategy::Hybrid
+            )
     }
 }

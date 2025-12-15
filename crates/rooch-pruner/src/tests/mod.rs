@@ -9,5 +9,6 @@ mod reachability_correctness;
 mod recycle_bin_integration_test;
 mod recycle_bin_strong_backup_tests;
 mod safety_boundary_test;
+mod scalable_dedup_test;
 mod snapshot_consistency;
 mod test_utils;
