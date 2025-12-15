@@ -39,6 +39,11 @@ impl SnapshotBuilder {
         })
     }
 
+    /// Get a reference to the configuration
+    pub fn config(&self) -> &SnapshotBuilderConfig {
+        &self.config
+    }
+
     /// Build snapshot from state root using streaming approach
     pub async fn build_snapshot(
         &self,
@@ -235,7 +240,7 @@ impl SnapshotBuilder {
 
     /// Adjust batch size based on current memory pressure
     /// Returns None if no adjustment needed, Some(new_size) otherwise
-    fn adjust_batch_size_for_memory_pressure(&self, current_batch_size: usize) -> Option<usize> {
+    pub fn adjust_batch_size_for_memory_pressure(&self, current_batch_size: usize) -> Option<usize> {
         // Get current memory usage
         let current_memory = self.get_current_memory_usage();
 

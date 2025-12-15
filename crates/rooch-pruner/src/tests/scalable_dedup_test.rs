@@ -3,13 +3,11 @@
 
 //! Tests for scalable deduplication to verify OOM issue resolution
 
-use crate::state_prune::config::{DeduplicationStrategy, SnapshotBuilderConfig};
-use crate::state_prune::snapshot_builder::{SnapshotBuilder, SnapshotNodeWriter};
+use rooch_pruner::state_prune::config::{DeduplicationStrategy, SnapshotBuilderConfig};
+use rooch_pruner::state_prune::snapshot_builder::{SnapshotBuilder, SnapshotNodeWriter};
 use anyhow::Result;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use std::collections::HashMap;
-use std::path::PathBuf;
 use std::time::Instant;
 use tempfile::TempDir;
 
@@ -29,7 +27,7 @@ fn test_rocksdb_deduplication_memory_efficiency() -> Result<()> {
     };
 
     let builder = SnapshotBuilder::new(config, store.clone())?;
-    let mut writer = SnapshotNodeWriter::new(temp_dir.path(), &builder.config)?;
+    let mut writer = SnapshotNodeWriter::new(temp_dir.path(), builder.config())?;
 
     // Test with a large number of nodes to verify memory efficiency
     let test_size = 50_000; // 50K nodes
@@ -93,7 +91,7 @@ fn test_adaptive_batch_sizing() -> Result<()> {
     let builder = SnapshotBuilder::new(config, store.clone())?;
 
     // Test the memory pressure detection
-    let initial_batch_size = builder.config.batch_size;
+    let initial_batch_size = builder.config().batch_size;
 
     // Simulate memory pressure by checking current usage
     if let Some(adjusted_size) = builder.adjust_batch_size_for_memory_pressure(initial_batch_size) {
@@ -271,8 +269,8 @@ async fn test_snapshot_creation_with_scalable_dedup() -> Result<()> {
     println!("  - Memory management systems are active");
 
     // Verify that the builder was created successfully with the right configuration
-    assert_eq!(builder.config.deduplication_strategy, DeduplicationStrategy::RocksDB);
-    assert!(builder.config.enable_adaptive_batching);
+    assert_eq!(builder.config().deduplication_strategy, DeduplicationStrategy::RocksDB);
+    assert!(builder.config().enable_adaptive_batching);
 
     Ok(())
 }
