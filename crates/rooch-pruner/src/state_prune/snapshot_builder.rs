@@ -217,6 +217,7 @@ impl SnapshotBuilder {
 /// RocksDB-backed snapshot node writer with batched writes and deduplication
 pub struct SnapshotNodeWriter {
     db: Arc<rocksdb::DB>,
+    #[allow(dead_code)]
     batch_size: usize,
     pub nodes_written: u64,
 }
