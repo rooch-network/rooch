@@ -192,9 +192,10 @@ impl SnapshotBuilder {
                                 current_batch_size, new_batch_size
                             );
                             current_batch_size = new_batch_size;
-                            // Resize buffer if needed
+                            // Resize buffer if needed - use reserve_exact for tighter allocation
                             if batch_buffer.capacity() < current_batch_size {
-                                batch_buffer.reserve(current_batch_size - batch_buffer.capacity());
+                                batch_buffer
+                                    .reserve_exact(current_batch_size - batch_buffer.capacity());
                             }
                         }
                     }
@@ -247,7 +248,8 @@ impl SnapshotBuilder {
     }
 
     /// Adjust batch size based on current memory pressure
-    /// Returns None if no adjustment needed, Some(new_size) otherwise
+    /// Uses integer arithmetic for deterministic behavior
+    /// Returns None if no adjustment needed, Some(new_size) otherwise where new_size >= 100
     pub fn adjust_batch_size_for_memory_pressure(
         &self,
         current_batch_size: usize,
@@ -260,36 +262,49 @@ impl SnapshotBuilder {
             return None;
         }
 
-        let memory_ratio = current_memory as f64 / self.config.memory_limit as f64;
-        let threshold = self.config.memory_pressure_threshold;
+        // Use integer arithmetic: multiply by 1000 for 3 decimal places precision
+        let memory_per_thousand = (current_memory * 1000) / self.config.memory_limit;
+        let threshold_per_thousand = (self.config.memory_pressure_threshold * 1000.0) as u64;
 
-        if memory_ratio > threshold {
+        if memory_per_thousand > threshold_per_thousand {
             // High memory pressure - reduce batch size
-            let reduction_factor = 1.0 - (memory_ratio - threshold).min(0.3); // Reduce by up to 30%
-            let new_batch_size = (current_batch_size as f64 * reduction_factor).max(100.0) as usize;
+            // Calculate reduction: up to 30% based on how much we're over threshold
+            let excess = memory_per_thousand.saturating_sub(threshold_per_thousand);
+            let max_reduction = 300; // 30% in per-thousand units
+            let reduction = std::cmp::min(excess, max_reduction);
+
+            // Reduce by up to 30% using integer arithmetic: * (1000 - reduction) / 1000
+            let new_batch_size = (current_batch_size * (1000 - reduction as usize) / 1000).max(100);
 
             info!(
-                "Memory pressure detected: {:.1}% usage ({}/{} bytes), reducing batch size from {} to {}",
-                memory_ratio * 100.0,
-                current_memory,
-                self.config.memory_limit,
+                "Memory pressure detected: {:.1}% usage ({} MB/{} MB), reducing batch size from {} to {}",
+                memory_per_thousand as f64 / 10.0,
+                current_memory / (1024 * 1024),
+                self.config.memory_limit / (1024 * 1024),
                 current_batch_size,
                 new_batch_size
             );
 
             Some(new_batch_size)
-        } else if memory_ratio < threshold * 0.6 && current_batch_size < self.config.batch_size {
-            // Low memory pressure - can increase batch size
-            let increase_factor = 1.0 + (threshold - memory_ratio).min(0.2); // Increase by up to 20%
-            let new_batch_size = (current_batch_size as f64 * increase_factor)
-                .min(self.config.batch_size as f64) as usize;
+        } else if memory_per_thousand < threshold_per_thousand * 6 / 10
+            && current_batch_size < self.config.batch_size
+        {
+            // Low memory pressure - can increase batch size (60% of threshold)
+            // Calculate increase: up to 20% based on headroom
+            let headroom = threshold_per_thousand.saturating_sub(memory_per_thousand);
+            let max_increase = 200; // 20% in per-thousand units
+            let increase = std::cmp::min(headroom, max_increase);
+
+            // Increase by up to 20%: * (1000 + increase) / 1000
+            let new_batch_size = (current_batch_size * (1000 + increase as usize) / 1000)
+                .min(self.config.batch_size);
 
             if new_batch_size > current_batch_size {
                 info!(
-                    "Low memory pressure: {:.1}% usage ({}/{} bytes), increasing batch size from {} to {}",
-                    memory_ratio * 100.0,
-                    current_memory,
-                    self.config.memory_limit,
+                    "Low memory pressure: {:.1}% usage ({} MB/{} MB), increasing batch size from {} to {}",
+                    memory_per_thousand as f64 / 10.0,
+                    current_memory / (1024 * 1024),
+                    self.config.memory_limit / (1024 * 1024),
                     current_batch_size,
                     new_batch_size
                 );
@@ -322,14 +337,14 @@ impl SnapshotBuilder {
                     }
                 }
                 Err(_) => {
-                    debug!("Failed to read /proc/self/status, falling back to estimate");
+                    warn!("Failed to read /proc/self/status, using conservative memory estimate");
                 }
             }
         }
 
-        // Fallback estimate - use a reasonable approximation
-        // This is a simplified approach; in production you might want more sophisticated monitoring
-        self.config.memory_limit.saturating_mul(30) / 100 // Assume 30% of limit
+        // Conservative fallback estimate - assume 75% usage to trigger aggressive batch reduction
+        // This ensures adaptive batching reduces batch size conservatively when actual usage is unknown
+        self.config.memory_limit.saturating_mul(75) / 100 // Assume 75% of limit
     }
 }
 
@@ -421,8 +436,8 @@ impl SnapshotNodeWriter {
     }
 
     /// Filter out already existing nodes from a batch, returning only new nodes
-    /// This is more efficient than checking each node individually
-    pub fn filter_new_nodes(&self, nodes: &[(H256, Vec<u8>)]) -> Result<Vec<(H256, Vec<u8>)>> {
+    /// Takes ownership of the input batch to avoid cloning data
+    pub fn filter_new_nodes(&self, nodes: Vec<(H256, Vec<u8>)>) -> Result<Vec<(H256, Vec<u8>)>> {
         if nodes.is_empty() {
             return Ok(Vec::new());
         }
@@ -430,17 +445,12 @@ impl SnapshotNodeWriter {
         let hashes: Vec<_> = nodes.iter().map(|(h, _)| *h).collect();
         let existence_flags = self.contains_nodes_batch(&hashes)?;
 
-        let new_nodes: Vec<_> = nodes
-            .iter()
-            .zip(existence_flags)
-            .filter_map(|((hash, data), exists)| {
-                if exists {
-                    None
-                } else {
-                    Some((*hash, data.clone()))
-                }
-            })
-            .collect();
+        let mut new_nodes = Vec::with_capacity(nodes.len());
+        for ((hash, data), exists) in nodes.into_iter().zip(existence_flags) {
+            if !exists {
+                new_nodes.push((hash, data));
+            }
+        }
 
         Ok(new_nodes)
     }
@@ -451,18 +461,21 @@ impl SnapshotNodeWriter {
             return Ok(());
         }
 
+        // Save batch length before passing ownership to filter_new_nodes
+        let original_batch_size = batch.len();
+
         // Filter out duplicates before writing to avoid unnecessary writes
-        let new_nodes = self.filter_new_nodes(&batch)?;
+        let new_nodes = self.filter_new_nodes(batch)?;
 
         if new_nodes.is_empty() {
             debug!(
                 "All {} nodes in batch were duplicates, skipping write",
-                batch.len()
+                original_batch_size
             );
             return Ok(());
         }
 
-        let duplicate_count = batch.len() - new_nodes.len();
+        let duplicate_count = original_batch_size - new_nodes.len();
         if duplicate_count > 0 {
             debug!(
                 "Filtered {} duplicate nodes from batch, writing {} unique nodes",

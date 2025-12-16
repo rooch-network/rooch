@@ -44,17 +44,19 @@ fn test_rocksdb_deduplication_memory_efficiency() -> Result<()> {
 
     // Write in batches
     let batch_size = 1000;
+    let mut nodes_processed = 0;
     for chunk in test_nodes.chunks(batch_size) {
         let chunk_start = Instant::now();
         writer.write_batch(chunk.to_vec())?;
         let chunk_time = chunk_start.elapsed();
 
-        // Log progress
-        if chunk.len() * (chunk.len() / batch_size + 1) % 10000 == 0 {
+        nodes_processed += chunk.len();
+
+        // Log progress every 10000 nodes
+        if nodes_processed % 10000 == 0 {
             println!(
                 "Processed {} nodes, current batch time: {:?}",
-                chunk.len() * (chunk.len() / batch_size + 1),
-                chunk_time
+                nodes_processed, chunk_time
             );
         }
     }
@@ -87,43 +89,69 @@ fn test_adaptive_batch_sizing() -> Result<()> {
     let _temp_dir = TempDir::new()?;
     let (store, _tmpdir) = MoveOSStore::mock_moveos_store()?;
 
-    let config = SnapshotBuilderConfig {
+    // Test case 1: Force memory pressure with very low memory limit
+    let pressure_config = SnapshotBuilderConfig {
         batch_size: 10000,
         workers: 1,
-        memory_limit: 50 * 1024 * 1024, // 50MB limit to trigger pressure
+        memory_limit: 1024 * 1024, // 1MB limit to guarantee pressure
         deduplication_strategy: DeduplicationStrategy::RocksDB,
         enable_adaptive_batching: true,
         memory_pressure_threshold: 0.5, // 50% threshold
         ..Default::default()
     };
 
-    let builder = SnapshotBuilder::new(config, store.clone())?;
+    let pressure_builder = SnapshotBuilder::new(pressure_config, store.clone())?;
+    let initial_batch_size = pressure_builder.config().batch_size;
 
-    // Test the memory pressure detection
-    let initial_batch_size = builder.config().batch_size;
+    // This should trigger memory pressure due to conservative 75% fallback estimate
+    let adjusted_size = pressure_builder
+        .adjust_batch_size_for_memory_pressure(initial_batch_size)
+        .expect("Should adjust batch size under forced memory pressure");
 
-    // Simulate memory pressure by checking current usage
-    if let Some(adjusted_size) = builder.adjust_batch_size_for_memory_pressure(initial_batch_size) {
-        println!(
-            "Batch size adjusted from {} to {} due to memory pressure",
-            initial_batch_size, adjusted_size
-        );
+    println!(
+        "Memory pressure test: batch size adjusted from {} to {}",
+        initial_batch_size, adjusted_size
+    );
 
-        // Verify adjustment is reasonable
-        assert!(
-            adjusted_size < initial_batch_size,
-            "Batch size should be reduced under pressure"
-        );
-        assert!(
-            adjusted_size >= 100,
-            "Batch size should not be reduced below minimum"
-        );
-    } else {
-        println!(
-            "No memory pressure detected, batch size remains {}",
-            initial_batch_size
-        );
-    }
+    // Verify reduction under pressure
+    assert!(
+        adjusted_size < initial_batch_size,
+        "Batch size should be reduced under memory pressure ({} -> {})",
+        initial_batch_size,
+        adjusted_size
+    );
+    assert!(
+        adjusted_size >= 100,
+        "Batch size should not be reduced below minimum of 100, got {}",
+        adjusted_size
+    );
+
+    // Test case 2: Test edge case with no memory limit (should never adjust)
+    let no_limit_config = SnapshotBuilderConfig {
+        batch_size: 1000,
+        workers: 1,
+        memory_limit: 0, // No memory limit
+        deduplication_strategy: DeduplicationStrategy::RocksDB,
+        enable_adaptive_batching: true,
+        memory_pressure_threshold: 0.9, // 90% threshold
+        ..Default::default()
+    };
+
+    let no_limit_builder = SnapshotBuilder::new(no_limit_config, store.clone())?;
+    let any_batch_size = 500;
+
+    // With no memory limit, should never adjust
+    let no_adjustment = no_limit_builder.adjust_batch_size_for_memory_pressure(any_batch_size);
+
+    println!(
+        "No limit test: batch size {} with adjustment: {:?}",
+        any_batch_size, no_adjustment
+    );
+
+    assert!(
+        no_adjustment.is_none(),
+        "With no memory limit, should never adjust batch size"
+    );
 
     Ok(())
 }

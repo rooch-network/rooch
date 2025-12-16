@@ -3,6 +3,7 @@
 
 use rooch_config::state_prune::StatePruneConfig;
 use serde::{Deserialize, Serialize};
+use tracing::{info, warn};
 
 /// Deduplication strategy for node processing
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -56,7 +57,7 @@ pub struct SnapshotBuilderConfig {
     /// Enable adaptive batch sizing based on memory pressure
     pub enable_adaptive_batching: bool,
 
-    /// Memory pressure threshold (percentage) to trigger batch size reduction
+    /// Memory pressure threshold (ratio from 0.0 to 1.0) to trigger batch size reduction
     pub memory_pressure_threshold: f64,
 }
 
@@ -124,29 +125,26 @@ impl SnapshotBuilderConfig {
             ));
         }
 
-        if !(0.0..1.0).contains(&self.memory_pressure_threshold) {
+        if !(0.0..=1.0).contains(&self.memory_pressure_threshold) {
             return Err(anyhow::anyhow!(
-                "Memory pressure threshold must be between 0 and 1"
+                "Memory pressure threshold must be between 0.0 and 1.0 inclusive"
             ));
         }
 
         // Validate strategy-specific settings
         match self.deduplication_strategy {
             DeduplicationStrategy::Memory => {
-                tracing::warn!("Memory deduplication strategy selected - beware of OOM risk with large datasets");
+                warn!("Memory deduplication strategy selected - beware of OOM risk with large datasets");
             }
             DeduplicationStrategy::BloomFilter | DeduplicationStrategy::Hybrid => {
-                if self.enable_bloom_filter && !(0.0..1.0).contains(&self.bloom_filter_fp_rate) {
-                    return Err(anyhow::anyhow!(
-                        "Bloom filter false positive rate must be between 0 and 1 when enabled"
-                    ));
-                }
+                // These strategies are not yet implemented - fail early with clear error
+                return Err(anyhow::anyhow!(
+                    "Deduplication strategy {:?} is not yet implemented. Use RocksDB strategy instead.",
+                    self.deduplication_strategy
+                ));
             }
             DeduplicationStrategy::RocksDB => {
-                // RocksDB strategy validation
-                tracing::info!(
-                    "RocksDB deduplication strategy selected - recommended for large datasets"
-                );
+                info!("RocksDB deduplication strategy selected - recommended for large datasets");
             }
         }
 
