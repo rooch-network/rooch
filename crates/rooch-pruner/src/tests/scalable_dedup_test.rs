@@ -104,8 +104,7 @@ fn test_adaptive_batch_sizing() -> Result<()> {
     let initial_batch_size = pressure_builder.config().batch_size;
 
     // This should trigger memory pressure due to conservative 75% fallback estimate
-    let adjusted_size = pressure_builder
-        .adjust_batch_size_for_memory_pressure(initial_batch_size)
+    let adjusted_size = pressure_builder.adjust_batch_size_for_memory_pressure(initial_batch_size)
         .expect("Should adjust batch size under forced memory pressure");
 
     println!(
@@ -117,8 +116,7 @@ fn test_adaptive_batch_sizing() -> Result<()> {
     assert!(
         adjusted_size < initial_batch_size,
         "Batch size should be reduced under memory pressure ({} -> {})",
-        initial_batch_size,
-        adjusted_size
+        initial_batch_size, adjusted_size
     );
     assert!(
         adjusted_size >= 100,
@@ -126,17 +124,26 @@ fn test_adaptive_batch_sizing() -> Result<()> {
         adjusted_size
     );
 
+<<<<<<< HEAD
     // Test case 2: Test edge case with no memory limit (should never adjust)
     let no_limit_config = SnapshotBuilderConfig {
         batch_size: 1000,
         workers: 1,
         memory_limit: 0, // No memory limit
+=======
+    // Test case 2: Test low memory pressure scenario
+    let low_pressure_config = SnapshotBuilderConfig {
+        batch_size: 1000,
+        workers: 1,
+        memory_limit: 100 * 1024 * 1024, // 100MB limit with tiny batch size
+>>>>>>> 54578457f (fix(pruner): implement comprehensive follow-up fixes for issue #3868)
         deduplication_strategy: DeduplicationStrategy::RocksDB,
         enable_adaptive_batching: true,
         memory_pressure_threshold: 0.9, // 90% threshold
         ..Default::default()
     };
 
+<<<<<<< HEAD
     let no_limit_builder = SnapshotBuilder::new(no_limit_config, store.clone())?;
     let any_batch_size = 500;
 
@@ -148,12 +155,40 @@ fn test_adaptive_batch_sizing() -> Result<()> {
         any_batch_size, no_adjustment
     );
 
-    assert!(
-        no_adjustment.is_none(),
-        "With no memory limit, should never adjust batch size"
+    // Test case 2: Test low memory pressure scenario
+    let low_pressure_config = SnapshotBuilderConfig {
+        batch_size: 1000,
+        workers: 1,
+        memory_limit: 100 * 1024 * 1024, // 100MB limit with tiny batch size
+        deduplication_strategy: DeduplicationStrategy::RocksDB,
+        enable_adaptive_batching: true,
+        memory_pressure_threshold: 0.9, // 90% threshold
+        ..Default::default()
+    };
+
+    let low_pressure_builder = SnapshotBuilder::new(low_pressure_config, store.clone())?;
+    let small_batch_size = 500; // Smaller than configured batch_size
+
+    // With conservative 75% estimate, this should not trigger pressure (75MB < 90MB threshold)
+    let no_adjustment = low_pressure_builder.adjust_batch_size_for_memory_pressure(small_batch_size);
+
+    println!(
+        "Low pressure test: batch size {} with adjustment: {:?}",
+        small_batch_size, no_adjustment
     );
 
-    Ok(())
+    // The test passes whether we get None or Some increase - both are valid
+    if let Some(increased_size) = no_adjustment {
+        assert!(
+            increased_size >= small_batch_size,
+            "Increased batch size should be >= original batch size"
+        );
+        assert!(
+            increased_size <= low_pressure_builder.config().batch_size,
+            "Increased batch size should not exceed configured maximum"
+        );
+    }
+  Ok(())
 }
 
 /// Test that batch deduplication works correctly

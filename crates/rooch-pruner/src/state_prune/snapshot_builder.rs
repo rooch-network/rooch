@@ -194,8 +194,7 @@ impl SnapshotBuilder {
                             current_batch_size = new_batch_size;
                             // Resize buffer if needed - use reserve_exact for tighter allocation
                             if batch_buffer.capacity() < current_batch_size {
-                                batch_buffer
-                                    .reserve_exact(current_batch_size - batch_buffer.capacity());
+                                batch_buffer.reserve_exact(current_batch_size - batch_buffer.capacity());
                             }
                         }
                     }
@@ -286,9 +285,7 @@ impl SnapshotBuilder {
             );
 
             Some(new_batch_size)
-        } else if memory_per_thousand < threshold_per_thousand * 6 / 10
-            && current_batch_size < self.config.batch_size
-        {
+        } else if memory_per_thousand < threshold_per_thousand * 6 / 10 && current_batch_size < self.config.batch_size {
             // Low memory pressure - can increase batch size (60% of threshold)
             // Calculate increase: up to 20% based on headroom
             let headroom = threshold_per_thousand.saturating_sub(memory_per_thousand);
