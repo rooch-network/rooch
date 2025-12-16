@@ -193,7 +193,7 @@ Based on recent activity, major development areas include:
 ### Language and Encoding
 - **Move files**: ASCII-only comments and strings required by Move compiler
 - **Rust files**: English comments and documentation only
-- **Exception**: UTF-8 test strings in `moveos/moveos-types/src/move_std/string.rs` are intentional for testing
+- **Exception**: Only test data strings (not comments) in `moveos/moveos-types/src/move_std/string.rs` may use UTF-8; this is intentional for testing purposes
 
 ### Testing Patterns
 
@@ -250,7 +250,7 @@ assert!(condition, ErrorCodeOne);
 
 ### Workspace Structure
 - **Cargo Workspace**: 68+ crates organized by domain
-- **Version Management**: Workspace-level versioning (currently 0.12.0)
+- **Version Management**: Workspace-level versioning (see `Cargo.toml` for current version)
 - **Framework Publishing**: Address-based deployment (0x1, 0x2, 0x3, 0x4)
 
 ### Common File Locations
