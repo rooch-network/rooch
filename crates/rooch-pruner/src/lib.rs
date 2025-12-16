@@ -12,6 +12,7 @@ pub mod safety_verifier; // Safety verification for GC operations
 pub mod state_prune; // State prune functionality
 #[cfg(test)]
 mod tests;
+
 pub mod util; // Utility functions for node traversal
 
 // Re-export commonly used GC types

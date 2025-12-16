@@ -39,6 +39,11 @@ impl SnapshotBuilder {
         })
     }
 
+    /// Get a reference to the configuration
+    pub fn config(&self) -> &SnapshotBuilderConfig {
+        &self.config
+    }
+
     /// Build snapshot from state root using streaming approach
     pub async fn build_snapshot(
         &self,
@@ -128,10 +133,13 @@ impl SnapshotBuilder {
         nodes_to_process.push_back(state_root);
 
         let node_store = &self.moveos_store.node_store;
-        let mut batch_buffer = Vec::with_capacity(self.config.batch_size);
+        let mut current_batch_size = self.config.batch_size;
+        let mut batch_buffer = Vec::with_capacity(current_batch_size);
         let mut last_progress_report = Instant::now();
         let mut consecutive_empty_batches = 0;
+        let mut last_memory_check = Instant::now();
         const MAX_EMPTY_BATCHES: u32 = 100; // Safety limit to prevent infinite loops
+        const MEMORY_CHECK_INTERVAL_SECS: u64 = 10; // Check memory every 10 seconds
 
         while let Some(current_hash) = nodes_to_process.pop_front() {
             // Safety check to prevent infinite loops in case of corrupted data
@@ -149,6 +157,7 @@ impl SnapshotBuilder {
             }
 
             // Check if node is already written to avoid duplication
+            // The RocksDB-based deduplication handles this efficiently with O(1) space complexity
             if snapshot_writer.contains_node(&current_hash)? {
                 debug!("Skipping duplicate node: {}", current_hash);
                 continue;
@@ -169,8 +178,31 @@ impl SnapshotBuilder {
                     nodes_to_process.push_back(child_hash);
                 }
 
-                // Write batch when it reaches the configured size
-                if batch_buffer.len() >= self.config.batch_size {
+                // Adaptive batch size adjustment based on memory pressure
+                if self.config.should_use_adaptive_batching()
+                    && last_memory_check.elapsed()
+                        >= Duration::from_secs(MEMORY_CHECK_INTERVAL_SECS)
+                {
+                    if let Some(new_batch_size) =
+                        self.adjust_batch_size_for_memory_pressure(current_batch_size)
+                    {
+                        if new_batch_size != current_batch_size {
+                            info!(
+                                "Adjusting batch size from {} to {} due to memory pressure",
+                                current_batch_size, new_batch_size
+                            );
+                            current_batch_size = new_batch_size;
+                            // Resize buffer if needed
+                            if batch_buffer.capacity() < current_batch_size {
+                                batch_buffer.reserve(current_batch_size - batch_buffer.capacity());
+                            }
+                        }
+                    }
+                    last_memory_check = Instant::now();
+                }
+
+                // Write batch when it reaches the current batch size
+                if batch_buffer.len() >= current_batch_size {
                     let batch_size = batch_buffer.len();
                     snapshot_writer.write_batch(std::mem::take(&mut batch_buffer))?;
 
@@ -181,9 +213,10 @@ impl SnapshotBuilder {
                         >= Duration::from_secs(self.config.progress_interval_seconds)
                     {
                         info!(
-                            "Streaming traversal progress: {} batches processed, {} nodes written",
-                            statistics.nodes_visited / self.config.batch_size as u64,
-                            snapshot_writer.nodes_written
+                            "Streaming traversal progress: {} batches processed, {} nodes written, current batch size: {}",
+                            statistics.nodes_visited / current_batch_size as u64,
+                            snapshot_writer.nodes_written,
+                            current_batch_size
                         );
                         last_progress_report = Instant::now();
                     }
@@ -211,6 +244,92 @@ impl SnapshotBuilder {
         }
 
         Ok(statistics)
+    }
+
+    /// Adjust batch size based on current memory pressure
+    /// Returns None if no adjustment needed, Some(new_size) otherwise
+    pub fn adjust_batch_size_for_memory_pressure(
+        &self,
+        current_batch_size: usize,
+    ) -> Option<usize> {
+        // Get current memory usage
+        let current_memory = self.get_current_memory_usage();
+
+        if self.config.memory_limit == 0 {
+            // No memory limit, no adjustment needed
+            return None;
+        }
+
+        let memory_ratio = current_memory as f64 / self.config.memory_limit as f64;
+        let threshold = self.config.memory_pressure_threshold;
+
+        if memory_ratio > threshold {
+            // High memory pressure - reduce batch size
+            let reduction_factor = 1.0 - (memory_ratio - threshold).min(0.3); // Reduce by up to 30%
+            let new_batch_size = (current_batch_size as f64 * reduction_factor).max(100.0) as usize;
+
+            info!(
+                "Memory pressure detected: {:.1}% usage ({}/{} bytes), reducing batch size from {} to {}",
+                memory_ratio * 100.0,
+                current_memory,
+                self.config.memory_limit,
+                current_batch_size,
+                new_batch_size
+            );
+
+            Some(new_batch_size)
+        } else if memory_ratio < threshold * 0.6 && current_batch_size < self.config.batch_size {
+            // Low memory pressure - can increase batch size
+            let increase_factor = 1.0 + (threshold - memory_ratio).min(0.2); // Increase by up to 20%
+            let new_batch_size = (current_batch_size as f64 * increase_factor)
+                .min(self.config.batch_size as f64) as usize;
+
+            if new_batch_size > current_batch_size {
+                info!(
+                    "Low memory pressure: {:.1}% usage ({}/{} bytes), increasing batch size from {} to {}",
+                    memory_ratio * 100.0,
+                    current_memory,
+                    self.config.memory_limit,
+                    current_batch_size,
+                    new_batch_size
+                );
+                Some(new_batch_size)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Get current memory usage in bytes
+    fn get_current_memory_usage(&self) -> u64 {
+        // Try to get memory usage from system
+        #[cfg(unix)]
+        {
+            use std::fs;
+            match fs::read_to_string("/proc/self/status") {
+                Ok(status) => {
+                    for line in status.lines() {
+                        if line.starts_with("VmRSS:") {
+                            let parts: Vec<&str> = line.split_whitespace().collect();
+                            if parts.len() >= 2 {
+                                if let Ok(kb) = parts[1].parse::<u64>() {
+                                    return kb * 1024; // Convert KB to bytes
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(_) => {
+                    debug!("Failed to read /proc/self/status, falling back to estimate");
+                }
+            }
+        }
+
+        // Fallback estimate - use a reasonable approximation
+        // This is a simplified approach; in production you might want more sophisticated monitoring
+        self.config.memory_limit.saturating_mul(30) / 100 // Assume 30% of limit
     }
 }
 
@@ -279,16 +398,83 @@ impl SnapshotNodeWriter {
         }
     }
 
-    /// Write batch of nodes to RocksDB
+    /// Batch check if nodes already exist in snapshot (for efficient deduplication)
+    /// Returns a vector of booleans indicating whether each node exists
+    pub fn contains_nodes_batch(&self, hashes: &[H256]) -> Result<Vec<bool>> {
+        if hashes.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Use multi_get for batch existence checking to reduce I/O overhead
+        let keys: Vec<_> = hashes.iter().map(|h| h.as_bytes()).collect();
+        let results: Result<Vec<_>> = self
+            .db
+            .multi_get(keys)
+            .into_iter()
+            .map(|r| {
+                r.map(|opt| opt.is_some())
+                    .map_err(|e| anyhow::anyhow!("RocksDB error: {}", e))
+            })
+            .collect();
+
+        results
+    }
+
+    /// Filter out already existing nodes from a batch, returning only new nodes
+    /// This is more efficient than checking each node individually
+    pub fn filter_new_nodes(&self, nodes: &[(H256, Vec<u8>)]) -> Result<Vec<(H256, Vec<u8>)>> {
+        if nodes.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let hashes: Vec<_> = nodes.iter().map(|(h, _)| *h).collect();
+        let existence_flags = self.contains_nodes_batch(&hashes)?;
+
+        let new_nodes: Vec<_> = nodes
+            .iter()
+            .zip(existence_flags)
+            .filter_map(|((hash, data), exists)| {
+                if exists {
+                    None
+                } else {
+                    Some((*hash, data.clone()))
+                }
+            })
+            .collect();
+
+        Ok(new_nodes)
+    }
+
+    /// Write batch of nodes to RocksDB with efficient deduplication
     pub fn write_batch(&mut self, batch: Vec<(H256, Vec<u8>)>) -> Result<()> {
         if batch.is_empty() {
             return Ok(());
         }
 
+        // Filter out duplicates before writing to avoid unnecessary writes
+        let new_nodes = self.filter_new_nodes(&batch)?;
+
+        if new_nodes.is_empty() {
+            debug!(
+                "All {} nodes in batch were duplicates, skipping write",
+                batch.len()
+            );
+            return Ok(());
+        }
+
+        let duplicate_count = batch.len() - new_nodes.len();
+        if duplicate_count > 0 {
+            debug!(
+                "Filtered {} duplicate nodes from batch, writing {} unique nodes",
+                duplicate_count,
+                new_nodes.len()
+            );
+        }
+
         let mut write_batch = rocksdb::WriteBatch::default();
 
-        // Add all nodes to batch
-        for (hash, data) in batch {
+        // Add only new nodes to batch
+        for (hash, data) in new_nodes {
             write_batch.put(hash.as_bytes(), data);
             self.nodes_written += 1;
         }

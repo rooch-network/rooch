@@ -6,7 +6,7 @@ use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::h256::H256;
-use rooch_pruner::state_prune::{SnapshotBuilder, SnapshotBuilderConfig};
+use rooch_pruner::state_prune::{DeduplicationStrategy, SnapshotBuilder, SnapshotBuilderConfig};
 use rooch_types::error::RoochResult;
 use serde_json;
 use std::path::PathBuf;
@@ -88,8 +88,12 @@ impl CommandAction<String> for SnapshotCommand {
             enable_progress_tracking: true,
             enable_resume: true,
             max_traversal_time_hours: 24,
-            enable_bloom_filter: false, // Disabled for simplicity
+            deduplication_strategy: DeduplicationStrategy::RocksDB,
+            enable_bloom_filter: false, // Disabled in favor of RocksDB strategy
             bloom_filter_fp_rate: 0.001,
+            deduplication_batch_size: 0, // Use same as processing batch size
+            enable_adaptive_batching: true,
+            memory_pressure_threshold: 0.8,
         };
 
         // Create snapshot builder
