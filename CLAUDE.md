@@ -134,7 +134,7 @@ Main blockchain implementation with modular architecture:
 **Storage and State:**
 - `rooch-store`: High-level storage operations
 - `rooch-db`: Database operations and migrations
-- `rooch-pruner`: **Currently being refactored** - State pruning and GC system
+- `rooch-pruner`: State pruning and GC system
 
 **Network and APIs:**
 - `rooch-rpc-server`: JSON-RPC server with OpenAPI specs
