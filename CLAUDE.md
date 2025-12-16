@@ -6,7 +6,53 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Rooch Network is a Bitcoin-focused Layer 2 blockchain solution positioned as a "VApp (Verifiable Application) Container" with the Move programming language. The project aims to provide verifiability of both computations and states within applications, ensuring transparency and reliability of operations.
 
-## Key Development Commands
+## Development Environment Setup
+
+### Prerequisites
+```bash
+# Rust toolchain (required)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup update stable
+
+# Node.js and pnpm (for TypeScript/E2E testing)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+npm install -g pnpm
+
+# Optional: Docker (for containerized testing)
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+```
+
+### Initial Setup
+```bash
+# Clone repository
+git clone https://github.com/rooch-network/rooch.git
+cd rooch
+
+# Install Rust dependencies
+cargo build
+
+# Install Node.js dependencies for E2E testing
+cd sdk/typescript/test-suite
+pnpm install
+
+# Initialize Rooch configuration (optional)
+rooch init
+```
+
+### Environment Variables
+```bash
+# Build profiles
+export ROOCH_BINARY_BUILD_PROFILE=debug  # Development builds
+export ROOCH_BINARY_BUILD_PROFILE=optci  # Optimized builds for testing
+
+# Debug configuration
+export RUST_LOG=debug     # Enable debug logging
+export RUST_BACKTRACE=1   # Show backtrace on errors
+```
+
+## Commands for AI Assistant
 
 ### Build System (Primary)
 The project uses a comprehensive Makefile as the primary development interface:
@@ -31,29 +77,30 @@ make lint           # Run all linters (includes non-ASCII comment check)
 make lint-rust      # Run Rust clippy and machete
 ```
 
-### Direct CLI Usage
+### CLI Commands for Testing
 ```bash
 # Building and installation
 cargo build && cp target/debug/rooch ~/.cargo/bin/
 
-# Core workflow
+# Core workflow for testing
 rooch init                    # Initialize config
-rooch move new <project>      # Create Move project
 rooch move build -p <path>    # Build Move project
-rooch move publish -p <path>  # Publish Move contract
-rooch server start -n local   # Start local server
-
-# Testing
 rooch move test -p <path> [filter]  # Run Move tests
+
+# Server operations
+rooch server start -n local   # Start local server for testing
+
+# Package-specific testing
 cargo test --package <name>         # Run Rust tests
 ```
 
-### TypeScript/Node.js Testing (Pruner E2E)
+### SDK E2E Testing (TypeScript)
 ```bash
-cd sdk/typescript/rooch-pruner-e2e
+cd sdk/typescript/test-suite
 pnpm install
-pnpm test:gc               # Run GC E2E tests
-pnpm test:pruner           # Run Pruner E2E tests
+pnpm test:e2e              # Run E2E tests with server
+pnpm test:unit             # Run unit tests
+pnpm test                  # Run all tests
 pnpm lint                  # ESLint and Prettier checks
 ```
 
@@ -173,10 +220,9 @@ rooch move test -p frameworks/rooch-framework [filter]
 
 #### E2E Tests (TypeScript)
 ```bash
-cd sdk/typescript/rooch-pruner-e2e
-pnpm test:gc
-pnpm test:pruner
-GC_FORCE=true GC_DRY_RUN=false pnpm test:gc:execute
+cd sdk/typescript/test-suite
+pnpm test:e2e
+pnpm test:unit
 ```
 
 ### Code Quality Standards
@@ -257,5 +303,52 @@ assert!(condition, ErrorCodeOne);
 - **Primary**: RocksDB with optimized column families
 - **State Tree**: SMT for efficient state proofs
 - **Indexing**: Multiple indexing strategies for query performance
+
+## Troubleshooting Common Issues
+
+### Build Issues
+```bash
+# Clean build if encountering compilation errors
+make clean-all
+cargo clean
+
+# Update Rust toolchain if needed
+rustup update stable
+
+# Clear Cargo cache (last resort)
+rm -rf ~/.cargo/registry/cache
+```
+
+### Test Failures
+```bash
+# Run tests with verbose output
+cargo test --package <name> -- --nocapture
+
+# Run specific test patterns
+cargo test --package rooch-pruner gc
+make test-move-frameworks
+
+# Check test environment
+rooch env
+```
+
+### Essential Testing Commands
+```bash
+# Linting (critical for this repository)
+make lint-rust                      # Check for non-ASCII comments
+make lint                           # Run all linters
+
+# Build verification
+make quick-check                    # Fast compilation check
+make build                          # Full build
+
+# Environment variables for optimized testing
+export ROOCH_BINARY_BUILD_PROFILE=optci  # Use optimized binary for tests
+```
+
+### Key File Locations for Context
+- **Framework APIs**: `frameworks/*/sources/` - Core Move interfaces and types
+- **Test Examples**: `sdk/typescript/*/src/case/` - Usage patterns and integration tests
+- **Move Examples**: `examples/*/sources/` - Sample Move projects
 
 This architecture enables Rooch to provide scalable, verifiable applications with strong Bitcoin ecosystem integration while maintaining Move language safety guarantees.
