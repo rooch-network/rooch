@@ -12,10 +12,10 @@ use std::sync::Arc;
 
 /// manage OpenDA backends while integrating specific adapter logic
 pub struct OpenDABackendManager {
-    identifier: String,
-    adapter_stats: AdapterSubmitStat,
-    adapter_config: OpenDAAdapterConfig,
     adapter: Box<dyn OpenDAAdapter>,
+    adapter_config: OpenDAAdapterConfig,
+    adapter_stats: AdapterSubmitStat,
+    identifier: String,
 }
 
 impl OpenDABackendManager {
@@ -28,10 +28,10 @@ impl OpenDABackendManager {
         let adapter = adapter_config.build(adapter_stats.clone()).await?;
 
         Ok(Self {
-            identifier: derive_identifier(open_da_config.scheme.clone()),
-            adapter_stats: adapter_stats.clone(),
-            adapter_config,
             adapter,
+            adapter_config,
+            adapter_stats: adapter_stats.clone(),
+            identifier: derive_identifier(open_da_config.scheme.clone()),
         })
     }
 }

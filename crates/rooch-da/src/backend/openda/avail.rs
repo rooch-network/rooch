@@ -144,7 +144,7 @@ impl AvailFusionClientConfig {
             Some(AvailTurboClient::new(
                 endpoint,
                 self.max_retries,
-                self.turbo_api_key.as_ref().unwrap(),
+                self.turbo_api_key.as_deref().ok_or_else(|| anyhow::anyhow!("turbo_api_key is required when turbo_endpoint is provided"))?,
             )?)
         } else {
             None
