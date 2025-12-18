@@ -252,7 +252,7 @@ impl SnapshotBuilder {
             Ok(Some(progress)) => {
                 let now = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
-                    .unwrap()
+                    .unwrap_or(std::time::Duration::from_secs(0))
                     .as_secs();
                 let elapsed = now.saturating_sub(progress.last_save_timestamp);
 
@@ -285,7 +285,7 @@ impl SnapshotBuilder {
     /// Clean up progress files on successful completion
     fn cleanup_progress_files(&self, output_dir: &Path) -> Result<()> {
         let progress_path = output_dir.join("snapshot_progress.json");
-        let backup_path = output_dir.join("snapshot_progress_backup.json");
+        let backup_path = output_dir.join("snapshot_progress.backup");
 
         for path in [progress_path, backup_path] {
             if path.exists() {
@@ -320,7 +320,7 @@ impl SnapshotBuilder {
             current_batch_size,
             last_save_timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or(std::time::Duration::from_secs(0))
                 .as_secs(),
             nodes_written,
             checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, statistics.nodes_visited),
