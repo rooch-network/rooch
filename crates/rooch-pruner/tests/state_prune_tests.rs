@@ -5,7 +5,7 @@ use moveos_types::h256::H256;
 use rooch_config::state_prune::{ReplayReport, SnapshotMeta};
 use rooch_pruner::state_prune::{
     DeduplicationStrategy, OperationStatus, OperationType, ProgressTracker, SnapshotBuilderConfig,
-    StatePruneMetadata,
+    SnapshotProgress, StatePruneMetadata,
 };
 
 #[cfg(test)]
@@ -267,5 +267,179 @@ mod tests {
 
         // Cleanup
         std::fs::remove_file(&test_file).unwrap();
+    }
+
+    #[test]
+    fn test_snapshot_progress_creation() {
+        let state_root = H256::random();
+        let worklist = vec![H256::random(), H256::random(), H256::random()];
+        let statistics = rooch_pruner::state_prune::TraversalStatistics {
+            nodes_visited: 100,
+            bytes_processed: 50000,
+        };
+        let batch_buffer = vec![(H256::random(), b"test_data".to_vec())];
+
+        let progress = SnapshotProgress {
+            state_root,
+            worklist: worklist.clone(),
+            worklist_position: 1,
+            statistics: statistics.clone(),
+            batch_buffer: batch_buffer.clone(),
+            current_batch_size: 1000,
+            last_save_timestamp: 1234567890,
+            nodes_written: 95,
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, 100),
+        };
+
+        assert_eq!(progress.state_root, state_root);
+        assert_eq!(progress.worklist, worklist);
+        assert_eq!(progress.worklist_position, 1);
+        assert_eq!(progress.statistics.nodes_visited, 100);
+        assert_eq!(progress.statistics.bytes_processed, 50000);
+        assert_eq!(progress.current_batch_size, 1000);
+        assert_eq!(progress.nodes_written, 95);
+        assert!(progress.checkpoint_id.contains(&format!("{:x}", state_root)));
+        assert!(progress.checkpoint_id.contains("100"));
+    }
+
+    #[test]
+    fn test_snapshot_progress_checkpoint_id() {
+        let state_root = H256::random();
+        let checkpoint_id = SnapshotProgress::generate_checkpoint_id(state_root, 42);
+
+        let expected = format!("{:x}-42", state_root);
+        assert_eq!(checkpoint_id, expected);
+    }
+
+    #[test]
+    fn test_snapshot_progress_save_load() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let progress_path = temp_dir.path().join("test_progress.json");
+
+        let state_root = H256::random();
+        let original_progress = SnapshotProgress {
+            state_root,
+            worklist: vec![H256::random(), H256::random()],
+            worklist_position: 0,
+            statistics: rooch_pruner::state_prune::TraversalStatistics {
+                nodes_visited: 500,
+                bytes_processed: 250000,
+            },
+            batch_buffer: vec![(H256::random(), b"buffer_data".to_vec())],
+            current_batch_size: 2000,
+            last_save_timestamp: 9876543210,
+            nodes_written: 480,
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, 500),
+        };
+
+        // Save progress
+        original_progress.save_to_file(&progress_path).unwrap();
+        assert!(progress_path.exists());
+
+        // Load progress with correct state_root
+        let loaded_progress = SnapshotProgress::load_from_file(&progress_path, state_root).unwrap();
+        assert!(loaded_progress.is_some());
+
+        let loaded = loaded_progress.unwrap();
+        assert_eq!(loaded.state_root, original_progress.state_root);
+        assert_eq!(loaded.worklist, original_progress.worklist);
+        assert_eq!(loaded.worklist_position, original_progress.worklist_position);
+        assert_eq!(loaded.statistics.nodes_visited, original_progress.statistics.nodes_visited);
+        assert_eq!(loaded.statistics.bytes_processed, original_progress.statistics.bytes_processed);
+        assert_eq!(loaded.current_batch_size, original_progress.current_batch_size);
+        assert_eq!(loaded.nodes_written, original_progress.nodes_written);
+        assert_eq!(loaded.checkpoint_id, original_progress.checkpoint_id);
+    }
+
+    #[test]
+    fn test_snapshot_progress_state_root_mismatch() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let progress_path = temp_dir.path().join("test_progress.json");
+
+        let state_root = H256::random();
+        let different_state_root = H256::random();
+
+        let progress = SnapshotProgress {
+            state_root,
+            worklist: vec![H256::random()],
+            worklist_position: 0,
+            statistics: rooch_pruner::state_prune::TraversalStatistics::default(),
+            batch_buffer: vec![],
+            current_batch_size: 1000,
+            last_save_timestamp: 0,
+            nodes_written: 0,
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, 0),
+        };
+
+        // Save progress
+        progress.save_to_file(&progress_path).unwrap();
+
+        // Try to load with different state_root - should return None
+        let loaded_progress = SnapshotProgress::load_from_file(&progress_path, different_state_root).unwrap();
+        assert!(loaded_progress.is_none());
+    }
+
+    #[test]
+    fn test_snapshot_progress_nonexistent_file() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let nonexistent_path = temp_dir.path().join("nonexistent.json");
+
+        let state_root = H256::random();
+        let loaded_progress = SnapshotProgress::load_from_file(&nonexistent_path, state_root).unwrap();
+        assert!(loaded_progress.is_none());
+    }
+
+    #[test]
+    fn test_snapshot_progress_backup_creation() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let progress_path = temp_dir.path().join("test_progress.json");
+        let backup_path = temp_dir.path().join("test_progress.backup");
+
+        let state_root = H256::random();
+        let progress1 = SnapshotProgress {
+            state_root,
+            worklist: vec![H256::random()],
+            worklist_position: 0,
+            statistics: rooch_pruner::state_prune::TraversalStatistics {
+                nodes_visited: 100,
+                bytes_processed: 1000,
+            },
+            batch_buffer: vec![],
+            current_batch_size: 1000,
+            last_save_timestamp: 0,
+            nodes_written: 95,
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, 100),
+        };
+
+        // Save initial progress
+        progress1.save_to_file(&progress_path).unwrap();
+
+        // Create updated progress
+        let progress2 = SnapshotProgress {
+            state_root,
+            worklist: vec![H256::random(), H256::random()],
+            worklist_position: 1,
+            statistics: rooch_pruner::state_prune::TraversalStatistics {
+                nodes_visited: 200,
+                bytes_processed: 2000,
+            },
+            batch_buffer: vec![(H256::random(), b"data".to_vec())],
+            current_batch_size: 1500,
+            last_save_timestamp: 100,
+            nodes_written: 195,
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, 200),
+        };
+
+        // Save updated progress - should create backup
+        progress2.save_to_file(&progress_path).unwrap();
+
+        // Verify backup exists and contains old progress
+        assert!(backup_path.exists());
+        let backup_progress = SnapshotProgress::load_from_file(&backup_path, state_root).unwrap();
+        assert!(backup_progress.is_some());
+
+        let backup = backup_progress.unwrap();
+        assert_eq!(backup.statistics.nodes_visited, 100);
+        assert_eq!(backup.nodes_written, 95);
     }
 }

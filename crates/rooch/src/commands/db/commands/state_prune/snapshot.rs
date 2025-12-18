@@ -49,6 +49,14 @@ pub struct SnapshotCommand {
     /// Enable verbose logging
     #[clap(long)]
     pub verbose: bool,
+
+    /// Force restart even if progress exists
+    #[clap(long)]
+    pub force_restart: bool,
+
+    /// Disable resume functionality
+    #[clap(long)]
+    pub no_resume: bool,
 }
 
 #[async_trait]
@@ -86,7 +94,7 @@ impl CommandAction<String> for SnapshotCommand {
             memory_limit: 16 * 1024 * 1024 * 1024, // 16GB
             progress_interval_seconds: 30,
             enable_progress_tracking: true,
-            enable_resume: true,
+            enable_resume: !self.no_resume, // Respect CLI flag
             max_traversal_time_hours: 24,
             deduplication_strategy: DeduplicationStrategy::RocksDB,
             enable_bloom_filter: false, // Disabled in favor of RocksDB strategy
@@ -107,7 +115,7 @@ impl CommandAction<String> for SnapshotCommand {
 
         // Build snapshot
         let snapshot_meta = snapshot_builder
-            .build_snapshot(state_root, self.output.clone())
+            .build_snapshot(state_root, self.output.clone(), self.force_restart)
             .await
             .map_err(|e| {
                 rooch_types::error::RoochError::from(anyhow::anyhow!(
