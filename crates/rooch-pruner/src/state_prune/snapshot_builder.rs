@@ -83,7 +83,10 @@ impl SnapshotProgress {
     }
 
     /// Load progress from disk with validation
-    pub fn load_from_file<P: AsRef<Path>>(path: P, expected_state_root: H256) -> Result<Option<Self>> {
+    pub fn load_from_file<P: AsRef<Path>>(
+        path: P,
+        expected_state_root: H256,
+    ) -> Result<Option<Self>> {
         let path = path.as_ref();
 
         if !path.exists() {
@@ -245,7 +248,11 @@ impl SnapshotBuilder {
     }
 
     /// Check if resumable progress exists and load it
-    fn check_resume_state(&self, output_dir: &Path, state_root: H256) -> Result<Option<SnapshotProgress>> {
+    fn check_resume_state(
+        &self,
+        output_dir: &Path,
+        state_root: H256,
+    ) -> Result<Option<SnapshotProgress>> {
         let progress_path = output_dir.join("snapshot_progress.json");
 
         match SnapshotProgress::load_from_file(&progress_path, state_root) {
@@ -323,7 +330,10 @@ impl SnapshotBuilder {
                 .unwrap_or(std::time::Duration::from_secs(0))
                 .as_secs(),
             nodes_written,
-            checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, statistics.nodes_visited),
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(
+                state_root,
+                statistics.nodes_visited,
+            ),
         };
 
         let progress_path = output_dir.join("snapshot_progress.json");
@@ -342,37 +352,48 @@ impl SnapshotBuilder {
         resume_progress: Option<SnapshotProgress>,
     ) -> Result<TraversalStatistics> {
         // Initialize or resume traversal state
-        let (mut statistics, mut nodes_to_process, mut current_batch_size, mut batch_buffer) = if let Some(progress) = resume_progress {
-            info!("Resuming from previous snapshot operation");
+        let (mut statistics, mut nodes_to_process, mut current_batch_size, mut batch_buffer) =
+            if let Some(progress) = resume_progress {
+                info!("Resuming from previous snapshot operation");
 
-            // Restore worklist from progress
-            let mut worklist = VecDeque::from(progress.worklist);
+                // Restore worklist from progress
+                let mut worklist = VecDeque::from(progress.worklist);
 
-            // Skip already processed nodes if worklist_position > 0
-            for _ in 0..progress.worklist_position {
-                worklist.pop_front();
-            }
+                // Skip already processed nodes if worklist_position > 0
+                for _ in 0..progress.worklist_position {
+                    worklist.pop_front();
+                }
 
-            // Update metadata with resume statistics
-            metadata.update_statistics(|stats| {
-                stats.nodes_processed = progress.statistics.nodes_visited;
-                stats.bytes_processed = progress.statistics.bytes_processed;
-            });
+                // Update metadata with resume statistics
+                metadata.update_statistics(|stats| {
+                    stats.nodes_processed = progress.statistics.nodes_visited;
+                    stats.bytes_processed = progress.statistics.bytes_processed;
+                });
 
-            info!(
+                info!(
                 "Resuming traversal: {} nodes already processed, {} nodes in worklist, batch size: {}",
                 progress.statistics.nodes_visited,
                 worklist.len(),
                 progress.current_batch_size
             );
 
-            (progress.statistics, worklist, progress.current_batch_size, progress.batch_buffer)
-        } else {
-            info!("No resumable state found, starting fresh");
-            let mut worklist = VecDeque::new();
-            worklist.push_back(state_root);
-            (TraversalStatistics::default(), worklist, self.config.batch_size, Vec::with_capacity(self.config.batch_size))
-        };
+                (
+                    progress.statistics,
+                    worklist,
+                    progress.current_batch_size,
+                    progress.batch_buffer,
+                )
+            } else {
+                info!("No resumable state found, starting fresh");
+                let mut worklist = VecDeque::new();
+                worklist.push_back(state_root);
+                (
+                    TraversalStatistics::default(),
+                    worklist,
+                    self.config.batch_size,
+                    Vec::with_capacity(self.config.batch_size),
+                )
+            };
 
         let node_store = &self.moveos_store.node_store;
         let mut last_progress_report = Instant::now();
@@ -436,7 +457,8 @@ impl SnapshotBuilder {
                             current_batch_size = new_batch_size;
                             // Resize buffer if needed - use reserve_exact for tighter allocation
                             if batch_buffer.capacity() < current_batch_size {
-                                batch_buffer.reserve_exact(current_batch_size - batch_buffer.capacity());
+                                batch_buffer
+                                    .reserve_exact(current_batch_size - batch_buffer.capacity());
                             }
                         }
                     }
@@ -478,7 +500,9 @@ impl SnapshotBuilder {
             }
 
             // Save progress periodically (every 5 minutes)
-            if self.config.enable_resume && last_progress_save.elapsed() >= Duration::from_secs(PROGRESS_SAVE_INTERVAL_SECS) {
+            if self.config.enable_resume
+                && last_progress_save.elapsed() >= Duration::from_secs(PROGRESS_SAVE_INTERVAL_SECS)
+            {
                 if let Err(e) = self.save_progress(
                     output_dir,
                     state_root,
@@ -490,8 +514,11 @@ impl SnapshotBuilder {
                 ) {
                     warn!("Failed to save progress: {}", e);
                 } else {
-                    info!("Progress saved: {} nodes processed, {} nodes in worklist",
-                          statistics.nodes_visited, nodes_to_process.len());
+                    info!(
+                        "Progress saved: {} nodes processed, {} nodes in worklist",
+                        statistics.nodes_visited,
+                        nodes_to_process.len()
+                    );
                     last_progress_save = Instant::now();
                 }
             }
@@ -546,7 +573,9 @@ impl SnapshotBuilder {
             );
 
             Some(new_batch_size)
-        } else if memory_per_thousand < threshold_per_thousand * 6 / 10 && current_batch_size < self.config.batch_size {
+        } else if memory_per_thousand < threshold_per_thousand * 6 / 10
+            && current_batch_size < self.config.batch_size
+        {
             // Low memory pressure - can increase batch size (60% of threshold)
             // Calculate increase: up to 20% based on headroom
             let headroom = threshold_per_thousand.saturating_sub(memory_per_thousand);

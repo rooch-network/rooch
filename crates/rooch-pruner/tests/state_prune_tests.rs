@@ -298,7 +298,9 @@ mod tests {
         assert_eq!(progress.statistics.bytes_processed, 50000);
         assert_eq!(progress.current_batch_size, 1000);
         assert_eq!(progress.nodes_written, 95);
-        assert!(progress.checkpoint_id.contains(&format!("{:x}", state_root)));
+        assert!(progress
+            .checkpoint_id
+            .contains(&format!("{:x}", state_root)));
         assert!(progress.checkpoint_id.contains("100"));
     }
 
@@ -343,10 +345,22 @@ mod tests {
         let loaded = loaded_progress.unwrap();
         assert_eq!(loaded.state_root, original_progress.state_root);
         assert_eq!(loaded.worklist, original_progress.worklist);
-        assert_eq!(loaded.worklist_position, original_progress.worklist_position);
-        assert_eq!(loaded.statistics.nodes_visited, original_progress.statistics.nodes_visited);
-        assert_eq!(loaded.statistics.bytes_processed, original_progress.statistics.bytes_processed);
-        assert_eq!(loaded.current_batch_size, original_progress.current_batch_size);
+        assert_eq!(
+            loaded.worklist_position,
+            original_progress.worklist_position
+        );
+        assert_eq!(
+            loaded.statistics.nodes_visited,
+            original_progress.statistics.nodes_visited
+        );
+        assert_eq!(
+            loaded.statistics.bytes_processed,
+            original_progress.statistics.bytes_processed
+        );
+        assert_eq!(
+            loaded.current_batch_size,
+            original_progress.current_batch_size
+        );
         assert_eq!(loaded.nodes_written, original_progress.nodes_written);
         assert_eq!(loaded.checkpoint_id, original_progress.checkpoint_id);
     }
@@ -375,7 +389,8 @@ mod tests {
         progress.save_to_file(&progress_path).unwrap();
 
         // Try to load with different state_root - should return None
-        let loaded_progress = SnapshotProgress::load_from_file(&progress_path, different_state_root).unwrap();
+        let loaded_progress =
+            SnapshotProgress::load_from_file(&progress_path, different_state_root).unwrap();
         assert!(loaded_progress.is_none());
     }
 
@@ -385,7 +400,8 @@ mod tests {
         let nonexistent_path = temp_dir.path().join("nonexistent.json");
 
         let state_root = H256::random();
-        let loaded_progress = SnapshotProgress::load_from_file(&nonexistent_path, state_root).unwrap();
+        let loaded_progress =
+            SnapshotProgress::load_from_file(&nonexistent_path, state_root).unwrap();
         assert!(loaded_progress.is_none());
     }
 
