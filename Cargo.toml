@@ -306,7 +306,7 @@ axum = { version = "0.7.9", default-features = false, features = [
 axum-server = { version = "0.6.0", default-features = false, features = [
     "tls-rustls",
 ] }
-serenity = { version = "0.12.4", default-features = false, features = [
+serenity = { version = "0.12.5", default-features = false, features = [
     "client",
     "gateway",
     "cache",
