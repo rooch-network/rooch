@@ -152,14 +152,17 @@ fn test_adaptive_batch_sizing() -> Result<()> {
     // The test passes whether we get None or Some increase - both are valid
     if let Some(increased_size) = no_adjustment {
         assert!(
-            increased_size >= small_batch_size,
-            "Increased batch size should be >= original batch size"
+            increased_size > small_batch_size, // Must be strictly greater, otherwise None should be returned
+            "Increased batch size should be > original batch size, got {} -> {}",
+            small_batch_size, increased_size
         );
         assert!(
             increased_size <= low_pressure_builder.config().batch_size,
             "Increased batch size should not exceed configured maximum"
         );
     }
+    // If None is returned, it means the calculation didn't result in a meaningful increase
+    // This is valid behavior when memory pressure is low but the increase calculation doesn't exceed the minimum threshold
 
     Ok(())
 }
