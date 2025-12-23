@@ -154,7 +154,8 @@ fn test_adaptive_batch_sizing() -> Result<()> {
         assert!(
             increased_size > small_batch_size, // Must be strictly greater, otherwise None should be returned
             "Increased batch size should be > original batch size, got {} -> {}",
-            small_batch_size, increased_size
+            small_batch_size,
+            increased_size
         );
         assert!(
             increased_size <= low_pressure_builder.config().batch_size,
