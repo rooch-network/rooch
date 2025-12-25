@@ -9,13 +9,117 @@ use anyhow::Result;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use rooch_config::state_prune::SnapshotMeta;
+use serde::{Deserialize, Serialize};
 use serde_json;
 use smt::NodeReader;
 use std::collections::VecDeque;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tracing::{debug, info, warn};
+
+/// Statistics for state tree traversal
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct TraversalStatistics {
+    pub nodes_visited: u64,
+    pub bytes_processed: u64,
+}
+
+/// Progress information for snapshot resume functionality
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SnapshotProgress {
+    /// State root being processed
+    pub state_root: H256,
+
+    /// Worklist state (nodes yet to process)
+    pub worklist: Vec<H256>,
+
+    /// Current position in worklist (for partial processing)
+    pub worklist_position: usize,
+
+    /// Traversal statistics so far
+    pub statistics: TraversalStatistics,
+
+    /// Current batch buffer (nodes being processed)
+    pub batch_buffer: Vec<(H256, Vec<u8>)>,
+
+    /// Current batch size configuration
+    pub current_batch_size: usize,
+
+    /// Timestamp of last progress save
+    pub last_save_timestamp: u64,
+
+    /// Number of nodes already written to snapshot
+    pub nodes_written: u64,
+
+    /// Checkpoint identifier for consistency validation
+    pub checkpoint_id: String,
+}
+
+impl SnapshotProgress {
+    /// Save current progress to disk with atomic write
+    pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        let path = path.as_ref();
+        let temp_path = path.with_extension("tmp");
+        let backup_path = path.with_extension("backup");
+
+        // Create backup if original exists
+        if path.exists() {
+            if let Err(e) = fs::copy(path, &backup_path) {
+                warn!("Failed to create backup of progress file: {}", e);
+            }
+        }
+
+        // Write to temp file first
+        let content = serde_json::to_string_pretty(self)?;
+        fs::write(&temp_path, content)?;
+
+        // Atomic rename
+        fs::rename(&temp_path, path)?;
+
+        debug!("Progress saved to {:?}", path);
+        Ok(())
+    }
+
+    /// Load progress from disk with validation
+    pub fn load_from_file<P: AsRef<Path>>(
+        path: P,
+        expected_state_root: H256,
+    ) -> Result<Option<Self>> {
+        let path = path.as_ref();
+
+        if !path.exists() {
+            return Ok(None);
+        }
+
+        let content = fs::read_to_string(path)?;
+        let progress: SnapshotProgress = serde_json::from_str(&content)?;
+
+        // Validate state root matches
+        if progress.state_root != expected_state_root {
+            warn!(
+                "Progress file state_root {:x} doesn't match expected {:x}, ignoring progress",
+                progress.state_root, expected_state_root
+            );
+            return Ok(None);
+        }
+
+        info!(
+            "Loaded valid progress: {} nodes processed, {} in worklist, checkpoint {}",
+            progress.statistics.nodes_visited,
+            progress.worklist.len() - progress.worklist_position,
+            progress.checkpoint_id
+        );
+
+        Ok(Some(progress))
+    }
+
+    /// Generate checkpoint ID for consistency validation
+    pub fn generate_checkpoint_id(state_root: H256, nodes_visited: u64) -> String {
+        format!("{:x}-{}", state_root, nodes_visited)
+    }
+}
 
 /// Streaming snapshot builder for creating state snapshots containing only active nodes
 /// Uses RocksDB backend with batched writes and scalable deduplication
@@ -49,6 +153,7 @@ impl SnapshotBuilder {
         &self,
         state_root: H256,
         output_dir: PathBuf,
+        force_restart: bool,
     ) -> Result<SnapshotMeta> {
         info!(
             "Starting streaming snapshot build for state root: {:x}",
@@ -75,6 +180,18 @@ impl SnapshotBuilder {
         // Ensure output directory exists
         std::fs::create_dir_all(&output_dir)?;
 
+        // Check for resumable progress if not forcing restart
+        let resume_progress = if !force_restart && self.config.enable_resume {
+            self.check_resume_state(&output_dir, state_root)?
+        } else {
+            if force_restart {
+                info!("Force restart requested, ignoring any existing progress");
+            } else if !self.config.enable_resume {
+                info!("Resume functionality disabled");
+            }
+            None
+        };
+
         // Initialize progress tracking
         self.progress_tracker.set_total(0); // Will be updated during traversal
 
@@ -85,7 +202,13 @@ impl SnapshotBuilder {
         // Perform streaming traversal with batched writes
         metadata.mark_in_progress("Traversing state tree".to_string(), 10.0);
         let statistics = self
-            .stream_traverse_and_write(state_root, &mut snapshot_writer, &mut metadata)
+            .stream_traverse_and_write(
+                state_root,
+                &mut snapshot_writer,
+                &mut metadata,
+                &output_dir,
+                resume_progress,
+            )
             .await?;
 
         metadata.update_statistics(|stats| {
@@ -116,9 +239,107 @@ impl SnapshotBuilder {
             duration, statistics.nodes_visited, active_nodes_count
         );
 
+        // Clean up progress files on successful completion
+        self.cleanup_progress_files(&output_dir)?;
+
         metadata.mark_completed();
 
         Ok(snapshot_meta)
+    }
+
+    /// Check if resumable progress exists and load it
+    fn check_resume_state(
+        &self,
+        output_dir: &Path,
+        state_root: H256,
+    ) -> Result<Option<SnapshotProgress>> {
+        let progress_path = output_dir.join("snapshot_progress.json");
+
+        match SnapshotProgress::load_from_file(&progress_path, state_root) {
+            Ok(Some(progress)) => {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or(std::time::Duration::from_secs(0))
+                    .as_secs();
+                let elapsed = now.saturating_sub(progress.last_save_timestamp);
+
+                info!(
+                    "Found resumable progress: {} nodes processed, {} in worklist, last saved {} seconds ago",
+                    progress.statistics.nodes_visited,
+                    progress.worklist.len() - progress.worklist_position,
+                    elapsed
+                );
+                Ok(Some(progress))
+            }
+            Ok(None) => {
+                info!("No resumable progress found, starting fresh");
+                Ok(None)
+            }
+            Err(e) => {
+                warn!("Failed to load progress file: {}, starting fresh", e);
+                // Try to clean up corrupted progress file
+                let progress_path = output_dir.join("snapshot_progress.json");
+                if progress_path.exists() {
+                    if let Err(remove_err) = fs::remove_file(&progress_path) {
+                        warn!("Failed to remove corrupted progress file: {}", remove_err);
+                    }
+                }
+                Ok(None)
+            }
+        }
+    }
+
+    /// Clean up progress files on successful completion
+    fn cleanup_progress_files(&self, output_dir: &Path) -> Result<()> {
+        let progress_path = output_dir.join("snapshot_progress.json");
+        let backup_path = output_dir.join("snapshot_progress.backup");
+
+        for path in [progress_path, backup_path] {
+            if path.exists() {
+                if let Err(e) = fs::remove_file(&path) {
+                    warn!("Failed to remove progress file {:?}: {}", path, e);
+                } else {
+                    debug!("Removed progress file: {:?}", path);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Save current progress to disk
+    fn save_progress(
+        &self,
+        output_dir: &Path,
+        state_root: H256,
+        worklist: &VecDeque<H256>,
+        statistics: &TraversalStatistics,
+        batch_buffer: &[(H256, Vec<u8>)],
+        current_batch_size: usize,
+        nodes_written: u64,
+    ) -> Result<()> {
+        let progress = SnapshotProgress {
+            state_root,
+            worklist: worklist.iter().cloned().collect(),
+            worklist_position: 0, // We've processed everything before current position
+            statistics: statistics.clone(),
+            batch_buffer: batch_buffer.to_vec(),
+            current_batch_size,
+            last_save_timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or(std::time::Duration::from_secs(0))
+                .as_secs(),
+            nodes_written,
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(
+                state_root,
+                statistics.nodes_visited,
+            ),
+        };
+
+        let progress_path = output_dir.join("snapshot_progress.json");
+        progress.save_to_file(progress_path)?;
+
+        Ok(())
     }
 
     /// Streaming traversal with batched writes to avoid OOM
@@ -127,19 +348,61 @@ impl SnapshotBuilder {
         state_root: H256,
         snapshot_writer: &mut SnapshotNodeWriter,
         metadata: &mut StatePruneMetadata,
+        output_dir: &Path,
+        resume_progress: Option<SnapshotProgress>,
     ) -> Result<TraversalStatistics> {
-        let mut statistics = TraversalStatistics::default();
-        let mut nodes_to_process = VecDeque::new();
-        nodes_to_process.push_back(state_root);
+        // Initialize or resume traversal state
+        let (mut statistics, mut nodes_to_process, mut current_batch_size, mut batch_buffer) =
+            if let Some(progress) = resume_progress {
+                info!("Resuming from previous snapshot operation");
+
+                // Restore worklist from progress
+                let mut worklist = VecDeque::from(progress.worklist);
+
+                // Skip already processed nodes if worklist_position > 0
+                for _ in 0..progress.worklist_position {
+                    worklist.pop_front();
+                }
+
+                // Update metadata with resume statistics
+                metadata.update_statistics(|stats| {
+                    stats.nodes_processed = progress.statistics.nodes_visited;
+                    stats.bytes_processed = progress.statistics.bytes_processed;
+                });
+
+                info!(
+                "Resuming traversal: {} nodes already processed, {} nodes in worklist, batch size: {}",
+                progress.statistics.nodes_visited,
+                worklist.len(),
+                progress.current_batch_size
+            );
+
+                (
+                    progress.statistics,
+                    worklist,
+                    progress.current_batch_size,
+                    progress.batch_buffer,
+                )
+            } else {
+                info!("No resumable state found, starting fresh");
+                let mut worklist = VecDeque::new();
+                worklist.push_back(state_root);
+                (
+                    TraversalStatistics::default(),
+                    worklist,
+                    self.config.batch_size,
+                    Vec::with_capacity(self.config.batch_size),
+                )
+            };
 
         let node_store = &self.moveos_store.node_store;
-        let mut current_batch_size = self.config.batch_size;
-        let mut batch_buffer = Vec::with_capacity(current_batch_size);
         let mut last_progress_report = Instant::now();
         let mut consecutive_empty_batches = 0;
         let mut last_memory_check = Instant::now();
+        let mut last_progress_save = Instant::now();
         const MAX_EMPTY_BATCHES: u32 = 100; // Safety limit to prevent infinite loops
         const MEMORY_CHECK_INTERVAL_SECS: u64 = 10; // Check memory every 10 seconds
+        const PROGRESS_SAVE_INTERVAL_SECS: u64 = 300; // Save progress every 5 minutes
 
         while let Some(current_hash) = nodes_to_process.pop_front() {
             // Safety check to prevent infinite loops in case of corrupted data
@@ -234,6 +497,30 @@ impl SnapshotBuilder {
                     progress.min(80.0),
                 );
                 self.progress_tracker.mark_reported();
+            }
+
+            // Save progress periodically (every 5 minutes)
+            if self.config.enable_resume
+                && last_progress_save.elapsed() >= Duration::from_secs(PROGRESS_SAVE_INTERVAL_SECS)
+            {
+                if let Err(e) = self.save_progress(
+                    output_dir,
+                    state_root,
+                    &nodes_to_process,
+                    &statistics,
+                    &batch_buffer,
+                    current_batch_size,
+                    snapshot_writer.nodes_written,
+                ) {
+                    warn!("Failed to save progress: {}", e);
+                } else {
+                    info!(
+                        "Progress saved: {} nodes processed, {} nodes in worklist",
+                        statistics.nodes_visited,
+                        nodes_to_process.len()
+                    );
+                    last_progress_save = Instant::now();
+                }
             }
         }
 
@@ -534,13 +821,6 @@ impl Drop for SnapshotNodeWriter {
             warn!("Failed to flush snapshot database on drop: {:?}", e);
         }
     }
-}
-
-/// Statistics for state tree traversal
-#[derive(Debug, Default)]
-struct TraversalStatistics {
-    nodes_visited: u64,
-    bytes_processed: u64,
 }
 
 #[cfg(test)]

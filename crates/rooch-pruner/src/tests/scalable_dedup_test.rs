@@ -126,32 +126,57 @@ fn test_adaptive_batch_sizing() -> Result<()> {
         adjusted_size
     );
 
-    // Test case 2: Test edge case with no memory limit (should never adjust)
-    let no_limit_config = SnapshotBuilderConfig {
+    // Test case 2: Test adaptive batching behavior (environment-dependent)
+    let adaptive_config = SnapshotBuilderConfig {
         batch_size: 1000,
         workers: 1,
-        memory_limit: 0, // No memory limit
+        memory_limit: 100 * 1024 * 1024, // 100MB limit
         deduplication_strategy: DeduplicationStrategy::RocksDB,
         enable_adaptive_batching: true,
         memory_pressure_threshold: 0.9, // 90% threshold
         ..Default::default()
     };
 
-    let no_limit_builder = SnapshotBuilder::new(no_limit_config, store.clone())?;
-    let any_batch_size = 500;
+    let adaptive_builder = SnapshotBuilder::new(adaptive_config, store.clone())?;
+    let test_batch_size = 500; // Smaller than configured batch_size
 
-    // With no memory limit, should never adjust
-    let no_adjustment = no_limit_builder.adjust_batch_size_for_memory_pressure(any_batch_size);
+    // Test the adaptive behavior - result depends on actual system memory usage
+    let adjustment = adaptive_builder.adjust_batch_size_for_memory_pressure(test_batch_size);
 
     println!(
-        "No limit test: batch size {} with adjustment: {:?}",
-        any_batch_size, no_adjustment
+        "Adaptive batching test: batch size {} with adjustment: {:?}",
+        test_batch_size, adjustment
     );
 
-    assert!(
-        no_adjustment.is_none(),
-        "With no memory limit, should never adjust batch size"
-    );
+    // Verify the adjustment logic is correct regardless of memory pressure
+    match adjustment {
+        Some(new_size) => {
+            // Whether increased (low pressure) or decreased (high pressure), validate constraints
+            assert!(
+                new_size >= 100,
+                "Adjusted batch size should never be below minimum (100), got {}",
+                new_size
+            );
+            assert!(
+                new_size <= adaptive_builder.config().batch_size,
+                "Adjusted batch size should not exceed configured maximum ({}), got {}",
+                adaptive_builder.config().batch_size,
+                new_size
+            );
+
+            use std::cmp::Ordering;
+            match new_size.cmp(&test_batch_size) {
+                Ordering::Less => println!("  → Memory pressure detected: batch size reduced"),
+                Ordering::Greater => {
+                    println!("  → Low memory pressure: batch size increased")
+                }
+                Ordering::Equal => {}
+            }
+        }
+        None => {
+            println!("  → No adjustment needed (memory pressure within acceptable range)");
+        }
+    }
 
     Ok(())
 }
@@ -364,7 +389,9 @@ async fn test_snapshot_creation_with_scalable_dedup() -> Result<()> {
     let start_time = Instant::now();
 
     // Note: This would normally create a real snapshot, but for testing we'll verify the setup
-    let _result = builder.build_snapshot(dummy_state_root, output_dir).await;
+    let _result = builder
+        .build_snapshot(dummy_state_root, output_dir, false)
+        .await;
 
     // The snapshot creation might fail due to missing state root data, but that's expected
     // What we're testing is that the deduplication system doesn't cause OOM

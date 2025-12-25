@@ -50,6 +50,13 @@ export ROOCH_BINARY_BUILD_PROFILE=optci  # Optimized builds for testing
 # Debug configuration
 export RUST_LOG=debug     # Enable debug logging
 export RUST_BACKTRACE=1   # Show backtrace on errors
+
+# CI-specific behavior
+export ENV_TEST_ON_CI=1   # Enable CI-specific test behavior
+
+# Tool requirements
+export RUST_VERSION=1.82.0  # Minimum Rust version required
+export NODE_VERSION=18.0.0  # Minimum Node.js version for TypeScript SDK
 ```
 
 ## Commands for AI Assistant
@@ -72,9 +79,21 @@ make build-move     # Build Move frameworks
 make test-move      # Run Move tests
 make test-rust      # Run Rust tests
 
+# Testing with filtering
+make test-integration FILTER=<pattern>    # Run Cucumber integration tests with filter
+make test-move-frameworks FILTER=<pattern>  # Run Move framework tests with filter
+make test-move-did   # Run DID module tests
+
 # Linting and formatting
 make lint           # Run all linters (includes non-ASCII comment check)
 make lint-rust      # Run Rust clippy and machete
+make rust-machete   # Check for unused dependencies
+make rust-clippy    # Run Rust clippy only
+
+# Tool installation and utilities
+make install-tools  # Install required cargo tools (cargo-machete, cargo-nextest)
+make generate-genesis  # Generate genesis files for networks
+make verify         # Verify Rooch CLI availability
 ```
 
 ### CLI Commands for Testing
@@ -87,11 +106,27 @@ rooch init                    # Initialize config
 rooch move build -p <path>    # Build Move project
 rooch move test -p <path> [filter]  # Run Move tests
 
+# Enhanced Move commands
+rooch move coverage           # Test coverage analysis
+rooch move docgen             # Documentation generation
+rooch move integration-test   # Integration testing
+
 # Server operations
 rooch server start -n local   # Start local server for testing
 
+# New specialized subcommands
+rooch bitcoin                 # Bitcoin-specific operations
+rooch bitseed                 # Bitseed protocol interactions
+rooch did                     # DID (Decentralized Identity) management
+rooch payment-channel         # Payment channel management
+rooch oracle                  # Oracle commands
+rooch da                      # Data Availability commands
+rooch session-key             # Session key management
+rooch faucet                  # Faucet commands
+
 # Package-specific testing
 cargo test --package <name>         # Run Rust tests
+cargo nextest run --workspace --all-features  # Faster test execution
 ```
 
 ### SDK E2E Testing (TypeScript)
@@ -141,6 +176,12 @@ Main blockchain implementation with modular architecture:
 - `rooch-indexer`: Data indexing for queries
 - `bitcoin-client`: Bitcoin network integration
 
+**New Components:**
+- `rooch-cosmwasm-vm`: CosmWasm smart contract execution VM
+- `rooch-ord`: Ordinals and BRC-20 inscription support
+- `rooch-pipeline-processor`: Transaction processing pipeline
+- `rooch-types`: Shared type definitions across crates
+
 #### 3. **Move Frameworks** (`/frameworks/`)
 Four-tier framework architecture by address:
 - `move-stdlib` (0x1): Standard Move library
@@ -186,7 +227,11 @@ Based on recent activity, major development areas include:
 
 2. **Bitcoin Integration**: Enhanced Bitcoin UTXO and Inscription support
 
-3. **Testing Infrastructure**: Comprehensive E2E testing with TypeScript/Node.js tooling
+3. **CosmWasm Integration**: Smart contract execution with CosmWasm VM support
+
+4. **Testing Infrastructure**: Comprehensive E2E testing with TypeScript/Node.js tooling
+
+5. **DID System**: Advanced decentralized identity management with WebAuthn support
 
 ## Critical Development Rules
 
@@ -259,6 +304,8 @@ assert!(condition, ErrorCodeOne);
 - **MoveOS Core**: `moveos/*/src/`
 - **Integration Tests**: `sdk/typescript/*/src/case/`
 - **Examples**: `examples/*/sources/`
+- **Apps Directory**: `apps/*/` - Production-ready applications (11 apps including app_admin, gas_faucet, rooch_dex, etc.)
+- **Development Guides**: `docs/dev-guide/` - Comprehensive development guides
 
 ### Configuration Files
 - **Rooch Config**: `~/.rooch/rooch_config.json`
@@ -304,6 +351,17 @@ assert!(condition, ErrorCodeOne);
 - **State Tree**: SMT for efficient state proofs
 - **Indexing**: Multiple indexing strategies for query performance
 
+### Development Tools and Scripts
+- **pr.sh**: Custom PR validation script with comprehensive flags for pre-commit checks
+- **cargo-nextest**: Faster test execution (version 0.9.97-b.2)
+- **cargo-machete**: Dependency checking (version 0.7.0)
+- **TestBox Framework**: Containerized testing infrastructure for E2E tests
+
+### Additional Development Guidelines
+- **Cursor Rules**: See `.cursorrules` for detailed Move development patterns and AI guidelines
+- **AGENTS.md**: Repository-specific development guidelines and patterns
+- **Move Development Guide**: Comprehensive guide at `docs/dev-guide/rooch_move_guide.md`
+
 ## Troubleshooting Common Issues
 
 ### Build Issues
@@ -346,9 +404,28 @@ make build                          # Full build
 export ROOCH_BINARY_BUILD_PROFILE=optci  # Use optimized binary for tests
 ```
 
+### New Development Guides Available
+The `docs/dev-guide/` directory contains comprehensive guides:
+- `atomic_snapshot_design.md`
+- `did_auth_validator_design.md`
+- `did_guide.md`
+- `offline_gc_guide.md`
+- `pruner_guide.md`
+- `rocksdb_stats_usage.md`
+- `typescript_signer_extension_guide.md`
+- `unidirectional-payment_channel-protocol.md`
+- `webauthn_guide.md`
+- `webauthn_validator.md`
+
 ### Key File Locations for Context
 - **Framework APIs**: `frameworks/*/sources/` - Core Move interfaces and types
 - **Test Examples**: `sdk/typescript/*/src/case/` - Usage patterns and integration tests
-- **Move Examples**: `examples/*/sources/` - Sample Move projects
+- **Move Examples**: `examples/*/sources/` - Sample Move projects including `cosmwasm_vm_execution`
+- **Production Apps**: `apps/*/` - 11 production-ready applications
+
+### Version Information
+- **Current workspace version**: 0.12.1
+- **Rust requirement**: 1.82.0 (minimum)
+- **Node.js requirement**: >=18.0.0 (for TypeScript SDK)
 
 This architecture enables Rooch to provide scalable, verifiable applications with strong Bitcoin ecosystem integration while maintaining Move language safety guarantees.
