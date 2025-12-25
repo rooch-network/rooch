@@ -164,10 +164,13 @@ fn test_adaptive_batch_sizing() -> Result<()> {
                 new_size
             );
 
-            if new_size < test_batch_size {
-                println!("  → Memory pressure detected: batch size reduced");
-            } else if new_size > test_batch_size {
-                println!("  → Low memory pressure: batch size increased");
+            use std::cmp::Ordering;
+            match new_size.cmp(&test_batch_size) {
+                Ordering::Less => println!("  → Memory pressure detected: batch size reduced"),
+                Ordering::Greater => {
+                    println!("  → Low memory pressure: batch size increased")
+                }
+                Ordering::Equal => {}
             }
         }
         None => {
