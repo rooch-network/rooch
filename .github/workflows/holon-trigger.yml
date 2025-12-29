@@ -25,6 +25,7 @@ jobs:
     with:
       # Keep config minimal; holon-solve derives issue_number/comment_body/mode/output_dir from the event.
       log_level: 'debug'
+      build_from_source: true
       issue_number: ${{ github.event.issue.number || github.event.pull_request.number }}
       comment_id: ${{ github.event.comment.id }}
     secrets:
