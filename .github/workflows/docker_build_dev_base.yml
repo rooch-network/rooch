@@ -48,6 +48,7 @@ jobs:
           echo "sha_short=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
       - name: Build and push dev base image
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .

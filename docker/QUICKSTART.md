@@ -64,7 +64,8 @@ bitcoind -regtest -server=1 -rest=1 -fallbackfee=0.0001 -daemon
 # Interact with bitcoind:
 bitcoin-cli -regtest getblockchaininfo
 bitcoin-cli -regtest createwallet test
-bitcoin-cli -regtest -generate 1
+ADDRESS=$(bitcoin-cli -regtest -rpcwallet=test getnewaddress)
+bitcoin-cli -regtest -rpcwallet=test generatetoaddress 1 "$ADDRESS"
 ```
 
 ### Continuous Development Container
@@ -213,4 +214,4 @@ docker push ghcr.io/rooch-network/rooch-dev-base:latest
 
 - See [docker/README.md](./README.md) for comprehensive documentation
 - See [docs/dev-guide/](../docs/dev-guide/) for Rooch development guides
-- See [github/workflows/docker_build_dev_base.yml](../.github/workflows/docker_build_dev_base.yml) for CI/CD setup
+- See [github/workflows/docker_build_dev_base.yml](https://github.com/rooch-network/rooch/blob/main/.github/workflows/docker_build_dev_base.yml) for CI/CD setup

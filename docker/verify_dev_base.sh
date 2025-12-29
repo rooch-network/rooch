@@ -25,7 +25,9 @@ echo
 echo "Test 2: Verify Node.js >= 20 installation"
 NODE_VERSION=$(docker run --rm "$IMAGE" node --version)
 echo "Node version: $NODE_VERSION"
-if [[ "$NODE_VERSION" =~ v([2-9][0-9]|20)\. ]]; then
+NODE_MAJOR=${NODE_VERSION#v}
+NODE_MAJOR=${NODE_MAJOR%%.*}
+if (( NODE_MAJOR >= 20 )); then
     echo "✓ Node.js version >= 20"
 else
     echo "✗ Node.js version not >= 20"
@@ -66,7 +68,7 @@ docker run --rm \
   -v "$(pwd):/rooch" \
   -w /rooch \
   "$IMAGE" \
-  cargo check --workspace 2>&1 | head -20
+  cargo check --workspace 2>&1
 echo "✓ cargo build succeeds"
 echo
 
@@ -77,7 +79,7 @@ docker run --rm \
   -w /rooch \
   "$IMAGE" \
   bash -c "
-    cargo build --bin rooch 2>&1 | tail -5 && \
+    cargo build --bin rooch 2>&1 && \
     ./target/debug/rooch move --help
 "
 echo "✓ rooch move build works"
