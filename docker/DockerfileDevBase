@@ -1,0 +1,105 @@
+# Development Base Image for Rooch
+# This image provides a complete development environment for Rooch, including:
+# - Rust/Move build toolchain
+# - Node.js and pnpm for TypeScript SDK development
+# - bitcoind for local regtest testing
+# - SQLite with thread-safe configuration
+#
+# Usage:
+#   docker build -f docker/DockerfileDevBase -t rooch-dev-base:latest .
+#   docker run -it rooch-dev-base:latest bash
+
+FROM ubuntu:jammy
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set working directory
+WORKDIR /rooch
+
+# Install base dependencies including bitcoind
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        gcc \
+        libc6-dev \
+        git \
+        libssl-dev \
+        wget \
+        curl \
+        pkg-config \
+        libclang-dev \
+        clang \
+        llvm \
+        lld \
+        libsnappy-dev \
+        g++ \
+        cmake \
+        make \
+        libprotobuf-dev \
+        protobuf-compiler \
+        build-essential \
+        libreadline-dev \
+        bitcoin-qt \
+        bitcoind \
+        bitcoin-util \
+        bitcoin-tx; \
+    rm -rf /var/lib/apt/lists/*
+
+# Install SQLite 3.46.1 with multi-threading enabled (SQLITE_THREADSAFE=2)
+# This matches the build approach used in the production Dockerfile
+RUN set -eux; \
+    wget https://www.sqlite.org/2024/sqlite-autoconf-3460100.tar.gz; \
+    tar xvf sqlite-autoconf-3460100.tar.gz; \
+    cd sqlite-autoconf-3460100; \
+    CFLAGS="-DSQLITE_THREADSAFE=2" ./configure --prefix=/usr/local; \
+    make; \
+    make install; \
+    cd ..; \
+    rm -rf sqlite-autoconf-3460100 sqlite-autoconf-3460100.tar.gz; \
+    ldconfig
+
+# Install Rust 1.82.0 (matching rust-toolchain.toml)
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:/usr/local/bin:$PATH
+
+RUN set -eux; \
+    url="https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init"; \
+    wget "$url"; \
+    chmod +x rustup-init; \
+    ./rustup-init -y --no-modify-path --default-toolchain 1.82.0 --profile minimal; \
+    rm rustup-init; \
+    chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
+    rustup --version; \
+    cargo --version; \
+    rustc --version
+
+# Install Node.js 20.x (satisfies >=20 requirement)
+RUN set -eux; \
+    install -m 0755 -d /etc/apt/keyrings; \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg; \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list; \
+    apt-get update; \
+    apt-get install -y nodejs; \
+    rm -rf /var/lib/apt/lists/*; \
+    node --version; \
+    npm --version
+
+# Install pnpm 9.10.0 (matching root package.json)
+RUN set -eux; \
+    npm install -g pnpm@9.10.0; \
+    pnpm --version
+
+# Install libssl1.1 for compatibility
+RUN set -eux; \
+    wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb"; \
+    dpkg -i libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb; \
+    rm libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb
+
+# Set up a convenient default workspace
+VOLUME ["/rooch"]
+
+# Default to bash shell
+CMD ["/bin/bash"]
