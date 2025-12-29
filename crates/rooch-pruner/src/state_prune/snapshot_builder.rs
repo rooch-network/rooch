@@ -356,15 +356,9 @@ impl SnapshotBuilder {
                 info!("Resuming from previous snapshot operation");
 
                 // Restore worklist from progress
-                let mut worklist = progress.worklist;
-
-                // Skip already processed nodes if worklist_position > 0
-                // For DFS with Vec (stack), we need to reverse the logic
-                // worklist_position represents nodes already processed from the front
-                // For Vec used as stack, we need to truncate to keep only unprocessed nodes
-                if progress.worklist_position > 0 && progress.worklist_position < worklist.len() {
-                    worklist = worklist.split_off(progress.worklist_position);
-                }
+                // For DFS with Vec (stack), save_progress always sets worklist_position to 0
+                // The entire worklist contains nodes yet to be processed (popped from the end)
+                let worklist = progress.worklist;
 
                 // Update metadata with resume statistics
                 metadata.update_statistics(|stats| {
