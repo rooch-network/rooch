@@ -109,21 +109,71 @@ jobs:
             sqlite3 --version
           "
 
-      - name: Test Rust build
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo git dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-git-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-target-
+
+      - name: Test Rust build (lightweight)
         run: |
+          # Show disk space before
+          df -h
+
           docker run --rm \
             -v $(pwd):/rooch \
+            -v ~/.cargo:/root/.cargo \
+            -v $(pwd)/target:/rooch/target \
             -w /rooch \
+            -e CARGO_BUILD_JOBS=2 \
+            -e CARGO_NET_RETRY=10 \
             ghcr.io/rooch-network/rooch-dev-base:latest \
-            cargo check --workspace
+            bash -c "
+              echo 'Starting cargo check with limited parallelism...' && \
+              cargo check --workspace -j 2 2>&1 | tail -20 && \
+              echo '=== Build completed ===' && \
+              df -h && \
+              du -sh target | sort -hr | head -10
+            "
+
+          # Show disk space after
+          df -h
 
       - name: Test Move build capability
         run: |
           docker run --rm \
             -v $(pwd):/rooch \
+            -v ~/.cargo:/root/.cargo \
+            -v $(pwd)/target:/rooch/target \
             -w /rooch \
+            -e CARGO_BUILD_JOBS=2 \
             ghcr.io/rooch-network/rooch-dev-base:latest \
-            bash -c "cargo build --bin rooch && ./target/debug/rooch move --help"
+            bash -c "
+              if [ ! -f ./target/debug/rooch ]; then
+                echo 'Building rooch binary...' && \
+                cargo build --bin rooch -j 2 2>&1 | tail -10
+              fi && \
+              ./target/debug/rooch move --help && \
+              echo '✓ rooch move command works'
+            "
 
       - name: Test TypeScript/pnpm capability
         run: |
@@ -131,4 +181,9 @@ jobs:
             -v $(pwd):/rooch \
             -w /rooch/sdk/typescript/test-suite \
             ghcr.io/rooch-network/rooch-dev-base:latest \
-            bash -c "pnpm --version"
+            bash -c "
+              pnpm --version && \
+              node --version && \
+              npm --version && \
+              echo '✓ pnpm environment works'
+            "

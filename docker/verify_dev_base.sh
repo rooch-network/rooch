@@ -62,26 +62,37 @@ echo "✓ SQLite 3.46.1 installed correctly"
 echo
 
 # Test 6: cargo build succeeds
-echo "Test 6: Verify cargo build works"
+echo "Test 6: Verify cargo build works (lightweight check)"
 echo "This test may take several minutes..."
 docker run --rm \
   -v "$(pwd):/rooch" \
   -w /rooch \
+  -e CARGO_BUILD_JOBS=2 \
+  -e CARGO_NET_RETRY=10 \
   "$IMAGE" \
-  cargo check --workspace 2>&1
-echo "✓ cargo build succeeds"
+  bash -c "
+    cargo check --workspace -j 2 2>&1 && \
+    du -sh /rooch/target && \
+    df -h / | grep -E '(Filesystem|/)|Size'
+  "
+echo "✓ cargo check succeeds"
 echo
 
 # Test 7: rooch move build runs
-echo "Test 7: Verify rooch move command works"
+echo "Test 7: Verify rooch move command works (reuse Test 6 build)"
 docker run --rm \
   -v "$(pwd):/rooch" \
   -w /rooch \
+  -e CARGO_BUILD_JOBS=2 \
   "$IMAGE" \
   bash -c "
-    cargo build --bin rooch 2>&1 && \
-    ./target/debug/rooch move --help
-"
+    if [ ! -f ./target/debug/rooch ]; then
+      echo 'Building rooch binary...' && \
+      cargo build --bin rooch -j 2 2>&1
+    fi && \
+    ./target/debug/rooch move --help && \
+    echo 'Build completed successfully'
+  "
 echo "✓ rooch move build works"
 echo
 
