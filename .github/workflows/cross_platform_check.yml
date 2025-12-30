@@ -53,8 +53,16 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Check disk space before build
+      - name: Check disk space before build (Unix)
+        if: matrix.os != 'windows-latest'
         run: df -h
+
+      - name: Check disk space before build (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "=== Disk Space Before Build ==="
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -137,11 +145,11 @@ jobs:
           echo "SKIP_STDLIB_BUILD=1" >> $GITHUB_ENV
 
       # Fast check for PRs (only syntax checking, minimal disk usage)
-      - name: Quick syntax check (PR only, 2-5GB)
-        if: github.event_name == 'pull_request'
+      - name: Quick syntax check (PR only, Unix)
+        if: github.event_name == 'pull_request' && matrix.os != 'windows-latest'
         run: |
           echo "Running quick check for PR (cargo check)..."
-          cargo check --target ${{ matrix.target }} --jobs 2 2>&1 | tail -50
+          cargo check --target ${{ matrix.target }} --jobs 2
           echo "=== Quick check completed ==="
           df -h
         env:
@@ -150,26 +158,42 @@ jobs:
           OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || (matrix.os == 'ubuntu-latest' && '/usr/include' || '') }}
           LIBGIT2_SYS_USE_PKG_CONFIG: ${{ matrix.os == 'ubuntu-latest' && '1' || '0' }}
 
+      - name: Quick syntax check (PR only, Windows)
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "Running quick check for PR (cargo check)..."
+          cargo check --target ${{ matrix.target }} --jobs 2
+          Write-Host "=== Quick check completed ==="
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
+
       # Full build only for main branch (10-20GB)
-      - name: Build (Debug, Main Branch Only)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Build (Debug, Main Branch Only, Unix)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os != 'windows-latest'
         run: |
           echo "Starting full debug build for main branch..."
-          cargo build --target ${{ matrix.target }} --jobs 2 2>&1 | tee build.log
+          cargo build --target ${{ matrix.target }} --jobs 2
           echo "=== Build completed ==="
           df -h
           echo "=== Target directory size ==="
           du -sh target 2>/dev/null || echo "No target dir yet"
-          echo "=== Largest directories ==="
-          du -sh target/* 2>/dev/null | sort -hr | head -5 || true
         env:
           OPENSSL_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3' || (matrix.os == 'ubuntu-latest' && '/usr' || '') }}
           OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || (matrix.os == 'ubuntu-latest' && '/usr/lib/x86_64-linux-gnu' || '') }}
           OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || (matrix.os == 'ubuntu-latest' && '/usr/include' || '') }}
           LIBGIT2_SYS_USE_PKG_CONFIG: ${{ matrix.os == 'ubuntu-latest' && '1' || '0' }}
 
-      - name: Check disk space after build
-        if: always()
+      - name: Build (Debug, Main Branch Only, Windows)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "Starting full debug build for main branch..."
+          cargo build --target ${{ matrix.target }} --jobs 2
+          Write-Host "=== Build completed ==="
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
+
+      - name: Check disk space after build (Unix)
+        if: always() && matrix.os != 'windows-latest'
         run: |
           echo "=== Final disk usage ==="
           df -h
@@ -178,9 +202,16 @@ jobs:
           echo "=== Target directory ==="
           du -sh target 2>/dev/null || echo "No target dir"
 
+      - name: Check disk space after build (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "=== Final disk usage ==="
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
+
       - name: Upload build failure logs
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-failure-${{ matrix.os }}-${{ matrix.target }}
           path: |
@@ -188,11 +219,5 @@ jobs:
             target/
           retention-days: 7
 
-      # Cleanup on success to save disk space for other jobs
-      - name: Cleanup build artifacts (Main Branch Only)
-        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          echo "Cleaning up build artifacts to save disk space..."
-          cargo clean
-          echo "=== Cleanup completed ==="
-          df -h
+      # Note: No cargo clean - rust-cache handles cache management automatically
+      # Build artifacts are preserved for faster subsequent builds
