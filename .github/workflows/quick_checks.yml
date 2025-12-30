@@ -59,7 +59,7 @@ jobs:
       - name: Check Licenses
         if: ${{ steps.changes.outputs.license == 'true' }}
         run: |
-          find . -not -path "./third_party/*" -type f \( -name '*.rs' -o -name '*.sh' \) -exec sh -c '
+          find . -not -path "./third_party/*" -type f \( -name '*.rs' \) -exec sh -c '
             for FILE do
               if ! grep -q "SPDX-License-Identifier: Apache-2.0" "$FILE"; then
                 echo "ERROR: SPDX-License-Identifier is not Apache-2.0 in $FILE"
