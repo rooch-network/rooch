@@ -19,7 +19,7 @@ WORKDIR /rooch
 
 # Install base dependencies
 RUN set -eux; \
-    apt-get update; \
+    apt-get update || (sleep 10 && apt-get update); \
     apt-get install -y --no-install-recommends \
         ca-certificates \
         gcc \
@@ -41,7 +41,30 @@ RUN set -eux; \
         protobuf-compiler \
         build-essential \
         libreadline-dev \
-        libevent-dev; \
+        libevent-dev \
+        gpg || (sleep 10 && apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        gcc \
+        libc6-dev \
+        git \
+        libssl-dev \
+        wget \
+        curl \
+        pkg-config \
+        libclang-dev \
+        clang \
+        llvm \
+        lld \
+        libsnappy-dev \
+        g++ \
+        cmake \
+        make \
+        libprotobuf-dev \
+        protobuf-compiler \
+        build-essential \
+        libreadline-dev \
+        libevent-dev \
+        gpg); \
     rm -rf /var/lib/apt/lists/*
 
 # Install Bitcoin Core 25.1 (matching test container version)
@@ -49,18 +72,17 @@ RUN set -eux; \
 RUN set -eux; \
     BITCOIN_VERSION="25.1"; \
     BITCOIN_DIR="bitcoin-${BITCOIN_VERSION}"; \
-    wget https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz; \
+    BITCOIN_FILE="bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz"; \
+    wget https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/${BITCOIN_FILE}; \
     wget https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/SHA256SUMS; \
-    wget https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}/SHA256SUMS.asc; \
-    grep "bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz\$" SHA256SUMS | sha256sum -c -; \
-    tar -xzf bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz; \
+    echo "a978c407b497a727f0444156e397b50491ce862d1f906fef9b521415b3611c8b  ${BITCOIN_FILE}" | sha256sum -c -; \
+    tar -xzf ${BITCOIN_FILE}; \
     install -m 0755 ${BITCOIN_DIR}/bin/bitcoind /usr/local/bin/bitcoind; \
     install -m 0755 ${BITCOIN_DIR}/bin/bitcoin-cli /usr/local/bin/bitcoin-cli; \
     install -m 0755 ${BITCOIN_DIR}/bin/bitcoin-tx /usr/local/bin/bitcoin-tx; \
     install -m 0755 ${BITCOIN_DIR}/bin/bitcoin-util /usr/local/bin/bitcoin-util; \
     install -m 0755 ${BITCOIN_DIR}/bin/bitcoin-wallet /usr/local/bin/bitcoin-wallet; \
-    install -m 0755 ${BITCOIN_DIR}/bin/bitcoind-test /usr/local/bin/bitcoind-test; \
-    rm -rf ${BITCOIN_DIR} bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz SHA256SUMS SHA256SUMS.asc; \
+    rm -rf ${BITCOIN_DIR} ${BITCOIN_FILE} SHA256SUMS; \
     bitcoind --version
 
 # Install SQLite 3.46.1 with multi-threading enabled (SQLITE_THREADSAFE=2)
@@ -69,7 +91,7 @@ RUN set -eux; \
 RUN set -eux; \
     SQLITE_VERSION="3460100"; \
     wget https://www.sqlite.org/2024/sqlite-autoconf-${SQLITE_VERSION}.tar.gz; \
-    echo "806194fa103122e46209b8ed8a9028820b0e8ae8b89789acbc4e6e1f3e8212ae  sqlite-autoconf-${SQLITE_VERSION}.tar.gz" | sha256sum -c -; \
+    echo "67d3fe6d268e6eaddcae3727fce58fcc8e9c53869bdd07a0c61e38ddf2965071  sqlite-autoconf-${SQLITE_VERSION}.tar.gz" | sha256sum -c -; \
     tar xvf sqlite-autoconf-${SQLITE_VERSION}.tar.gz; \
     cd sqlite-autoconf-${SQLITE_VERSION}; \
     CFLAGS="-DSQLITE_THREADSAFE=2" ./configure --prefix=/usr/local; \
@@ -86,7 +108,7 @@ ENV RUSTUP_HOME=/usr/local/rustup \
 
 RUN set -eux; \
     RUSTUP_INIT_VERSION="1.82.0"; \
-    RUSTUP_INIT_SHA256="913a76042db0a4d607d24905fc88cf4781971e1d0b5f1e3a3d39dc2d12a40228"; \
+    RUSTUP_INIT_SHA256="20a06e644b0d9bd2fbdbfd52d42540bdde820ea7df86e92e533c073da0cdd43c"; \
     url="https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init"; \
     wget "$url"; \
     echo "${RUSTUP_INIT_SHA256}  rustup-init" | sha256sum -c -; \
@@ -119,7 +141,7 @@ RUN set -eux; \
 RUN set -eux; \
     LIBSSL_DEB="libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb"; \
     LIBSSL_URL="https://security.ubuntu.com/ubuntu/pool/main/o/openssl/${LIBSSL_DEB}"; \
-    LIBSSL_SHA256="6e89f72a5f1e864241df3f1a5a51c2b9c6f60a5789e7d5d8a594f6e9db7e4b37"; \
+    LIBSSL_SHA256="7cf39d70a639017d1dd7c8d36daa2258063608688e449fddf40ffdd46f992a78"; \
     wget "${LIBSSL_URL}"; \
     echo "${LIBSSL_SHA256}  ${LIBSSL_DEB}" | sha256sum -c -; \
     dpkg -i "${LIBSSL_DEB}"; \
