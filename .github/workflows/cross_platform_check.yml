@@ -1,4 +1,4 @@
-name: Cross-Platform Build Check
+name: Cross-Platform Build Check (Optimized)
 
 on:
   push:
@@ -26,6 +26,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  # Optimize for disk space and stability
+  CARGO_BUILD_JOBS: 2
+  CARGO_NET_RETRY: 10
 
 jobs:
   cross_platform_build:
@@ -50,16 +53,29 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Check disk space before build (Unix)
+        if: matrix.os != 'windows-latest'
+        run: df -h
+
+      - name: Check disk space before build (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "=== Disk Space Before Build ==="
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.target }}
 
-      - name: Cache Rust dependencies
+      - name: Cache Rust dependencies (Optimized)
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: cross-platform-${{ matrix.target }}
           cache-on-failure: true
+          cache-targets: true
+          cache-all-crates: true
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -89,23 +105,19 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          # Install Scoop package manager
           Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
           Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
-          
-          # Add Scoop to PATH for current session
+
           $env:PATH += ";$env:USERPROFILE\scoop\shims"
-          
+
           scoop bucket add main
           scoop bucket add extras
-          
-          # Install LLVM, MinGW, Protobuf, and CMake using Scoop
+
           scoop install llvm
           scoop install mingw
           scoop install protobuf
           scoop install cmake
-          
-          # Update PATH for subsequent steps
+
           echo "$env:USERPROFILE\scoop\shims" >> $env:GITHUB_PATH
           echo "$env:USERPROFILE\scoop\apps\protobuf\current\bin" >> $env:GITHUB_PATH
           echo "$env:USERPROFILE\scoop\apps\llvm\current\bin" >> $env:GITHUB_PATH
@@ -116,7 +128,6 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
-          # Note: Linux RUSTFLAGS are configured in .cargo/config.toml
           echo "Linux build will use config from .cargo/config.toml"
 
       - name: Set Protoc Environment Variables
@@ -133,11 +144,80 @@ jobs:
           echo "LIBGIT2_SYS_USE_VCPKG=0" >> $GITHUB_ENV
           echo "SKIP_STDLIB_BUILD=1" >> $GITHUB_ENV
 
-      - name: Build (Debug)
-        run: cargo build --target ${{ matrix.target }}
+      # Fast check for PRs (only syntax checking, minimal disk usage)
+      - name: Quick syntax check (PR only, Unix)
+        if: github.event_name == 'pull_request' && matrix.os != 'windows-latest'
+        run: |
+          echo "Running quick check for PR (cargo check)..."
+          cargo check --target ${{ matrix.target }} --jobs 2
+          echo "=== Quick check completed ==="
+          df -h
         env:
           OPENSSL_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3' || (matrix.os == 'ubuntu-latest' && '/usr' || '') }}
           OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || (matrix.os == 'ubuntu-latest' && '/usr/lib/x86_64-linux-gnu' || '') }}
           OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || (matrix.os == 'ubuntu-latest' && '/usr/include' || '') }}
           LIBGIT2_SYS_USE_PKG_CONFIG: ${{ matrix.os == 'ubuntu-latest' && '1' || '0' }}
 
+      - name: Quick syntax check (PR only, Windows)
+        if: github.event_name == 'pull_request' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "Running quick check for PR (cargo check)..."
+          cargo check --target ${{ matrix.target }} --jobs 2
+          Write-Host "=== Quick check completed ==="
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
+
+      # Full build only for main branch (10-20GB)
+      - name: Build (Debug, Main Branch Only, Unix)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os != 'windows-latest'
+        run: |
+          echo "Starting full debug build for main branch..."
+          cargo build --target ${{ matrix.target }} --jobs 2
+          echo "=== Build completed ==="
+          df -h
+          echo "=== Target directory size ==="
+          du -sh target 2>/dev/null || echo "No target dir yet"
+        env:
+          OPENSSL_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3' || (matrix.os == 'ubuntu-latest' && '/usr' || '') }}
+          OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || (matrix.os == 'ubuntu-latest' && '/usr/lib/x86_64-linux-gnu' || '') }}
+          OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || (matrix.os == 'ubuntu-latest' && '/usr/include' || '') }}
+          LIBGIT2_SYS_USE_PKG_CONFIG: ${{ matrix.os == 'ubuntu-latest' && '1' || '0' }}
+
+      - name: Build (Debug, Main Branch Only, Windows)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "Starting full debug build for main branch..."
+          cargo build --target ${{ matrix.target }} --jobs 2
+          Write-Host "=== Build completed ==="
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
+
+      - name: Check disk space after build (Unix)
+        if: always() && matrix.os != 'windows-latest'
+        run: |
+          echo "=== Final disk usage ==="
+          df -h
+          echo "=== Cargo cache size ==="
+          du -sh ~/.cargo 2>/dev/null || echo "No cargo cache"
+          echo "=== Target directory ==="
+          du -sh target 2>/dev/null || echo "No target dir"
+
+      - name: Check disk space after build (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "=== Final disk usage ==="
+          Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
+
+      - name: Upload build failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-failure-${{ matrix.os }}-${{ matrix.target }}
+          path: |
+            build.log
+            target/
+          retention-days: 7
+
+      # Note: No cargo clean - rust-cache handles cache management automatically
+      # Build artifacts are preserved for faster subsequent builds
