@@ -311,7 +311,7 @@ impl SnapshotBuilder {
         &self,
         output_dir: &Path,
         state_root: H256,
-        worklist: &Vec<H256>,
+        worklist: &[H256],
         statistics: &TraversalStatistics,
         batch_buffer: &[(H256, Vec<u8>)],
         current_batch_size: usize,
@@ -319,7 +319,7 @@ impl SnapshotBuilder {
     ) -> Result<()> {
         let progress = SnapshotProgress {
             state_root,
-            worklist: worklist.clone(),
+            worklist: worklist.to_owned(),
             worklist_position: 0, // We've processed everything before current position
             statistics: statistics.clone(),
             batch_buffer: batch_buffer.to_vec(),
@@ -381,8 +381,7 @@ impl SnapshotBuilder {
                 )
             } else {
                 info!("No resumable state found, starting fresh");
-                let mut worklist = Vec::new();
-                worklist.push(state_root);
+                let worklist = vec![state_root];
                 (
                     TraversalStatistics::default(),
                     worklist,
