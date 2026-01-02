@@ -12,7 +12,6 @@ use rooch_config::state_prune::SnapshotMeta;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use smt::NodeReader;
-use std::collections::VecDeque;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -312,7 +311,7 @@ impl SnapshotBuilder {
         &self,
         output_dir: &Path,
         state_root: H256,
-        worklist: &VecDeque<H256>,
+        worklist: &[H256],
         statistics: &TraversalStatistics,
         batch_buffer: &[(H256, Vec<u8>)],
         current_batch_size: usize,
@@ -320,7 +319,7 @@ impl SnapshotBuilder {
     ) -> Result<()> {
         let progress = SnapshotProgress {
             state_root,
-            worklist: worklist.iter().cloned().collect(),
+            worklist: worklist.to_owned(),
             worklist_position: 0, // We've processed everything before current position
             statistics: statistics.clone(),
             batch_buffer: batch_buffer.to_vec(),
@@ -357,12 +356,9 @@ impl SnapshotBuilder {
                 info!("Resuming from previous snapshot operation");
 
                 // Restore worklist from progress
-                let mut worklist = VecDeque::from(progress.worklist);
-
-                // Skip already processed nodes if worklist_position > 0
-                for _ in 0..progress.worklist_position {
-                    worklist.pop_front();
-                }
+                // For DFS with Vec (stack), save_progress always sets worklist_position to 0
+                // The entire worklist contains nodes yet to be processed (popped from the end)
+                let worklist = progress.worklist;
 
                 // Update metadata with resume statistics
                 metadata.update_statistics(|stats| {
@@ -385,8 +381,7 @@ impl SnapshotBuilder {
                 )
             } else {
                 info!("No resumable state found, starting fresh");
-                let mut worklist = VecDeque::new();
-                worklist.push_back(state_root);
+                let worklist = vec![state_root];
                 (
                     TraversalStatistics::default(),
                     worklist,
@@ -404,7 +399,7 @@ impl SnapshotBuilder {
         const MEMORY_CHECK_INTERVAL_SECS: u64 = 10; // Check memory every 10 seconds
         const PROGRESS_SAVE_INTERVAL_SECS: u64 = 300; // Save progress every 5 minutes
 
-        while let Some(current_hash) = nodes_to_process.pop_front() {
+        while let Some(current_hash) = nodes_to_process.pop() {
             // Safety check to prevent infinite loops in case of corrupted data
             if nodes_to_process.is_empty() && batch_buffer.is_empty() {
                 consecutive_empty_batches += 1;
@@ -436,9 +431,9 @@ impl SnapshotBuilder {
                 // Add node to batch buffer for writing
                 batch_buffer.push((current_hash, node_data));
 
-                // Add child nodes to processing queue
+                // Add child nodes to processing queue (DFS: push to stack)
                 for child_hash in child_hashes {
-                    nodes_to_process.push_back(child_hash);
+                    nodes_to_process.push(child_hash);
                 }
 
                 // Adaptive batch size adjustment based on memory pressure
