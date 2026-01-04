@@ -12,6 +12,7 @@ use rooch_config::state_prune::SnapshotMeta;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use smt::NodeReader;
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -126,6 +127,8 @@ pub struct SnapshotBuilder {
     config: SnapshotBuilderConfig,
     moveos_store: MoveOSStore,
     progress_tracker: ProgressTracker,
+    /// Estimated total nodes for progress calculation
+    estimated_total_nodes: u64,
 }
 
 impl SnapshotBuilder {
@@ -139,6 +142,7 @@ impl SnapshotBuilder {
             config,
             moveos_store,
             progress_tracker,
+            estimated_total_nodes: 1_000_000, // Default estimate, will be adjusted if possible
         })
     }
 
@@ -179,6 +183,14 @@ impl SnapshotBuilder {
         // Ensure output directory exists
         std::fs::create_dir_all(&output_dir)?;
 
+        // Check available disk space (requires at least 10GB free space)
+        if let Err(e) = self.check_disk_space(&output_dir, 10 * 1024 * 1024 * 1024) {
+            warn!(
+                "Could not verify disk space availability: {}. Proceeding with caution.",
+                e
+            );
+        }
+
         // Check for resumable progress if not forcing restart
         let resume_progress = if !force_restart && self.config.enable_resume {
             self.check_resume_state(&output_dir, state_root)?
@@ -218,14 +230,15 @@ impl SnapshotBuilder {
         metadata.mark_in_progress("Finalizing snapshot".to_string(), 95.0);
 
         // Flush and close snapshot writer to get final statistics
-        let active_nodes_count = snapshot_writer.finalize(&output_dir, &mut metadata)?;
+        let active_nodes_count = snapshot_writer.finalize(&mut metadata)?;
 
-        // Create snapshot metadata
+        // Create snapshot metadata with accurate global_size
+        // global_size represents the total nodes in the state tree, active_nodes is what we wrote
         let snapshot_meta = SnapshotMeta::new(
             0, // tx_order will be set later
             state_root,
-            active_nodes_count, // Use active nodes count as global size estimate
-            active_nodes_count,
+            statistics.nodes_visited, // Total nodes visited (global_size)
+            active_nodes_count,       // Unique nodes written (active_nodes)
         );
 
         // Save metadata
@@ -306,6 +319,51 @@ impl SnapshotBuilder {
         Ok(())
     }
 
+    /// Check available disk space before starting snapshot operation
+    /// Returns Ok(()) if sufficient space is available, Err otherwise
+    fn check_disk_space(&self, output_dir: &Path, required_bytes: u64) -> Result<()> {
+        // Try to use fs2 for accurate disk space checking if available
+        #[cfg(feature = "fs2")]
+        {
+            use fs2::available_space;
+            match available_space(output_dir) {
+                Ok(available) => {
+                    if available < required_bytes {
+                        return Err(anyhow::anyhow!(
+                            "Insufficient disk space: {} bytes required, but only {} bytes available at {:?}",
+                            required_bytes,
+                            available,
+                            output_dir
+                        ));
+                    }
+                    info!(
+                        "Disk space check passed: {} bytes available at {:?}",
+                        available, output_dir
+                    );
+                    return Ok(());
+                }
+                Err(e) => {
+                    warn!("Failed to check available disk space using fs2: {}", e);
+                    // Fall through to basic check
+                }
+            }
+        }
+
+        // Basic fallback check - verify directory is writable
+        let test_file = output_dir.join(".disk_space_test");
+        match fs::write(&test_file, b"test") {
+            Ok(_) => {
+                let _ = fs::remove_file(&test_file);
+                debug!("Basic disk space check passed - directory is writable");
+                Ok(())
+            }
+            Err(e) => Err(anyhow::anyhow!(
+                "Failed to write to output directory {:?}: {}. Insufficient disk space or permissions?",
+                output_dir, e
+            )),
+        }
+    }
+
     /// Save current progress to disk
     fn save_progress(
         &self,
@@ -343,7 +401,7 @@ impl SnapshotBuilder {
 
     /// Streaming traversal with batched writes to avoid OOM
     async fn stream_traverse_and_write(
-        &self,
+        &mut self,
         state_root: H256,
         snapshot_writer: &mut SnapshotNodeWriter,
         metadata: &mut StatePruneMetadata,
@@ -392,26 +450,28 @@ impl SnapshotBuilder {
 
         let node_store = &self.moveos_store.node_store;
         let mut last_progress_report = Instant::now();
-        let mut consecutive_empty_batches = 0;
         let mut last_memory_check = Instant::now();
         let mut last_progress_save = Instant::now();
-        const MAX_EMPTY_BATCHES: u32 = 100; // Safety limit to prevent infinite loops
+        // Track visited nodes to detect actual infinite loops (node revisits)
+        let mut visited_nodes: HashSet<H256> = HashSet::new();
+        const MAX_VISITED_NODES: usize = 10_000_000; // Safety limit for visited nodes tracking
         const MEMORY_CHECK_INTERVAL_SECS: u64 = 10; // Check memory every 10 seconds
         const PROGRESS_SAVE_INTERVAL_SECS: u64 = 300; // Save progress every 5 minutes
 
         while let Some(current_hash) = nodes_to_process.pop() {
-            // Safety check to prevent infinite loops in case of corrupted data
-            if nodes_to_process.is_empty() && batch_buffer.is_empty() {
-                consecutive_empty_batches += 1;
-                if consecutive_empty_batches > MAX_EMPTY_BATCHES {
+            // Increment visited counter for each node we process
+            statistics.nodes_visited += 1;
+
+            // Safety check to prevent infinite loops by tracking visited nodes
+            // Only track if we haven't exceeded the maximum tracking size
+            if visited_nodes.len() < MAX_VISITED_NODES {
+                if !visited_nodes.insert(current_hash) {
                     warn!(
-                        "Reached maximum consecutive empty batches ({}), stopping traversal to prevent infinite loop",
-                        MAX_EMPTY_BATCHES
+                        "Detected revisit of node {} during traversal, possible infinite loop or cyclic reference",
+                        current_hash
                     );
-                    break;
+                    // Continue processing as this might be valid DAG structure, but log it
                 }
-            } else {
-                consecutive_empty_batches = 0;
             }
 
             // Check if node is already written to avoid duplication
@@ -462,31 +522,32 @@ impl SnapshotBuilder {
 
                 // Write batch when it reaches the current batch size
                 if batch_buffer.len() >= current_batch_size {
-                    let batch_size = batch_buffer.len();
+                    let _batch_size = batch_buffer.len();
                     snapshot_writer.write_batch(std::mem::take(&mut batch_buffer))?;
-
-                    statistics.nodes_visited += batch_size as u64;
 
                     // Update progress periodically
                     if last_progress_report.elapsed()
                         >= Duration::from_secs(self.config.progress_interval_seconds)
                     {
                         info!(
-                            "Streaming traversal progress: {} batches processed, {} nodes written, current batch size: {}",
-                            statistics.nodes_visited / current_batch_size as u64,
+                            "Streaming traversal progress: {} nodes processed, {} nodes written, current batch size: {}",
+                            statistics.nodes_visited,
                             snapshot_writer.nodes_written,
                             current_batch_size
                         );
                         last_progress_report = Instant::now();
                     }
                 }
-            } else {
-                statistics.nodes_visited += 1;
             }
 
-            // Periodic progress update
+            // Periodic progress update using estimated total nodes for better accuracy
             if self.progress_tracker.should_report() {
-                let progress = 10.0 + (statistics.nodes_visited as f64 / 1_000_000.0) * 70.0; // Approximate progress
+                let progress = if self.estimated_total_nodes > 0 {
+                    10.0 + (statistics.nodes_visited as f64 / self.estimated_total_nodes as f64) * 70.0
+                } else {
+                    // Fallback to time-based progress if estimate is not available
+                    10.0 + ((statistics.nodes_visited as f64 / 100_000.0).min(70.0))
+                };
                 metadata.mark_in_progress(
                     format!("Streaming traversal ({} nodes)", statistics.nodes_visited),
                     progress.min(80.0),
@@ -521,9 +582,7 @@ impl SnapshotBuilder {
 
         // Write remaining nodes in the final batch
         if !batch_buffer.is_empty() {
-            let batch_size = batch_buffer.len();
             snapshot_writer.write_batch(batch_buffer)?;
-            statistics.nodes_visited += batch_size as u64;
         }
 
         Ok(statistics)
@@ -633,8 +692,6 @@ impl SnapshotBuilder {
 /// RocksDB-backed snapshot node writer with batched writes and deduplication
 pub struct SnapshotNodeWriter {
     db: Arc<rocksdb::DB>,
-    #[allow(dead_code)]
-    batch_size: usize,
     pub nodes_written: u64,
 }
 
@@ -681,7 +738,6 @@ impl SnapshotNodeWriter {
 
         Ok(Self {
             db,
-            batch_size: config.batch_size,
             nodes_written: 0,
         })
     }
@@ -781,7 +837,7 @@ impl SnapshotNodeWriter {
     }
 
     /// Finalize the snapshot writer and return the final count
-    pub fn finalize(self, _output_dir: &Path, metadata: &mut StatePruneMetadata) -> Result<u64> {
+    pub fn finalize(self, metadata: &mut StatePruneMetadata) -> Result<u64> {
         info!(
             "Finalizing snapshot with {} nodes written",
             self.nodes_written
