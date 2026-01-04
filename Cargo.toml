@@ -362,7 +362,7 @@ vergen-git2 = { version = "1.0.1", features = ["build", "cargo", "rustc"] }
 vergen-pretty = "1.0.1"
 crossbeam-channel = "0.5.15"
 inferno = "0.12.4"
-handlebars = "6.3.2"
+handlebars = "6.4.0"
 indexmap = "2.11.4"
 tikv-jemallocator = { git = "https://github.com/jamesatomc/jemallocator.git", features = [
     "unprefixed_malloc_on_supported_platforms",
