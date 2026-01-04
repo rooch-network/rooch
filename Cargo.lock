@@ -4403,7 +4403,7 @@ dependencies = [
  "num-bigint 0.4.5",
  "once_cell",
  "regex",
- "reqwest 0.12.7",
+ "reqwest 0.12.9",
  "schemars",
  "serde 1.0.228",
  "serde_json",
@@ -5900,7 +5900,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b0f83760fb341a774ed326568e19f5a863af4a952def8c39f9ab92fd95b88e5"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.0",
+ "hashbrown 0.15.2",
  "serde 1.0.228",
  "serde_core",
 ]
@@ -6644,7 +6644,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -8486,7 +8486,7 @@ dependencies = [
  "percent-encoding",
  "quick-xml 0.36.2",
  "reqsign",
- "reqwest 0.12.7",
+ "reqwest 0.12.9",
  "serde 1.0.228",
  "serde_json",
  "tokio",
@@ -10173,7 +10173,7 @@ dependencies = [
  "log",
  "percent-encoding",
  "rand 0.8.5",
- "reqwest 0.12.7",
+ "reqwest 0.12.9",
  "rsa 0.9.6",
  "serde 1.0.228",
  "serde_json",
@@ -10230,9 +10230,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.12.7"
+version = "0.12.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8f4955649ef5c38cc7f9e8aa41761d48fb9677197daea9984dc54f56aad5e63"
+checksum = "a77c62af46e79de0a562e1a9849205ffcb7fc1238876e9bd743357570e04046f"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -10505,7 +10505,7 @@ dependencies = [
  "rand 0.8.5",
  "raw-store",
  "regex",
- "reqwest 0.12.7",
+ "reqwest 0.12.9",
  "rocksdb",
  "rooch-anomalies",
  "rooch-common",
@@ -10675,7 +10675,7 @@ dependencies = [
  "coerce",
  "hex",
  "opendal",
- "reqwest 0.12.7",
+ "reqwest 0.12.9",
  "rooch-common",
  "rooch-config",
  "rooch-store",
@@ -11040,7 +11040,7 @@ dependencies = [
  "move-core-types",
  "moveos-types",
  "pin-project",
- "reqwest 0.12.7",
+ "reqwest 0.12.9",
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-types",
@@ -11059,7 +11059,7 @@ version = "0.12.1"
 dependencies = [
  "anyhow 1.0.95",
  "ordinals",
- "reqwest 0.12.7",
+ "reqwest 0.12.9",
  "rooch-types",
  "serde 1.0.228",
  "serde_json",
