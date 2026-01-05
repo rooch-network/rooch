@@ -399,29 +399,21 @@ impl SnapshotBuilder {
         let mut last_progress_report = Instant::now();
         let mut last_memory_check = Instant::now();
         let mut last_progress_save = Instant::now();
-        let mut visited_nodes = std::collections::HashSet::new();
         const MEMORY_CHECK_INTERVAL_SECS: u64 = 10; // Check memory every 10 seconds
         const PROGRESS_SAVE_INTERVAL_SECS: u64 = 300; // Save progress every 5 minutes
 
         while let Some(current_hash) = nodes_to_process.pop() {
-            // Safety check to prevent infinite loops by tracking visited nodes
-            if !visited_nodes.insert(current_hash) {
-                warn!(
-                    "Detected cycle in state tree: node {} already visited, skipping to prevent infinite loop",
-                    current_hash
-                );
-                continue;
-            }
-
-            // Increment nodes_visited counter immediately when we start processing
-            statistics.nodes_visited += 1;
-
             // Check if node is already written to avoid duplication
             // The RocksDB-based deduplication handles this efficiently with O(1) space complexity
+            // This also serves as cycle detection since nodes already processed won't be revisited
             if snapshot_writer.contains_node(&current_hash)? {
                 debug!("Skipping duplicate node: {}", current_hash);
                 continue;
             }
+
+            // Increment nodes_visited counter only when we actually process the node
+            // (after confirming it's not already in the snapshot)
+            statistics.nodes_visited += 1;
 
             // Get node data
             if let Some(node_data) = node_store.get(&current_hash)? {
