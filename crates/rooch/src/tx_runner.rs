@@ -190,7 +190,7 @@ pub fn prepare_execute_env(
     tx: RoochTransactionData,
 ) -> (
     MoveOSVM,
-    Rc<RwLock<ObjectRuntime>>,
+    Rc<RwLock<ObjectRuntime<'_>>>,
     &ClientResolver,
     VerifiedMoveAction,
     CostTable,
