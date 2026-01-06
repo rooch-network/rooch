@@ -218,13 +218,18 @@ impl SnapshotBuilder {
         metadata.mark_in_progress("Finalizing snapshot".to_string(), 95.0);
 
         // Flush and close snapshot writer to get final statistics
-        let active_nodes_count = snapshot_writer.finalize(&output_dir, &mut metadata)?;
+        let active_nodes_count = snapshot_writer.finalize(&mut metadata)?;
 
         // Create snapshot metadata
+        // Note: global_size is set to 0 here because it represents the number of global objects
+        // in the state, not the SMT node count. This should be populated from the StateChangeSet
+        // when building a snapshot for a specific tx_order. For state-root-only snapshots,
+        // this field remains 0 as the information is not available without querying the
+        // state change set storage.
         let snapshot_meta = SnapshotMeta::new(
             0, // tx_order will be set later
             state_root,
-            active_nodes_count, // Use active nodes count as global size estimate
+            0, // global_size - should be populated from StateChangeSet if available
             active_nodes_count,
         );
 
@@ -392,34 +397,23 @@ impl SnapshotBuilder {
 
         let node_store = &self.moveos_store.node_store;
         let mut last_progress_report = Instant::now();
-        let mut consecutive_empty_batches = 0;
         let mut last_memory_check = Instant::now();
         let mut last_progress_save = Instant::now();
-        const MAX_EMPTY_BATCHES: u32 = 100; // Safety limit to prevent infinite loops
         const MEMORY_CHECK_INTERVAL_SECS: u64 = 10; // Check memory every 10 seconds
         const PROGRESS_SAVE_INTERVAL_SECS: u64 = 300; // Save progress every 5 minutes
 
         while let Some(current_hash) = nodes_to_process.pop() {
-            // Safety check to prevent infinite loops in case of corrupted data
-            if nodes_to_process.is_empty() && batch_buffer.is_empty() {
-                consecutive_empty_batches += 1;
-                if consecutive_empty_batches > MAX_EMPTY_BATCHES {
-                    warn!(
-                        "Reached maximum consecutive empty batches ({}), stopping traversal to prevent infinite loop",
-                        MAX_EMPTY_BATCHES
-                    );
-                    break;
-                }
-            } else {
-                consecutive_empty_batches = 0;
-            }
-
             // Check if node is already written to avoid duplication
             // The RocksDB-based deduplication handles this efficiently with O(1) space complexity
+            // This also serves as cycle detection since nodes already processed won't be revisited
             if snapshot_writer.contains_node(&current_hash)? {
                 debug!("Skipping duplicate node: {}", current_hash);
                 continue;
             }
+
+            // Increment nodes_visited counter only when we actually process the node
+            // (after confirming it's not already in the snapshot)
+            statistics.nodes_visited += 1;
 
             // Get node data
             if let Some(node_data) = node_store.get(&current_hash)? {
@@ -462,10 +456,7 @@ impl SnapshotBuilder {
 
                 // Write batch when it reaches the current batch size
                 if batch_buffer.len() >= current_batch_size {
-                    let batch_size = batch_buffer.len();
                     snapshot_writer.write_batch(std::mem::take(&mut batch_buffer))?;
-
-                    statistics.nodes_visited += batch_size as u64;
 
                     // Update progress periodically
                     if last_progress_report.elapsed()
@@ -480,8 +471,6 @@ impl SnapshotBuilder {
                         last_progress_report = Instant::now();
                     }
                 }
-            } else {
-                statistics.nodes_visited += 1;
             }
 
             // Periodic progress update
@@ -521,9 +510,7 @@ impl SnapshotBuilder {
 
         // Write remaining nodes in the final batch
         if !batch_buffer.is_empty() {
-            let batch_size = batch_buffer.len();
             snapshot_writer.write_batch(batch_buffer)?;
-            statistics.nodes_visited += batch_size as u64;
         }
 
         Ok(statistics)
@@ -633,14 +620,12 @@ impl SnapshotBuilder {
 /// RocksDB-backed snapshot node writer with batched writes and deduplication
 pub struct SnapshotNodeWriter {
     db: Arc<rocksdb::DB>,
-    #[allow(dead_code)]
-    batch_size: usize,
     pub nodes_written: u64,
 }
 
 impl SnapshotNodeWriter {
     /// Create new snapshot node writer with RocksDB backend
-    pub fn new(output_dir: &Path, config: &SnapshotBuilderConfig) -> Result<Self> {
+    pub fn new(output_dir: &Path, _config: &SnapshotBuilderConfig) -> Result<Self> {
         let snapshot_db_path = output_dir.join("snapshot.db");
 
         // Validate and create output directory
@@ -681,7 +666,6 @@ impl SnapshotNodeWriter {
 
         Ok(Self {
             db,
-            batch_size: config.batch_size,
             nodes_written: 0,
         })
     }
@@ -781,7 +765,7 @@ impl SnapshotNodeWriter {
     }
 
     /// Finalize the snapshot writer and return the final count
-    pub fn finalize(self, _output_dir: &Path, metadata: &mut StatePruneMetadata) -> Result<u64> {
+    pub fn finalize(self, metadata: &mut StatePruneMetadata) -> Result<u64> {
         info!(
             "Finalizing snapshot with {} nodes written",
             self.nodes_written
