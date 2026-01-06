@@ -345,7 +345,7 @@ revm-precompile = "16.2.0"
 revm-primitives = "15.2.0"
 scopeguard = "1.1"
 uuid = { version = "1.16.0", features = ["v4", "fast-rng"] }
-protobuf = { version = "2.28", features = ["with-bytes"] }
+protobuf = { version = "3.7", features = ["with-bytes"] }
 
 # windows no longer supports jemalloc, so we need to use tikv-jemallocator
 rocksdb = { version = "0.23.0", features = ["lz4", "mt_static"] }
