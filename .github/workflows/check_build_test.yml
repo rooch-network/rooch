@@ -262,6 +262,7 @@ jobs:
         with:
           shared-key: 'ci-build'
           cache-on-failure: true
+          cache-targets: false  # Disable target caching on ubuntu-latest to save disk space
 
       - name: Build binaries (with cache, should be fast)
         run: |
