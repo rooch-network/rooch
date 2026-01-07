@@ -168,11 +168,11 @@ jobs:
       - name: Setup Rust (minimal, for cargo test command)
         uses: ./.github/actions/rust-setup
 
-      - name: Install cargo-nextest (pre-built binary)
+      - name: Install cargo-nextest
         run: |
-          echo "Installing cargo-binstall and cargo-nextest..."
-          cargo install cargo-binstall --locked || cargo install cargo-binstall
-          cargo binstall cargo-nextest --locked --version 0.9.97-b.2 -y
+          echo "Installing cargo-nextest from GitHub releases..."
+          curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          cargo nextest --version
 
       - name: Run Rust unit tests
         run: |
@@ -212,11 +212,11 @@ jobs:
       - name: Setup Rust (minimal, for cargo test command)
         uses: ./.github/actions/rust-setup
 
-      - name: Install cargo-nextest (pre-built binary)
+      - name: Install cargo-nextest
         run: |
-          echo "Installing cargo-binstall and cargo-nextest..."
-          cargo install cargo-binstall --locked || cargo install cargo-binstall
-          cargo binstall cargo-nextest --locked --version 0.9.97-b.2 -y
+          echo "Installing cargo-nextest from GitHub releases..."
+          curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          cargo nextest --version
 
       - name: Run Rust framework tests
         run: |
@@ -256,11 +256,11 @@ jobs:
       - name: Setup Rust (minimal, for cargo test command)
         uses: ./.github/actions/rust-setup
 
-      - name: Install cargo-nextest (pre-built binary)
+      - name: Install cargo-nextest
         run: |
-          echo "Installing cargo-binstall and cargo-nextest..."
-          cargo install cargo-binstall --locked || cargo install cargo-binstall
-          cargo binstall cargo-nextest --locked --version 0.9.97-b.2 -y
+          echo "Installing cargo-nextest from GitHub releases..."
+          curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          cargo nextest --version
 
       - name: Run Rust Bitcoin tests
         run: |
@@ -300,11 +300,11 @@ jobs:
       - name: Setup Rust (minimal, for cargo test command)
         uses: ./.github/actions/rust-setup
 
-      - name: Install cargo-nextest (pre-built binary)
+      - name: Install cargo-nextest
         run: |
-          echo "Installing cargo-binstall and cargo-nextest..."
-          cargo install cargo-binstall --locked || cargo install cargo-binstall
-          cargo binstall cargo-nextest --locked --version 0.9.97-b.2 -y
+          echo "Installing cargo-nextest from GitHub releases..."
+          curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          cargo nextest --version
 
       - name: Run Rust integration suite tests
         run: |
