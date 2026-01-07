@@ -20,11 +20,20 @@ use tracing::{error, info, warn};
 pub struct IncrementalReplayer {
     config: ReplayConfig,
     progress_tracker: ProgressTracker,
+    /// Live RoochStore for reading changesets
+    rooch_store: rooch_store::RoochStore,
+    /// Live MoveOSStore for other operations
+    #[allow(dead_code)]
+    moveos_store: MoveOSStore,
 }
 
 impl IncrementalReplayer {
     /// Create new incremental replayer
-    pub fn new(config: ReplayConfig, _moveos_store: MoveOSStore) -> Result<Self> {
+    pub fn new(
+        config: ReplayConfig,
+        rooch_store: rooch_store::RoochStore,
+        moveos_store: MoveOSStore,
+    ) -> Result<Self> {
         // Validate configuration
         if config.default_batch_size == 0 {
             return Err(anyhow::anyhow!("Batch size must be greater than 0"));
@@ -33,6 +42,8 @@ impl IncrementalReplayer {
         Ok(Self {
             config,
             progress_tracker: ProgressTracker::new(30), // Report every 30 seconds
+            rooch_store,
+            moveos_store,
         })
     }
 
@@ -175,7 +186,7 @@ impl IncrementalReplayer {
         &self,
         from_order: u64,
         to_order: u64,
-        _report: &mut ReplayReport,
+        report: &mut ReplayReport,
     ) -> Result<Vec<(u64, StateChangeSetExt)>> {
         // Validate range
         if from_order >= to_order {
@@ -183,13 +194,56 @@ impl IncrementalReplayer {
             return Ok(Vec::new());
         }
 
-        // For now, return empty placeholder as we focus on core functionality
-        // In a full implementation, this would query the StateChangeSet storage
         info!(
-            "Changeset range query implemented as placeholder for {}..{} - returning empty changesets",
+            "Loading changesets in range {}..{} from rooch_store",
             from_order, to_order
         );
-        Ok(Vec::new())
+
+        // Load changesets from the rooch_store's state store
+        let changesets = self
+            .rooch_store
+            .get_state_store()
+            .get_changesets_range(from_order, to_order)
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "Failed to load changesets from range {}..{}: {}",
+                    from_order,
+                    to_order,
+                    e
+                )
+            })?;
+
+        // Check if we got all the changesets we expected
+        let expected_count = (to_order - from_order) as usize;
+        if changesets.len() != expected_count {
+            report.add_error(format!(
+                "Expected {} changesets in range {}..{}, but found {}",
+                expected_count,
+                from_order,
+                to_order,
+                changesets.len()
+            ));
+
+            // Log which orders are missing
+            use std::collections::HashSet;
+            let loaded_orders: HashSet<u64> = changesets.iter().map(|(order, _)| *order).collect();
+            let missing_orders: Vec<u64> = (from_order..to_order)
+                .filter(|order| !loaded_orders.contains(order))
+                .collect();
+
+            if !missing_orders.is_empty() {
+                warn!("Missing changesets for orders: {:?}", missing_orders);
+            }
+        }
+
+        info!(
+            "Successfully loaded {} changesets in range {}..{}",
+            changesets.len(),
+            from_order,
+            to_order
+        );
+
+        Ok(changesets)
     }
 
     /// Replay changesets in batches
@@ -413,14 +467,16 @@ impl IncrementalReplayer {
 mod tests {
     use super::*;
     use rooch_config::state_prune::SnapshotMeta;
+    use rooch_store::RoochStore;
     use std::fs;
     use tempfile::TempDir;
 
     #[test]
     fn test_incremental_replayer_creation() {
         let config = ReplayConfig::default();
-        let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
-        let replayer = IncrementalReplayer::new(config, store);
+        let (moveos_store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let (rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
+        let replayer = IncrementalReplayer::new(config, rooch_store, moveos_store);
         assert!(replayer.is_ok());
     }
 
@@ -431,8 +487,9 @@ mod tests {
             ..Default::default()
         };
 
-        let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
-        let replayer = IncrementalReplayer::new(config, store);
+        let (moveos_store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let (rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
+        let replayer = IncrementalReplayer::new(config, rooch_store, moveos_store);
         assert!(replayer.is_err());
     }
 
@@ -468,11 +525,13 @@ mod tests {
         fs::write(&meta_path, meta_content).unwrap();
 
         // Create a live store (this represents the live database)
-        let (live_store, _live_tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let (live_moveos_store, _live_tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let (live_rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
 
         // Create a replayer with the live store
         let config = ReplayConfig::default();
-        let replayer = IncrementalReplayer::new(config, live_store).unwrap();
+        let replayer =
+            IncrementalReplayer::new(config, live_rooch_store, live_moveos_store).unwrap();
 
         // Load snapshot store from the snapshot path
         let result = replayer.load_snapshot_store(snapshot_path);
@@ -526,9 +585,11 @@ mod tests {
     fn test_load_snapshot_store_validates_path() {
         // Test that load_snapshot_store validates the snapshot path
 
-        let (live_store, _live_tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let (live_moveos_store, _live_tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let (live_rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
         let config = ReplayConfig::default();
-        let replayer = IncrementalReplayer::new(config, live_store).unwrap();
+        let replayer =
+            IncrementalReplayer::new(config, live_rooch_store, live_moveos_store).unwrap();
 
         // Test with a file instead of a directory
         let file_as_snapshot = TempDir::new().unwrap();

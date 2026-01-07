@@ -66,6 +66,7 @@ impl CommandAction<String> for ReplayCommand {
             )),
         );
         let moveos_store = rooch_db.moveos_store;
+        let rooch_store = rooch_db.rooch_store;
 
         // Create replay configuration
         let replay_config = ReplayConfig {
@@ -78,12 +79,13 @@ impl CommandAction<String> for ReplayCommand {
         };
 
         // Create incremental replayer
-        let replayer = IncrementalReplayer::new(replay_config, moveos_store).map_err(|e| {
-            rooch_types::error::RoochError::from(anyhow::anyhow!(
-                "Failed to create replayer: {}",
-                e
-            ))
-        })?;
+        let replayer =
+            IncrementalReplayer::new(replay_config, rooch_store, moveos_store).map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Failed to create replayer: {}",
+                    e
+                ))
+            })?;
 
         // Execute replay
         let replay_report = replayer
