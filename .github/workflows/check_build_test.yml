@@ -96,8 +96,8 @@ jobs:
 
       - name: Build test binaries
         run: |
-          echo "Building test binaries (will be used by ubuntu-latest runners)..."
-          cargo test --profile optci --workspace --tests --no-run
+          echo "Building test binaries with cargo-nextest (will be used by ubuntu-latest runners)..."
+          cargo nextest run --cargo-profile optci --workspace --no-run
 
       - name: Rooch init
         run: |
