@@ -17,6 +17,7 @@ tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 hex = { workspace = true }
+prometheus = { workspace = true }
 
 rayon = { workspace = true }
 crossbeam-deque = "0.8"
@@ -44,7 +45,6 @@ tempfile = { workspace = true }
 rand = { workspace = true }
 bcs = { workspace = true }
 bcs-ext = { workspace = true }
-prometheus = { workspace = true }
 
 [[bench]]
 name = "bench_bloom_comparison"
