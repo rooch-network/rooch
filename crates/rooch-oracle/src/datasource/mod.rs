@@ -142,6 +142,7 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore = "This test makes network requests to OKX API and can timeout/block in CI"]
     async fn test_okx_datasource() {
         let _trace = tracing_subscriber::fmt().try_init();
         test_datasource(okx::OKXSource).await;
@@ -155,6 +156,7 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore = "This test makes network requests to Pyth API and can timeout/block in CI"]
     async fn test_pyth_datasource() {
         let _trace = tracing_subscriber::fmt().try_init();
         test_datasource(pyth::PythSource).await;

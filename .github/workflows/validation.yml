@@ -1,0 +1,91 @@
+name: Validation Checks
+
+on:
+  pull_request:
+    branches: ['main']
+  push:
+    branches: ['main']
+
+jobs:
+  check_validation_changes:
+    name: Check Validation Changes
+    runs-on: ubuntu-latest
+    outputs:
+      dockerfile_debug: ${{ steps.changes.outputs.dockerfile_debug }}
+      dockerfile: ${{ steps.changes.outputs.dockerfile }}
+      homebrew: ${{ steps.changes.outputs.homebrew }}
+      shell_scripts: ${{ steps.changes.outputs.shell_scripts }}
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Filter Changed Files
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            dockerfile_debug:
+              - 'docker/DockerfileDebug'
+            dockerfile:
+              - 'docker/Dockerfile'
+            homebrew:
+              - 'Formula/**'
+            shell_scripts:
+              - 'scripts/**'
+
+  validate_dockerfile_debug:
+    name: Validate Debug Dockerfile
+    runs-on: ubuntu-latest
+    needs: check_validation_changes
+    if: ${{ needs.check_validation_changes.outputs.dockerfile_debug == 'true' }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Debug Docker files
+        run: docker build -f docker/DockerfileDebug -t rooch-test-debug .
+
+  validate_dockerfile:
+    name: Validate Dockerfile
+    runs-on: ubuntu-latest
+    needs: check_validation_changes
+    if: ${{ needs.check_validation_changes.outputs.dockerfile == 'true' }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Docker files
+        run: docker build -f docker/Dockerfile -t rooch-test .
+
+  validate_homebrew:
+    name: Validate Homebrew Formula
+    runs-on: ubuntu-latest
+    needs: check_validation_changes
+    if: ${{ needs.check_validation_changes.outputs.homebrew == 'true' }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Homebrew formula
+        run: |
+          brew audit --strict --online Formula/rooch.rb
+
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    needs: check_validation_changes
+    if: ${{ needs.check_validation_changes.outputs.shell_scripts == 'true' }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: Azbagheri/shell-linter@v0.8.0
+        with:
+          path: 'scripts/*.sh'
+          severity: 'error'
