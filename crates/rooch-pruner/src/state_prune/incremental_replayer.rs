@@ -6,6 +6,7 @@ use anyhow::Result;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::state::StateChangeSetExt;
+use prometheus::Registry;
 use rooch_config::state_prune::{ReplayConfig, ReplayReport};
 use serde_json;
 use smt::NodeReader;
@@ -19,12 +20,11 @@ use tracing::{error, info, warn};
 pub struct IncrementalReplayer {
     config: ReplayConfig,
     progress_tracker: ProgressTracker,
-    moveos_store: MoveOSStore,
 }
 
 impl IncrementalReplayer {
     /// Create new incremental replayer
-    pub fn new(config: ReplayConfig, moveos_store: MoveOSStore) -> Result<Self> {
+    pub fn new(config: ReplayConfig, _moveos_store: MoveOSStore) -> Result<Self> {
         // Validate configuration
         if config.default_batch_size == 0 {
             return Err(anyhow::anyhow!("Batch size must be greater than 0"));
@@ -33,7 +33,6 @@ impl IncrementalReplayer {
         Ok(Self {
             config,
             progress_tracker: ProgressTracker::new(30), // Report every 30 seconds
-            moveos_store,
         })
     }
 
@@ -130,11 +129,45 @@ impl IncrementalReplayer {
             .map_err(|e| anyhow::anyhow!("Failed to load snapshot metadata: {}", e))
     }
 
-    /// Load snapshot store (simplified - use existing MoveOSStore)
-    fn load_snapshot_store(&self, _snapshot_path: &Path) -> Result<MoveOSStore> {
-        // For this simplified implementation, we'll use the existing MoveOSStore
-        // In a full implementation, we would load the snapshot data into a new store
-        Ok(self.moveos_store.clone())
+    /// Load snapshot store from snapshot path
+    fn load_snapshot_store(&self, snapshot_path: &Path) -> Result<MoveOSStore> {
+        // The snapshot database is stored at snapshot_path/snapshot.db
+        let snapshot_db_path = snapshot_path.join("snapshot.db");
+
+        // Check if snapshot database exists
+        if !snapshot_db_path.exists() {
+            return Err(anyhow::anyhow!(
+                "Snapshot database not found at {:?}. \
+                 Please ensure the snapshot path is correct and contains a valid snapshot.",
+                snapshot_db_path
+            ));
+        }
+
+        // Verify it's a directory (RocksDB databases are directories)
+        if !snapshot_db_path.is_dir() {
+            return Err(anyhow::anyhow!(
+                "Snapshot path exists but is not a valid database: {:?}",
+                snapshot_db_path
+            ));
+        }
+
+        // Create a new MoveOSStore from the snapshot database
+        // This loads the snapshot state instead of using the live database
+        let registry = Registry::new();
+        let snapshot_store = MoveOSStore::new(&snapshot_db_path, &registry).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to load snapshot store from {:?}: {}",
+                snapshot_db_path,
+                e
+            )
+        })?;
+
+        info!(
+            "Successfully loaded snapshot store from {:?}",
+            snapshot_db_path
+        );
+
+        Ok(snapshot_store)
     }
 
     /// Load changesets in specified range
@@ -379,6 +412,9 @@ impl IncrementalReplayer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rooch_config::state_prune::SnapshotMeta;
+    use std::fs;
+    use tempfile::TempDir;
 
     #[test]
     fn test_incremental_replayer_creation() {
@@ -398,5 +434,118 @@ mod tests {
         let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
         let replayer = IncrementalReplayer::new(config, store);
         assert!(replayer.is_err());
+    }
+
+    #[test]
+    fn test_load_snapshot_store_uses_snapshot_path_not_live_db() {
+        // This is a regression test for issue #3900
+        // It verifies that load_snapshot_store actually loads from the snapshot path,
+        // not from the live MoveOSStore
+
+        // Create a temporary directory for the snapshot
+        let snapshot_dir = TempDir::new().unwrap();
+        let snapshot_path = snapshot_dir.path();
+
+        // Create a snapshot database directory
+        let snapshot_db_path = snapshot_path.join("snapshot.db");
+        fs::create_dir_all(&snapshot_db_path).unwrap();
+
+        // Create a minimal snapshot metadata file
+        let snapshot_meta = SnapshotMeta {
+            tx_order: 100,
+            state_root: H256::from([1u8; 32]),
+            global_size: 1000,
+            node_count: 100,
+            created_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            version: 1,
+            metadata: serde_json::json!({}),
+        };
+        let meta_path = snapshot_path.join("snapshot_meta.json");
+        let meta_content = serde_json::to_string_pretty(&snapshot_meta).unwrap();
+        fs::write(&meta_path, meta_content).unwrap();
+
+        // Create a live store (this represents the live database)
+        let (live_store, _live_tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+
+        // Create a replayer with the live store
+        let config = ReplayConfig::default();
+        let replayer = IncrementalReplayer::new(config, live_store).unwrap();
+
+        // Load snapshot store from the snapshot path
+        let result = replayer.load_snapshot_store(snapshot_path);
+
+        // Before the fix for issue #3900, this would succeed and return the live store
+        // After the fix, it should succeed and return a store loaded from the snapshot path
+
+        // The test passes if load_snapshot_store succeeds and loads from the snapshot path
+        assert!(result.is_ok(), "load_snapshot_store should succeed");
+
+        let snapshot_store = result.unwrap();
+
+        // Verify that the snapshot store is different from the live store
+        // (They should have different database paths)
+        // We can't directly compare the paths, but we can verify the snapshot store was created
+        // by checking it's a valid MoveOSStore
+
+        // Try to access the startup info from the snapshot store
+        // This will fail if the snapshot database is empty, which is expected for this test
+        let startup_info_result = snapshot_store.get_config_store().get_startup_info();
+
+        // The snapshot database is empty (we only created the directory structure),
+        // so we expect no startup info, but the store should be valid
+        assert!(
+            startup_info_result.is_ok(),
+            "Should be able to access config store"
+        );
+        assert!(
+            startup_info_result.unwrap().is_none(),
+            "New snapshot should have no startup info"
+        );
+
+        // Test that loading from a non-existent path fails
+        let nonexistent_path = TempDir::new().unwrap();
+        let nonexistent_snapshot_path = nonexistent_path.path().join("nonexistent");
+        let result = replayer.load_snapshot_store(&nonexistent_snapshot_path);
+        assert!(
+            result.is_err(),
+            "Should fail to load from non-existent path"
+        );
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Snapshot database not found"),
+            "Error should mention missing snapshot database"
+        );
+    }
+
+    #[test]
+    fn test_load_snapshot_store_validates_path() {
+        // Test that load_snapshot_store validates the snapshot path
+
+        let (live_store, _live_tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let config = ReplayConfig::default();
+        let replayer = IncrementalReplayer::new(config, live_store).unwrap();
+
+        // Test with a file instead of a directory
+        let file_as_snapshot = TempDir::new().unwrap();
+        let file_path = file_as_snapshot.path().join("snapshot.db");
+        fs::write(&file_path, b"not a directory").unwrap();
+
+        let result = replayer.load_snapshot_store(file_as_snapshot.path());
+        assert!(
+            result.is_err(),
+            "Should fail when snapshot.db is a file, not a directory"
+        );
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("not a valid database"),
+            "Error should mention invalid database"
+        );
     }
 }
