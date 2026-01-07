@@ -27,7 +27,7 @@ env:
 jobs:
   check_build_test:
     name: Check-Build-Test
-    runs-on: self-hosted
+    runs-on: larger-runner
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

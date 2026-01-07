@@ -38,7 +38,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || needs.check-docker-label.outputs.has-label == 'true' }}
     needs: [check-docker-label]
     name: Build Docker Images
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v1
