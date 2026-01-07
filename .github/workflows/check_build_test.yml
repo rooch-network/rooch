@@ -25,9 +25,15 @@ env:
   CARGO_INCREMENTAL: 0
 
 jobs:
-  check_build_test:
-    name: Check-Build-Test
-    runs-on: larger-runner
+  # Phase 1: Check changes
+  check_changes:
+    name: Check Changes
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.changes.outputs.core }}
+      sdk_web: ${{ steps.changes.outputs.sdk_web }}
+      scripts: ${{ steps.changes.outputs.scripts }}
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,58 +67,141 @@ jobs:
             scripts:
               - 'scripts/**'
 
-      - name: Setup pnpm Cache
-        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.OS }}-pnpm-
+  # Phase 2: Build
+  build:
+    name: Build
+    runs-on: larger-runner
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Rust
-        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: ./.github/actions/rust-setup
 
       - name: Cache Rust dependencies
-        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: 'ci-build'
           cache-on-failure: true
 
       - name: Install cargo tools
-        if: ${{ steps.changes.outputs.core == 'true' }}
         run: |
-          # Ensure cargo bin directory is in PATH
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          # Install required tools
           make install-tools
 
       - name: Build Rust (optci profile)
-        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
-          # Build all binaries in the workspace
-          cargo build --profile optci --workspace --bins
-      - name: Run Rust Lint
-        if: ${{ steps.changes.outputs.core == 'true'}}
-        run: make lint
+          echo "Building with 16 parallel jobs..."
+          cargo build --profile optci --workspace --bins -j 16
+
       - name: Rooch init
-        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
-          # Use pre-built binaries from optci profile
           ./target/optci/framework-release
           ./target/optci/rooch init --skip-password
-      - name: Run Rust tests
-        if: ${{ steps.changes.outputs.core == 'true'}}
+
+  # Phase 3: Tests (parallel jobs)
+  test_rust_unit:
+    name: Rust Unit Tests
+    runs-on: larger-runner
+    needs: [check_changes, build]
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci-build'
+          cache-on-failure: true
+
+      - name: Run Rust unit tests
         run: |
-          # Run test targets using optci profile (already built above)
+          echo "Running unit tests with increased parallelism..."
           make test-rust-unit
+        env:
+          RUST_TEST_THREADS: 16
+
+  test_rust_integration:
+    name: Rust Integration Tests
+    runs-on: larger-runner
+    needs: [check_changes, build]
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci-build'
+          cache-on-failure: true
+
+      - name: Run Rust integration tests
+        run: |
+          echo "Running integration tests with increased parallelism..."
           make test-rust-integration
+        env:
+          RUST_TEST_THREADS: 16
+
+  lint:
+    name: Rust Lint
+    runs-on: larger-runner
+    needs: [check_changes, build]
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci-build'
+          cache-on-failure: true
+
+      - name: Run Rust Lint
+        run: make lint
+
+  test_move_frameworks:
+    name: Move Framework Tests
+    runs-on: larger-runner
+    needs: [check_changes, build]
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci-build'
+          cache-on-failure: true
+
+      - name: Rooch init
+        run: |
+          ./target/optci/framework-release
+          ./target/optci/rooch init --skip-password
+
       - name: Run Move tests
-        if: ${{ steps.changes.outputs.core == 'true'}}
         run: |
           echo "ROOCH_BINARY_BUILD_PROFILE is set to: $ROOCH_BINARY_BUILD_PROFILE"
           echo "Expected rooch binary at: target/$ROOCH_BINARY_BUILD_PROFILE/rooch"
@@ -120,28 +209,74 @@ jobs:
           make test-move
         env:
           ROOCH_BINARY_BUILD_PROFILE: optci
-      - name: Run example tests
-        if: ${{ steps.changes.outputs.core == 'true'}}
+
+  test_move_examples:
+    name: Move Examples Tests
+    runs-on: larger-runner
+    needs: [check_changes, build]
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci-build'
+          cache-on-failure: true
+
+      - name: Rooch init
+        run: |
+          ./target/optci/framework-release
+          ./target/optci/rooch init --skip-password
+
+      - name: Run Move examples tests
         run: make test-move-examples
         env:
           ROOCH_BINARY_BUILD_PROFILE: optci
-      - name: Generate genesis files for Mainnet and Testnet
-        if: ${{ steps.changes.outputs.core == 'true'}}
-        run: make generate-genesis
-        env:
-          ROOCH_BINARY_BUILD_PROFILE: optci
+
+  test_sdk_web:
+    name: SDK and Web Tests
+    runs-on: ubuntu-latest
+    needs: [check_changes, build]
+    if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci-build'
+          cache-on-failure: true
 
       - name: Setup Node.js
-        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: actions/setup-node@v2
         with:
           node-version: '20.3.1'
-      - name: Run Web and SDK tests
-        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
+
+      - name: Setup pnpm Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Run SDK and Web tests
         env:
           ROOCH_BINARY_BUILD_PROFILE: optci
         run: |
-          # Check Docker and use cached image if available
           docker --version
           if ! docker images | grep -q 'lncm/bitcoind.*v25.1'; then
             echo "Pulling Docker image..."
@@ -149,17 +284,11 @@ jobs:
           else
             echo "Using cached Docker image"
           fi
-          # docker pull bitseed/ord:0.18.0-burn
-          # docker pull bitseed/bitseed:0.1.8
-          # Setup pnpm and run web/SDK tests
-          # . $NVM_DIR/nvm.sh
-          # nvm install 20.3.1
-          # nvm use 20.3.1
+
           npm install pnpm@9.10.0 -g
           pnpm install
-          # pnpm bitseed-sdk playwright-deps
-          # Run web/SDK tasks in parallel
 
+          echo "Building in parallel..."
           pnpm rooch-sdk lint
 
           pnpm test-suite build &
@@ -168,8 +297,6 @@ jobs:
           PID_SDK=$!
           pnpm rooch-sdk-kit build &
           PID_SDK_KIT=$!
-          # pnpm bitseed-sdk lint
-          # pnpm bitseed-sdk build
 
           EXIT_CODE_LINT=$?
           wait $PID_TEST_SUITE
@@ -178,46 +305,122 @@ jobs:
           EXIT_CODE_SDK=$?
           wait $PID_SDK_KIT
           EXIT_CODE_SDK_KIT=$?
+
           if [ $EXIT_CODE_LINT -ne 0 ]; then
-          echo "Error: The linting failed."
-          exit $EXIT_CODE_LINT
+            echo "Error: The linting failed."
+            exit $EXIT_CODE_LINT
           fi
           if [ $EXIT_CODE_TEST_SUITE -ne 0 ]; then
-          echo "Error: The test suite build failed."
-          exit $EXIT_CODE_TEST_SUITE
+            echo "Error: The test suite build failed."
+            exit $EXIT_CODE_TEST_SUITE
           fi
           if [ $EXIT_CODE_SDK -ne 0 ]; then
-          echo "Error: The SDK build failed."
-          exit $EXIT_CODE_SDK
+            echo "Error: The SDK build failed."
+            exit $EXIT_CODE_SDK
           fi
           if [ $EXIT_CODE_SDK_KIT -ne 0 ]; then
-          echo "Error: The SDK kit build failed."
-          exit $EXIT_CODE_SDK_KIT
+            echo "Error: The SDK kit build failed."
+            exit $EXIT_CODE_SDK_KIT
           fi
+
           echo "Web and SDK tests passed."
-          # Run tests
+          echo "Running tests..."
           pnpm rooch-sdk test
           pnpm rooch-sdk-kit test || true
-          # pnpm bitseed-sdk test || true
+
+  generate_genesis:
+    name: Generate Genesis
+    runs-on: larger-runner
+    needs: [check_changes, build]
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci-build'
+          cache-on-failure: true
+
+      - name: Generate genesis files
+        run: make generate-genesis
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
+
+  # Phase 4: Final checks
+  check_git_status:
+    name: Check Git Status
+    runs-on: ubuntu-latest
+    needs: [check_changes, test_rust_unit, test_rust_integration, test_move_frameworks, test_move_examples, test_sdk_web]
+    if: always() && (needs.test_rust_unit.result == 'success' || needs.test_rust_integration.result == 'success' || needs.test_move_frameworks.result == 'success' || needs.test_move_examples.result == 'success' || needs.test_sdk_web.result == 'success')
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - uses: CatChen/check-git-status-action@v1
         with:
           fail-if-not-clean: true
           push-if-not-clean: false
           targets: '.'
 
+  # Conditional validation jobs
+  validate_dockerfile_debug:
+    name: Validate Debug Dockerfile
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ contains(github.event.pull_request.changed_files.*.filename, 'docker/DockerfileDebug') }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Validate Debug Docker files
-        if: contains(github.event.pull_request.changed_files.*.filename, 'docker/DockerfileDebug')
         run: docker build -f docker/DockerfileDebug -t rooch-test-debug .
+
+  validate_dockerfile:
+    name: Validate Dockerfile
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ contains(github.event.pull_request.changed_files.*.filename, 'docker/Dockerfile') }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Validate Docker files
-        if: contains(github.event.pull_request.changed_files.*.filename, 'docker/Dockerfile')
         run: docker build -f docker/Dockerfile -t rooch-test .
+
+  validate_homebrew:
+    name: Validate Homebrew Formula
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ contains(github.event.pull_request.changed_files.*.filename, 'Formula/') }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Validate Homebrew formula
-        if: contains(github.event.pull_request.changed_files.*.filename, 'Formula/')
         run: |
           brew audit --strict --online Formula/rooch.rb
 
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.scripts == 'true' }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Run ShellCheck
-        if: ${{ steps.changes.outputs.scripts == 'true' }}
         uses: Azbagheri/shell-linter@v0.8.0
         with:
           path: 'scripts/*.sh'
