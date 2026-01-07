@@ -225,9 +225,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: ./.github/actions/rust-setup
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -264,9 +261,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: ./.github/actions/rust-setup
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -298,9 +292,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: ./.github/actions/rust-setup
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
