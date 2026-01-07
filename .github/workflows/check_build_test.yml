@@ -384,12 +384,11 @@ jobs:
           pnpm rooch-sdk test
           pnpm rooch-sdk-kit test || true
 
-  # Phase 4: Final checks
   check_git_status:
     name: Check Git Status
     runs-on: ubuntu-latest
-    needs: [check_changes, test_rust_unit, test_rust_integration, test_move_frameworks, test_move_examples, test_sdk_web]
-    if: always() && (needs.test_rust_unit.result == 'success' || needs.test_rust_integration.result == 'success' || needs.test_move_frameworks.result == 'success' || needs.test_move_examples.result == 'success' || needs.test_sdk_web.result == 'success')
+    needs: [check_changes, build_and_verify]
+    if: needs.build_and_verify.result == 'success'
     timeout-minutes: 10
     steps:
       - name: Checkout code
