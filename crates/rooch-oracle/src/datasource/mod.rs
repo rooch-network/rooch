@@ -148,6 +148,7 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore = "This test makes network requests to Binance API and can timeout/block in CI"]
     async fn test_binance_datasource() {
         let _trace = tracing_subscriber::fmt().try_init();
         test_datasource(binance::BinanceSource).await;
