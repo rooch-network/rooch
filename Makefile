@@ -136,7 +136,7 @@ test-rust-unit:
 		--exclude rooch-framework-tests \
 		--exclude rooch-integration-test-runner \
 		--exclude testsuite \
-		-j 8 \
+		-j 12 \
 		--retries 2 \
 		--success-output final \
 		--failure-output immediate-final \
@@ -145,11 +145,11 @@ test-rust-unit:
 test-rust-integration:
 	@echo "🧪 Running specific Rust framework and integration tests (profile: $(RUST_PROFILE_RELEASE))..."
 	# Ensure rooch-framework-tests and rooch-integration-test-runner are tested
-	cargo test --profile $(RUST_PROFILE_RELEASE) -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8
+	cargo test --profile $(RUST_PROFILE_RELEASE) -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=12
 	# Test rooch-framework-tests specifically for bitcoin_test filter as in pr.sh
-	cargo test --profile $(RUST_PROFILE_RELEASE) -p rooch-framework-tests bitcoin_test -- --test-threads=8
+	cargo test --profile $(RUST_PROFILE_RELEASE) -p rooch-framework-tests bitcoin_test -- --test-threads=12
 	@echo "🧪 Running Rust integration tests for testsuite (profile: $(RUST_PROFILE_RELEASE))..."
-	RUST_LOG=warn cargo test --profile $(RUST_PROFILE_RELEASE) -p testsuite --test integration
+	RUST_LOG=warn cargo test --profile $(RUST_PROFILE_RELEASE) -p testsuite --test integration -- --test-threads=12
 
 test-rust: build-rust-release test-rust-unit test-rust-integration
 

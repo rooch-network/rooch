@@ -146,14 +146,9 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           make install-tools
 
-      - name: Build binaries (with cache, should be fast)
-        run: |
-          echo "Building with cache (should complete in a few minutes)..."
-          cargo build --profile optci --workspace --bins -j 16
-
       - name: Run Rust unit tests
         run: |
-          echo "Running unit tests..."
+          echo "Running unit tests (test binaries will be compiled on-demand)..."
           make test-rust-unit
 
   test_rust_integration:
@@ -180,14 +175,9 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           make install-tools
 
-      - name: Build binaries (with cache, should be fast)
-        run: |
-          echo "Building with cache (should complete in a few minutes)..."
-          cargo build --profile optci --workspace --bins -j 16
-
       - name: Run Rust integration tests
         run: |
-          echo "Running integration tests..."
+          echo "Running integration tests (test binaries will be compiled on-demand)..."
           make test-rust-integration
 
   lint:
@@ -214,13 +204,10 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           make install-tools
 
-      - name: Build binaries (with cache, should be fast)
-        run: |
-          echo "Building with cache (should complete in a few minutes)..."
-          cargo build --profile optci --workspace --bins -j 16
-
       - name: Run Rust Lint
-        run: make lint
+        run: |
+          echo "Running lint (binaries will be compiled on-demand for analysis)..."
+          make lint
 
   test_move_frameworks:
     name: Move Framework Tests
