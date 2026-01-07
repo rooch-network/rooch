@@ -168,6 +168,12 @@ jobs:
       - name: Setup Rust (minimal, for cargo test command)
         uses: ./.github/actions/rust-setup
 
+      - name: Install cargo-nextest (pre-built binary)
+        run: |
+          echo "Installing cargo-binstall and cargo-nextest..."
+          cargo install cargo-binstall --locked || cargo install cargo-binstall
+          cargo binstall cargo-nextest --locked --version 0.9.97-b.2 -y
+
       - name: Run Rust unit tests
         run: |
           echo "Running unit tests using pre-compiled test binaries..."
@@ -205,6 +211,12 @@ jobs:
 
       - name: Setup Rust (minimal, for cargo test command)
         uses: ./.github/actions/rust-setup
+
+      - name: Install cargo-nextest (pre-built binary)
+        run: |
+          echo "Installing cargo-binstall and cargo-nextest..."
+          cargo install cargo-binstall --locked || cargo install cargo-binstall
+          cargo binstall cargo-nextest --locked --version 0.9.97-b.2 -y
 
       - name: Run Rust framework tests
         run: |
@@ -244,6 +256,12 @@ jobs:
       - name: Setup Rust (minimal, for cargo test command)
         uses: ./.github/actions/rust-setup
 
+      - name: Install cargo-nextest (pre-built binary)
+        run: |
+          echo "Installing cargo-binstall and cargo-nextest..."
+          cargo install cargo-binstall --locked || cargo install cargo-binstall
+          cargo binstall cargo-nextest --locked --version 0.9.97-b.2 -y
+
       - name: Run Rust Bitcoin tests
         run: |
           echo "Running Bitcoin tests using pre-compiled test binaries..."
@@ -281,6 +299,12 @@ jobs:
 
       - name: Setup Rust (minimal, for cargo test command)
         uses: ./.github/actions/rust-setup
+
+      - name: Install cargo-nextest (pre-built binary)
+        run: |
+          echo "Installing cargo-binstall and cargo-nextest..."
+          cargo install cargo-binstall --locked || cargo install cargo-binstall
+          cargo binstall cargo-nextest --locked --version 0.9.97-b.2 -y
 
       - name: Run Rust integration suite tests
         run: |

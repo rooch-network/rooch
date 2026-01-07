@@ -130,14 +130,17 @@ rust-machete:
 test-rust-unit:
 	@echo "🧪 Running Rust unit tests (profile: $(RUST_PROFILE_RELEASE))..."
 	export RUST_BACKTRACE=1; \
-	cargo test \
+	cargo nextest run \
 		--workspace \
 		--all-features \
 		--exclude rooch-framework-tests \
 		--exclude rooch-integration-test-runner \
 		--exclude testsuite \
-		--profile $(RUST_PROFILE_RELEASE) \
-		-j 12
+		-j 12 \
+		--retries 2 \
+		--success-output final \
+		--failure-output immediate-final \
+		--cargo-profile $(RUST_PROFILE_RELEASE)
 
 test-rust-integration:
 	@echo "🧪 Running specific Rust framework and integration tests (profile: $(RUST_PROFILE_RELEASE))..."
