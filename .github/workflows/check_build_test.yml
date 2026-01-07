@@ -315,25 +315,13 @@ jobs:
 
   lint:
     name: Rust Lint
-    runs-on: ubuntu-latest
+    runs-on: larger-runner
     needs: build_and_verify
     if: ${{ needs.check_changes.outputs.core == 'true' }}
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: rooch-binaries
-          path: target/optci
-
-      - name: Make binaries executable
-        run: |
-          chmod +x target/optci/rooch
-          chmod +x target/optci/rooch-genesis
-          chmod +x target/optci/framework-release
 
       - name: Setup Rust
         uses: ./.github/actions/rust-setup
@@ -351,7 +339,7 @@ jobs:
 
       - name: Run Rust Lint
         run: |
-          echo "Running lint on ubuntu-latest (compiles workspace for analysis)..."
+          echo "Running lint on larger-runner (compiles workspace for analysis)..."
           make lint
         env:
           ROOCH_BINARY_BUILD_PROFILE: optci
