@@ -165,6 +165,9 @@ jobs:
           chmod +x target/optci/rooch-genesis
           chmod +x target/optci/framework-release
 
+      - name: Setup Rust (minimal, for cargo test command)
+        uses: ./.github/actions/rust-setup
+
       - name: Run Rust unit tests
         run: |
           echo "Running unit tests using pre-compiled test binaries..."
@@ -199,6 +202,9 @@ jobs:
           chmod +x target/optci/rooch
           chmod +x target/optci/rooch-genesis
           chmod +x target/optci/framework-release
+
+      - name: Setup Rust (minimal, for cargo test command)
+        uses: ./.github/actions/rust-setup
 
       - name: Run Rust framework tests
         run: |
@@ -235,6 +241,9 @@ jobs:
           chmod +x target/optci/rooch-genesis
           chmod +x target/optci/framework-release
 
+      - name: Setup Rust (minimal, for cargo test command)
+        uses: ./.github/actions/rust-setup
+
       - name: Run Rust Bitcoin tests
         run: |
           echo "Running Bitcoin tests using pre-compiled test binaries..."
@@ -269,6 +278,9 @@ jobs:
           chmod +x target/optci/rooch
           chmod +x target/optci/rooch-genesis
           chmod +x target/optci/framework-release
+
+      - name: Setup Rust (minimal, for cargo test command)
+        uses: ./.github/actions/rust-setup
 
       - name: Run Rust integration suite tests
         run: |
