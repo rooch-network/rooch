@@ -81,7 +81,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: 'ci-build'
+          shared-key: 'ci'
           cache-on-failure: true
 
       - name: Install cargo tools
@@ -138,7 +138,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: 'ci-test'
+          shared-key: 'ci'
           cache-on-failure: true
 
       - name: Install cargo tools
@@ -175,7 +175,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: 'ci-test'
+          shared-key: 'ci'
           cache-on-failure: true
 
       - name: Install cargo tools
@@ -212,7 +212,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: 'ci-test'
+          shared-key: 'ci'
           cache-on-failure: true
 
       - name: Install cargo tools
@@ -249,7 +249,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: 'ci-test'
+          shared-key: 'ci'
           cache-on-failure: true
 
       - name: Install cargo tools
@@ -286,7 +286,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: 'ci-build'
+          shared-key: 'ci'
           cache-on-failure: true
 
       - name: Install cargo tools
