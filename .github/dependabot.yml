@@ -1,12 +1,45 @@
+# Dependabot configuration to reduce CI costs
+# See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
 version: 2
 updates:
-- package-ecosystem: cargo
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "02:00"
-    # Use UTC +08:00
-    timezone: "Asia/Shanghai"
-  open-pull-requests-limit: 10
-  # Disable auto rebase
-  rebase-strategy: "disabled"
+  # Rust dependencies (Cargo.toml)
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      # Reduce frequency from daily to weekly
+      interval: "weekly"
+      day: "monday"
+      # Run at midnight UTC to avoid conflicts with manual work
+      time: "00:00"
+    # Group updates to reduce PR count
+    groups:
+      # Group all production dependencies together
+      production-dependencies:
+        patterns:
+          - "*"  # Match all dependencies
+        exclude-patterns:
+          - "*-dev"  # Exclude dev dependencies
+        update-types:
+          - "minor"
+          - "patch"
+      # Group dev dependencies separately
+      dev-dependencies:
+        patterns:
+          - "*-dev"
+        update-types:
+          - "minor"
+          "patch"
+    # Commit message limits
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(dev-deps)"
+      include: "scope"
+    # Limit to 5 open PRs at a time
+    open-pull-requests-limit: 5
+    # Automatically rebases to reduce merge conflicts
+    rebase-strategy: "auto"
+    # Only create PRs for version updates that are compatible
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
