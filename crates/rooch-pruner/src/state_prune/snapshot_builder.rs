@@ -107,7 +107,10 @@ impl SnapshotProgress {
         info!(
             "Loaded valid progress: {} nodes processed, {} in worklist, checkpoint {}",
             progress.statistics.nodes_visited,
-            progress.worklist.len().saturating_sub(progress.worklist_position),
+            progress
+                .worklist
+                .len()
+                .saturating_sub(progress.worklist_position),
             progress.checkpoint_id
         );
 
@@ -198,7 +201,10 @@ impl SnapshotBuilder {
         metadata.mark_in_progress("Creating snapshot database".to_string(), 5.0);
 
         // When resuming, restore nodes_written count from previous progress
-        let initial_nodes_written = resume_progress.as_ref().map(|p| p.nodes_written).unwrap_or(0);
+        let initial_nodes_written = resume_progress
+            .as_ref()
+            .map(|p| p.nodes_written)
+            .unwrap_or(0);
         if initial_nodes_written > 0 {
             info!(
                 "Restoring snapshot writer with {} previously written nodes",
@@ -641,7 +647,11 @@ impl SnapshotNodeWriter {
 
     /// Create new snapshot node writer with RocksDB backend, starting from existing count
     /// Used when resuming a snapshot operation to preserve previously written node count
-    pub fn new_with_count(output_dir: &Path, _config: &SnapshotBuilderConfig, initial_count: u64) -> Result<Self> {
+    pub fn new_with_count(
+        output_dir: &Path,
+        _config: &SnapshotBuilderConfig,
+        initial_count: u64,
+    ) -> Result<Self> {
         let snapshot_db_path = output_dir.join("snapshot.db");
 
         // Validate and create output directory
@@ -791,7 +801,10 @@ impl SnapshotNodeWriter {
             match result {
                 Ok(_) => count += 1,
                 Err(e) => {
-                    return Err(anyhow::anyhow!("Error iterating over snapshot database: {}", e));
+                    return Err(anyhow::anyhow!(
+                        "Error iterating over snapshot database: {}",
+                        e
+                    ));
                 }
             }
         }
@@ -800,26 +813,33 @@ impl SnapshotNodeWriter {
     }
 
     /// Finalize the snapshot writer and return the final count
-    pub fn finalize(self, metadata: &mut StatePruneMetadata) -> Result<u64> {
+    pub fn finalize(mut self, metadata: &mut StatePruneMetadata) -> Result<u64> {
         info!(
             "Finalizing snapshot with {} nodes written",
             self.nodes_written
         );
 
         // Validate the nodes_written count matches actual database count
-        match self.get_actual_node_count() {
+        // Use actual count as source of truth if they differ
+        let final_count = match self.get_actual_node_count() {
             Ok(actual_count) => {
                 if actual_count != self.nodes_written {
                     warn!(
                         "nodes_written count ({}) does not match actual database count ({}), using actual count",
                         self.nodes_written, actual_count
                     );
+                    self.nodes_written = actual_count;
                 }
+                self.nodes_written
             }
             Err(e) => {
-                warn!("Failed to validate node count from database: {}", e);
+                warn!(
+                    "Failed to validate node count from database: {}, using tracked count",
+                    e
+                );
+                self.nodes_written
             }
-        }
+        };
 
         // Force flush to ensure all data is written to disk
         self.db.flush()?;
@@ -831,15 +851,15 @@ impl SnapshotNodeWriter {
 
         info!(
             "Snapshot compaction completed in {:?}, final node count: {}",
-            compact_duration, self.nodes_written
+            compact_duration, final_count
         );
 
         // Update metadata with final progress
         metadata.update_statistics(|stats| {
-            stats.nodes_written = Some(self.nodes_written);
+            stats.nodes_written = Some(final_count);
         });
 
-        Ok(self.nodes_written)
+        Ok(final_count)
     }
 }
 
