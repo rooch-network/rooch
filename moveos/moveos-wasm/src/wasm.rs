@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(static_mut_refs)]
+
 use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};

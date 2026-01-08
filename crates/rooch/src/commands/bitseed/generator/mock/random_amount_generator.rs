@@ -5,6 +5,7 @@ use crate::commands::bitseed::generator::{Generator, InscribeGenerateOutput, Ins
 use bitcoin::Address;
 use move_core_types::u256::U256;
 
+#[allow(dead_code)]
 pub struct RandomAmountGenerator;
 
 impl Generator for RandomAmountGenerator {

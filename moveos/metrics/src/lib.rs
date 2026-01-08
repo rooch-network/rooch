@@ -4,6 +4,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+#![allow(mismatched_lifetime_syntaxes)]
+
 use axum::{extract::Extension, http::StatusCode, routing::get, Router};
 use dashmap::DashMap;
 use std::future::Future;

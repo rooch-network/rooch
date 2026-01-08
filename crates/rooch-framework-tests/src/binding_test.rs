@@ -138,7 +138,7 @@ impl RustBindingTest {
         self.opt.base().data_dir()
     }
 
-    pub fn resolver(&self) -> RootObjectResolver<MoveOSStore> {
+    pub fn resolver(&self) -> RootObjectResolver<'_, MoveOSStore> {
         RootObjectResolver::new(self.root.clone(), &self.rooch_db.moveos_store)
     }
 

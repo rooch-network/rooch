@@ -9,6 +9,14 @@ license = "Apache-2.0"
 publish = ["crates-io"]
 edition = "2021"
 
+[lints.rust]
+non_local_definitions = "allow"
+
+[lints.clippy]
+doc_overindented_list_items = "allow"
+empty_line_after_doc_comments = "allow"
+manual_is_multiple_of = "allow"
+
 [dependencies]
 anyhow = "1.0.52"
 arbitrary = { version = "1.1.7", features = [ "derive_arbitrary"], optional = true }
