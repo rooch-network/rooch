@@ -29,7 +29,7 @@ updates:
           - "*-dev"
         update-types:
           - "minor"
-          "patch"
+          - "patch"
     # Commit message limits
     commit-message:
       prefix: "chore(deps)"
@@ -37,8 +37,8 @@ updates:
       include: "scope"
     # Limit to 5 open PRs at a time
     open-pull-requests-limit: 5
-    # Automatically rebases to reduce merge conflicts
-    rebase-strategy: "auto"
+    # Disable auto rebase (keep original behavior)
+    rebase-strategy: "disabled"
     # Only create PRs for version updates that are compatible
     allow:
       - dependency-type: "direct"

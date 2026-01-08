@@ -32,22 +32,10 @@ jobs:
     outputs:
       core: ${{ steps.changes.outputs.core }}
       sdk_web: ${{ steps.changes.outputs.sdk_web }}
-      is_dependabot: ${{ steps.check_dependabot.outputs.is_dependabot }}
     timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Check if Dependabot PR
-        id: check_dependabot
-        run: |
-          if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
-            echo "is_dependabot=true" >> $GITHUB_OUTPUT
-            echo "🤖 This is a Dependabot PR - will run reduced test suite"
-          else
-            echo "is_dependabot=false" >> $GITHUB_OUTPUT
-            echo "👤 This is a regular PR - will run full test suite"
-          fi
 
       - name: Filter Changed Files
         uses: dorny/paths-filter@v3
@@ -249,7 +237,7 @@ jobs:
     name: Rust Integration Suite Tests
     runs-on: ubuntu-latest
     needs: build_and_verify
-    if: ${{ needs.check_changes.outputs.core == 'true' && needs.check_changes.outputs.is_dependabot != 'true' }}
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
     steps:
       - name: Checkout code
@@ -317,7 +305,7 @@ jobs:
     name: Move Framework Tests
     runs-on: ubuntu-latest
     needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' && needs.check_changes.outputs.is_dependabot != 'true' }}
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
     steps:
       - name: Checkout code
@@ -353,7 +341,7 @@ jobs:
     name: Move Examples Tests
     runs-on: ubuntu-latest
     needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' && needs.check_changes.outputs.is_dependabot != 'true' }}
+    if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
     steps:
       - name: Checkout code
@@ -385,7 +373,7 @@ jobs:
     name: SDK and Web Tests
     runs-on: ubuntu-latest
     needs: [check_changes, build_and_verify]
-    if: ${{ (needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true') && needs.check_changes.outputs.is_dependabot != 'true' }}
+    if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
     timeout-minutes: 60
     steps:
       - name: Checkout code
