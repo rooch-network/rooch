@@ -187,6 +187,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
 //this test takes too long time in debug mod run it in release mod, use command:
 //RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_test::test_real_bocks
 #[tokio::test]
+#[ignore = "This test processes real blockchain data and takes ~14 minutes. Run manually with --include-ignored flag for verification."]
 async fn test_real_bocks() {
     let _ = tracing_subscriber::fmt::try_init();
     if cfg!(debug_assertions) {
