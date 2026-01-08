@@ -92,14 +92,21 @@ impl IncrementalReplayer {
 
         metadata.mark_in_progress("Replaying changesets".to_string(), 20.0);
 
-        // Process changesets in batches
-        self.replay_changesets_batched(changesets, &snapshot_store, &mut report, &mut metadata)
+        // Process changesets in batches and get expected final state root
+        let expected_state_root = self
+            .replay_changesets_batched(changesets, &snapshot_store, &mut report, &mut metadata)
             .await?;
 
         // Verify final state root if enabled
         if self.config.verify_final_state_root {
             metadata.mark_in_progress("Verifying final state root".to_string(), 90.0);
-            self.verify_final_state_root(&snapshot_store, &mut report)?;
+            if let Err(e) =
+                self.verify_final_state_root(&snapshot_store, expected_state_root, &mut report)
+            {
+                // Verification failed - mark metadata as failed
+                metadata.mark_failed(format!("State root verification failed: {}", e));
+                return Err(e);
+            }
         }
 
         // Create checkpoints if enabled
@@ -247,13 +254,14 @@ impl IncrementalReplayer {
     }
 
     /// Replay changesets in batches
+    /// Returns the expected final state root (from the last changeset applied)
     async fn replay_changesets_batched(
         &self,
         changesets: Vec<(u64, StateChangeSetExt)>,
         snapshot_store: &MoveOSStore,
         report: &mut ReplayReport,
         metadata: &mut StatePruneMetadata,
-    ) -> Result<()> {
+    ) -> Result<H256> {
         let total_changesets = changesets.len();
         let mut processed = 0;
 
@@ -298,7 +306,19 @@ impl IncrementalReplayer {
         }
 
         report.changesets_processed = processed as u64;
-        Ok(())
+
+        // Get the expected final state root from the last changeset
+        let expected_state_root = changesets
+            .last()
+            .map(|(_, changeset)| changeset.state_change_set.state_root)
+            .unwrap_or_else(H256::zero);
+
+        info!(
+            "Processed {} changesets, expected final state root: {:x}",
+            processed, expected_state_root
+        );
+
+        Ok(expected_state_root)
     }
 
     /// Apply a batch of changesets
@@ -359,12 +379,16 @@ impl IncrementalReplayer {
     fn verify_final_state_root(
         &self,
         snapshot_store: &MoveOSStore,
+        expected_state_root: H256,
         report: &mut ReplayReport,
     ) -> Result<()> {
-        info!("Starting final state root verification");
+        info!(
+            "Starting final state root verification, expected: {:x}",
+            expected_state_root
+        );
 
-        // Get current state root from startup info
-        let current_state_root = snapshot_store
+        // Get actual state root from startup info
+        let actual_state_root = snapshot_store
             .get_config_store()
             .get_startup_info()
             .map_err(|e| anyhow::anyhow!("Failed to get startup info: {}", e))?
@@ -372,16 +396,34 @@ impl IncrementalReplayer {
             .state_root;
 
         info!(
-            "Current state root from startup info: {:x}",
-            current_state_root
+            "Actual state root from startup info: {:x}",
+            actual_state_root
         );
 
-        // For now, we'll consider the verification successful if we can get the startup info
-        // In a full implementation, we would compare with an expected state root
+        // Store the actual state root in the report
+        report.final_state_root = actual_state_root;
+
+        // Compare expected vs actual
+        if expected_state_root != actual_state_root {
+            let error_msg = format!(
+                "State root mismatch: expected {:x}, but got {:x}",
+                expected_state_root, actual_state_root
+            );
+
+            error!("{}", error_msg);
+            report.add_error(error_msg.clone());
+            report.verification_passed = false;
+
+            return Err(anyhow::anyhow!(
+                "Final state root verification failed: {}",
+                error_msg
+            ));
+        }
+
         report.verification_passed = true;
         info!(
             "Final state root verification passed: {:x}",
-            current_state_root
+            actual_state_root
         );
 
         Ok(())
@@ -466,6 +508,7 @@ impl IncrementalReplayer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state_prune::metadata::OperationStatus;
     use rooch_config::state_prune::SnapshotMeta;
     use rooch_store::RoochStore;
     use std::fs;
@@ -607,6 +650,187 @@ mod tests {
                 .to_string()
                 .contains("not a valid database"),
             "Error should mention invalid database"
+        );
+    }
+
+    #[test]
+    fn test_verify_final_state_root_success() {
+        // Test that verification passes when state roots match
+        let (live_moveos_store, _live_tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let (live_rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
+        let config = ReplayConfig::default();
+        let replayer =
+            IncrementalReplayer::new(config, live_rooch_store.clone(), live_moveos_store.clone())
+                .unwrap();
+
+        // Create a snapshot store with a known state root
+        let snapshot_dir = TempDir::new().unwrap();
+        let snapshot_path = snapshot_dir.path();
+
+        // Use a known state root for testing
+        let expected_root = H256::from([1u8; 32]);
+
+        // Create snapshot metadata
+        let snapshot_meta = SnapshotMeta {
+            tx_order: 100,
+            state_root: expected_root,
+            global_size: 1000,
+            node_count: 100,
+            created_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            version: 1,
+            metadata: serde_json::json!({}),
+        };
+        let meta_path = snapshot_path.join("snapshot_meta.json");
+        let meta_content = serde_json::to_string_pretty(&snapshot_meta).unwrap();
+        fs::write(&meta_path, meta_content).unwrap();
+
+        // Create snapshot database and set startup info
+        let snapshot_db_path = snapshot_path.join("snapshot.db");
+        fs::create_dir_all(&snapshot_db_path).unwrap();
+
+        // Create a MoveOSStore for the snapshot
+        let registry = Registry::new();
+        let snapshot_store = MoveOSStore::new(&snapshot_db_path, &registry).unwrap();
+
+        // Create startup info with the expected state root
+        use moveos_types::startup_info::StartupInfo;
+        let startup_info = StartupInfo::new(expected_root, 1000);
+        snapshot_store
+            .get_config_store()
+            .save_startup_info(startup_info)
+            .unwrap();
+
+        // Create report and metadata
+        let mut report = ReplayReport::new();
+        let metadata = StatePruneMetadata::new(
+            crate::state_prune::OperationType::Replay {
+                snapshot_path: snapshot_path.to_path_buf(),
+                from_order: 0,
+                to_order: 100,
+                output_dir: TempDir::new().unwrap().path().to_path_buf(),
+            },
+            serde_json::json!({}),
+        );
+
+        // Verify with matching state root should succeed
+        let result = replayer.verify_final_state_root(&snapshot_store, expected_root, &mut report);
+
+        assert!(
+            result.is_ok(),
+            "Verification should succeed when state roots match"
+        );
+        assert!(
+            report.verification_passed,
+            "Report should show verification passed"
+        );
+        assert_eq!(report.final_state_root, expected_root);
+        assert!(
+            report.errors.is_empty(),
+            "Report should have no errors when verification passes"
+        );
+        // Note: The verify function doesn't mark metadata as completed/failed,
+        // that's done by the caller (replay_changesets method)
+        assert!(
+            matches!(metadata.status, OperationStatus::Pending),
+            "Metadata status should remain pending when called directly"
+        );
+    }
+
+    #[test]
+    fn test_verify_final_state_root_failure() {
+        // Test that verification fails when state roots don't match
+        let (live_moveos_store, _live_tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+        let (live_rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
+        let config = ReplayConfig::default();
+        let replayer =
+            IncrementalReplayer::new(config, live_rooch_store.clone(), live_moveos_store.clone())
+                .unwrap();
+
+        // Create a snapshot store
+        let snapshot_dir = TempDir::new().unwrap();
+        let snapshot_path = snapshot_dir.path();
+
+        // Use different roots for actual and expected to cause mismatch
+        let actual_root = H256::from([1u8; 32]);
+        let expected_root = H256::from([2u8; 32]);
+
+        // Create snapshot metadata
+        let snapshot_meta = SnapshotMeta {
+            tx_order: 100,
+            state_root: actual_root,
+            global_size: 1000,
+            node_count: 100,
+            created_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            version: 1,
+            metadata: serde_json::json!({}),
+        };
+        let meta_path = snapshot_path.join("snapshot_meta.json");
+        let meta_content = serde_json::to_string_pretty(&snapshot_meta).unwrap();
+        fs::write(&meta_path, meta_content).unwrap();
+
+        // Create snapshot database
+        let snapshot_db_path = snapshot_path.join("snapshot.db");
+        fs::create_dir_all(&snapshot_db_path).unwrap();
+
+        // Create a MoveOSStore for the snapshot
+        let registry = Registry::new();
+        let snapshot_store = MoveOSStore::new(&snapshot_db_path, &registry).unwrap();
+
+        // Create startup info with the actual state root
+        use moveos_types::startup_info::StartupInfo;
+        let startup_info = StartupInfo::new(actual_root, 1000);
+        snapshot_store
+            .get_config_store()
+            .save_startup_info(startup_info)
+            .unwrap();
+
+        // Create report and metadata
+        let mut report = ReplayReport::new();
+        let metadata = StatePruneMetadata::new(
+            crate::state_prune::OperationType::Replay {
+                snapshot_path: snapshot_path.to_path_buf(),
+                from_order: 0,
+                to_order: 100,
+                output_dir: TempDir::new().unwrap().path().to_path_buf(),
+            },
+            serde_json::json!({}),
+        );
+
+        // Verify with mismatching state root should fail
+        let result = replayer.verify_final_state_root(&snapshot_store, expected_root, &mut report);
+
+        assert!(
+            result.is_err(),
+            "Verification should fail when state roots don't match"
+        );
+        assert!(
+            !report.verification_passed,
+            "Report should show verification failed"
+        );
+        assert_eq!(report.final_state_root, actual_root);
+        assert!(
+            !report.errors.is_empty(),
+            "Report should contain error message"
+        );
+        assert!(
+            report.errors[0].contains("State root mismatch"),
+            "Error should mention state root mismatch"
+        );
+        assert!(
+            !report.is_success(),
+            "Report should indicate failure via is_success()"
+        );
+        // Note: The verify function doesn't mark metadata as failed,
+        // that's done by the caller (replay_changesets method)
+        assert!(
+            matches!(metadata.status, OperationStatus::Pending),
+            "Metadata status should remain pending when called directly"
         );
     }
 }
