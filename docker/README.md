@@ -30,7 +30,7 @@ This image is designed for:
 - Integration testing with Move, TypeScript SDK, and Bitcoin regtest
 
 **Included Components:**
-- **Rust 1.82.0** - Matches `rust-toolchain.toml`
+- **Rust 1.91.1** - Matches `rust-toolchain.toml`
 - **Move compiler** - Via Rust toolchain
 - **Node.js 20.x** - For TypeScript SDK development
 - **pnpm 9.10.0** - Matches root `package.json`
@@ -135,8 +135,8 @@ docker run --rm rooch-dev-base:latest bash -c "
 ```
 
 Expected output:
-- `rustc 1.82.0`
-- `cargo 1.82.0`
+- `rustc 1.91.1`
+- `cargo 1.91.1`
 - `node v20.x.x`
 - `pnpm 9.10.0`
 - `Bitcoin Core version x.x.x`

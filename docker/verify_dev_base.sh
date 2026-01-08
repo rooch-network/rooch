@@ -12,13 +12,13 @@ echo "=================================="
 echo
 
 # Test 1: Rust installation and version
-echo "Test 1: Verify Rust 1.82.0 installation"
+echo "Test 1: Verify Rust 1.91.1 installation"
 docker run --rm "$IMAGE" bash -c "
-  rustc --version | grep '1.82.0' && \
+  rustc --version | grep '1.91.1' && \
   cargo --version && \
   rustup --version
 "
-echo "✓ Rust 1.82.0 installed correctly"
+echo "✓ Rust 1.91.1 installed correctly"
 echo
 
 # Test 2: Node.js >= 20
@@ -114,7 +114,7 @@ echo "All tests passed! ✓"
 echo "=================================="
 echo
 echo "Image $IMAGE meets all acceptance criteria:"
-echo "  ✓ Rust 1.82.0"
+echo "  ✓ Rust 1.91.1"
 echo "  ✓ Node.js >= 20"
 echo "  ✓ pnpm 9.10.0"
 echo "  ✓ bitcoind installed"

@@ -99,7 +99,7 @@ Run the verification script to ensure the image meets all requirements:
 ## Expected Versions
 
 When verified, the image should report:
-- Rust: 1.82.0
+- Rust: 1.91.1
 - Node.js: v20.x.x
 - pnpm: 9.10.0
 - bitcoind: Bitcoin Core x.x.x

@@ -15,7 +15,7 @@ function install_cargo_machete {
 
 function install_cargo_nextest {
   # Install cargo-nextest with a version compatible with the Rust toolchain (>=1.81, <1.85).
-  # CI currently uses rustc 1.82, whereas cargo-nextest 0.9.98 requires 1.85.
+  # CI currently uses rustc 1.91, whereas cargo-nextest 0.9.98 requires 1.85.
   if ! command -v cargo-nextest &>/dev/null; then
     cargo install cargo-nextest --locked --version 0.9.97-b.2
   fi

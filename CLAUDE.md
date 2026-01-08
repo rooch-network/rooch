@@ -55,7 +55,7 @@ export RUST_BACKTRACE=1   # Show backtrace on errors
 export ENV_TEST_ON_CI=1   # Enable CI-specific test behavior
 
 # Tool requirements
-export RUST_VERSION=1.82.0  # Minimum Rust version required
+export RUST_VERSION=1.91.1  # Minimum Rust version required
 export NODE_VERSION=18.0.0  # Minimum Node.js version for TypeScript SDK
 ```
 
@@ -425,7 +425,7 @@ The `docs/dev-guide/` directory contains comprehensive guides:
 
 ### Version Information
 - **Current workspace version**: 0.12.1
-- **Rust requirement**: 1.82.0 (minimum)
+- **Rust requirement**: 1.91.1 (minimum)
 - **Node.js requirement**: >=18.0.0 (for TypeScript SDK)
 
 This architecture enables Rooch to provide scalable, verifiable applications with strong Bitcoin ecosystem integration while maintaining Move language safety guarantees.
