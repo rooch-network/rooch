@@ -27,7 +27,7 @@
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.5.1",
     "react-markdown": "^9.0.3",
-    "react-router-dom": "^6.21.3",
+    "react-router-dom": "^6.30.3",
     "react-syntax-highlighter": "^15.6.1",
     "remark-gfm": "^4.0.0"
   },
@@ -48,6 +48,6 @@
     "prettier": "^3.0.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.6.2",
-    "vite": "^5.4.4"
+    "vite": "^5.4.21"
   }
 }

@@ -87,7 +87,7 @@
 		"debug": "^4.4.0",
 		"rxjs": "^7.8.2",
 		"tweetnacl": "^1.0.3",
-		"valibot": "^0.41.0",
+		"valibot": "^1.2.0",
 		"eventsource": "3.0.6"
 	},
 	"publishConfig": {
