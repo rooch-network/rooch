@@ -40,7 +40,6 @@ use std::sync::Arc;
 use std::{env, vec};
 use tempfile::TempDir;
 use tokio::runtime::Runtime;
-use tracing::info;
 
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
