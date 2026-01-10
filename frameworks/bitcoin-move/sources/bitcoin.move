@@ -259,24 +259,45 @@ module bitcoin_move::bitcoin{
 
     /// The sequencer submit a new Bitcoin block to execute
     /// This function is a system function, is the execute_l1_block entry point
+    /// Modified to only process block headers, skipping transaction processing
     fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
-        let btc_block_store_obj = borrow_block_store();
-        let btc_block_store = object::borrow(btc_block_store_obj);
+        let btc_block_store_obj = borrow_block_store_mut();
+        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+        
         assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
+        
         let block = bcs::from_bytes<Block>(block_bytes);
-        let block_header = types::header(&block);
-        let time = types::time(block_header);
-        if(pending_block::add_pending_block(block_height, block_hash, block)){
-            //We do not update the timestamp via bitcoin block header in testnet
-            //Because the testnet block time is not accurate
-            if(!chain_id::is_test()){
-                //We directly update the global time do not wait the pending block to be confirmed
-                //The reorg do not affect the global time
-                let timestamp_seconds = (time as u64);
-                let module_signer = signer::module_signer<BitcoinBlockStore>();
-                timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
-            }
-        };
+        let block_header = *types::header(&block);
+        
+        // Directly process block header, skip pending_block and transaction processing
+        process_block_header(btc_block_store, block_height, block_hash, block_header);
+        
+        // Update global time
+        if(!chain_id::is_test()){
+            let timestamp_seconds = (types::time(&block_header) as u64);
+            let module_signer = signer::module_signer<BitcoinBlockStore>();
+            timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+        }
+    }
+
+    /// Entry function for future use by Relayer to submit only block headers
+    public entry fun execute_l1_block_header(block_height: u64, block_hash: address, header_bytes: vector<u8>){
+        let btc_block_store_obj = borrow_block_store_mut();
+        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+        
+        assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
+        
+        let header = bcs::from_bytes<Header>(header_bytes);
+        
+        // Process block header
+        process_block_header(btc_block_store, block_height, block_hash, header);
+        
+        // Update global time
+        if(!chain_id::is_test()){
+            let timestamp_seconds = (types::time(&header) as u64);
+            let module_signer = signer::module_signer<BitcoinBlockStore>();
+            timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+        }
     }
 
     /// This is the execute_l1_tx entry point
@@ -411,6 +432,36 @@ module bitcoin_move::bitcoin{
         let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
         table::contains(&btc_block_store.txs, tx_hash)
+    }
+
+    /// Event emitted when a transaction is verified via Merkle proof
+    struct TxVerifiedEvent has copy, drop {
+        block_hash: address,
+        txid: address,
+    }
+
+    /// Submit a Bitcoin transaction with Merkle proof for verification
+    /// This is a minimal version that only verifies the proof
+    /// Future versions will support UTXO/Inscription creation
+    public entry fun submit_tx_with_proof(
+        block_hash: address,
+        tx_bytes: vector<u8>,
+        proof_bytes: vector<u8>,
+    ) {
+        let tx = bcs::from_bytes<Transaction>(tx_bytes);
+        let proof = bcs::from_bytes<types::MerkleProof>(proof_bytes);
+        
+        // Verify Merkle proof
+        assert!(
+            bitcoin_move::merkle_proof::verify_tx_in_block(block_hash, &tx, &proof),
+            ErrorBlockProcessError
+        );
+        
+        // Emit verification success event
+        event::emit(TxVerifiedEvent {
+            block_hash,
+            txid: types::tx_id(&tx),
+        });
     }
 
     #[test_only]

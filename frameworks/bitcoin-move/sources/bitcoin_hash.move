@@ -49,6 +49,14 @@ module bitcoin_move::bitcoin_hash{
         address::from_bytes(hash2)
     }
 
+    /// Concatenate two hashes and compute double SHA256
+    /// Used for Merkle tree verification
+    public fun sha256d_concat(left: address, right: address): address {
+        let mut input = address::to_bytes(&left);
+        vector::append(&mut input, address::to_bytes(&right));
+        sha256d(input)
+    }
+
     #[test]
     fun test_from_ascii_bytes() {
         let input = b"00000000e47349de5a0193abc5a2fe0be81cb1d1987e45ab85f3289d54cddc4d";
