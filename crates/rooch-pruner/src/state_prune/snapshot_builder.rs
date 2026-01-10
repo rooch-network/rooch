@@ -241,12 +241,8 @@ impl SnapshotBuilder {
         let active_nodes_count = snapshot_writer.finalize(&mut metadata)?;
 
         // Create snapshot metadata with tx_order and global_size
-        let snapshot_meta = SnapshotMeta::new(
-            tx_order,
-            state_root,
-            global_size,
-            active_nodes_count,
-        );
+        let snapshot_meta =
+            SnapshotMeta::new(tx_order, state_root, global_size, active_nodes_count);
 
         // Save metadata
         snapshot_meta.save_to_file(&output_dir)?;
