@@ -3,29 +3,10 @@
 
 module bitcoin_move::merkle_proof {
     use std::vector;
-    use std::option::{Self, Option};
-    use bitcoin_move::types::{Self, Header, Transaction, MerkleProof, ProofNode};
+    use bitcoin_move::types::{Self, MerkleProof};
     use bitcoin_move::bitcoin_hash;
-    use bitcoin_move::bitcoin;
 
     const ErrorInvalidProof: u64 = 1;
-    const ErrorBlockNotFound: u64 = 2;
-
-    /// Verify that a transaction is included in the specified block
-    public fun verify_tx_in_block(
-        block_hash: address,
-        tx: &Transaction,
-        proof: &MerkleProof,
-    ): bool {
-        let header_opt = bitcoin::get_block(block_hash);
-        if (option::is_none(&header_opt)) {
-            return false
-        };
-        let header = option::destroy_some(header_opt);
-        let merkle_root = types::merkle_root(&header);
-        
-        verify_merkle_proof(types::tx_id(tx), merkle_root, proof)
-    }
 
     /// Verify a Merkle proof against a known root
     public fun verify_merkle_proof(
@@ -70,5 +51,81 @@ module bitcoin_move::merkle_proof {
         let proof = types::new_merkle_proof(proof_nodes);
         
         assert!(verify_merkle_proof(tx1_hash, expected_root, &proof), 1);
+    }
+
+    #[test]
+    fun test_verify_merkle_proof_empty() {
+        // Test with empty proof - should only work if tx_hash == merkle_root
+        let tx_hash = @0x1111111111111111111111111111111111111111111111111111111111111111;
+        let proof_nodes = vector::empty();
+        let proof = types::new_merkle_proof(proof_nodes);
+        
+        // Empty proof should only pass if tx_hash equals merkle_root
+        assert!(verify_merkle_proof(tx_hash, tx_hash, &proof), 1);
+    }
+
+    #[test]
+    #[expected_failure]
+    fun test_verify_merkle_proof_incorrect() {
+        // Test with incorrect proof - should fail
+        let tx1_hash = @0x1111111111111111111111111111111111111111111111111111111111111111;
+        let tx2_hash = @0x2222222222222222222222222222222222222222222222222222222222222222;
+        let wrong_hash = @0x3333333333333333333333333333333333333333333333333333333333333333;
+        
+        let expected_root = bitcoin_hash::sha256d_concat(tx1_hash, tx2_hash);
+        
+        // Proof with wrong sibling hash
+        let proof_nodes = vector::empty();
+        vector::push_back(&mut proof_nodes, types::new_proof_node(wrong_hash, false));
+        let proof = types::new_merkle_proof(proof_nodes);
+        
+        // This should fail
+        assert!(verify_merkle_proof(tx1_hash, expected_root, &proof), 1);
+    }
+
+    #[test]
+    fun test_verify_merkle_proof_wrong_position() {
+        // Test with wrong sibling position
+        let tx1_hash = @0x1111111111111111111111111111111111111111111111111111111111111111;
+        let tx2_hash = @0x2222222222222222222222222222222222222222222222222222222222222222;
+        
+        let expected_root = bitcoin_hash::sha256d_concat(tx1_hash, tx2_hash);
+        
+        // Proof with correct sibling but wrong position (is_left = true instead of false)
+        let proof_nodes = vector::empty();
+        vector::push_back(&mut proof_nodes, types::new_proof_node(tx2_hash, true));
+        let proof = types::new_merkle_proof(proof_nodes);
+        
+        // This should fail because the position is wrong
+        let result = verify_merkle_proof(tx1_hash, expected_root, &proof);
+        assert!(!result, 1);
+    }
+
+    #[test]
+    fun test_verify_merkle_proof_multilevel() {
+        // Test with a 4-transaction Merkle tree (2 levels)
+        //        root
+        //       /    \
+        //     h12    h34
+        //    /  \   /  \
+        //   tx1 tx2 tx3 tx4
+        
+        let tx1_hash = @0x1111111111111111111111111111111111111111111111111111111111111111;
+        let tx2_hash = @0x2222222222222222222222222222222222222222222222222222222222222222;
+        let tx3_hash = @0x3333333333333333333333333333333333333333333333333333333333333333;
+        let tx4_hash = @0x4444444444444444444444444444444444444444444444444444444444444444;
+        
+        // Build tree bottom-up
+        let h12 = bitcoin_hash::sha256d_concat(tx1_hash, tx2_hash);
+        let h34 = bitcoin_hash::sha256d_concat(tx3_hash, tx4_hash);
+        let root = bitcoin_hash::sha256d_concat(h12, h34);
+        
+        // Proof for tx1: sibling is tx2 (right), then h34 (right)
+        let proof_nodes = vector::empty();
+        vector::push_back(&mut proof_nodes, types::new_proof_node(tx2_hash, false)); // Level 0: tx2 is on the right
+        vector::push_back(&mut proof_nodes, types::new_proof_node(h34, false));      // Level 1: h34 is on the right
+        let proof = types::new_merkle_proof(proof_nodes);
+        
+        assert!(verify_merkle_proof(tx1_hash, root, &proof), 1);
     }
 }

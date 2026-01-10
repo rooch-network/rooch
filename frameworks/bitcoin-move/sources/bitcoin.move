@@ -34,6 +34,7 @@ module bitcoin_move::bitcoin{
     /// The reorg is too deep, we need to stop the system and fix the issue
     const ErrorReorgTooDeep:u64 = 3;
     const ErrorUTXONotExists:u64 = 4;
+    const ErrorBlockNotFound:u64 = 5;
 
     const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
     /// https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
@@ -280,26 +281,6 @@ module bitcoin_move::bitcoin{
         }
     }
 
-    /// Entry function for future use by Relayer to submit only block headers
-    public entry fun execute_l1_block_header(block_height: u64, block_hash: address, header_bytes: vector<u8>){
-        let btc_block_store_obj = borrow_block_store_mut();
-        let btc_block_store = object::borrow_mut(btc_block_store_obj);
-        
-        assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
-        
-        let header = bcs::from_bytes<Header>(header_bytes);
-        
-        // Process block header
-        process_block_header(btc_block_store, block_height, block_hash, header);
-        
-        // Update global time
-        if(!chain_id::is_test()){
-            let timestamp_seconds = (types::time(&header) as u64);
-            let module_signer = signer::module_signer<BitcoinBlockStore>();
-            timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
-        }
-    }
-
     /// This is the execute_l1_tx entry point
     fun execute_l1_tx(block_hash: address, txid: address){
         let btc_block_store_obj = borrow_block_store_mut();
@@ -451,9 +432,15 @@ module bitcoin_move::bitcoin{
         let tx = bcs::from_bytes<Transaction>(tx_bytes);
         let proof = bcs::from_bytes<types::MerkleProof>(proof_bytes);
         
+        // Get block header to retrieve merkle_root
+        let header_opt = get_block(block_hash);
+        assert!(option::is_some(&header_opt), ErrorBlockNotFound);
+        let header = option::destroy_some(header_opt);
+        let merkle_root = types::merkle_root(&header);
+        
         // Verify Merkle proof
         assert!(
-            bitcoin_move::merkle_proof::verify_tx_in_block(block_hash, &tx, &proof),
+            bitcoin_move::merkle_proof::verify_merkle_proof(types::tx_id(&tx), merkle_root, &proof),
             ErrorBlockProcessError
         );
         
