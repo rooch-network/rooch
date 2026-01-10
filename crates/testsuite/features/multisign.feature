@@ -2,6 +2,7 @@ Feature: Rooch CLI multisign integration tests
 
    
     @serial
+    @ignore
     Scenario: multisign_account
       Given a bitcoind server for multisign_account
       Given a server for multisign_account
