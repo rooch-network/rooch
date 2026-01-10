@@ -154,6 +154,8 @@ impl SnapshotBuilder {
     pub async fn build_snapshot(
         &self,
         state_root: H256,
+        tx_order: u64,
+        global_size: u64,
         output_dir: PathBuf,
         force_restart: bool,
     ) -> Result<SnapshotMeta> {
@@ -167,12 +169,14 @@ impl SnapshotBuilder {
         // Initialize metadata
         let mut metadata = StatePruneMetadata::new(
             OperationType::Snapshot {
-                tx_order: 0, // Will be updated when we get it from state root
+                tx_order,
                 state_root: format!("{:x}", state_root),
                 output_dir: output_dir.clone(),
             },
             serde_json::json!({
                 "state_root": format!("{:x}", state_root),
+                "tx_order": tx_order,
+                "global_size": global_size,
                 "config": self.config
             }),
         );
@@ -236,16 +240,11 @@ impl SnapshotBuilder {
         // Flush and close snapshot writer to get final statistics
         let active_nodes_count = snapshot_writer.finalize(&mut metadata)?;
 
-        // Create snapshot metadata
-        // Note: global_size is set to 0 here because it represents the number of global objects
-        // in the state, not the SMT node count. This should be populated from the StateChangeSet
-        // when building a snapshot for a specific tx_order. For state-root-only snapshots,
-        // this field remains 0 as the information is not available without querying the
-        // state change set storage.
+        // Create snapshot metadata with tx_order and global_size
         let snapshot_meta = SnapshotMeta::new(
-            0, // tx_order will be set later
+            tx_order,
             state_root,
-            0, // global_size - should be populated from StateChangeSet if available
+            global_size,
             active_nodes_count,
         );
 

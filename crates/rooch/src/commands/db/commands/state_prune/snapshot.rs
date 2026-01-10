@@ -23,10 +23,12 @@ pub struct SnapshotCommand {
     pub chain_id: rooch_types::rooch_network::BuiltinChainID,
 
     /// Target tx_order to create snapshot from (default: latest)
+    /// When provided, the snapshot will use the state_root and global_size from this transaction
     #[clap(long)]
     pub tx_order: Option<u64>,
 
-    /// State root hash to create snapshot from (overrides tx_order)
+    /// State root hash to create snapshot from (overrides --tx_order)
+    /// If both --tx_order and --state-root are provided, --state-root takes precedence
     #[clap(long)]
     pub state_root: Option<String>,
 
@@ -70,20 +72,41 @@ impl CommandAction<String> for SnapshotCommand {
             )),
         );
         let moveos_store = rooch_db.moveos_store;
+        let rooch_store = rooch_db.rooch_store;
 
-        // Determine state root
-        let state_root = if let Some(root_str) = self.state_root {
-            H256::from_slice(&hex::decode(root_str).map_err(|e| {
+        // Determine tx_order, state_root, and global_size
+        // Priority: --state-root > --tx_order > startup_info
+        let (tx_order, state_root, global_size) = if let Some(root_str) = self.state_root {
+            // --state-root takes precedence over --tx_order
+            let state_root = H256::from_slice(&hex::decode(root_str).map_err(|e| {
                 rooch_types::error::RoochError::from(anyhow::anyhow!(
                     "Invalid state_root hex: {}",
                     e
                 ))
-            })?)
+            })?);
+            // When state_root is provided explicitly, we don't have tx_order or global_size
+            (None, state_root, None)
+        } else if let Some(tx_order) = self.tx_order {
+            // Look up state_root and global_size from tx_order
+            match rooch_store.state_store.get_state_change_set(tx_order)? {
+                Some(changeset_ext) => {
+                    let state_root = changeset_ext.state_change_set.state_root;
+                    let global_size = changeset_ext.state_change_set.global_size;
+                    (Some(tx_order), state_root, Some(global_size))
+                }
+                None => {
+                    return Err(rooch_types::error::RoochError::from(anyhow::anyhow!(
+                        "No state change set found for tx_order: {}. Ensure the tx_order exists.",
+                        tx_order
+                    )));
+                }
+            }
         } else if let Some(startup_info) = moveos_store.get_config_store().get_startup_info()? {
-            startup_info.state_root
+            // Default to latest (startup_info)
+            (None, startup_info.state_root, None)
         } else {
             return Err(rooch_types::error::RoochError::from(anyhow::anyhow!(
-                "Unable to determine state_root: provide --state-root or ensure startup_info exists"
+                "Unable to determine state_root: provide --tx-order, --state-root, or ensure startup_info exists"
             )));
         };
 
@@ -115,7 +138,13 @@ impl CommandAction<String> for SnapshotCommand {
 
         // Build snapshot
         let snapshot_meta = snapshot_builder
-            .build_snapshot(state_root, self.output.clone(), self.force_restart)
+            .build_snapshot(
+                state_root,
+                tx_order.unwrap_or(0),
+                global_size.unwrap_or(0),
+                self.output.clone(),
+                self.force_restart,
+            )
             .await
             .map_err(|e| {
                 rooch_types::error::RoochError::from(anyhow::anyhow!(
