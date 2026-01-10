@@ -456,15 +456,8 @@ module bitcoin_move::bitcoin{
         let block_hash = types::header_to_hash(types::header(&block));
         let block_bytes = bcs::to_bytes(&block);
         execute_l1_block(block_height, block_hash, block_bytes);
-        // We directly conform the txs for convenience test
-        let (_, txs) = types::unpack_block(block);
-        let coinbase_tx = vector::remove(&mut txs, 0);
-        vector::for_each(txs, |tx| {
-            let txid = types::tx_id(&tx);
-            execute_l1_tx(block_hash, txid);
-        });
-        //process coinbase tx last
-        execute_l1_tx(block_hash, types::tx_id(&coinbase_tx));
+        // Note: In header-only mode, we no longer process transactions automatically
+        // Transactions can be verified on-demand using submit_tx_with_proof
     }
 
 
