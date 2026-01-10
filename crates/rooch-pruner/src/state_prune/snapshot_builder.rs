@@ -107,7 +107,10 @@ impl SnapshotProgress {
         info!(
             "Loaded valid progress: {} nodes processed, {} in worklist, checkpoint {}",
             progress.statistics.nodes_visited,
-            progress.worklist.len() - progress.worklist_position,
+            progress
+                .worklist
+                .len()
+                .saturating_sub(progress.worklist_position),
             progress.checkpoint_id
         );
 
@@ -196,7 +199,20 @@ impl SnapshotBuilder {
 
         // Create snapshot node writer with RocksDB backend
         metadata.mark_in_progress("Creating snapshot database".to_string(), 5.0);
-        let mut snapshot_writer = SnapshotNodeWriter::new(&output_dir, &self.config)?;
+
+        // When resuming, restore nodes_written count from previous progress
+        let initial_nodes_written = resume_progress
+            .as_ref()
+            .map(|p| p.nodes_written)
+            .unwrap_or(0);
+        if initial_nodes_written > 0 {
+            info!(
+                "Restoring snapshot writer with {} previously written nodes",
+                initial_nodes_written
+            );
+        }
+        let mut snapshot_writer =
+            SnapshotNodeWriter::new_with_count(&output_dir, &self.config, initial_nodes_written)?;
 
         // Perform streaming traversal with batched writes
         metadata.mark_in_progress("Traversing state tree".to_string(), 10.0);
@@ -270,7 +286,7 @@ impl SnapshotBuilder {
                 info!(
                     "Found resumable progress: {} nodes processed, {} in worklist, last saved {} seconds ago",
                     progress.statistics.nodes_visited,
-                    progress.worklist.len() - progress.worklist_position,
+                    progress.worklist.len().saturating_sub(progress.worklist_position),
                     elapsed
                 );
                 Ok(Some(progress))
@@ -626,6 +642,16 @@ pub struct SnapshotNodeWriter {
 impl SnapshotNodeWriter {
     /// Create new snapshot node writer with RocksDB backend
     pub fn new(output_dir: &Path, _config: &SnapshotBuilderConfig) -> Result<Self> {
+        Self::new_with_count(output_dir, _config, 0)
+    }
+
+    /// Create new snapshot node writer with RocksDB backend, starting from existing count
+    /// Used when resuming a snapshot operation to preserve previously written node count
+    pub fn new_with_count(
+        output_dir: &Path,
+        _config: &SnapshotBuilderConfig,
+        initial_count: u64,
+    ) -> Result<Self> {
         let snapshot_db_path = output_dir.join("snapshot.db");
 
         // Validate and create output directory
@@ -666,7 +692,7 @@ impl SnapshotNodeWriter {
 
         Ok(Self {
             db,
-            nodes_written: 0,
+            nodes_written: initial_count,
         })
     }
 
@@ -764,12 +790,56 @@ impl SnapshotNodeWriter {
         Ok(())
     }
 
+    /// Get the actual count of nodes in the snapshot database by querying RocksDB
+    /// This is useful for validation or when the count needs to be derived from the database
+    pub fn get_actual_node_count(&self) -> Result<u64> {
+        // Create an iterator to count all keys in the database
+        let iter = self.db.iterator(rocksdb::IteratorMode::Start);
+        let mut count = 0u64;
+
+        for result in iter {
+            match result {
+                Ok(_) => count += 1,
+                Err(e) => {
+                    return Err(anyhow::anyhow!(
+                        "Error iterating over snapshot database: {}",
+                        e
+                    ));
+                }
+            }
+        }
+
+        Ok(count)
+    }
+
     /// Finalize the snapshot writer and return the final count
-    pub fn finalize(self, metadata: &mut StatePruneMetadata) -> Result<u64> {
+    pub fn finalize(mut self, metadata: &mut StatePruneMetadata) -> Result<u64> {
         info!(
             "Finalizing snapshot with {} nodes written",
             self.nodes_written
         );
+
+        // Validate the nodes_written count matches actual database count
+        // Use actual count as source of truth if they differ
+        let final_count = match self.get_actual_node_count() {
+            Ok(actual_count) => {
+                if actual_count != self.nodes_written {
+                    warn!(
+                        "nodes_written count ({}) does not match actual database count ({}), using actual count",
+                        self.nodes_written, actual_count
+                    );
+                    self.nodes_written = actual_count;
+                }
+                self.nodes_written
+            }
+            Err(e) => {
+                warn!(
+                    "Failed to validate node count from database: {}, using tracked count",
+                    e
+                );
+                self.nodes_written
+            }
+        };
 
         // Force flush to ensure all data is written to disk
         self.db.flush()?;
@@ -781,15 +851,15 @@ impl SnapshotNodeWriter {
 
         info!(
             "Snapshot compaction completed in {:?}, final node count: {}",
-            compact_duration, self.nodes_written
+            compact_duration, final_count
         );
 
         // Update metadata with final progress
         metadata.update_statistics(|stats| {
-            stats.nodes_written = Some(self.nodes_written);
+            stats.nodes_written = Some(final_count);
         });
 
-        Ok(self.nodes_written)
+        Ok(final_count)
     }
 }
 
@@ -852,6 +922,148 @@ mod tests {
                 // If RocksDB is not available in test environment, that's acceptable
                 // This might happen in CI environments without proper RocksDB setup
                 println!("RocksDB not available in test environment: {:?}", e);
+            }
+        }
+    }
+
+    #[test]
+    fn test_snapshot_node_writer_resume_with_count() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let config = SnapshotBuilderConfig::default();
+
+        match SnapshotNodeWriter::new(temp_dir.path(), &config) {
+            Ok(mut writer) => {
+                // Write some initial nodes
+                let hash1 = H256::random();
+                let hash2 = H256::random();
+                let batch1 = vec![
+                    (hash1, b"test_data_1".to_vec()),
+                    (hash2, b"test_data_2".to_vec()),
+                ];
+                assert!(writer.write_batch(batch1).is_ok());
+                assert_eq!(writer.nodes_written, 2);
+
+                // Get the actual count from the database
+                let actual_count = writer.get_actual_node_count();
+                assert!(actual_count.is_ok());
+                assert_eq!(actual_count.unwrap(), 2);
+
+                // Drop the first writer to release the database lock
+                drop(writer);
+
+                // Simulate a resume scenario - create a new writer with initial count
+                let initial_count = 2;
+                match SnapshotNodeWriter::new_with_count(temp_dir.path(), &config, initial_count) {
+                    Ok(mut resumed_writer) => {
+                        // Verify the resumed writer starts with the correct count
+                        assert_eq!(resumed_writer.nodes_written, 2);
+
+                        // Write more nodes
+                        let hash3 = H256::random();
+                        let batch2 = vec![(hash3, b"test_data_3".to_vec())];
+                        assert!(resumed_writer.write_batch(batch2).is_ok());
+
+                        // Verify the count has been incremented correctly
+                        assert_eq!(resumed_writer.nodes_written, 3);
+
+                        // Verify the database has the correct total count
+                        let final_count = resumed_writer.get_actual_node_count();
+                        assert!(final_count.is_ok());
+                        assert_eq!(final_count.unwrap(), 3);
+                    }
+                    Err(e) => {
+                        panic!("Failed to create resumed writer: {:?}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                println!("RocksDB not available in test environment: {:?}", e);
+            }
+        }
+    }
+
+    #[test]
+    fn test_snapshot_progress_save_and_load() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let progress_path = temp_dir.path().join("snapshot_progress.json");
+
+        let state_root = H256::random();
+        let worklist = vec![H256::random(), H256::random()];
+        let statistics = TraversalStatistics {
+            nodes_visited: 100,
+            bytes_processed: 5000,
+        };
+
+        // Create and save progress
+        let progress = SnapshotProgress {
+            state_root,
+            worklist: worklist.clone(),
+            worklist_position: 0,
+            statistics: statistics.clone(),
+            batch_buffer: vec![],
+            current_batch_size: 1000,
+            last_save_timestamp: 1234567890,
+            nodes_written: 50,
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, 100),
+        };
+
+        assert!(progress.save_to_file(&progress_path).is_ok());
+
+        // Load and verify progress
+        match SnapshotProgress::load_from_file(&progress_path, state_root) {
+            Ok(Some(loaded_progress)) => {
+                assert_eq!(loaded_progress.state_root, state_root);
+                assert_eq!(loaded_progress.worklist, worklist);
+                assert_eq!(loaded_progress.statistics.nodes_visited, 100);
+                assert_eq!(loaded_progress.statistics.bytes_processed, 5000);
+                assert_eq!(loaded_progress.nodes_written, 50);
+                assert_eq!(loaded_progress.worklist_position, 0);
+            }
+            Ok(None) => {
+                panic!("Expected to load progress but got None");
+            }
+            Err(e) => {
+                panic!("Failed to load progress: {:?}", e);
+            }
+        }
+    }
+
+    #[test]
+    fn test_snapshot_progress_invalid_state_root() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let progress_path = temp_dir.path().join("snapshot_progress.json");
+
+        let state_root = H256::random();
+        let different_state_root = H256::random();
+
+        // Ensure they're different
+        assert_ne!(state_root, different_state_root);
+
+        // Create and save progress with one state root
+        let progress = SnapshotProgress {
+            state_root,
+            worklist: vec![],
+            worklist_position: 0,
+            statistics: TraversalStatistics::default(),
+            batch_buffer: vec![],
+            current_batch_size: 1000,
+            last_save_timestamp: 1234567890,
+            nodes_written: 10,
+            checkpoint_id: SnapshotProgress::generate_checkpoint_id(state_root, 50),
+        };
+
+        assert!(progress.save_to_file(&progress_path).is_ok());
+
+        // Try to load with a different state root - should return None
+        match SnapshotProgress::load_from_file(&progress_path, different_state_root) {
+            Ok(None) => {
+                // Expected - state root mismatch
+            }
+            Ok(Some(_)) => {
+                panic!("Expected None due to state root mismatch");
+            }
+            Err(_) => {
+                // Also acceptable - implementation may return error
             }
         }
     }
