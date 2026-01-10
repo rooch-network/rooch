@@ -4,7 +4,7 @@
 use moveos_types::h256::H256;
 use rooch_config::state_prune::{ReplayReport, SnapshotMeta};
 use rooch_pruner::state_prune::{
-    DeduplicationStrategy, OperationStatus, OperationType, ProgressTracker, SnapshotBuilderConfig,
+    OperationStatus, OperationType, ProgressTracker, SnapshotBuilderConfig,
     SnapshotProgress, StatePruneMetadata,
 };
 
@@ -16,25 +16,11 @@ mod tests {
     fn test_snapshot_builder_config_default() {
         let config = SnapshotBuilderConfig::default();
         assert_eq!(config.batch_size, 10000);
-        assert_eq!(config.workers, 4);
         assert_eq!(config.memory_limit, 16 * 1024 * 1024 * 1024);
         assert_eq!(config.progress_interval_seconds, 30);
-        assert!(config.enable_progress_tracking);
         assert!(config.enable_resume);
-        assert_eq!(config.max_traversal_time_hours, 24);
-
-        // Updated defaults for scalable deduplication
-        assert!(!config.enable_bloom_filter); // Disabled in favor of RocksDB strategy
-        assert_eq!(config.bloom_filter_fp_rate, 0.001);
-        assert_eq!(config.deduplication_batch_size, 0); // Use same as processing batch size
         assert!(config.enable_adaptive_batching);
         assert_eq!(config.memory_pressure_threshold, 0.8);
-
-        // Verify default deduplication strategy is RocksDB
-        assert!(matches!(
-            config.deduplication_strategy,
-            DeduplicationStrategy::RocksDB
-        ));
     }
 
     #[test]
@@ -46,16 +32,6 @@ mod tests {
 
         // Invalid batch size
         config.batch_size = 0;
-        assert!(config.validate().is_err());
-
-        // Reset and test invalid workers
-        config = SnapshotBuilderConfig::default();
-        config.workers = 0;
-        assert!(config.validate().is_err());
-
-        // Reset and test invalid bloom filter fp rate
-        config = SnapshotBuilderConfig::default();
-        config.bloom_filter_fp_rate = 1.5;
         assert!(config.validate().is_err());
 
         // Reset and test invalid memory pressure threshold
@@ -73,7 +49,7 @@ mod tests {
         assert!(config.validate().is_ok());
 
         config = SnapshotBuilderConfig::default();
-        config.memory_pressure_threshold = 0.999; // Valid (upper bound, exclusive)
+        config.memory_pressure_threshold = 1.0; // Valid (upper bound, inclusive)
         assert!(config.validate().is_ok());
     }
 

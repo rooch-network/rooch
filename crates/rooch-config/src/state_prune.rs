@@ -43,17 +43,11 @@ pub struct SnapshotConfig {
     /// Maximum number of nodes to process in one batch
     pub max_batch_size: usize,
 
-    /// Enable progress tracking
-    pub enable_progress_tracking: bool,
-
     /// Progress reporting interval in seconds
     pub progress_interval_seconds: u64,
 
     /// Enable resume from interrupted operations
     pub enable_resume: bool,
-
-    /// Maximum time to wait for node traversal (in hours)
-    pub max_traversal_time_hours: u64,
 }
 
 /// Configuration for replay operations
@@ -167,10 +161,8 @@ impl Default for SnapshotConfig {
         Self {
             default_output_dir: PathBuf::from("./snapshots"),
             max_batch_size: 50000,
-            enable_progress_tracking: true,
             progress_interval_seconds: 30,
             enable_resume: true,
-            max_traversal_time_hours: 24,
         }
     }
 }

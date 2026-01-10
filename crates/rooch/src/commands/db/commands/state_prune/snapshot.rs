@@ -6,7 +6,7 @@ use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::h256::H256;
-use rooch_pruner::state_prune::{DeduplicationStrategy, SnapshotBuilder, SnapshotBuilderConfig};
+use rooch_pruner::state_prune::{SnapshotBuilder, SnapshotBuilderConfig};
 use rooch_types::error::RoochResult;
 use serde_json;
 use std::path::PathBuf;
@@ -39,10 +39,6 @@ pub struct SnapshotCommand {
     /// Batch size for processing nodes
     #[clap(long, default_value = "10000")]
     pub batch_size: usize,
-
-    /// Number of parallel workers
-    #[clap(long, default_value = "4")]
-    pub workers: usize,
 
     /// Skip confirmation prompts
     #[clap(long)]
@@ -113,16 +109,9 @@ impl CommandAction<String> for SnapshotCommand {
         // Create snapshot builder configuration
         let snapshot_config = SnapshotBuilderConfig {
             batch_size: self.batch_size,
-            workers: self.workers,
             memory_limit: 16 * 1024 * 1024 * 1024, // 16GB
             progress_interval_seconds: 30,
-            enable_progress_tracking: true,
             enable_resume: !self.no_resume, // Respect CLI flag
-            max_traversal_time_hours: 24,
-            deduplication_strategy: DeduplicationStrategy::RocksDB,
-            enable_bloom_filter: false, // Disabled in favor of RocksDB strategy
-            bloom_filter_fp_rate: 0.001,
-            deduplication_batch_size: 0, // Use same as processing batch size
             enable_adaptive_batching: true,
             memory_pressure_threshold: 0.8,
         };
