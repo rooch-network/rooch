@@ -19,6 +19,7 @@ This is the reference documentation of the Bitcoin Move Framework.
 -  [`0x4::bitcoin_multisign_validator`](bitcoin_multisign_validator.md#0x4_bitcoin_multisign_validator)
 -  [`0x4::genesis`](genesis.md#0x4_genesis)
 -  [`0x4::inscription_updater`](inscription_updater.md#0x4_inscription_updater)
+-  [`0x4::merkle_proof`](merkle_proof.md#0x4_merkle_proof)
 -  [`0x4::multisign_account`](multisign_account.md#0x4_multisign_account)
 -  [`0x4::network`](network.md#0x4_network)
 -  [`0x4::opcode`](opcode.md#0x4_opcode)

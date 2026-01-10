@@ -10,6 +10,7 @@
 -  [Function `from_ascii_bytes_option`](#0x4_bitcoin_hash_from_ascii_bytes_option)
 -  [Function `to_string`](#0x4_bitcoin_hash_to_string)
 -  [Function `sha256d`](#0x4_bitcoin_hash_sha256d)
+-  [Function `sha256d_concat`](#0x4_bitcoin_hash_sha256d_concat)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -85,4 +86,17 @@ Bitcoin hash is double sha256 of the input
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash_sha256d">sha256d</a>(input: <a href="">vector</a>&lt;u8&gt;): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_hash_sha256d_concat"></a>
+
+## Function `sha256d_concat`
+
+Concatenate two hashes and compute double SHA256
+Used for Merkle tree verification
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash_sha256d_concat">sha256d_concat</a>(left: <b>address</b>, right: <b>address</b>): <b>address</b>
 </code></pre>

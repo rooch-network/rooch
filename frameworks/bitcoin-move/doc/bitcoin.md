@@ -8,6 +8,7 @@
 -  [Struct `UTXONotExistsEvent`](#0x4_bitcoin_UTXONotExistsEvent)
 -  [Struct `RepeatCoinbaseTxEvent`](#0x4_bitcoin_RepeatCoinbaseTxEvent)
 -  [Resource `BitcoinBlockStore`](#0x4_bitcoin_BitcoinBlockStore)
+-  [Struct `TxVerifiedEvent`](#0x4_bitcoin_TxVerifiedEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bitcoin_genesis_init)
 -  [Function `get_tx`](#0x4_bitcoin_get_tx)
@@ -21,6 +22,7 @@
 -  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
 -  [Function `contains_header`](#0x4_bitcoin_contains_header)
 -  [Function `exist_l1_tx`](#0x4_bitcoin_exist_l1_tx)
+-  [Function `submit_tx_with_proof`](#0x4_bitcoin_submit_tx_with_proof)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -38,6 +40,7 @@
 <b>use</b> <a href="">0x3::chain_id</a>;
 <b>use</b> <a href="bbn.md#0x4_bbn">0x4::bbn</a>;
 <b>use</b> <a href="inscription_updater.md#0x4_inscription_updater">0x4::inscription_updater</a>;
+<b>use</b> <a href="merkle_proof.md#0x4_merkle_proof">0x4::merkle_proof</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="pending_block.md#0x4_pending_block">0x4::pending_block</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
@@ -80,6 +83,18 @@
 
 
 
+<a name="0x4_bitcoin_TxVerifiedEvent"></a>
+
+## Struct `TxVerifiedEvent`
+
+Event emitted when a transaction is verified via Merkle proof
+
+
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_TxVerifiedEvent">TxVerifiedEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -109,6 +124,15 @@ https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
 
 
 <pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_BIP_34_HEIGHT">BIP_34_HEIGHT</a>: u64 = 227835;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_ErrorBlockNotFound"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockNotFound">ErrorBlockNotFound</a>: u64 = 5;
 </code></pre>
 
 
@@ -285,4 +309,18 @@ Check is l1 tx exist
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_exist_l1_tx">exist_l1_tx</a>(tx_hash: <b>address</b>): bool
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_submit_tx_with_proof"></a>
+
+## Function `submit_tx_with_proof`
+
+Submit a Bitcoin transaction with Merkle proof for verification
+This is a minimal version that only verifies the proof
+Future versions will support UTXO/Inscription creation
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_submit_tx_with_proof">submit_tx_with_proof</a>(block_hash: <b>address</b>, tx_bytes: <a href="">vector</a>&lt;u8&gt;, proof_bytes: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
