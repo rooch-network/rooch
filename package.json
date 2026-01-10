@@ -51,7 +51,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "pnpm": "^9.10.0"
+    "pnpm": "^10.27.0"
   },
   "packageManager": "pnpm@9.10.0"
 }
