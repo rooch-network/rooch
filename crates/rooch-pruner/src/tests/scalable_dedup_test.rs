@@ -390,7 +390,7 @@ async fn test_snapshot_creation_with_scalable_dedup() -> Result<()> {
 
     // Note: This would normally create a real snapshot, but for testing we'll verify the setup
     let _result = builder
-        .build_snapshot(dummy_state_root, output_dir, false)
+        .build_snapshot(dummy_state_root, 0, 0, output_dir, false)
         .await;
 
     // The snapshot creation might fail due to missing state root data, but that's expected
