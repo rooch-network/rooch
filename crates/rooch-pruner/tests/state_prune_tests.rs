@@ -4,8 +4,8 @@
 use moveos_types::h256::H256;
 use rooch_config::state_prune::{ReplayReport, SnapshotMeta};
 use rooch_pruner::state_prune::{
-    OperationStatus, OperationType, ProgressTracker, SnapshotBuilderConfig,
-    SnapshotProgress, StatePruneMetadata,
+    OperationStatus, OperationType, ProgressTracker, SnapshotBuilderConfig, SnapshotProgress,
+    StatePruneMetadata,
 };
 
 #[cfg(test)]
