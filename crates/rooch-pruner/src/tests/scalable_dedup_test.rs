@@ -3,7 +3,7 @@
 
 //! Tests for scalable deduplication to verify OOM issue resolution
 
-use crate::state_prune::config::{DeduplicationStrategy, SnapshotBuilderConfig};
+use crate::state_prune::config::SnapshotBuilderConfig;
 use crate::state_prune::snapshot_builder::{SnapshotBuilder, SnapshotNodeWriter};
 use anyhow::Result;
 use moveos_store::MoveOSStore;
@@ -20,9 +20,7 @@ fn test_rocksdb_deduplication_memory_efficiency() -> Result<()> {
 
     let config = SnapshotBuilderConfig {
         batch_size: 1000,
-        workers: 1,
         memory_limit: 100 * 1024 * 1024, // 100MB limit
-        deduplication_strategy: DeduplicationStrategy::RocksDB,
         enable_adaptive_batching: true,
         ..Default::default()
     };
@@ -92,9 +90,7 @@ fn test_adaptive_batch_sizing() -> Result<()> {
     // Test case 1: Force memory pressure with very low memory limit
     let pressure_config = SnapshotBuilderConfig {
         batch_size: 10000,
-        workers: 1,
         memory_limit: 1024 * 1024, // 1MB limit to guarantee pressure
-        deduplication_strategy: DeduplicationStrategy::RocksDB,
         enable_adaptive_batching: true,
         memory_pressure_threshold: 0.5, // 50% threshold
         ..Default::default()
@@ -129,9 +125,7 @@ fn test_adaptive_batch_sizing() -> Result<()> {
     // Test case 2: Test adaptive batching behavior (environment-dependent)
     let adaptive_config = SnapshotBuilderConfig {
         batch_size: 1000,
-        workers: 1,
         memory_limit: 100 * 1024 * 1024, // 100MB limit
-        deduplication_strategy: DeduplicationStrategy::RocksDB,
         enable_adaptive_batching: true,
         memory_pressure_threshold: 0.9, // 90% threshold
         ..Default::default()
@@ -237,14 +231,13 @@ fn test_batch_deduplication() -> Result<()> {
     Ok(())
 }
 
-/// Performance comparison between different deduplication strategies
+/// Performance comparison for RocksDB deduplication strategy
 #[test]
 fn test_deduplication_strategy_comparison() -> Result<()> {
     let temp_dir = TempDir::new()?;
 
     // Test RocksDB strategy with unique nodes first
     let rocksdb_config = SnapshotBuilderConfig {
-        deduplication_strategy: DeduplicationStrategy::RocksDB,
         batch_size: 1000,
         ..Default::default()
     };
@@ -301,12 +294,11 @@ fn test_deduplication_strategy_comparison() -> Result<()> {
     Ok(())
 }
 
-/// Test configuration validation for new deduplication options
+/// Test configuration validation for deduplication options
 #[test]
 fn test_deduplication_config_validation() -> Result<()> {
     // Test valid RocksDB configuration
     let valid_config = SnapshotBuilderConfig {
-        deduplication_strategy: DeduplicationStrategy::RocksDB,
         memory_pressure_threshold: 0.8,
         ..Default::default()
     };
@@ -331,31 +323,6 @@ fn test_deduplication_config_validation() -> Result<()> {
         "Invalid memory threshold should fail validation"
     );
 
-    // Test deduplication batch size calculation
-    let custom_batch_config = SnapshotBuilderConfig {
-        batch_size: 5000,
-        deduplication_batch_size: 2000,
-        ..Default::default()
-    };
-
-    assert_eq!(
-        custom_batch_config.get_deduplication_batch_size(),
-        2000,
-        "Should use custom deduplication batch size"
-    );
-
-    let default_batch_config = SnapshotBuilderConfig {
-        batch_size: 5000,
-        deduplication_batch_size: 0, // Use default
-        ..Default::default()
-    };
-
-    assert_eq!(
-        default_batch_config.get_deduplication_batch_size(),
-        5000,
-        "Should use processing batch size when deduplication batch size is 0"
-    );
-
     println!("All configuration validation tests passed");
 
     Ok(())
@@ -370,12 +337,9 @@ async fn test_snapshot_creation_with_scalable_dedup() -> Result<()> {
     // Create a realistic configuration for large-scale snapshot creation
     let config = SnapshotBuilderConfig {
         batch_size: 5000,
-        workers: 2,
         memory_limit: 200 * 1024 * 1024, // 200MB limit
-        deduplication_strategy: DeduplicationStrategy::RocksDB,
         enable_adaptive_batching: true,
         memory_pressure_threshold: 0.7,
-        enable_progress_tracking: true,
         ..Default::default()
     };
 
@@ -403,10 +367,6 @@ async fn test_snapshot_creation_with_scalable_dedup() -> Result<()> {
     println!("  - Memory management systems are active");
 
     // Verify that the builder was created successfully with the right configuration
-    assert_eq!(
-        builder.config().deduplication_strategy,
-        DeduplicationStrategy::RocksDB
-    );
     assert!(builder.config().enable_adaptive_batching);
 
     Ok(())

@@ -412,8 +412,6 @@ async function executeRealSnapshot(
     outputDir,
     '--batch-size',
     '1000', // Smaller batch size for testing
-    '--workers',
-    '2',    // Fewer workers to avoid resource contention
     '--skip-confirm', // Non-interactive execution
   ]
 
@@ -997,18 +995,12 @@ describe('State-Prune E2E Tests', () => {
           batch_size: 5000,
           memory_limit: 8589934592, // 8GB
           parallel_workers: 2,
-          enable_progress_tracking: true,
           enable_resume: true,
           snapshot_builder: {
             batch_size: 10000,
-            workers: 4,
             memory_limit: 17179869184, // 16GB
             progress_interval_seconds: 30,
-            enable_progress_tracking: true,
             enable_resume: true,
-            max_traversal_time_hours: 24,
-            enable_bloom_filter: true,
-            bloom_filter_fp_rate: 0.001,
           },
           incremental_replayer: {
             default_batch_size: 1000,
@@ -1185,7 +1177,6 @@ describe('State-Prune E2E Tests', () => {
           config: {
             batch_size: 10000,
             memory_limit: 17179869184,
-            enable_bloom_filter: true,
           },
           statistics: {
             nodes_processed: 50000,
@@ -1461,8 +1452,6 @@ describe('State-Prune E2E Tests', () => {
           snapshotDir,
           '--batch-size',
           '1000',
-          '--workers',
-          '2',
           '--skip-confirm',
         ])
 
