@@ -50,12 +50,12 @@ async fn e2e_snapshot_node_count_populated() {
             "node_count should be non-negative"
         );
 
-        println!("✅ Snapshot node_count verification passed:");
+        println!("[OK] Snapshot node_count verification passed:");
         println!("  - state_root: {:x}", state_root);
         println!("  - node_count: {}", snapshot_meta.node_count);
         println!("  - global_size: {}", snapshot_meta.global_size);
     } else {
-        println!("ℹ️ Snapshot creation failed (expected with dummy state root)");
+        println!("[INFO] Snapshot creation failed (expected with dummy state root)");
     }
 }
 
@@ -95,7 +95,7 @@ async fn e2e_snapshot_metadata_structure_verification() {
     assert_eq!(loaded_meta.state_root, test_meta.state_root);
     assert_eq!(loaded_meta.node_count, test_meta.node_count);
 
-    println!("✅ SnapshotMeta structure verification passed:");
+    println!("[OK] SnapshotMeta structure verification passed:");
     println!("  - All 6 fields verified");
     println!("  - Serialization/deserialization verified");
     println!("  - Save/load roundtrip verified");
@@ -123,7 +123,7 @@ async fn e2e_snapshot_state_root_consistency() {
         "State root should be preserved after save/load"
     );
 
-    println!("✅ State root consistency verified:");
+    println!("[OK] State root consistency verified:");
     println!("  - Original: {:x}", test_state_root);
     println!("  - After save/load: {:x}", loaded_meta.state_root);
 }
@@ -162,7 +162,7 @@ async fn e2e_snapshot_node_count_not_zero_for_valid_snapshot() {
         "Medium snapshot should have fewer nodes than large"
     );
 
-    println!("✅ Node count not a no-op verified:");
+    println!("[OK] Node count not a no-op verified:");
     println!("  - Small: {} nodes", meta_small.node_count);
     println!("  - Medium: {} nodes", meta_medium.node_count);
     println!("  - Large: {} nodes", meta_large.node_count);
@@ -214,7 +214,10 @@ async fn e2e_replay_report_comprehensive_field_validation() {
 
     // Add an error and verify failure
     report.add_error("Test error".to_string());
-    assert!(!report.is_success(), "Report with errors should indicate failure");
+    assert!(
+        !report.is_success(),
+        "Report with errors should indicate failure"
+    );
     assert_eq!(report.errors.len(), 1);
 
     // Verify serialization
@@ -226,16 +229,13 @@ async fn e2e_replay_report_comprehensive_field_validation() {
         report.changesets_processed
     );
     assert_eq!(deserialized.nodes_updated, report.nodes_updated);
-    assert_eq!(
-        deserialized.final_state_root,
-        report.final_state_root
-    );
+    assert_eq!(deserialized.final_state_root, report.final_state_root);
     assert_eq!(
         deserialized.statistics.objects_created,
         report.statistics.objects_created
     );
 
-    println!("✅ ReplayReport comprehensive field validation passed:");
+    println!("[OK] ReplayReport comprehensive field validation passed:");
     println!("  - All 11 fields properly validated");
     println!("  - Serialization/deserialization verified");
     println!("  - is_success() logic verified");
@@ -266,16 +266,13 @@ async fn e2e_replay_report_save_and_load() {
         .expect("Report should save successfully");
 
     // Verify file exists
-    assert!(
-        report_path.exists(),
-        "Report file should be created"
-    );
+    assert!(report_path.exists(), "Report file should be created");
 
     // Load report from file
-    let report_content = std::fs::read_to_string(&report_path)
-        .expect("Report file should be readable");
-    let loaded_report: ReplayReport = serde_json::from_str(&report_content)
-        .expect("Report should deserialize successfully");
+    let report_content =
+        std::fs::read_to_string(&report_path).expect("Report file should be readable");
+    let loaded_report: ReplayReport =
+        serde_json::from_str(&report_content).expect("Report should deserialize successfully");
 
     // Verify all fields match
     assert_eq!(
@@ -310,7 +307,7 @@ async fn e2e_replay_report_save_and_load() {
         report.statistics.peak_memory_bytes
     );
 
-    println!("✅ ReplayReport save and load verification passed:");
+    println!("[OK] ReplayReport save and load verification passed:");
     println!("  - Report saved to: {:?}", report_path);
     println!("  - All fields preserved after save/load");
 }
@@ -324,7 +321,10 @@ async fn e2e_snapshot_meta_validation() {
     let valid_meta = SnapshotMeta::new(100, H256::random(), 500, 1000);
 
     // Should validate successfully
-    assert!(valid_meta.validate().is_ok(), "Valid metadata should pass validation");
+    assert!(
+        valid_meta.validate().is_ok(),
+        "Valid metadata should pass validation"
+    );
 
     // Test validation with zero state_root (should fail)
     let mut invalid_meta = SnapshotMeta::new(100, H256::random(), 500, 1000);
@@ -348,21 +348,18 @@ async fn e2e_snapshot_meta_validation() {
         .save_to_file(&meta_dir)
         .expect("Metadata should save successfully");
 
-    assert!(
-        result_path.exists(),
-        "Metadata file should be created"
-    );
+    assert!(result_path.exists(), "Metadata file should be created");
 
     // Test metadata can be loaded from file
-    let loaded_meta = SnapshotMeta::load_from_file(&result_path)
-        .expect("Metadata should load successfully");
+    let loaded_meta =
+        SnapshotMeta::load_from_file(&result_path).expect("Metadata should load successfully");
 
     assert_eq!(loaded_meta.tx_order, valid_meta.tx_order);
     assert_eq!(loaded_meta.state_root, valid_meta.state_root);
     assert_eq!(loaded_meta.node_count, valid_meta.node_count);
     assert_eq!(loaded_meta.global_size, valid_meta.global_size);
 
-    println!("✅ SnapshotMeta validation verified:");
+    println!("[OK] SnapshotMeta validation verified:");
     println!("  - Valid metadata passes validation");
     println!("  - Zero state_root fails validation");
     println!("  - Zero created_at fails validation");
@@ -402,11 +399,14 @@ async fn e2e_replay_report_statistics_verification() {
         + report.statistics.objects_deleted;
     assert_eq!(total_ops, 350);
 
-    println!("✅ ReplayReport statistics verification passed:");
+    println!("[OK] ReplayReport statistics verification passed:");
     println!("  - objects_created: {}", report.statistics.objects_created);
     println!("  - objects_updated: {}", report.statistics.objects_updated);
     println!("  - objects_deleted: {}", report.statistics.objects_deleted);
     println!("  - data_size_bytes: {}", report.statistics.data_size_bytes);
-    println!("  - peak_memory_bytes: {}", report.statistics.peak_memory_bytes);
+    println!(
+        "  - peak_memory_bytes: {}",
+        report.statistics.peak_memory_bytes
+    );
     println!("  - Total operations: {}", total_ops);
 }
