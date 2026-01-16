@@ -34,7 +34,7 @@ pub struct ReplayCommand {
     #[clap(long, required = true)]
     pub to_order: u64,
 
-    /// Output directory for the final pruned database
+    /// Output store directory for the final pruned database (RocksDB checkpoint)
     #[clap(long, short = 'o', required = true)]
     pub output: PathBuf,
 
@@ -65,7 +65,6 @@ impl CommandAction<String> for ReplayCommand {
                 self.chain_id,
             )),
         );
-        let moveos_store = rooch_db.moveos_store;
         let rooch_store = rooch_db.rooch_store;
 
         // Create replay configuration
@@ -80,7 +79,7 @@ impl CommandAction<String> for ReplayCommand {
 
         // Create incremental replayer
         let replayer =
-            IncrementalReplayer::new(replay_config, rooch_store, moveos_store).map_err(|e| {
+            IncrementalReplayer::new(replay_config, rooch_store).map_err(|e| {
                 rooch_types::error::RoochError::from(anyhow::anyhow!(
                     "Failed to create replayer: {}",
                     e

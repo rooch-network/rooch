@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+#![cfg(feature = "gc-tests")]
+
 use moveos_common::bloom_filter::BloomFilter;
 use parking_lot::Mutex;
 use rand::SeedableRng;

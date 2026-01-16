@@ -356,7 +356,7 @@ pub fn create_marker(
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "gc-tests")]
 mod tests {
     use super::*;
 

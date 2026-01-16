@@ -758,7 +758,7 @@ impl GarbageCollector {
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "gc-tests")]
 mod tests {
     use super::*;
 

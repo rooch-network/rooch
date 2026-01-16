@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
 use moveos_types::state::FieldKey;
 use primitive_types::H256;
 use smt::jellyfish_merkle::node_type::Node;
@@ -52,21 +53,23 @@ pub fn try_extract_child_root(bytes: &[u8]) -> Option<H256> {
 ///
 /// This avoids redundant deserialization by parsing the node only once.
 pub fn extract_child_nodes(bytes: &[u8]) -> Vec<H256> {
-    // Decode the node once, then match on the result
-    let node = match Node::<FieldKey, moveos_types::state::ObjectState>::decode(bytes) {
-        Ok(n) => n,
+    match extract_child_nodes_strict(bytes) {
+        Ok(children) => children,
         Err(e) => {
-            // This should not happen in normal operation - indicates data corruption or bug
             warn!(
                 "Failed to decode SMT node (len={}): {}. This may indicate data corruption.",
                 bytes.len(),
                 e
             );
-            return Vec::new();
+            Vec::new()
         }
-    };
+    }
+}
 
-    match node {
+pub fn extract_child_nodes_strict(bytes: &[u8]) -> Result<Vec<H256>> {
+    let node = Node::<FieldKey, moveos_types::state::ObjectState>::decode(bytes)?;
+
+    let children = match node {
         Node::Internal(internal) => {
             // For internal nodes, return all child hashes
             internal.all_child().into_iter().map(|h| h.into()).collect()
@@ -76,13 +79,15 @@ pub fn extract_child_nodes(bytes: &[u8]) -> Vec<H256> {
             let state = &leaf.value().origin;
             if let Some(hash) = state.metadata.state_root {
                 if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
-                    return vec![hash];
+                    return Ok(vec![hash]);
                 }
             }
             Vec::new()
         }
         Node::Null => Vec::new(),
-    }
+    };
+
+    Ok(children)
 }
 
 #[cfg(test)]
