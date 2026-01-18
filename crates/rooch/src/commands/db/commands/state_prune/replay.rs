@@ -6,8 +6,10 @@ use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_config::state_prune::ReplayConfig;
+use rooch_config::store_config::{DEFAULT_DB_DIR, DEFAULT_DB_STORE_SUBDIR};
 use rooch_pruner::state_prune::IncrementalReplayer;
 use rooch_types::error::RoochResult;
+use rooch_types::rooch_network::RoochChainID;
 use serde_json;
 use std::path::PathBuf;
 
@@ -34,7 +36,8 @@ pub struct ReplayCommand {
     #[clap(long, required = true)]
     pub to_order: u64,
 
-    /// Output store directory for the final pruned database (RocksDB checkpoint)
+    /// Output data directory (base dir). Store will be created at
+    /// <output>/<chain>/roochdb/store as a RocksDB checkpoint.
     #[clap(long, short = 'o', required = true)]
     pub output: PathBuf,
 
@@ -85,9 +88,20 @@ impl CommandAction<String> for ReplayCommand {
             ))
         })?;
 
+        let output_store_dir = self
+            .output
+            .join(RoochChainID::Builtin(self.chain_id).dir_name())
+            .join(DEFAULT_DB_DIR)
+            .join(DEFAULT_DB_STORE_SUBDIR);
+
         // Execute replay
         let replay_report = replayer
-            .replay_changesets(&self.snapshot, self.from_order, self.to_order, &self.output)
+            .replay_changesets(
+                &self.snapshot,
+                self.from_order,
+                self.to_order,
+                &output_store_dir,
+            )
             .await
             .map_err(|e| {
                 rooch_types::error::RoochError::from(anyhow::anyhow!(
@@ -102,6 +116,7 @@ impl CommandAction<String> for ReplayCommand {
             "from_order": self.from_order,
             "to_order": self.to_order,
             "output": self.output,
+            "output_store_dir": output_store_dir,
             "batch_size": self.batch_size,
             "verify_root": self.verify_root,
             "replay_report": {
