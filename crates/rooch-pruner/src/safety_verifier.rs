@@ -92,7 +92,7 @@ impl SafetyVerifier {
     }
 }
 
-#[cfg(feature = "gc-tests")]
+#[cfg(all(test, feature = "gc-tests"))]
 mod tests {
     use super::*;
     use std::fs;
