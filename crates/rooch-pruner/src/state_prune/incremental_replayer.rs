@@ -3,11 +3,14 @@
 
 use crate::state_prune::{ProgressTracker, StatePruneMetadata};
 use anyhow::Result;
+use move_core_types::effects::Op;
 use moveos_store::transaction_store::TransactionStore as MoveOSTransactionStore;
 use moveos_store::{MoveOSStore, STATE_NODE_COLUMN_FAMILY_NAME};
 use moveos_types::h256::H256;
-use moveos_types::state::StateChangeSetExt;
+use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
 use moveos_types::startup_info::StartupInfo;
+use moveos_types::state::StateChangeSetExt;
+use moveos_types::state_resolver::StateResolver;
 use prometheus::Registry;
 use raw_store::SchemaStore;
 use rocksdb::checkpoint::Checkpoint;
@@ -24,7 +27,7 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 /// Incremental replayer for applying changesets to a snapshot
 pub struct IncrementalReplayer {
@@ -36,10 +39,7 @@ pub struct IncrementalReplayer {
 
 impl IncrementalReplayer {
     /// Create new incremental replayer
-    pub fn new(
-        config: ReplayConfig,
-        rooch_store: rooch_store::RoochStore,
-    ) -> Result<Self> {
+    pub fn new(config: ReplayConfig, rooch_store: rooch_store::RoochStore) -> Result<Self> {
         // Validate configuration
         if config.default_batch_size == 0 {
             return Err(anyhow::anyhow!("Batch size must be greater than 0"));
@@ -124,9 +124,7 @@ impl IncrementalReplayer {
         report.final_state_root = actual_state_root;
 
         metadata.mark_in_progress("Compacting state nodes".to_string(), 88.0);
-        output_store
-            .get_state_node_store()
-            .flush_and_compact()?;
+        output_store.get_state_node_store().flush_and_compact()?;
 
         // Verify final state root if enabled
         if self.config.verify_final_state_root {
@@ -242,8 +240,8 @@ impl IncrementalReplayer {
             .ok_or_else(|| anyhow::anyhow!("Failed to access RocksDB instance"))?
             .inner();
 
-        let checkpoint =
-            Checkpoint::new(rocks_db).map_err(|e| anyhow::anyhow!("Checkpoint init failed: {}", e))?;
+        let checkpoint = Checkpoint::new(rocks_db)
+            .map_err(|e| anyhow::anyhow!("Checkpoint init failed: {}", e))?;
         checkpoint
             .create_checkpoint(output_dir)
             .map_err(|e| anyhow::anyhow!("Failed to create output checkpoint: {}", e))?;
@@ -263,11 +261,7 @@ impl IncrementalReplayer {
 
         let registry = Registry::new();
         let output_store = MoveOSStore::new(output_dir, &registry).map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to load output store from {:?}: {}",
-                output_dir,
-                e
-            )
+            anyhow::anyhow!("Failed to load output store from {:?}: {}", output_dir, e)
         })?;
 
         Ok(output_store)
@@ -281,9 +275,8 @@ impl IncrementalReplayer {
             .clone();
 
         let registry = Registry::new();
-        RoochStore::new_with_instance(store_instance, &registry).map_err(|e| {
-            anyhow::anyhow!("Failed to load output RoochStore from output DB: {}", e)
-        })
+        RoochStore::new_with_instance(store_instance, &registry)
+            .map_err(|e| anyhow::anyhow!("Failed to load output RoochStore from output DB: {}", e))
     }
 
     /// Clear state nodes in output store before importing snapshot
@@ -341,10 +334,8 @@ impl IncrementalReplayer {
                 batch = BTreeMap::new();
 
                 if last_report.elapsed() >= Duration::from_secs(30) {
-                    metadata.mark_in_progress(
-                        format!("Importing snapshot nodes ({})", imported),
-                        20.0,
-                    );
+                    metadata
+                        .mark_in_progress(format!("Importing snapshot nodes ({})", imported), 20.0);
                     last_report = Instant::now();
                 }
             }
@@ -375,6 +366,68 @@ impl IncrementalReplayer {
         output_store
             .get_config_store()
             .save_startup_info(StartupInfo::new(state_root, global_size))?;
+        Ok(())
+    }
+
+    fn normalize_changeset_pre_state_roots(
+        &self,
+        output_store: &MoveOSStore,
+        pre_state_root: H256,
+        changeset: &mut moveos_types::state::StateChangeSet,
+    ) -> Result<()> {
+        let root_metadata = moveos_types::moveos_std::object::ObjectMeta::root_metadata(
+            pre_state_root,
+            changeset.global_size,
+        );
+        let resolver =
+            moveos_types::state_resolver::RootObjectResolver::new(root_metadata, output_store);
+
+        for obj_change in changeset.changes.values_mut() {
+            self.normalize_object_change_pre_state_root(&resolver, obj_change)?;
+        }
+
+        Ok(())
+    }
+
+    fn normalize_object_change_pre_state_root(
+        &self,
+        resolver: &moveos_types::state_resolver::RootObjectResolver<'_, MoveOSStore>,
+        obj_change: &mut moveos_types::state::ObjectChange,
+    ) -> Result<()> {
+        let object_id = obj_change.metadata.id.clone();
+        let resolved = resolver.get_object(&object_id)?;
+
+        match &obj_change.value {
+            Some(Op::New(_)) => {
+                if resolved.is_some() {
+                    return Err(anyhow::anyhow!(
+                        "Object {} marked as New but exists in pre-state",
+                        object_id
+                    ));
+                }
+                if obj_change.metadata.state_root.is_some()
+                    && obj_change.metadata.state_root != Some(*GENESIS_STATE_ROOT)
+                {
+                    warn!(
+                        "New object {} has non-empty state_root; resetting to GENESIS for replay",
+                        object_id
+                    );
+                }
+                obj_change.metadata.state_root = None;
+            }
+            _ => {
+                let object_state = resolved.ok_or_else(|| {
+                    anyhow::anyhow!("Object {} not found in pre-state during replay", object_id)
+                })?;
+
+                obj_change.metadata.state_root = object_state.metadata.state_root;
+            }
+        }
+
+        for child in obj_change.fields.values_mut() {
+            self.normalize_object_change_pre_state_root(resolver, child)?;
+        }
+
         Ok(())
     }
 
@@ -479,9 +532,7 @@ impl IncrementalReplayer {
             (None, Some(_)) => {
                 output_rooch_store.clear_last_proposed()?;
             }
-            (Some(last_block_number), Some(last_proposed))
-                if last_proposed > last_block_number =>
-            {
+            (Some(last_block_number), Some(last_proposed)) if last_proposed > last_block_number => {
                 output_rooch_store.set_last_proposed(last_block_number)?;
             }
             _ => {}
@@ -592,12 +643,7 @@ impl IncrementalReplayer {
             );
 
             // Apply batch
-            self.apply_changeset_batch(
-                batch,
-                output_store,
-                &mut current_state_root,
-                report,
-            )?;
+            self.apply_changeset_batch(batch, output_store, &mut current_state_root, report)?;
 
             processed += batch.len();
             self.progress_tracker
@@ -641,7 +687,11 @@ impl IncrementalReplayer {
             processed, expected_state_root
         );
 
-        Ok((current_state_root, expected_state_root, expected_global_size))
+        Ok((
+            current_state_root,
+            expected_state_root,
+            expected_global_size,
+        ))
     }
 
     /// Apply a batch of changesets
@@ -661,14 +711,44 @@ impl IncrementalReplayer {
             let mut changeset = changeset_ext.state_change_set.clone();
             let expected_root = changeset.state_root;
 
+            // DEBUG: Log state root handling
+            info!(
+                "DEBUG tx_order {}: changeset.state_root (post-root) = {:x}, current_state_root (pre-root) = {:x}",
+                tx_order, expected_root, current_state_root
+            );
+
             // Set pre-state root for correct node generation
             changeset.state_root = *current_state_root;
+            self.normalize_changeset_pre_state_roots(
+                output_store,
+                *current_state_root,
+                &mut changeset,
+            )?;
+
+            // DEBUG: Log changeset size
+            info!(
+                "DEBUG tx_order {}: changeset has {} fields to update",
+                tx_order,
+                changeset.changes.len()
+            );
+
+            // DEBUG: Log all fields being updated
+            for (field_key, obj_change) in &changeset.changes {
+                debug!(
+                    "DEBUG tx_order {}: field {:?}, op: {:?}, object state_root: {:?}",
+                    tx_order, field_key, obj_change.value, obj_change.metadata.state_root
+                );
+            }
 
             let (nodes, _stale_indices) = output_store
                 .get_state_store()
                 .change_set_to_nodes(&mut changeset)
                 .map_err(|e| {
-                    anyhow::anyhow!("Failed to convert changeset {} to nodes: {}", tx_order, e)
+                    // DEBUG: Enhanced error message
+                    anyhow::anyhow!(
+                        "Failed to convert changeset {} to nodes: {}\n  current_state_root (pre): {:x}\n  expected_root (post): {:x}\n  fields_count: {}",
+                        tx_order, e, current_state_root, expected_root, changeset.changes.len()
+                    )
                 })?;
 
             let nodes_count = nodes.len() as u64;
@@ -804,8 +884,7 @@ impl IncrementalReplayer {
 
         // Additional integrity check: verify we can access some SMT nodes
         // This ensures the database is in a readable state
-        if let Err(e) = NodeReader::get(output_store.get_state_node_store(), &expected_state_root)
-        {
+        if let Err(e) = NodeReader::get(output_store.get_state_node_store(), &expected_state_root) {
             warn!(
                 "Cannot access expected state root node {:x}: {}",
                 expected_state_root, e

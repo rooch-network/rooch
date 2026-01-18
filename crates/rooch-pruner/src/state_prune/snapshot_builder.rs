@@ -7,9 +7,9 @@ use crate::state_prune::{
 use crate::util::extract_child_nodes_strict;
 use anyhow::Result;
 use moveos_store::MoveOSStore;
+use moveos_store::STATE_NODE_COLUMN_FAMILY_NAME;
 use moveos_types::h256::H256;
 use moveos_types::startup_info::StartupInfo;
-use moveos_store::STATE_NODE_COLUMN_FAMILY_NAME;
 use prometheus::Registry;
 use raw_store::SchemaStore;
 use rooch_config::state_prune::SnapshotMeta;
@@ -559,9 +559,7 @@ impl SnapshotBuilder {
         })?;
         let node_store = snapshot_store.get_state_node_store();
 
-        if state_root != *SPARSE_MERKLE_PLACEHOLDER_HASH
-            && node_store.get(&state_root)?.is_none()
-        {
+        if state_root != *SPARSE_MERKLE_PLACEHOLDER_HASH && node_store.get(&state_root)?.is_none() {
             return Err(anyhow::anyhow!(
                 "Snapshot integrity check failed: missing root node {:x}",
                 state_root
@@ -605,7 +603,10 @@ impl SnapshotBuilder {
         iter.status()
             .map_err(|e| anyhow::anyhow!("Snapshot iterator error: {}", e))?;
 
-        info!("Snapshot integrity check passed ({} nodes verified)", checked);
+        info!(
+            "Snapshot integrity check passed ({} nodes verified)",
+            checked
+        );
         Ok(())
     }
 
@@ -781,10 +782,7 @@ impl SnapshotNodeWriter {
             return Ok(Vec::new());
         }
 
-        let results = self
-            .moveos_store
-            .get_state_node_store()
-            .multi_get(hashes)?;
+        let results = self.moveos_store.get_state_node_store().multi_get(hashes)?;
         Ok(results.into_iter().map(|opt| opt.is_some()).collect())
     }
 
@@ -842,7 +840,9 @@ impl SnapshotNodeWriter {
             nodes.insert(hash, data);
         }
         let nodes_count = nodes.len() as u64;
-        self.moveos_store.get_state_node_store().write_nodes(nodes)?;
+        self.moveos_store
+            .get_state_node_store()
+            .write_nodes(nodes)?;
 
         // Update nodes_written count
         self.nodes_written += nodes_count;
