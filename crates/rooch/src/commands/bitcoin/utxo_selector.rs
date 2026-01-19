@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 
 use anyhow::{bail, Result};
 use bitcoin::{Address, Amount};
+use tokio::time::Duration;
 use moveos_types::moveos_std::object::{ObjectID, GENESIS_STATE_ROOT};
 use rooch_rpc_api::jsonrpc_types::{
     btc::utxo::{UTXOFilterView, UTXOObjectView, UTXOStateView},
@@ -13,6 +14,11 @@ use rooch_rpc_api::jsonrpc_types::{
 use rooch_rpc_client::Client;
 use rooch_types::bitcoin::{types::OutPoint, utxo::derive_utxo_id};
 use tracing::debug;
+
+// Retry configuration for handling rate limiting (HTTP 429)
+const MAX_RETRIES: u32 = 5;
+const BASE_DELAY: Duration = Duration::from_millis(500);
+const MAX_DELAY: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 pub struct UTXOSelector {
@@ -82,37 +88,66 @@ impl UTXOSelector {
         if !has_next_page {
             return Ok(());
         }
-        let utxo_page = self
-            .client
-            .rooch
-            .query_utxos(
-                UTXOFilterView::owner(self.sender.clone()),
-                next_cursor.map(Into::into),
-                None,
-                Some(false),
-            )
-            .await?;
-        debug!("loaded utxos: {:?}", utxo_page.data.len());
-        let minimal_non_dust = self.sender.script_pubkey().minimal_non_dust();
-        for utxo_view in utxo_page.data {
-            let utxo = &utxo_view.value;
-            if !self.skip_seal_check && skip_utxo(&utxo_view, minimal_non_dust) {
-                continue;
+
+        // Retry loop with exponential backoff for rate limiting
+        let mut retry_count = 0;
+        let mut retry_delay = BASE_DELAY;
+
+        loop {
+            let result = self
+                .client
+                .rooch
+                .query_utxos(
+                    UTXOFilterView::owner(self.sender.clone()),
+                    next_cursor.map(Into::into),
+                    None,
+                    Some(false),
+                )
+                .await;
+
+            match result {
+                Ok(utxo_page) => {
+                    debug!("loaded utxos: {:?}", utxo_page.data.len());
+                    let minimal_non_dust = self.sender.script_pubkey().minimal_non_dust();
+                    for utxo_view in utxo_page.data {
+                        let utxo = &utxo_view.value;
+                        if !self.skip_seal_check && skip_utxo(&utxo_view, minimal_non_dust) {
+                            continue;
+                        }
+                        if utxo_view.metadata.owner_bitcoin_address.is_none() {
+                            debug!(
+                                "Can not recognize the owner of UTXO {}, metadata: {:?}, skip.",
+                                utxo.outpoint(),
+                                utxo_view.metadata
+                            );
+                            continue;
+                        }
+                        // We use deque to make sure the utxos are popped in the order they are loaded, the oldest utxo will be popped first
+                        // Avoid bad-txns-premature-spend-of-coinbase error
+                        self.candidate_utxos.push_front(utxo_view.into());
+                    }
+                    self.loaded_page = Some((utxo_page.next_cursor, utxo_page.has_next_page));
+                    return Ok(());
+                }
+                Err(e) if is_rate_limit_error(&e) && retry_count < MAX_RETRIES => {
+                    retry_count += 1;
+                    debug!(
+                        "Rate limited while loading UTXOs (attempt {}/{}), retrying after {:?}",
+                        retry_count, MAX_RETRIES, retry_delay
+                    );
+                    tokio::time::sleep(retry_delay).await;
+                    // Exponential backoff: double the delay, capped at MAX_DELAY
+                    retry_delay = std::cmp::min(retry_delay * 2, MAX_DELAY);
+                }
+                Err(e) => {
+                    // Either not a rate limit error or max retries exceeded
+                    return Err(e.context(format!(
+                        "Failed to load UTXOs after {} retries",
+                        retry_count
+                    )));
+                }
             }
-            if utxo_view.metadata.owner_bitcoin_address.is_none() {
-                debug!(
-                    "Can not recognize the owner of UTXO {}, metadata: {:?}, skip.",
-                    utxo.outpoint(),
-                    utxo_view.metadata
-                );
-                continue;
-            }
-            // We use deque to make sure the utxos are popped in the order they are loaded, the oldest utxo will be popped first
-            // Avoid bad-txns-premature-spend-of-coinbase error
-            self.candidate_utxos.push_front(utxo_view.into());
         }
-        self.loaded_page = Some((utxo_page.next_cursor, utxo_page.has_next_page));
-        Ok(())
     }
 
     /// Get the next utxo from the candidate utxos
@@ -177,4 +212,13 @@ fn skip_utxo(utxo_state_view: &UTXOStateView, minimal_non_dust: Amount) -> bool 
         return true;
     }
     false
+}
+
+fn is_rate_limit_error(error: &anyhow::Error) -> bool {
+    let error_msg = error.to_string().to_lowercase();
+    // Check for various rate limit indicators
+    error_msg.contains("too many requests")
+        || error_msg.contains("429")
+        || error_msg.contains("serverisbusy")
+        || error_msg.contains("wait for")
 }
