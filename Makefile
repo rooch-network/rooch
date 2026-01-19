@@ -119,10 +119,6 @@ rust-clippy:
 	@echo "🔍 Running Rust clippy linter..."
 	cargo clippy --workspace --all-targets --all-features -- \
 		-W clippy::all \
-		-A clippy::mismatched_lifetime_syntaxes \
-		-A clippy::empty_line_after_doc_comments \
-		-A clippy::doc_overindented_list_items \
-		-A clippy::manual_is_multiple_of \
 		-A non_local_definitions
 
 rust-machete:

@@ -117,7 +117,7 @@ impl<T> SMTObject<T> {
 
 impl<T> PartialOrd for SMTObject<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.raw.cmp(&other.raw))
+        Some(self.cmp(other))
     }
 }
 

@@ -250,11 +250,9 @@ impl<T> Sender<T> {
         &self.gauge
     }
 }
-
 ////////////////////////////////
 /// Stream API Wrappers!
 ////////////////////////////////
-
 /// A wrapper around [`crate::metered_channel::Receiver`] that implements [`Stream`].
 ///
 #[derive(Debug)]
@@ -310,11 +308,9 @@ impl<T> From<Receiver<T>> for ReceiverStream<T> {
 
 // TODO: facade PollSender
 // TODO: add prom metrics reporting for gauge and migrate all existing use cases.
-
 ////////////////////////////////////////////////////////////////
 /// Constructor
 ////////////////////////////////////////////////////////////////
-
 /// Similar to `mpsc::channel`, `channel` creates a pair of `Sender` and `Receiver`
 /// Deprecated: use `monitored_mpsc::channel` instead.
 #[track_caller]

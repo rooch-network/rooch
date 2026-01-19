@@ -378,7 +378,7 @@ impl ExportCommand {
         {
             writer.write_record(&k, &v)?;
             count += 1;
-            if count % 100_000 == 0 {
+            if count.is_multiple_of(100_000) {
                 tracing::info!("Exported {} state entries for snapshot...", count);
             }
         }
@@ -488,7 +488,7 @@ impl ExportCommand {
                 {
                     writer.write_record(&field_key, &object_state)?;
                     count += 1;
-                    if count % 1_000_000 == 0 {
+                    if count.is_multiple_of(1_000_000) {
                         println!(
                             "exporting top_level_fields of object_id: {:?}({}), exported count: {}. cost: {:?}",
                             object_id, object_name, count, loop_time.elapsed()
@@ -548,7 +548,7 @@ impl ExportCommand {
             }
 
             count += 1;
-            if count % 1_000_000 == 0 {
+            if count.is_multiple_of(1_000_000) {
                 println!(
                     "exporting top_level_fields of object_id: {:?}({}), exported count: {}. cost: {:?}",
                     object_id, object_name, count, loop_time.elapsed()
@@ -627,7 +627,7 @@ impl ExportCommand {
             let (k, v) = item?;
             writer.write_record(&k, &v)?;
             count += 1;
-            if count % 1_000_000 == 0 {
+            if count.is_multiple_of(1_000_000) {
                 println!(
                     "exporting top_level_fields of object_id: {:?}({}), exported count: {}. cost: {:?}",
                     object_id, object_name, count, loop_time.elapsed()

@@ -99,7 +99,7 @@ impl SMTNodeHash {
     pub fn nibble(&self, index: usize) -> u8 {
         assert!(index < Self::LEN * 2);
         let pos = index / 2;
-        let shift = if index % 2 == 0 { 4 } else { 0 };
+        let shift = if index.is_multiple_of(2) { 4 } else { 0 };
         (self[pos] >> shift) & 0x0f
     }
 
