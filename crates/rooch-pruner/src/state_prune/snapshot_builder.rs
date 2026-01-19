@@ -863,7 +863,7 @@ impl SnapshotNodeWriter {
             let raw_db = wrapper.inner();
             let cf = raw_db
                 .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
-                .expect("state node cf");
+                .ok_or_else(|| anyhow::anyhow!("State node column family not found"))?;
             let mut iter = raw_db.raw_iterator_cf(&cf);
             let mut count = 0u64;
             iter.seek_to_first();

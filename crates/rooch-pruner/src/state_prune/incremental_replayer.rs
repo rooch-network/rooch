@@ -711,9 +711,9 @@ impl IncrementalReplayer {
             let mut changeset = changeset_ext.state_change_set.clone();
             let expected_root = changeset.state_root;
 
-            // DEBUG: Log state root handling
-            info!(
-                "DEBUG tx_order {}: changeset.state_root (post-root) = {:x}, current_state_root (pre-root) = {:x}",
+            // Log state root handling for debugging
+            debug!(
+                "tx_order {}: changeset.state_root (post-root) = {:x}, current_state_root (pre-root) = {:x}",
                 tx_order, expected_root, current_state_root
             );
 
@@ -725,17 +725,17 @@ impl IncrementalReplayer {
                 &mut changeset,
             )?;
 
-            // DEBUG: Log changeset size
-            info!(
-                "DEBUG tx_order {}: changeset has {} fields to update",
+            // Log changeset size
+            debug!(
+                "tx_order {}: changeset has {} fields to update",
                 tx_order,
                 changeset.changes.len()
             );
 
-            // DEBUG: Log all fields being updated
+            // Log all fields being updated
             for (field_key, obj_change) in &changeset.changes {
                 debug!(
-                    "DEBUG tx_order {}: field {:?}, op: {:?}, object state_root: {:?}",
+                    "tx_order {}: field {:?}, op: {:?}, object state_root: {:?}",
                     tx_order, field_key, obj_change.value, obj_change.metadata.state_root
                 );
             }
@@ -744,7 +744,7 @@ impl IncrementalReplayer {
                 .get_state_store()
                 .change_set_to_nodes(&mut changeset)
                 .map_err(|e| {
-                    // DEBUG: Enhanced error message
+                    // Enhanced error message with state root details
                     anyhow::anyhow!(
                         "Failed to convert changeset {} to nodes: {}\n  current_state_root (pre): {:x}\n  expected_root (post): {:x}\n  fields_count: {}",
                         tx_order, e, current_state_root, expected_root, changeset.changes.len()
