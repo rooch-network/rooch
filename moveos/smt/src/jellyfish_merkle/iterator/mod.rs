@@ -135,9 +135,7 @@ where
         let mut done = false;
 
         let mut current_node_key = state_root_hash;
-        let starting_key_hash = starting_key
-            .map(|k| k.merkle_hash())
-            .unwrap_or_default();
+        let starting_key_hash = starting_key.map(|k| k.merkle_hash()).unwrap_or_default();
         let nibble_path = NibblePath::new(starting_key_hash.to_vec());
         let mut nibble_iter = nibble_path.nibbles();
 
