@@ -5,7 +5,6 @@ use std::collections::VecDeque;
 
 use anyhow::{bail, Result};
 use bitcoin::{Address, Amount};
-use tokio::time::Duration;
 use moveos_types::moveos_std::object::{ObjectID, GENESIS_STATE_ROOT};
 use rooch_rpc_api::jsonrpc_types::{
     btc::utxo::{UTXOFilterView, UTXOObjectView, UTXOStateView},
@@ -13,6 +12,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_client::Client;
 use rooch_types::bitcoin::{types::OutPoint, utxo::derive_utxo_id};
+use tokio::time::Duration;
 use tracing::debug;
 
 // Retry configuration for handling rate limiting (HTTP 429)
