@@ -229,8 +229,7 @@ impl UTXOFilter {
             } else {
                 None
             };
-            if addr_updates.is_some() {
-                let (addr_key, _) = addr_updates.unwrap();
+            if let Some((addr_key, _)) = addr_updates {
                 addr_keys.push(xxh3_64(&addr_key.0));
             }
         }
@@ -404,7 +403,7 @@ fn verify_utxo(
         };
 
         utxo_total += 1;
-        if utxo_total % 1_000_000 == 0 {
+        if utxo_total.is_multiple_of(1_000_000) {
             println!(
                 "utxo checking: total: {}. (mismatched(not_found)/checked): utxo: ({}({})/{}); address: ({}({})/{}). cost: {:?}",
                 utxo_total,
@@ -430,7 +429,7 @@ fn verify_utxo(
             if sample_rate == 0 {
                 is_case
             } else {
-                rand::random::<u32>() % sample_rate == 0 || is_case
+                rand::random::<u32>().is_multiple_of(sample_rate) || is_case
             }
         };
 
@@ -460,9 +459,8 @@ fn verify_utxo(
             utxo_not_found_count += 1;
         }
         // check address
-        if addr_updates.is_some() {
+        if let Some((exp_addr_key, exp_addr_state)) = addr_updates {
             address_checked_count += 1;
-            let (exp_addr_key, exp_addr_state) = addr_updates.unwrap();
             let act_address_state = resolver
                 .get_field_at(address_mapping_state_root, &exp_addr_key)
                 .unwrap();
@@ -596,7 +594,7 @@ fn verify_inscription(
         }
 
         total += 1;
-        if total % 1_000_000 == 0 {
+        if total.is_multiple_of(1_000_000) {
             println!(
                 "inscription checking: total: {}. (mismatched(not_found)/checked): inscription: ({}({})/{}); inscription_id: ({}({})/{}). cost: {:?}",
                 total,
@@ -617,7 +615,7 @@ fn verify_inscription(
             if sample_rate == 0 {
                 is_case
             } else {
-                rand::random::<u32>() % sample_rate == 0 || is_case
+                rand::random::<u32>().is_multiple_of(sample_rate) || is_case
             }
         };
 
@@ -924,7 +922,7 @@ fn find_latest_file_with_prefix(output_dir: &PathBuf, prefix: &str) -> Option<Pa
                 continue;
             };
             // get timestamp from file name: <prefix>_<timestamp>
-            let timestamp = filename.split('_').last()?.parse::<u64>().unwrap();
+            let timestamp = filename.split('_').next_back()?.parse::<u64>().unwrap();
             if max_timestamp.is_none() || timestamp > max_timestamp? {
                 max_timestamp = Some(timestamp);
                 max_path = Some(path);
@@ -966,7 +964,7 @@ impl From<&Inscription> for InscriptionForComparison {
             content_type: ins.content_type.clone(),
             metadata: ins.metadata.clone(),
             metaprotocol: ins.metaprotocol.clone(),
-            parents: ins.parents.clone().into_iter().map(Into::into).collect(),
+            parents: ins.parents.clone(),
             pointer: ins.pointer.clone(),
             rune: MoveOption::from(to_commitment(ins.rune.clone().into())),
         }

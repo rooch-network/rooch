@@ -32,7 +32,6 @@ mod update_set;
 
 /// MerkeHashType is a trait to indicate the type can be converted to H256.
 /// So the type can be used as the key of the Sparse Merkle Tree, and do not need to hash again.
-
 /// Load the tree node binary via hash
 pub trait NodeReader {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>>;
