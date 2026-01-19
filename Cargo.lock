@@ -11121,6 +11121,7 @@ dependencies = [
  "criterion",
  "crossbeam-deque",
  "hex",
+ "move-core-types",
  "moveos-common",
  "moveos-store",
  "moveos-types",

@@ -174,7 +174,7 @@ impl HistoricalStateCollector {
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "gc-tests")]
 mod tests {
     use super::*;
     use rooch_types::framework::chain_id::ChainID;

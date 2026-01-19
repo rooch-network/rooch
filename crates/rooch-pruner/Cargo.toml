@@ -9,6 +9,10 @@ repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[features]
+gc-tests = []
+gc-perf-tests = ["gc-tests"]
+
 [dependencies]
 anyhow = { workspace = true }
 smt = { workspace = true }
@@ -34,6 +38,7 @@ rooch-db = { workspace = true }
 moveos-common = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
+move-core-types = { workspace = true }
 raw-store = { workspace = true }
 bcs = { workspace = true }
 sysinfo = { workspace = true }

@@ -4,17 +4,21 @@
 use crate::state_prune::{
     OperationType, ProgressTracker, SnapshotBuilderConfig, StatePruneMetadata,
 };
-use crate::util::extract_child_nodes;
+use crate::util::extract_child_nodes_strict;
 use anyhow::Result;
 use moveos_store::MoveOSStore;
+use moveos_store::STATE_NODE_COLUMN_FAMILY_NAME;
 use moveos_types::h256::H256;
+use moveos_types::startup_info::StartupInfo;
+use prometheus::Registry;
+use raw_store::SchemaStore;
 use rooch_config::state_prune::SnapshotMeta;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use smt::NodeReader;
+use smt::{NodeReader, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tracing::{debug, info, warn};
 
@@ -237,15 +241,25 @@ impl SnapshotBuilder {
 
         metadata.mark_in_progress("Finalizing snapshot".to_string(), 95.0);
 
+        // Persist startup info for snapshot store consistency
+        snapshot_writer.save_startup_info(state_root, global_size)?;
+
         // Flush and close snapshot writer to get final statistics
         let active_nodes_count = snapshot_writer.finalize(&mut metadata)?;
+
+        metadata.mark_in_progress("Verifying snapshot integrity".to_string(), 97.0);
+        self.verify_snapshot_integrity(&output_dir, state_root)?;
 
         // Create snapshot metadata with tx_order and global_size
         let snapshot_meta =
             SnapshotMeta::new(tx_order, state_root, global_size, active_nodes_count);
 
         // Save metadata
-        snapshot_meta.save_to_file(&output_dir)?;
+        let meta_path = snapshot_meta.save_to_file(&output_dir)?;
+        let latest_meta_path = output_dir.join("snapshot_meta.json");
+        if meta_path != latest_meta_path {
+            fs::copy(&meta_path, &latest_meta_path)?;
+        }
         metadata.save_to_file(output_dir.join("operation_meta.json"))?;
 
         let duration = start_time.elapsed();
@@ -414,6 +428,9 @@ impl SnapshotBuilder {
         const PROGRESS_SAVE_INTERVAL_SECS: u64 = 300; // Save progress every 5 minutes
 
         while let Some(current_hash) = nodes_to_process.pop() {
+            if current_hash == *SPARSE_MERKLE_PLACEHOLDER_HASH {
+                continue;
+            }
             // Check if node is already written to avoid duplication
             // The RocksDB-based deduplication handles this efficiently with O(1) space complexity
             // This also serves as cycle detection since nodes already processed won't be revisited
@@ -427,60 +444,63 @@ impl SnapshotBuilder {
             statistics.nodes_visited += 1;
 
             // Get node data
-            if let Some(node_data) = node_store.get(&current_hash)? {
-                statistics.bytes_processed += node_data.len() as u64;
+            let node_data = node_store.get(&current_hash)?.ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Missing state node {:x} while building snapshot",
+                    current_hash
+                )
+            })?;
+            statistics.bytes_processed += node_data.len() as u64;
 
-                // Extract child nodes from the node data before moving it into the buffer
-                let child_hashes = extract_child_nodes(&node_data);
+            // Extract child nodes from the node data before moving it into the buffer
+            let child_hashes = extract_child_nodes_strict(&node_data)?;
 
-                // Add node to batch buffer for writing
-                batch_buffer.push((current_hash, node_data));
+            // Add node to batch buffer for writing
+            batch_buffer.push((current_hash, node_data));
 
-                // Add child nodes to processing queue (DFS: push to stack)
-                for child_hash in child_hashes {
-                    nodes_to_process.push(child_hash);
-                }
+            // Add child nodes to processing queue (DFS: push to stack)
+            for child_hash in child_hashes {
+                nodes_to_process.push(child_hash);
+            }
 
-                // Adaptive batch size adjustment based on memory pressure
-                if self.config.should_use_adaptive_batching()
-                    && last_memory_check.elapsed()
-                        >= Duration::from_secs(MEMORY_CHECK_INTERVAL_SECS)
+            // Adaptive batch size adjustment based on memory pressure
+            if self.config.should_use_adaptive_batching()
+                && last_memory_check.elapsed() >= Duration::from_secs(MEMORY_CHECK_INTERVAL_SECS)
+            {
+                if let Some(new_batch_size) =
+                    self.adjust_batch_size_for_memory_pressure(current_batch_size)
                 {
-                    if let Some(new_batch_size) =
-                        self.adjust_batch_size_for_memory_pressure(current_batch_size)
-                    {
-                        if new_batch_size != current_batch_size {
-                            info!(
-                                "Adjusting batch size from {} to {} due to memory pressure",
-                                current_batch_size, new_batch_size
-                            );
-                            current_batch_size = new_batch_size;
-                            // Resize buffer if needed - use reserve_exact for tighter allocation
-                            if batch_buffer.capacity() < current_batch_size {
-                                batch_buffer
-                                    .reserve_exact(current_batch_size - batch_buffer.capacity());
-                            }
+                    if new_batch_size != current_batch_size {
+                        info!(
+                            "Adjusting batch size from {} to {} due to memory pressure",
+                            current_batch_size, new_batch_size
+                        );
+                        current_batch_size = new_batch_size;
+                        // Resize buffer if needed - use reserve_exact for tighter allocation
+                        if batch_buffer.capacity() < current_batch_size {
+                            batch_buffer
+                                .reserve_exact(current_batch_size - batch_buffer.capacity());
                         }
                     }
-                    last_memory_check = Instant::now();
                 }
+                last_memory_check = Instant::now();
+            }
 
-                // Write batch when it reaches the current batch size
-                if batch_buffer.len() >= current_batch_size {
-                    snapshot_writer.write_batch(std::mem::take(&mut batch_buffer))?;
+            // Write batch when it reaches the current batch size
+            if batch_buffer.len() >= current_batch_size {
+                snapshot_writer.write_batch(std::mem::take(&mut batch_buffer))?;
 
-                    // Update progress periodically
-                    if last_progress_report.elapsed()
-                        >= Duration::from_secs(self.config.progress_interval_seconds)
-                    {
-                        info!(
-                            "Streaming traversal progress: {} batches processed, {} nodes written, current batch size: {}",
-                            statistics.nodes_visited / current_batch_size as u64,
-                            snapshot_writer.nodes_written,
-                            current_batch_size
-                        );
-                        last_progress_report = Instant::now();
-                    }
+                // Update progress periodically
+                if last_progress_report.elapsed()
+                    >= Duration::from_secs(self.config.progress_interval_seconds)
+                {
+                    info!(
+                        "Streaming traversal progress: {} batches processed, {} nodes written, current batch size: {}",
+                        statistics.nodes_visited / current_batch_size as u64,
+                        snapshot_writer.nodes_written,
+                        current_batch_size
+                    );
+                    last_progress_report = Instant::now();
                 }
             }
 
@@ -525,6 +545,69 @@ impl SnapshotBuilder {
         }
 
         Ok(statistics)
+    }
+
+    fn verify_snapshot_integrity(&self, output_dir: &Path, state_root: H256) -> Result<()> {
+        let snapshot_db_path = output_dir.join("snapshot.db");
+        let registry = Registry::new();
+        let snapshot_store = MoveOSStore::new(&snapshot_db_path, &registry).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to open snapshot database at {:?}: {}",
+                snapshot_db_path,
+                e
+            )
+        })?;
+        let node_store = snapshot_store.get_state_node_store();
+
+        if state_root != *SPARSE_MERKLE_PLACEHOLDER_HASH && node_store.get(&state_root)?.is_none() {
+            return Err(anyhow::anyhow!(
+                "Snapshot integrity check failed: missing root node {:x}",
+                state_root
+            ));
+        }
+
+        let raw_db = node_store
+            .get_store()
+            .store()
+            .db()
+            .ok_or_else(|| anyhow::anyhow!("Failed to access snapshot RocksDB instance"))?
+            .inner();
+        let cf = raw_db
+            .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+            .ok_or_else(|| anyhow::anyhow!("State node column family not found"))?;
+        let mut iter = raw_db.raw_iterator_cf(&cf);
+        let mut checked = 0u64;
+
+        iter.seek_to_first();
+        while iter.valid() {
+            if let (Some(key), Some(value)) = (iter.key(), iter.value()) {
+                if key.len() != 32 {
+                    return Err(anyhow::anyhow!(
+                        "Invalid state node key length: {}",
+                        key.len()
+                    ));
+                }
+                let children = extract_child_nodes_strict(value)?;
+                for child in children {
+                    if node_store.get(&child)?.is_none() {
+                        return Err(anyhow::anyhow!(
+                            "Snapshot integrity check failed: missing child node {:x}",
+                            child
+                        ));
+                    }
+                }
+                checked += 1;
+            }
+            iter.next();
+        }
+        iter.status()
+            .map_err(|e| anyhow::anyhow!("Snapshot iterator error: {}", e))?;
+
+        info!(
+            "Snapshot integrity check passed ({} nodes verified)",
+            checked
+        );
+        Ok(())
     }
 
     /// Adjust batch size based on current memory pressure
@@ -630,7 +713,7 @@ impl SnapshotBuilder {
 
 /// RocksDB-backed snapshot node writer with batched writes and deduplication
 pub struct SnapshotNodeWriter {
-    db: Arc<rocksdb::DB>,
+    moveos_store: MoveOSStore,
     pub nodes_written: u64,
 }
 
@@ -663,41 +746,33 @@ impl SnapshotNodeWriter {
             debug!("Snapshot directory created: {:?}", snapshot_db_path);
         }
 
-        // Configure RocksDB for snapshot workloads with minimal settings
-        let mut db_opts = rocksdb::Options::default();
-        db_opts.create_if_missing(true);
+        let registry = Registry::new();
+        let moveos_store = MoveOSStore::new(&snapshot_db_path, &registry).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to open snapshot database at {:?}: {}",
+                snapshot_db_path,
+                e
+            )
+        })?;
 
-        // Open database with single column family for nodes
-        let db = match rocksdb::DB::open(&db_opts, &snapshot_db_path) {
-            Ok(db) => {
-                info!(
-                    "Successfully opened snapshot database at: {:?}",
-                    snapshot_db_path
-                );
-                Arc::new(db)
-            }
-            Err(e) => {
-                return Err(anyhow::anyhow!(
-                    "Failed to open snapshot database at {:?}: {}",
-                    snapshot_db_path,
-                    e
-                ));
-            }
-        };
+        info!(
+            "Successfully opened snapshot database at: {:?}",
+            snapshot_db_path
+        );
 
         Ok(Self {
-            db,
+            moveos_store,
             nodes_written: initial_count,
         })
     }
 
     /// Check if node already exists in snapshot (for deduplication)
     pub fn contains_node(&self, hash: &H256) -> Result<bool> {
-        match self.db.get(hash.as_bytes()) {
-            Ok(Some(_)) => Ok(true),
-            Ok(None) => Ok(false),
-            Err(e) => Err(e.into()),
-        }
+        Ok(self
+            .moveos_store
+            .get_state_node_store()
+            .get(hash)?
+            .is_some())
     }
 
     /// Batch check if nodes already exist in snapshot (for efficient deduplication)
@@ -707,19 +782,8 @@ impl SnapshotNodeWriter {
             return Ok(Vec::new());
         }
 
-        // Use multi_get for batch existence checking to reduce I/O overhead
-        let keys: Vec<_> = hashes.iter().map(|h| h.as_bytes()).collect();
-        let results: Result<Vec<_>> = self
-            .db
-            .multi_get(keys)
-            .into_iter()
-            .map(|r| {
-                r.map(|opt| opt.is_some())
-                    .map_err(|e| anyhow::anyhow!("RocksDB error: {}", e))
-            })
-            .collect();
-
-        results
+        let results = self.moveos_store.get_state_node_store().multi_get(hashes)?;
+        Ok(results.into_iter().map(|opt| opt.is_some()).collect())
     }
 
     /// Filter out already existing nodes from a batch, returning only new nodes
@@ -771,16 +835,17 @@ impl SnapshotNodeWriter {
             );
         }
 
-        let mut write_batch = rocksdb::WriteBatch::default();
-
-        // Add only new nodes to batch
+        let mut nodes = BTreeMap::new();
         for (hash, data) in new_nodes {
-            write_batch.put(hash.as_bytes(), data);
-            self.nodes_written += 1;
+            nodes.insert(hash, data);
         }
+        let nodes_count = nodes.len() as u64;
+        self.moveos_store
+            .get_state_node_store()
+            .write_nodes(nodes)?;
 
-        // Write batch
-        self.db.write(write_batch)?;
+        // Update nodes_written count
+        self.nodes_written += nodes_count;
 
         Ok(())
     }
@@ -788,23 +853,31 @@ impl SnapshotNodeWriter {
     /// Get the actual count of nodes in the snapshot database by querying RocksDB
     /// This is useful for validation or when the count needs to be derived from the database
     pub fn get_actual_node_count(&self) -> Result<u64> {
-        // Create an iterator to count all keys in the database
-        let iter = self.db.iterator(rocksdb::IteratorMode::Start);
-        let mut count = 0u64;
-
-        for result in iter {
-            match result {
-                Ok(_) => count += 1,
-                Err(e) => {
-                    return Err(anyhow::anyhow!(
-                        "Error iterating over snapshot database: {}",
-                        e
-                    ));
-                }
+        if let Some(wrapper) = self
+            .moveos_store
+            .get_state_node_store()
+            .get_store()
+            .store()
+            .db()
+        {
+            let raw_db = wrapper.inner();
+            let cf = raw_db
+                .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+                .ok_or_else(|| anyhow::anyhow!("State node column family not found"))?;
+            let mut iter = raw_db.raw_iterator_cf(&cf);
+            let mut count = 0u64;
+            iter.seek_to_first();
+            while iter.valid() {
+                count += 1;
+                iter.next();
             }
+            iter.status()
+                .map_err(|e| anyhow::anyhow!("Error iterating snapshot db: {}", e))?;
+            return Ok(count);
         }
 
-        Ok(count)
+        warn!("Snapshot store does not expose a RocksDB instance; using tracked count");
+        Ok(self.nodes_written)
     }
 
     /// Finalize the snapshot writer and return the final count
@@ -836,12 +909,11 @@ impl SnapshotNodeWriter {
             }
         };
 
-        // Force flush to ensure all data is written to disk
-        self.db.flush()?;
-
-        // Trigger a single compaction to optimize file layout
+        // Flush and compact to ensure all data is written and optimized
         let start = Instant::now();
-        self.db.compact_range::<&[u8], &[u8]>(None, None);
+        self.moveos_store
+            .get_state_node_store()
+            .flush_and_compact()?;
         let compact_duration = start.elapsed();
 
         info!(
@@ -856,12 +928,20 @@ impl SnapshotNodeWriter {
 
         Ok(final_count)
     }
+
+    /// Persist startup_info so the snapshot can be opened as a MoveOS store
+    pub fn save_startup_info(&self, state_root: H256, global_size: u64) -> Result<()> {
+        let startup_info = StartupInfo::new(state_root, global_size);
+        self.moveos_store
+            .get_config_store()
+            .save_startup_info(startup_info)?;
+        Ok(())
+    }
 }
 
 impl Drop for SnapshotNodeWriter {
     fn drop(&mut self) {
-        // Ensure database is properly closed
-        if let Err(e) = self.db.flush() {
+        if let Err(e) = self.moveos_store.get_state_node_store().flush_only() {
             warn!("Failed to flush snapshot database on drop: {:?}", e);
         }
     }
