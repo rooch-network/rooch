@@ -16,9 +16,10 @@ use tokio::time::Duration;
 use tracing::debug;
 
 // Retry configuration for handling rate limiting (HTTP 429)
-const MAX_RETRIES: u32 = 5;
-const BASE_DELAY: Duration = Duration::from_millis(500);
-const MAX_DELAY: Duration = Duration::from_secs(30);
+// Fixed delay strategy: wait 2 seconds between retries
+// Based on rate limit: 10 req/ms with 200 burst size, refills in ~20ms
+const MAX_RETRIES: u32 = 20;
+const RETRY_DELAY: Duration = Duration::from_secs(2);
 
 #[derive(Debug)]
 pub struct UTXOSelector {
@@ -89,9 +90,8 @@ impl UTXOSelector {
             return Ok(());
         }
 
-        // Retry loop with exponential backoff for rate limiting
+        // Retry loop with fixed delay for rate limiting
         let mut retry_count = 0;
-        let mut retry_delay = BASE_DELAY;
 
         loop {
             let result = self
@@ -133,11 +133,9 @@ impl UTXOSelector {
                     retry_count += 1;
                     debug!(
                         "Rate limited while loading UTXOs (attempt {}/{}), retrying after {:?}",
-                        retry_count, MAX_RETRIES, retry_delay
+                        retry_count, MAX_RETRIES, RETRY_DELAY
                     );
-                    tokio::time::sleep(retry_delay).await;
-                    // Exponential backoff: double the delay, capped at MAX_DELAY
-                    retry_delay = std::cmp::min(retry_delay * 2, MAX_DELAY);
+                    tokio::time::sleep(RETRY_DELAY).await;
                 }
                 Err(e) => {
                     // Either not a rate limit error or max retries exceeded
@@ -153,7 +151,12 @@ impl UTXOSelector {
     /// Get the next utxo from the candidate utxos
     pub async fn next_utxo(&mut self) -> Result<Option<UTXOObjectView>> {
         if self.candidate_utxos.is_empty() {
+            debug!("candidate_utxos is empty, loading more UTXOs...");
             self.load_utxos().await?;
+            debug!(
+                "After loading, candidate_utxos count: {}",
+                self.candidate_utxos.len()
+            );
         }
         Ok(self.candidate_utxos.pop_back())
     }
@@ -161,15 +164,39 @@ impl UTXOSelector {
     pub async fn select_utxos(&mut self, expected_amount: Amount) -> Result<Vec<UTXOObjectView>> {
         let mut utxos = vec![];
         let mut total_input = Amount::from_sat(0);
+        let mut iteration_count = 0;
+        debug!(
+            "select_utxos: expected_amount={} satoshi",
+            expected_amount.to_sat()
+        );
         while total_input < expected_amount {
+            iteration_count += 1;
             let utxo = self.next_utxo().await?;
             if utxo.is_none() {
+                debug!(
+                    "select_utxos: No more UTXOs after {} iterations. total_input={} satoshi, expected={}",
+                    iteration_count,
+                    total_input.to_sat(),
+                    expected_amount.to_sat()
+                );
                 bail!("not enough BTC funds");
             }
             let utxo = utxo.unwrap();
             total_input += utxo.amount();
-            utxos.push(utxo);
+            utxos.push(utxo.clone());
+            debug!(
+                "Iteration {}: UTXO {} added, amount={}, total_input={}",
+                iteration_count,
+                utxo.outpoint(),
+                utxo.amount().to_sat(),
+                total_input.to_sat()
+            );
         }
+        debug!(
+            "select_utxos: Successfully selected {} UTXOs totaling {} satoshi",
+            utxos.len(),
+            total_input.to_sat()
+        );
         Ok(utxos)
     }
 

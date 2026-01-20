@@ -10,7 +10,9 @@ use bitcoin::{
 use moveos_types::{module_binding::MoveFunctionCaller, moveos_std::object::ObjectID};
 use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOObjectView;
 use rooch_rpc_client::{wallet_context::WalletContext, Client};
-use rooch_types::bitcoin::multisign_account::{self};
+use rooch_types::address::RoochAddress;
+use rooch_types::bitcoin::multisign_account::{self, MultisignAccountInfo};
+use std::time::Duration;
 use tracing::debug;
 
 #[derive(Debug)]
@@ -21,6 +23,45 @@ pub struct TransactionBuilder<'a> {
     fee_rate: FeeRate,
     change_address: Address,
     lock_time: Option<LockTime>,
+}
+
+// Retry configuration for handling rate limiting (HTTP 429)
+const MAX_RETRIES: u32 = 20;
+const RETRY_DELAY: Duration = Duration::from_secs(2);
+
+/// Check if an error is a rate limit error
+fn is_rate_limit_error(error: &anyhow::Error) -> bool {
+    let error_msg = error.to_string().to_lowercase();
+    // Check for various rate limit indicators
+    error_msg.contains("too many requests")
+        || error_msg.contains("429")
+        || error_msg.contains("serverisbusy")
+        || error_msg.contains("wait for")
+}
+
+/// Retry wrapper for RPC calls that may hit rate limits
+async fn retry_rpc_call<F, Fut, T>(f: F) -> Result<T>
+where
+    F: Fn() -> Fut,
+    Fut: std::future::Future<Output = Result<T>>,
+{
+    let mut retry_count = 0;
+    loop {
+        match f().await {
+            Ok(result) => return Ok(result),
+            Err(e) if is_rate_limit_error(&e) && retry_count < MAX_RETRIES => {
+                retry_count += 1;
+                debug!(
+                    "Rate limited while calling RPC (attempt {}/{}), retrying after {:?}",
+                    retry_count, MAX_RETRIES, RETRY_DELAY
+                );
+                tokio::time::sleep(RETRY_DELAY).await;
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
 }
 
 impl<'a> TransactionBuilder<'a> {
@@ -164,6 +205,11 @@ impl<'a> TransactionBuilder<'a> {
         let multisign_account_module = self
             .client
             .as_module_binding::<multisign_account::MultisignAccountModule>();
+        let mut multisign_account_cache: std::collections::HashMap<
+            RoochAddress,
+            MultisignAccountInfo,
+        > = std::collections::HashMap::new();
+
         for (idx, utxo) in utxos.iter().enumerate() {
             let input = &mut psbt.inputs[idx];
 
@@ -184,12 +230,22 @@ impl<'a> TransactionBuilder<'a> {
             let rooch_addr = bitcoin_addr.to_rooch_address();
 
             if multisign_account_module.is_multisign_account(rooch_addr.into())? {
-                let account_info = self
-                    .client
-                    .rooch
-                    .get_multisign_account_info(rooch_addr)
+                let account_info = if let Some(cached) = multisign_account_cache.get(&rooch_addr) {
+                    debug!("Using cached multisign account info for {:?}", rooch_addr);
+                    cached.clone()
+                } else {
+                    debug!("Fetching multisign account info for {:?}", rooch_addr);
+                    let info = retry_rpc_call(|| async {
+                        self.client
+                            .rooch
+                            .get_multisign_account_info(rooch_addr)
+                            .await
+                    })
                     .await?;
-                debug!("Multisign account: {:?}", account_info);
+                    debug!("Multisign account: {:?}", info);
+                    multisign_account_cache.insert(rooch_addr, info.clone());
+                    info
+                };
                 multisign_account::update_multisig_psbt(input, &account_info)?;
             } else {
                 let kp = self.wallet_context.get_key_pair(&rooch_addr)?;
