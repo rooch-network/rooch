@@ -11,7 +11,7 @@ use moveos_types::{module_binding::MoveFunctionCaller, moveos_std::object::Objec
 use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOObjectView;
 use rooch_rpc_client::{wallet_context::WalletContext, Client};
 use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::multisign_account::{self, MultisignAccountInfo};
+use rooch_types::bitcoin::multisign_account::{self, PrecomputedMultisigPsbtData};
 use std::time::Duration;
 use tracing::debug;
 
@@ -205,10 +205,12 @@ impl<'a> TransactionBuilder<'a> {
         let multisign_account_module = self
             .client
             .as_module_binding::<multisign_account::MultisignAccountModule>();
-        let mut multisign_account_cache: std::collections::HashMap<
+        let mut multisign_psbt_cache: std::collections::HashMap<
             RoochAddress,
-            MultisignAccountInfo,
+            PrecomputedMultisigPsbtData,
         > = std::collections::HashMap::new();
+        let mut non_multisign_addresses: std::collections::HashSet<RoochAddress> =
+            std::collections::HashSet::new();
 
         for (idx, utxo) in utxos.iter().enumerate() {
             let input = &mut psbt.inputs[idx];
@@ -229,27 +231,47 @@ impl<'a> TransactionBuilder<'a> {
 
             let rooch_addr = bitcoin_addr.to_rooch_address();
 
-            if multisign_account_module.is_multisign_account(rooch_addr.into())? {
-                let account_info = if let Some(cached) = multisign_account_cache.get(&rooch_addr) {
-                    debug!("Using cached multisign account info for {:?}", rooch_addr);
-                    cached.clone()
-                } else {
-                    debug!("Fetching multisign account info for {:?}", rooch_addr);
-                    let info = retry_rpc_call(|| async {
-                        self.client
-                            .rooch
-                            .get_multisign_account_info(rooch_addr)
-                            .await
-                    })
-                    .await?;
-                    debug!("Multisign account: {:?}", info);
-                    multisign_account_cache.insert(rooch_addr, info.clone());
-                    info
-                };
-                multisign_account::update_multisig_psbt(input, &account_info)?;
-            } else {
+            // Check if we already know this address is non-multisign
+            if non_multisign_addresses.contains(&rooch_addr) {
                 let kp = self.wallet_context.get_key_pair(&rooch_addr)?;
+                input.bip32_derivation.insert(
+                    kp.bitcoin_public_key()?.inner,
+                    (Fingerprint::default(), Default::default()),
+                );
+                continue;
+            }
 
+            // Check if we have cached multisign data
+            if let Some(cached) = multisign_psbt_cache.get(&rooch_addr) {
+                debug!("Using cached precomputed PSBT data for {:?}", rooch_addr);
+                multisign_account::update_psbt_with_precomputed_data(input, cached);
+                continue;
+            }
+
+            // Need to check if this is a multisign account
+            if multisign_account_module.is_multisign_account(rooch_addr.into())? {
+                debug!(
+                    "Fetching and precomputing multisign PSBT data for {:?}",
+                    rooch_addr
+                );
+                let info = retry_rpc_call(|| async {
+                    self.client
+                        .rooch
+                        .get_multisign_account_info(rooch_addr)
+                        .await
+                })
+                .await?;
+                debug!(
+                    "Precomputing PSBT data for account with {} participants",
+                    info.participants.data.len()
+                );
+                let precomputed = multisign_account::precompute_multisig_psbt_data(&info)?;
+                multisign_psbt_cache.insert(rooch_addr, precomputed.clone());
+                multisign_account::update_psbt_with_precomputed_data(input, &precomputed);
+            } else {
+                // Not a multisign account, remember this for future UTXOs
+                non_multisign_addresses.insert(rooch_addr.clone());
+                let kp = self.wallet_context.get_key_pair(&rooch_addr)?;
                 input.bip32_derivation.insert(
                     kp.bitcoin_public_key()?.inner,
                     (Fingerprint::default(), Default::default()),
