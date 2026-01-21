@@ -168,8 +168,10 @@ pub struct PrecomputedMultisigPsbtData {
         ),
     >,
     pub tap_merkle_root: Option<bitcoin::taproot::TapNodeHash>,
-    // Store all tap_scripts data as raw bytes to avoid type complexity
-    pub tap_scripts_serialized: Vec<u8>,
+    /// Control block for the taproot script
+    pub control_block: bitcoin::taproot::ControlBlock,
+    /// The multisig script (OP_CHECKSIG* OP_GREATERTHANOREQUAL)
+    pub multisig_script: bitcoin::ScriptBuf,
 }
 
 /// Precompute all the expensive operations for a multisign account once
@@ -232,24 +234,12 @@ pub fn precompute_multisig_psbt_data(
         );
     }
 
-    // Serialize tap_scripts by creating a temporary PSBT input and serializing it
-    let mut temp_input = bitcoin::psbt::Input::default();
-    temp_input.tap_internal_key = Some(internal_key);
-    temp_input.tap_key_origins = tap_key_origins.clone();
-    temp_input.tap_merkle_root = tap_tree.merkle_root();
-    temp_input
-        .tap_scripts
-        .insert(control_block, (multisig_script, LeafVersion::TapScript));
-
-    // Serialize the tap_scripts field
-    // We'll need to deserialize it later, but for now let's use a different approach
-    // Just clone the entire input for each UTXO - this is still much faster than recomputing
-
     Ok(PrecomputedMultisigPsbtData {
         tap_internal_key: internal_key,
         tap_key_origins,
         tap_merkle_root: tap_tree.merkle_root(),
-        tap_scripts_serialized: vec![], // Placeholder
+        control_block,
+        multisig_script,
     })
 }
 
@@ -259,11 +249,18 @@ pub fn update_psbt_with_precomputed_data(
     psbt_input: &mut bitcoin::psbt::Input,
     precomputed: &PrecomputedMultisigPsbtData,
 ) {
-    // For now, just copy the basic fields and skip tap_scripts
-    // This is a limitation that can be improved later if needed
     psbt_input.tap_internal_key = Some(precomputed.tap_internal_key);
     psbt_input.tap_key_origins = precomputed.tap_key_origins.clone();
     psbt_input.tap_merkle_root = precomputed.tap_merkle_root;
+
+    // Insert tap_scripts - this is required for signing
+    psbt_input.tap_scripts.insert(
+        precomputed.control_block.clone(),
+        (
+            precomputed.multisig_script.clone(),
+            bitcoin::taproot::LeafVersion::TapScript,
+        ),
+    );
 }
 
 pub fn update_multisig_psbt(

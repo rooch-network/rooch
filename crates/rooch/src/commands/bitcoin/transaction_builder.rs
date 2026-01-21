@@ -88,6 +88,24 @@ impl<'a> TransactionBuilder<'a> {
         })
     }
 
+    /// Create a TransactionBuilder with pre-loaded UTXOs, avoiding redundant queries
+    pub fn with_utxos(
+        wallet_context: &'a WalletContext,
+        client: Client,
+        sender: Address,
+        utxos: Vec<UTXOObjectView>,
+    ) -> Self {
+        let utxo_selector = UTXOSelector::with_utxos(client.clone(), sender.clone(), utxos);
+        Self {
+            wallet_context,
+            client,
+            utxo_selector,
+            fee_rate: FeeRate::from_sat_per_vb(10).unwrap(),
+            change_address: sender,
+            lock_time: None,
+        }
+    }
+
     pub fn with_fee_rate(mut self, fee_rate: FeeRate) -> Self {
         self.fee_rate = fee_rate;
         self

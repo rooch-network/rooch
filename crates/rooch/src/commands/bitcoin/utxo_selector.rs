@@ -50,36 +50,58 @@ impl UTXOSelector {
         Ok(selector)
     }
 
+    /// Create a UTXOSelector with pre-loaded UTXOs, avoiding redundant queries
+    pub fn with_utxos(client: Client, sender: Address, utxos: Vec<UTXOObjectView>) -> Self {
+        // Convert to VecDeque so pop_back returns items in order (oldest first)
+        let mut candidate_utxos = VecDeque::new();
+        for utxo in utxos {
+            // We use push_front so that pop_back will return items in FIFO order
+            // The oldest UTXO should be spent first to avoid bad-txns-premature-spend-of-coinbase
+            candidate_utxos.push_front(utxo);
+        }
+
+        Self {
+            client,
+            sender,
+            specific_utxos: vec![],
+            loaded_page: Some((None, false)), // Mark as no more pages to load
+            candidate_utxos,
+            skip_seal_check: true, // Already checked when loading
+        }
+    }
+
     async fn load_specific_utxos(&mut self) -> Result<()> {
         if self.specific_utxos.is_empty() {
             return Ok(());
         }
-        let utxos_objs = self
-            .client
-            .rooch
-            .query_utxos(
-                UTXOFilterView::object_ids(self.specific_utxos.clone()),
-                None,
-                None,
-                None,
-            )
-            .await?;
-        for utxo_state_view in utxos_objs.data {
-            let utxo = &utxo_state_view.value;
-            if !self.skip_seal_check {
-                let minimal_non_dust = self.sender.script_pubkey().minimal_non_dust();
-                if skip_utxo(&utxo_state_view, minimal_non_dust) {
-                    bail!("UTXO {} has seal or tempstate attachment: {:?}, please use --skip-seal-check to skip this check", utxo_state_view.value.outpoint(), utxo_state_view);
+
+        // RPC has a limit of 100 object IDs per request
+        const BATCH_SIZE: usize = 100;
+        let minimal_non_dust = self.sender.script_pubkey().minimal_non_dust();
+
+        for chunk in self.specific_utxos.chunks(BATCH_SIZE) {
+            let utxos_objs = self
+                .client
+                .rooch
+                .query_utxos(UTXOFilterView::object_ids(chunk.to_vec()), None, None, None)
+                .await?;
+
+            for utxo_state_view in utxos_objs.data {
+                let utxo = &utxo_state_view.value;
+                if !self.skip_seal_check {
+                    if skip_utxo(&utxo_state_view, minimal_non_dust) {
+                        bail!("UTXO {} has seal or tempstate attachment: {:?}, please use --skip-seal-check to skip this check", utxo_state_view.value.outpoint(), utxo_state_view);
+                    }
                 }
+                if utxo_state_view.metadata.owner_bitcoin_address.is_none() {
+                    bail!(
+                        "Can not recognize the owner of UTXO {}, metadata: {:?}",
+                        utxo.outpoint(),
+                        utxo_state_view.metadata
+                    );
+                }
+                self.candidate_utxos.push_front(utxo_state_view.into());
             }
-            if utxo_state_view.metadata.owner_bitcoin_address.is_none() {
-                bail!(
-                    "Can not recognize the owner of UTXO {}, metadata: {:?}",
-                    utxo.outpoint(),
-                    utxo_state_view.metadata
-                );
-            }
-            self.candidate_utxos.push_front(utxo_state_view.into());
         }
         Ok(())
     }
@@ -198,6 +220,33 @@ impl UTXOSelector {
             total_input.to_sat()
         );
         Ok(utxos)
+    }
+
+    /// Load all UTXOs for the sender address and return them
+    /// This is used when we need to know the total count of UTXOs before building transactions
+    pub async fn load_all_utxos(&mut self) -> Result<Vec<UTXOObjectView>> {
+        let mut all_utxos = Vec::new();
+
+        // Keep loading pages until no more
+        loop {
+            self.load_utxos().await?;
+            if self.candidate_utxos.is_empty() {
+                break;
+            }
+            // Collect all currently loaded UTXOs
+            while let Some(utxo) = self.candidate_utxos.pop_back() {
+                all_utxos.push(utxo);
+            }
+
+            // Check if there's a next page
+            let (_, has_next_page) = self.loaded_page.unwrap_or((None, false));
+            if !has_next_page {
+                break;
+            }
+        }
+
+        debug!("load_all_utxos: Loaded {} UTXOs", all_utxos.len());
+        Ok(all_utxos)
     }
 
     pub fn specific_utxos(&self) -> &[ObjectID] {
