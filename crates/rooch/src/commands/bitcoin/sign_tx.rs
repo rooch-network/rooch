@@ -4,7 +4,7 @@
 use crate::utils::prompt_yes_no;
 use crate::{
     cli_types::{CommandAction, FileOrHexInput, WalletContextOptions},
-    commands::bitcoin::{FileOutput, FileOutputData},
+    commands::bitcoin::{retry_rpc_call, FileOutput, FileOutputData},
 };
 use anyhow::bail;
 use anyhow::Result;
@@ -110,12 +110,55 @@ pub(crate) async fn sign_psbt(
 
     let mut sighash_cache = SighashCache::new(&psbt.unsigned_tx);
 
+    // Cache for multisign account info to avoid repeated RPC calls for the same address
+    let mut multisign_account_cache: std::collections::HashMap<
+        RoochAddress,
+        rooch_types::bitcoin::multisign_account::MultisignAccountInfo,
+    > = std::collections::HashMap::new();
+
+    // Cache for is_multisign_account results to avoid repeated Move calls
+    let mut is_multisign_cache: std::collections::HashSet<RoochAddress> =
+        std::collections::HashSet::new();
+    let mut non_multisign_cache: std::collections::HashSet<RoochAddress> =
+        std::collections::HashSet::new();
+
     for (idx, input) in psbt.inputs.iter_mut().enumerate() {
         if let Some(utxo) = input.witness_utxo.as_ref() {
             let addr = BitcoinAddress::from(&utxo.script_pubkey);
             let rooch_addr = addr.to_rooch_address();
-            if multisign_account_module.is_multisign_account(rooch_addr.into())? {
-                let account_info = client.rooch.get_multisign_account_info(rooch_addr).await?;
+
+            // Check caches to avoid repeated Move calls
+            let is_multisign = if is_multisign_cache.contains(&rooch_addr) {
+                debug!("Using cached is_multisign result for {:?}", rooch_addr);
+                true
+            } else if non_multisign_cache.contains(&rooch_addr) {
+                debug!("Using cached non-multisign result for {:?}", rooch_addr);
+                false
+            } else {
+                debug!("Checking is_multisign_account for {:?}", rooch_addr);
+                let is_ms = multisign_account_module.is_multisign_account(rooch_addr.into())?;
+                if is_ms {
+                    is_multisign_cache.insert(rooch_addr.clone());
+                } else {
+                    non_multisign_cache.insert(rooch_addr.clone());
+                };
+                is_ms
+            };
+
+            if is_multisign {
+                // Use cached account info if available, otherwise fetch with retry
+                let account_info = if let Some(cached) = multisign_account_cache.get(&rooch_addr) {
+                    debug!("Using cached account info for {:?}", rooch_addr);
+                    cached.clone()
+                } else {
+                    debug!("Fetching multisign account info for {:?}", rooch_addr);
+                    let info = retry_rpc_call(|| async {
+                        client.rooch.get_multisign_account_info(rooch_addr).await
+                    })
+                    .await?;
+                    multisign_account_cache.insert(rooch_addr, info.clone());
+                    info
+                };
                 debug!("Account info: {:?}", account_info);
                 let (control_block, (multisig_script, leaf_version)) = input
                     .tap_scripts

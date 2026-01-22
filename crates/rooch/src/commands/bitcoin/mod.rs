@@ -5,14 +5,17 @@ use crate::cli_types::CommandAction;
 use anyhow::Result;
 use async_trait::async_trait;
 use bitcoin::{consensus::Encodable, Psbt, Transaction, Txid};
-use broadcast_tx::BroadcastTx;
-use build_tx::BuildTx;
 use clap::{Parser, Subcommand};
 use rooch_types::error::RoochResult;
 use serde::{Deserialize, Serialize};
-use sign_tx::SignTx;
-use std::{env, fs::File, io::Write, path::PathBuf};
-use transfer::Transfer;
+use std::{env, fs::File, io::Write, path::PathBuf, time::Duration};
+use tracing::debug;
+
+use self::broadcast_tx::BroadcastTx;
+use self::build_tx::BuildTx;
+use self::sign_tx::SignTx;
+use self::transfer::Transfer;
+use self::verify_psbt::VerifyPsbt;
 
 pub mod broadcast_tx;
 pub mod build_tx;
@@ -20,6 +23,47 @@ pub mod sign_tx;
 pub mod transaction_builder;
 pub mod transfer;
 pub mod utxo_selector;
+pub mod verify_psbt;
+
+// Retry configuration for handling rate limiting (HTTP 429)
+pub const MAX_RETRIES: u32 = 20;
+pub const RETRY_DELAY: Duration = Duration::from_secs(2);
+
+/// Check if an error is a rate limit error
+pub fn is_rate_limit_error(error: &anyhow::Error) -> bool {
+    let error_msg = error.to_string().to_lowercase();
+    // Check for various rate limit indicators
+    error_msg.contains("too many requests")
+        || error_msg.contains("429")
+        || error_msg.contains("serverisbusy")
+        || error_msg.contains("wait for")
+}
+
+/// Retry wrapper for RPC calls that may hit rate limits
+/// This is a public function that can be used across all bitcoin command modules
+pub async fn retry_rpc_call<F, Fut, T>(f: F) -> Result<T>
+where
+    F: Fn() -> Fut,
+    Fut: std::future::Future<Output = Result<T>>,
+{
+    let mut retry_count = 0;
+    loop {
+        match f().await {
+            Ok(result) => return Ok(result),
+            Err(e) if is_rate_limit_error(&e) && retry_count < MAX_RETRIES => {
+                retry_count += 1;
+                debug!(
+                    "Rate limited while calling RPC (attempt {}/{}), retrying after {:?}",
+                    retry_count, MAX_RETRIES, RETRY_DELAY
+                );
+                tokio::time::sleep(RETRY_DELAY).await;
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+}
 
 #[derive(Debug, Parser)]
 pub struct Bitcoin {
@@ -34,16 +78,18 @@ pub enum BitcoinCommands {
     SignTx(SignTx),
     BroadcastTx(BroadcastTx),
     Transfer(Transfer),
+    VerifyPsbt(VerifyPsbt),
 }
 
 #[async_trait]
 impl CommandAction<String> for Bitcoin {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
-            BitcoinCommands::BuildTx(build_tx) => build_tx.execute_serialized().await,
+            BitcoinCommands::BuildTx(build_tx) => build_tx.execute().await,
             BitcoinCommands::SignTx(sign_tx) => sign_tx.execute_serialized().await,
             BitcoinCommands::BroadcastTx(broadcast_tx) => broadcast_tx.execute_serialized().await,
             BitcoinCommands::Transfer(transfer) => transfer.execute_serialized().await,
+            BitcoinCommands::VerifyPsbt(verify_psbt) => verify_psbt.execute().await,
         }
     }
 }
