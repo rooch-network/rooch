@@ -142,6 +142,21 @@ impl CommandAction<String> for BuildTx {
         let max_inputs = self.max_inputs.unwrap_or(usize::MAX);
         let send_all = self.outputs.iter().any(|o| o.amount == OutputAmount::All);
 
+        // Validate :all usage - only one output can use :all
+        if send_all {
+            let all_count = self
+                .outputs
+                .iter()
+                .filter(|o| o.amount == OutputAmount::All)
+                .count();
+            if all_count > 1 {
+                return Err(RoochError::from(anyhow::anyhow!(
+                    "Only one output can use :all. Found {} outputs with :all.",
+                    all_count
+                )));
+            }
+        }
+
         // Case 1: Manual inputs specified
         if !self.inputs.is_empty() {
             if send_all {
@@ -158,7 +173,7 @@ impl CommandAction<String> for BuildTx {
 
             if inputs.len() > max_inputs {
                 return Err(RoochError::from(anyhow::anyhow!(
-                    "Too many inputs ({} > {}). Use --max-inputs to auto-split.",
+                    "Too many inputs ({} > {}). Either reduce the number of inputs or remove --inputs to enable auto-splitting.",
                     inputs.len(),
                     max_inputs
                 )));
@@ -256,13 +271,13 @@ impl CommandAction<String> for BuildTx {
                     })
                     .collect::<Vec<_>>();
 
-                // Build transaction with auto-loading (empty inputs = auto-load)
-                return build_single_transaction(
+                // Build transaction with pre-loaded UTXOs to avoid redundant queries
+                return build_single_transaction_with_utxos(
                     &context,
                     client,
                     sender,
                     bitcoin_network,
-                    vec![], // Empty inputs triggers auto-loading
+                    all_utxos,
                     self.skip_check_seal,
                     self.fee_rate,
                     self.lock_time,
@@ -452,7 +467,7 @@ async fn build_multiple_transactions(
         let chunk_output_file = output_file.as_ref().map(|base_path| {
             if let Some(ext_pos) = base_path.rfind('.') {
                 format!(
-                    "_{}_{}{}",
+                    "{}_{}{}",
                     &base_path[..ext_pos],
                     chunk_idx + 1,
                     &base_path[ext_pos..]
@@ -474,4 +489,57 @@ async fn build_multiple_transactions(
         count: total_chunks,
     };
     Ok(serde_json::to_string_pretty(&result).unwrap())
+}
+
+async fn build_single_transaction_with_utxos(
+    context: &WalletContext,
+    client: rooch_rpc_client::Client,
+    sender: Address,
+    bitcoin_network: rooch_types::bitcoin::network::Network,
+    utxos: Vec<UTXOObjectView>,
+    _skip_check_seal: bool, // UTXOs already checked during load_all_utxos
+    fee_rate: Option<FeeRate>,
+    lock_time: Option<LockTime>,
+    change_address: Option<ParsedAddress>,
+    outputs: Vec<ParsedOutput>,
+    output_file: Option<String>,
+) -> RoochResult<String> {
+    let btc_network = bitcoin::Network::from(bitcoin_network);
+
+    // Use TransactionBuilder with pre-loaded UTXOs to avoid redundant queries
+    let mut tx_builder = TransactionBuilder::with_utxos(context, client.clone(), sender, utxos);
+
+    if let Some(fee_rate) = fee_rate {
+        tx_builder = tx_builder.with_fee_rate(fee_rate);
+    }
+    if let Some(lock_time) = lock_time {
+        tx_builder = tx_builder.with_lock_time(lock_time);
+    }
+    if let Some(change_address) = change_address {
+        let change_btc_addr = context.resolve_bitcoin_address(change_address).await?;
+        let change_address = change_btc_addr.to_bitcoin_address(btc_network)?;
+        tx_builder = tx_builder.with_change_address(change_address);
+    }
+
+    let mut converted_outputs = Vec::new();
+    for output in outputs {
+        let btc_address = context.resolve_bitcoin_address(output.address).await?;
+        let address = btc_address.to_bitcoin_address(btc_network)?;
+        let amount = match output.amount {
+            OutputAmount::All => {
+                // This shouldn't happen here, :all should be handled before calling this function
+                return Err(RoochError::from(anyhow::anyhow!(
+                    "Unexpected :all in build_single_transaction_with_utxos"
+                )));
+            }
+            OutputAmount::Specific(amt) => amt,
+        };
+        converted_outputs.push((address, amount));
+    }
+
+    let psbt = tx_builder.build(converted_outputs).await?;
+    debug!("PSBT built successfully");
+
+    let fileout = FileOutput::write_to_file(FileOutputData::Psbt(psbt), output_file)?;
+    Ok(serde_json::to_string_pretty(&fileout).unwrap())
 }

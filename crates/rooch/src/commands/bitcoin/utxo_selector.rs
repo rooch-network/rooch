@@ -15,11 +15,8 @@ use rooch_types::bitcoin::{types::OutPoint, utxo::derive_utxo_id};
 use tokio::time::Duration;
 use tracing::debug;
 
-// Retry configuration for handling rate limiting (HTTP 429)
-// Fixed delay strategy: wait 2 seconds between retries
-// Based on rate limit: 10 req/ms with 200 burst size, refills in ~20ms
-const MAX_RETRIES: u32 = 20;
-const RETRY_DELAY: Duration = Duration::from_secs(2);
+// Use retry configuration and functions from mod.rs
+use super::{is_rate_limit_error, retry_rpc_call, MAX_RETRIES, RETRY_DELAY};
 
 #[derive(Debug)]
 pub struct UTXOSelector {
@@ -80,11 +77,14 @@ impl UTXOSelector {
         let minimal_non_dust = self.sender.script_pubkey().minimal_non_dust();
 
         for chunk in self.specific_utxos.chunks(BATCH_SIZE) {
-            let utxos_objs = self
-                .client
-                .rooch
-                .query_utxos(UTXOFilterView::object_ids(chunk.to_vec()), None, None, None)
-                .await?;
+            // Use retry logic to handle rate limiting for each batch
+            let utxos_objs = retry_rpc_call(|| async {
+                self.client
+                    .rooch
+                    .query_utxos(UTXOFilterView::object_ids(chunk.to_vec()), None, None, None)
+                    .await
+            })
+            .await?;
 
             for utxo_state_view in utxos_objs.data {
                 let utxo = &utxo_state_view.value;
@@ -161,10 +161,15 @@ impl UTXOSelector {
                 }
                 Err(e) => {
                     // Either not a rate limit error or max retries exceeded
-                    return Err(e.context(format!(
-                        "Failed to load UTXOs after {} retries",
-                        retry_count
-                    )));
+                    if retry_count == 0 {
+                        // Initial request failed with a non-retryable error
+                        return Err(e.context("Failed to load UTXOs: non-retryable error"));
+                    } else {
+                        return Err(e.context(format!(
+                            "Failed to load UTXOs after {} retries",
+                            retry_count
+                        )));
+                    }
                 }
             }
         }
@@ -288,13 +293,4 @@ fn skip_utxo(utxo_state_view: &UTXOStateView, minimal_non_dust: Amount) -> bool 
         return true;
     }
     false
-}
-
-fn is_rate_limit_error(error: &anyhow::Error) -> bool {
-    let error_msg = error.to_string().to_lowercase();
-    // Check for various rate limit indicators
-    error_msg.contains("too many requests")
-        || error_msg.contains("429")
-        || error_msg.contains("serverisbusy")
-        || error_msg.contains("wait for")
 }

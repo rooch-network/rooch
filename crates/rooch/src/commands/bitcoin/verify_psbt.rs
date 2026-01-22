@@ -264,7 +264,7 @@ fn format_verification_result(result: &PsbtVerificationResult, verbose: bool) ->
             ));
 
             // Estimate final transaction size
-            if statuses.len() > 0 {
+            if !statuses.is_empty() {
                 let sig_size = 64; // Schnorr signature
                 let script_size = 107; // Approximate multisig script for 7 participants
                 let control_block_size = 65; // Taproot control block

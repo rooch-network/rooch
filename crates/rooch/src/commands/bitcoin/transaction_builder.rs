@@ -12,8 +12,10 @@ use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOObjectView;
 use rooch_rpc_client::{wallet_context::WalletContext, Client};
 use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::multisign_account::{self, PrecomputedMultisigPsbtData};
-use std::time::Duration;
 use tracing::debug;
+
+// Use retry configuration and functions from mod.rs
+use super::{is_rate_limit_error, retry_rpc_call, MAX_RETRIES, RETRY_DELAY};
 
 #[derive(Debug)]
 pub struct TransactionBuilder<'a> {
@@ -23,45 +25,6 @@ pub struct TransactionBuilder<'a> {
     fee_rate: FeeRate,
     change_address: Address,
     lock_time: Option<LockTime>,
-}
-
-// Retry configuration for handling rate limiting (HTTP 429)
-const MAX_RETRIES: u32 = 20;
-const RETRY_DELAY: Duration = Duration::from_secs(2);
-
-/// Check if an error is a rate limit error
-fn is_rate_limit_error(error: &anyhow::Error) -> bool {
-    let error_msg = error.to_string().to_lowercase();
-    // Check for various rate limit indicators
-    error_msg.contains("too many requests")
-        || error_msg.contains("429")
-        || error_msg.contains("serverisbusy")
-        || error_msg.contains("wait for")
-}
-
-/// Retry wrapper for RPC calls that may hit rate limits
-async fn retry_rpc_call<F, Fut, T>(f: F) -> Result<T>
-where
-    F: Fn() -> Fut,
-    Fut: std::future::Future<Output = Result<T>>,
-{
-    let mut retry_count = 0;
-    loop {
-        match f().await {
-            Ok(result) => return Ok(result),
-            Err(e) if is_rate_limit_error(&e) && retry_count < MAX_RETRIES => {
-                retry_count += 1;
-                debug!(
-                    "Rate limited while calling RPC (attempt {}/{}), retrying after {:?}",
-                    retry_count, MAX_RETRIES, RETRY_DELAY
-                );
-                tokio::time::sleep(RETRY_DELAY).await;
-            }
-            Err(e) => {
-                return Err(e);
-            }
-        }
-    }
 }
 
 impl<'a> TransactionBuilder<'a> {
