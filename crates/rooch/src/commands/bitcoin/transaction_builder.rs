@@ -84,7 +84,9 @@ impl<'a> TransactionBuilder<'a> {
         self
     }
 
-    fn estimate_vbytes_with(inputs: usize, outputs: Vec<Address>) -> usize {
+    /// Estimate vsize for a transaction with given inputs and outputs
+    /// This creates a temporary transaction and calculates its vsize
+    pub fn estimate_vbytes_with(inputs: usize, outputs: Vec<Address>) -> usize {
         Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,

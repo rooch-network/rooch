@@ -403,6 +403,14 @@ async fn build_multiple_transactions(
     let mut all_files = Vec::new();
     let total_chunks = chunks.len();
 
+    // Pre-resolve change address for vsize estimation (outside the async map closure)
+    let change_bitcoin_addr = if let Some(ref change_addr) = change_address {
+        let change_btc_addr = context.resolve_bitcoin_address(change_addr.clone()).await?;
+        Some(change_btc_addr.to_bitcoin_address(btc_network)?)
+    } else {
+        None
+    };
+
     for (chunk_idx, chunk_utxos) in chunks.into_iter().enumerate() {
         // Calculate output amount for this chunk if using :all
         let chunk_outputs: Vec<(Address, Amount)> = resolved_outputs
@@ -412,9 +420,23 @@ async fn build_multiple_transactions(
                     OutputAmount::All => {
                         let chunk_total: Amount = chunk_utxos.iter().map(|u| u.amount()).sum();
 
-                        // Estimate fee
+                        // Estimate fee using accurate vsize calculation
                         let utxo_count = chunk_utxos.len();
-                        let estimated_vsize = 100 + utxo_count * 60 + 2 * 43;
+
+                        // Use the same estimation method as TransactionBuilder
+                        let estimated_vsize = if let Some(ref addr) = change_bitcoin_addr {
+                            TransactionBuilder::estimate_vbytes_with(
+                                utxo_count,
+                                vec![addr.clone(), addr.clone()],
+                            )
+                        } else {
+                            // Fallback to sender address if no change address
+                            TransactionBuilder::estimate_vbytes_with(
+                                utxo_count,
+                                vec![sender.clone(), sender.clone()],
+                            )
+                        };
+
                         let fee_rate_val =
                             fee_rate.unwrap_or_else(|| FeeRate::from_sat_per_vb(10).unwrap());
                         let estimated_fee = fee_rate_val
@@ -422,10 +444,7 @@ async fn build_multiple_transactions(
                             .unwrap_or(Amount::from_sat(estimated_vsize as u64));
 
                         let output_amount = Amount::from_sat(
-                            chunk_total
-                                .to_sat()
-                                .saturating_sub(estimated_fee.to_sat())
-                                .saturating_sub(1000),
+                            chunk_total.to_sat().saturating_sub(estimated_fee.to_sat()),
                         );
 
                         debug!(
