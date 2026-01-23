@@ -424,6 +424,9 @@ async fn build_multiple_transactions(
                         let utxo_count = chunk_utxos.len();
 
                         // Use the same estimation method as TransactionBuilder
+                        // Note: This assumes 2 outputs (main output + potential change output)
+                        // which is a conservative estimate. The actual transaction may have
+                        // only 1 output if there's no change, but this ensures we don't underestimate fees.
                         let estimated_vsize = if let Some(ref addr) = change_bitcoin_addr {
                             TransactionBuilder::estimate_vbytes_with(
                                 utxo_count,
