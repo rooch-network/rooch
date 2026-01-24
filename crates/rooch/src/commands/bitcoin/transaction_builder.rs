@@ -15,7 +15,7 @@ use rooch_types::bitcoin::multisign_account::{self, PrecomputedMultisigPsbtData}
 use tracing::debug;
 
 // Use retry configuration and functions from mod.rs
-use super::{is_rate_limit_error, retry_rpc_call, MAX_RETRIES, RETRY_DELAY};
+use super::retry_rpc_call;
 
 #[derive(Debug)]
 pub struct TransactionBuilder<'a> {
