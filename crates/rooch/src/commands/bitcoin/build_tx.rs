@@ -142,6 +142,13 @@ impl CommandAction<String> for BuildTx {
         let max_inputs = self.max_inputs.unwrap_or(usize::MAX);
         let send_all = self.outputs.iter().any(|o| o.amount == OutputAmount::All);
 
+        // The CLI parser interprets the numeric argument as sat/kwu (sat per 1000 weight units),
+        // but users expect sat/vbyte. Re-wrap with the same numeric value as sat/vbyte.
+        let fee_rate = self.fee_rate.map(|fr| {
+            let numeric = fr.to_sat_per_kwu() as u64;
+            FeeRate::from_sat_per_vb(numeric).unwrap()
+        });
+
         // Validate :all usage - only one output can use :all
         if send_all {
             let all_count = self
@@ -187,7 +194,7 @@ impl CommandAction<String> for BuildTx {
                 bitcoin_network,
                 inputs,
                 self.skip_check_seal,
-                self.fee_rate,
+                fee_rate,
                 self.lock_time,
                 self.change_address,
                 self.outputs,
@@ -222,7 +229,7 @@ impl CommandAction<String> for BuildTx {
                     sender,
                     bitcoin_network,
                     chunks,
-                    self.fee_rate,
+                    fee_rate,
                     self.lock_time,
                     self.change_address,
                     self.outputs,
@@ -239,10 +246,9 @@ impl CommandAction<String> for BuildTx {
                 // Estimate fee
                 let utxo_count = all_utxos.len();
                 let estimated_vsize = 100 + utxo_count * 60 + 2 * 43;
-                let fee_rate = self
-                    .fee_rate
-                    .unwrap_or_else(|| FeeRate::from_sat_per_vb(10).unwrap());
-                let estimated_fee = fee_rate
+                let fee_rate_val =
+                    fee_rate.unwrap_or_else(|| FeeRate::from_sat_per_vb(10).unwrap());
+                let estimated_fee = fee_rate_val
                     .fee_vb(estimated_vsize as u64)
                     .unwrap_or(Amount::from_sat(estimated_vsize as u64));
 
@@ -279,7 +285,7 @@ impl CommandAction<String> for BuildTx {
                     bitcoin_network,
                     all_utxos,
                     self.skip_check_seal,
-                    self.fee_rate,
+                    fee_rate,
                     self.lock_time,
                     self.change_address,
                     specific_outputs,
@@ -297,7 +303,7 @@ impl CommandAction<String> for BuildTx {
                 bitcoin_network,
                 vec![], // Empty inputs triggers auto-loading
                 self.skip_check_seal,
-                self.fee_rate,
+                fee_rate,
                 self.lock_time,
                 self.change_address,
                 specific_outputs,
@@ -314,7 +320,7 @@ impl CommandAction<String> for BuildTx {
             bitcoin_network,
             vec![], // Empty inputs triggers auto-loading
             self.skip_check_seal,
-            self.fee_rate,
+            fee_rate,
             self.lock_time,
             self.change_address,
             self.outputs,
@@ -425,26 +431,33 @@ async fn build_multiple_transactions(
                         let utxo_count = chunk_utxos.len();
 
                         // Use the same accurate estimation method as TransactionBuilder
-                        // Assume 2 outputs (main output + potential change output)
                         let estimated_vsize = if let Some(ref addr) = change_bitcoin_addr {
                             TransactionBuilder::estimate_vbytes_with(
                                 utxo_count,
                                 vec![addr.clone(), addr.clone()],
                             )
                         } else {
-                            // Fallback to sender address if no change address
                             TransactionBuilder::estimate_vbytes_with(
                                 utxo_count,
                                 vec![sender.clone(), sender.clone()],
                             )
                         };
 
+                        // Debug print
+                        eprintln!("DEBUG: utxo_count={}, estimated_vsize={}", utxo_count, estimated_vsize);
+
                         let fee_rate_val =
                             fee_rate.unwrap_or_else(|| FeeRate::from_sat_per_vb(10).unwrap());
+
+                        eprintln!("DEBUG: fee_rate_val={:?}, from_sat_per_vb(1)={:?}",
+                                 fee_rate_val, FeeRate::from_sat_per_vb(1));
+
                         let estimated_fee = fee_rate_val
                             .fee_vb(estimated_vsize as u64)
                             .unwrap_or(Amount::from_sat(estimated_vsize as u64));
 
+                        // Set output to chunk_total - estimated_fee
+                        // TransactionBuilder will recalculate actual fee and add change if needed
                         let output_amount = Amount::from_sat(
                             chunk_total.to_sat().saturating_sub(estimated_fee.to_sat()),
                         );
