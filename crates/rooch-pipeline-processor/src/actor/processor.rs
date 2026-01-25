@@ -167,23 +167,74 @@ impl PipelineProcessorActor {
         Ok(())
     }
 
-    // sequence tx and public tx to DA
-    async fn sequence_and_public_tx(&mut self, tx_data: LedgerTxData) -> Result<LedgerTransaction> {
-        let ledger_tx_ret = self.sequencer.sequence_transaction(tx_data).await;
-        let mut ledger_tx = match ledger_tx_ret {
+    // sequence tx and publish tx to DA
+    async fn sequence_and_public_tx(
+        &mut self,
+        mut tx_data: LedgerTxData,
+    ) -> Result<LedgerTransaction> {
+        // cache tx_hash for dedup handling before moving tx_data
+        let mut tx_for_hash = tx_data.clone();
+        let tx_hash = tx_for_hash.tx_hash();
+
+        // Fast-path: if tx already exists, reuse it and skip sequencing/DA publish.
+        if !self
+            .rooch_db
+            .rooch_store
+            .transaction_store
+            .is_safe_to_sequence(tx_hash)?
+        {
+            if let Some(existing) = self
+                .rooch_db
+                .rooch_store
+                .transaction_store
+                .get_transaction_by_hash(tx_hash)?
+            {
+                tracing::info!(
+                    "Skip sequencing duplicated tx {:?}, reuse existing tx_order {}",
+                    tx_hash,
+                    existing.sequence_info.tx_order
+                );
+                return Ok(existing);
+            }
+        }
+
+        let sequenced = self.sequencer.sequence_transaction(tx_data).await;
+        // flag to determine whether we still need to append to DA.
+        let mut need_append_da = true;
+        let mut ledger_tx = match sequenced {
             Ok(v) => v,
             Err(err) => {
-                if let Some(_io_err) = err.downcast_ref::<io::Error>() {
-                    tracing::error!(
-                        "Sequence transaction failed while io_error occurred then \
-                        set service to Maintenance mode and pause the relayer. error: {:?}",
-                        err
+                // Possible race: sequenced by someone else after our pre-check.
+                if let Some(existing) = self
+                    .rooch_db
+                    .rooch_store
+                    .transaction_store
+                    .get_transaction_by_hash(tx_hash)?
+                {
+                    tracing::info!(
+                        "Detected duplicated tx after sequencing error {:?}, reuse existing tx_order {}",
+                        tx_hash,
+                        existing.sequence_info.tx_order
                     );
-                    self.update_service_status(ServiceStatus::Maintenance).await;
+                    need_append_da = false;
+                    existing
+                } else {
+                    if let Some(_io_err) = err.downcast_ref::<io::Error>() {
+                        tracing::error!(
+                            "Sequence transaction failed while io_error occurred then \
+                            set service to Maintenance mode and pause the relayer. error: {:?}",
+                            err
+                        );
+                        self.update_service_status(ServiceStatus::Maintenance).await;
+                    }
+                    return Err(err);
                 }
-                return Err(err);
             }
         };
+
+        if !need_append_da {
+            return Ok(ledger_tx);
+        }
 
         let tx_order = ledger_tx.sequence_info.tx_order;
         let public_ret = self
