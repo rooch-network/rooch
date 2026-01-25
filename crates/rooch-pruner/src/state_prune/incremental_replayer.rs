@@ -6,7 +6,7 @@ use anyhow::Result;
 use move_core_types::effects::Op;
 use moveos_store::transaction_store::TransactionStore as MoveOSTransactionStore;
 use moveos_store::{
-    EVENT_COLUMN_FAMILY_NAME, EVENT_HANDLE_COLUMN_FAMILY_NAME, MoveOSStore,
+    MoveOSStore, EVENT_COLUMN_FAMILY_NAME, EVENT_HANDLE_COLUMN_FAMILY_NAME,
     STATE_NODE_COLUMN_FAMILY_NAME, TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
 };
 use moveos_types::h256::H256;
@@ -17,16 +17,17 @@ use moveos_types::state_resolver::StateResolver;
 use prometheus::Registry;
 use raw_store::SchemaStore;
 use rocksdb::checkpoint::Checkpoint;
-use rooch_config::state_prune::{HistoryPruneCFStats, HistoryPruneConfig, HistoryPruneReport, ReplayConfig, ReplayReport};
+use rooch_config::state_prune::{
+    HistoryPruneCFStats, HistoryPruneConfig, HistoryPruneReport, ReplayConfig, ReplayReport,
+};
 use rooch_store::da_store::DAMetaStore;
 use rooch_store::proposer_store::ProposerStore;
 use rooch_store::state_store::StateStore;
 use rooch_store::{
-    DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME, DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME,
+    RoochStore, DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME, DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME,
     META_SEQUENCER_INFO_COLUMN_FAMILY_NAME, PROPOSER_LAST_BLOCK_COLUMN_FAMILY_NAME,
-    STATE_CHANGE_SET_COLUMN_FAMILY_NAME, TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME,
-    TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME, TRANSACTION_COLUMN_FAMILY_NAME,
-    RoochStore,
+    STATE_CHANGE_SET_COLUMN_FAMILY_NAME, TRANSACTION_COLUMN_FAMILY_NAME,
+    TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME, TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
 };
 use rooch_types::sequencer::SequencerInfo;
 use serde_json;
@@ -152,7 +153,9 @@ impl IncrementalReplayer {
         self.trim_output_store(&output_store, to_order, &mut metadata)?;
 
         // Perform history pruning if enabled
-        if self.config.history_prune.is_some() && self.config.history_prune.as_ref().unwrap().enabled {
+        if self.config.history_prune.is_some()
+            && self.config.history_prune.as_ref().unwrap().enabled
+        {
             metadata.mark_in_progress("Pruning historical data".to_string(), 93.0);
             let output_rooch_store = self.load_output_rooch_store(&output_store)?;
 
@@ -169,10 +172,8 @@ impl IncrementalReplayer {
                     info!("History pruning completed successfully");
                 }
                 Err(e) => {
-                    let error_msg = format!("History pruning failed: {}", e);
-                    warn!("{}", error_msg);
-                    report.add_error(error_msg);
-                    // Don't fail the operation, just log the error
+                    // Fail the operation if history pruning was requested
+                    return Err(e);
                 }
             }
         }
@@ -888,9 +889,11 @@ impl IncrementalReplayer {
         metadata: &mut StatePruneMetadata,
         report: &mut ReplayReport,
     ) -> Result<HistoryPruneReport> {
-        let config = self.config.history_prune.as_ref().ok_or_else(|| {
-            anyhow::anyhow!("History pruning config not found")
-        })?;
+        let config = self
+            .config
+            .history_prune
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("History pruning config not found"))?;
 
         if !config.enabled {
             return Ok(HistoryPruneReport::default());
@@ -929,30 +932,53 @@ impl IncrementalReplayer {
         // Execute pruning for each CF in the config
         for cf_name in &config.prune_cfs {
             let (records, bytes) = match cf_name.as_str() {
-                TRANSACTION_COLUMN_FAMILY_NAME => {
-                    Self::prune_by_tx_order_range(output_store, output_rooch_store, TRANSACTION_COLUMN_FAMILY_NAME, 0, retain_from, config.dry_run)?
-                }
-                TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME => {
-                    Self::prune_by_tx_order_range(output_store, output_rooch_store, TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME, 0, retain_from, config.dry_run)?
-                }
+                TRANSACTION_COLUMN_FAMILY_NAME => Self::prune_by_tx_order_range(
+                    output_store,
+                    output_rooch_store,
+                    TRANSACTION_COLUMN_FAMILY_NAME,
+                    0,
+                    retain_from,
+                    config.dry_run,
+                )?,
+                TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME => Self::prune_by_tx_order_range(
+                    output_store,
+                    output_rooch_store,
+                    TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+                    0,
+                    retain_from,
+                    config.dry_run,
+                )?,
                 STATE_CHANGE_SET_COLUMN_FAMILY_NAME => {
                     Self::prune_state_change_sets(output_rooch_store, retain_from, config.dry_run)?
                 }
                 TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME => {
-                    Self::prune_transaction_execution_infos(output_store, output_rooch_store, retain_from, config.dry_run)?
+                    Self::prune_transaction_execution_infos(
+                        output_store,
+                        output_rooch_store,
+                        retain_from,
+                        config.dry_run,
+                    )?
                 }
-                EVENT_COLUMN_FAMILY_NAME => {
-                    Self::prune_events(output_store, output_rooch_store, retain_from, config.dry_run)?
-                }
+                EVENT_COLUMN_FAMILY_NAME => Self::prune_events(
+                    output_store,
+                    output_rooch_store,
+                    retain_from,
+                    config.dry_run,
+                )?,
                 EVENT_HANDLE_COLUMN_FAMILY_NAME => {
                     Self::prune_event_handles(output_store, retain_from, config.dry_run)?
                 }
-                TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME => {
-                    Self::prune_accumulator_nodes(output_store, output_rooch_store, retain_from, config.dry_run)?
-                }
-                DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME => {
-                    Self::prune_da_block_submit_state(output_rooch_store, retain_from, config.dry_run)?
-                }
+                TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME => Self::prune_accumulator_nodes(
+                    output_store,
+                    output_rooch_store,
+                    retain_from,
+                    config.dry_run,
+                )?,
+                DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME => Self::prune_da_block_submit_state(
+                    output_rooch_store,
+                    retain_from,
+                    config.dry_run,
+                )?,
                 _ => {
                     warn!("Unknown column family for pruning: {}", cf_name);
                     continue;
@@ -966,15 +992,17 @@ impl IncrementalReplayer {
             });
             prune_report.records_deleted += records;
             prune_report.bytes_estimated += bytes;
-            info!(
-                "Pruned {}: {} records, ~{} bytes",
-                cf_name, records, bytes
-            );
+            info!("Pruned {}: {} records, ~{} bytes", cf_name, records, bytes);
         }
 
         // Truncate DA cursor if needed
-        if config.prune_cfs.contains(&DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string()) {
-            if let Err(e) = Self::truncate_da_cursor(output_rooch_store, retain_from, config.dry_run) {
+        if config
+            .prune_cfs
+            .contains(&DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string())
+        {
+            if let Err(e) =
+                Self::truncate_da_cursor(output_rooch_store, retain_from, config.dry_run)
+            {
                 warn!("Failed to truncate DA cursor: {}", e);
             } else {
                 info!("DA cursor truncated based on retain_from={}", retain_from);
@@ -1040,7 +1068,9 @@ impl IncrementalReplayer {
             if !dry_run && !delete_keys.is_empty() {
                 // Batch delete
                 for key in delete_keys {
-                    let _ = db.delete_cf(&cf_handle, key);
+                    if let Err(e) = db.delete_cf(&cf_handle, key) {
+                        debug!("Error deleting key from CF {}: {}", cf_name, e);
+                    }
                 }
             }
         }
@@ -1070,7 +1100,9 @@ impl IncrementalReplayer {
                         bytes += size;
 
                         if !dry_run {
-                            let _ = output_rooch_store.remove_state_change_set(order);
+                            if let Err(e) = output_rooch_store.remove_state_change_set(order) {
+                                debug!("Error removing changeset for order {}: {}", order, e);
+                            }
                         }
                     }
                     Ok(None) => {}
@@ -1116,12 +1148,20 @@ impl IncrementalReplayer {
                             bytes += size;
 
                             if !dry_run {
-                                let _ = output_store.remove_tx_execution_info(tx_hash);
+                                if let Err(e) = output_store.remove_tx_execution_info(tx_hash) {
+                                    debug!(
+                                        "Error removing execution info for tx_hash {:?}: {}",
+                                        tx_hash, e
+                                    );
+                                }
                             }
                         }
                         Ok(None) => {}
                         Err(e) => {
-                            debug!("Error getting execution info for tx_hash {:?}: {}", tx_hash, e);
+                            debug!(
+                                "Error getting execution info for tx_hash {:?}: {}",
+                                tx_hash, e
+                            );
                         }
                     }
                 }
@@ -1225,10 +1265,22 @@ impl IncrementalReplayer {
         retain_from: u64,
         dry_run: bool,
     ) -> Result<()> {
-        if !dry_run {
-            // Set cursor to point to the first block after retain_from
-            // This prevents references to pruned blocks
+        if dry_run {
+            // In dry run mode we only log the intended cursor change.
+            info!(
+                "Dry run: would truncate DA cursor to retain_from tx order {}",
+                retain_from
+            );
+            return Ok(());
         }
+
+        // The DA cursor (LAST_BLOCK_NUMBER_KEY) is automatically updated
+        // when blocks are removed via prune_da_block_submit_state.
+        // No additional cursor truncation needed here.
+        info!(
+            "DA cursor will be updated automatically when blocks with tx_order_end < {} are removed",
+            retain_from
+        );
         Ok(())
     }
 

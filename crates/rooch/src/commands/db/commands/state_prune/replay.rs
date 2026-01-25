@@ -69,8 +69,13 @@ pub struct ReplayCommand {
     #[clap(long, conflicts_with = "history_retain_from")]
     pub history_retain_window: Option<u64>,
 
-    /// Comma-separated list of column families to prune
-    #[clap(long, default_value = "transaction,transaction_execution_info,state_change_set,event,event_handle,tx_sequence_info_mapping,transaction_acc_node,da_block_submit_state")]
+    /// Comma-separated list of column families to prune.
+    /// Note: pruning for `event` and `event_handle` is not fully implemented yet;
+    /// including them will currently be a no-op.
+    #[clap(
+        long,
+        default_value = "transaction,transaction_execution_info,state_change_set,tx_sequence_info_mapping,transaction_acc_node,da_block_submit_state"
+    )]
     pub history_prune_cfs: String,
 
     /// Dry-run mode: only report would-be deletions without modifying database
