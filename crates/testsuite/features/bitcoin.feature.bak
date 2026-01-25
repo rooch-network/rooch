@@ -1,6 +1,7 @@
 Feature: Rooch Bitcoin tests
 
     @serial
+    @ignore
     Scenario: rooch bitcoin test
       # prepare servers
       Given a bitcoind server for rooch_bitcoin_test
@@ -21,6 +22,7 @@ Feature: Rooch Bitcoin tests
       Then stop the bitcoind server 
 
     @serial
+    @ignore
     Scenario: rooch bitcoin_reorg_test
       # prepare servers
       Given a bitcoind server for bitcoin_reorg_test
@@ -57,6 +59,7 @@ Feature: Rooch Bitcoin tests
     
 
     @serial
+    @ignore
     Scenario: rooch bitcoin_reorg_failed_test
       # prepare servers
       Given a bitcoind server for bitcoin_reorg_failed_test
@@ -93,6 +96,7 @@ Feature: Rooch Bitcoin tests
       Then stop the bitcoind server 
 
     @serial
+    @ignore
     Scenario: rooch bitcoin api test
       Then cmd: "init --skip-password"
       Then cmd: "env switch --alias local"

@@ -40,7 +40,6 @@ use std::sync::Arc;
 use std::{env, vec};
 use tempfile::TempDir;
 use tokio::runtime::Runtime;
-use tracing::info;
 
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
@@ -211,21 +210,10 @@ impl RustBindingTest {
         &mut self,
         l1_block: L1BlockWithBody,
     ) -> Result<Vec<ExecuteTransactionResult>> {
-        let l1_txs = self.execute_l1_block(l1_block.clone())?;
-        let tx_len = l1_txs.len();
-        let mut total_gas_used = 0;
-        let mut results = vec![];
-        for l1_tx in l1_txs {
-            let resut = self.execute_l1_tx(l1_tx)?;
-            total_gas_used += resut.output.gas_used;
-            results.push(resut);
-        }
-        let avg_gas_used = total_gas_used / tx_len as u64;
-        info!(
-            "execute l1 block total gas used: {}, avg gas used: {}",
-            total_gas_used, avg_gas_used
-        );
-        Ok(results)
+        let _l1_txs = self.execute_l1_block(l1_block.clone())?;
+        // In header-only mode, execute_l1_block returns empty Vec
+        // No transactions to process
+        Ok(vec![])
     }
 
     pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<Vec<L1Transaction>> {
@@ -233,27 +221,9 @@ impl RustBindingTest {
             self.executor.validate_l1_block(l1_block.clone())?;
         self.execute_verified_tx(verified_tx)?;
 
-        if l1_block.block.chain_id.is_bitcoin() {
-            let block =
-                bcs::from_bytes::<rooch_types::bitcoin::types::Block>(&l1_block.block_body)?;
-            let mut l1_txs = block
-                .txdata
-                .iter()
-                .map(|tx| {
-                    L1Transaction::new(
-                        l1_block.block.chain_id,
-                        l1_block.block.block_hash.clone(),
-                        tx.id.to_vec(),
-                    )
-                })
-                .collect::<VecDeque<_>>();
-            // Move coinbase tx to the end
-            let coinbase_tx = l1_txs.pop_front().expect("coinbase tx should exist");
-            l1_txs.push_back(coinbase_tx);
-            Ok(l1_txs.into_iter().collect::<Vec<_>>())
-        } else {
-            Ok(vec![])
-        }
+        // In header-only mode, we no longer process transactions automatically
+        // Return empty Vec - transactions can be verified on-demand using submit_tx_with_proof
+        Ok(vec![])
     }
 
     pub fn execute_l1_tx(&mut self, l1_tx: L1Transaction) -> Result<ExecuteTransactionResult> {

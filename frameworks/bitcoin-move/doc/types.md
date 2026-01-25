@@ -13,6 +13,8 @@
 -  [Struct `OutPoint`](#0x4_types_OutPoint)
 -  [Struct `TxOut`](#0x4_types_TxOut)
 -  [Struct `BlockHeightHash`](#0x4_types_BlockHeightHash)
+-  [Struct `ProofNode`](#0x4_types_ProofNode)
+-  [Struct `MerkleProof`](#0x4_types_MerkleProof)
 -  [Constants](#@Constants_0)
 -  [Function `header`](#0x4_types_header)
 -  [Function `txdata`](#0x4_types_txdata)
@@ -52,6 +54,11 @@
 -  [Function `new_block_height_hash`](#0x4_types_new_block_height_hash)
 -  [Function `unpack_block_height_hash`](#0x4_types_unpack_block_height_hash)
 -  [Function `is_coinbase_tx`](#0x4_types_is_coinbase_tx)
+-  [Function `new_proof_node`](#0x4_types_new_proof_node)
+-  [Function `proof_node_hash`](#0x4_types_proof_node_hash)
+-  [Function `proof_node_is_left`](#0x4_types_proof_node_is_left)
+-  [Function `new_merkle_proof`](#0x4_types_new_merkle_proof)
+-  [Function `proof_nodes`](#0x4_types_proof_nodes)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -157,6 +164,30 @@
 
 <pre><code>#[data_struct]
 <b>struct</b> <a href="types.md#0x4_types_BlockHeightHash">BlockHeightHash</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_types_ProofNode"></a>
+
+## Struct `ProofNode`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="types.md#0x4_types_ProofNode">ProofNode</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_types_MerkleProof"></a>
+
+## Struct `MerkleProof`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="types.md#0x4_types_MerkleProof">MerkleProof</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -616,4 +647,59 @@ The Inscription unbound outpoint.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_is_coinbase_tx">is_coinbase_tx</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_types_new_proof_node"></a>
+
+## Function `new_proof_node`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_new_proof_node">new_proof_node</a>(<a href="">hash</a>: <b>address</b>, is_left: bool): <a href="types.md#0x4_types_ProofNode">types::ProofNode</a>
+</code></pre>
+
+
+
+<a name="0x4_types_proof_node_hash"></a>
+
+## Function `proof_node_hash`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_proof_node_hash">proof_node_hash</a>(self: &<a href="types.md#0x4_types_ProofNode">types::ProofNode</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x4_types_proof_node_is_left"></a>
+
+## Function `proof_node_is_left`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_proof_node_is_left">proof_node_is_left</a>(self: &<a href="types.md#0x4_types_ProofNode">types::ProofNode</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_types_new_merkle_proof"></a>
+
+## Function `new_merkle_proof`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_new_merkle_proof">new_merkle_proof</a>(proof: <a href="">vector</a>&lt;<a href="types.md#0x4_types_ProofNode">types::ProofNode</a>&gt;): <a href="types.md#0x4_types_MerkleProof">types::MerkleProof</a>
+</code></pre>
+
+
+
+<a name="0x4_types_proof_nodes"></a>
+
+## Function `proof_nodes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_proof_nodes">proof_nodes</a>(self: &<a href="types.md#0x4_types_MerkleProof">types::MerkleProof</a>): &<a href="">vector</a>&lt;<a href="types.md#0x4_types_ProofNode">types::ProofNode</a>&gt;
 </code></pre>

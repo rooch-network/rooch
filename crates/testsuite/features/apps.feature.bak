@@ -1,7 +1,7 @@
 Feature: RoochDAO Apps contract tests
 
    
-    @serial
+    @serial @ignore # Temporarily disabled: Bitcoin UTXO no longer produced in header-only mode
     Scenario: gas_market & gas_faucet
       Given a bitcoind server for gas_market
       Given a server for gas_market
@@ -110,7 +110,7 @@ Feature: RoochDAO Apps contract tests
       Then assert: "{{$.move[-1].execution_info.status.type}} != executed"
 
 
-  @serial
+  @serial @ignore # Temporarily disabled: Bitcoin UTXO no longer produced in header-only mode
     Scenario: grow_bitcoin
       Given a bitcoind server for grow_bitcoin
       Given a server for grow_bitcoin

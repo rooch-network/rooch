@@ -314,6 +314,42 @@ module bitcoin_move::types {
         is_coinbase
     }
 
+    // === Merkle Proof ===
+
+    #[data_struct]
+    struct ProofNode has store, copy, drop {
+        /// Sibling hash in the Merkle tree
+        hash: address,
+        /// True if this node is on the left side
+        is_left: bool,
+    }
+
+    public fun new_proof_node(hash: address, is_left: bool): ProofNode {
+        ProofNode { hash, is_left }
+    }
+
+    public fun proof_node_hash(self: &ProofNode): address {
+        self.hash
+    }
+
+    public fun proof_node_is_left(self: &ProofNode): bool {
+        self.is_left
+    }
+
+    #[data_struct]
+    struct MerkleProof has store, copy, drop {
+        /// Path from transaction hash to merkle_root
+        proof: vector<ProofNode>,
+    }
+
+    public fun new_merkle_proof(proof: vector<ProofNode>): MerkleProof {
+        MerkleProof { proof }
+    }
+
+    public fun proof_nodes(self: &MerkleProof): &vector<ProofNode> {
+        &self.proof
+    }
+
     #[test_only]
     public fun new_header_for_test(
         version: u32,

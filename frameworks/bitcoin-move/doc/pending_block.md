@@ -14,6 +14,8 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_pending_block_genesis_init)
 -  [Function `add_pending_block`](#0x4_pending_block_add_pending_block)
+-  [Function `add_pending_block_header_only`](#0x4_pending_block_add_pending_block_header_only)
+-  [Function `remove_pending_block_header_only`](#0x4_pending_block_remove_pending_block_header_only)
 -  [Function `block_height`](#0x4_pending_block_block_height)
 -  [Function `take_intermediate`](#0x4_pending_block_take_intermediate)
 -  [Function `add_intermediate`](#0x4_pending_block_add_intermediate)
@@ -199,6 +201,30 @@ This is a hot potato struct, can not be store and drop
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_add_pending_block">add_pending_block</a>(block_height: u64, block_hash: <b>address</b>, block: <a href="types.md#0x4_types_Block">types::Block</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_pending_block_add_pending_block_header_only"></a>
+
+## Function `add_pending_block_header_only`
+
+Header-only variant: only tracks header/topology, does not store tx bodies.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_add_pending_block_header_only">add_pending_block_header_only</a>(block_height: u64, block_hash: <b>address</b>, header: <a href="types.md#0x4_types_Header">types::Header</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_pending_block_remove_pending_block_header_only"></a>
+
+## Function `remove_pending_block_header_only`
+
+Remove a header-only pending block right after processing, avoiding storage leak.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_remove_pending_block_header_only">remove_pending_block_header_only</a>(block_hash: <b>address</b>)
 </code></pre>
 
 

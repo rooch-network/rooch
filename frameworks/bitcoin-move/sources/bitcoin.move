@@ -34,6 +34,7 @@ module bitcoin_move::bitcoin{
     /// The reorg is too deep, we need to stop the system and fix the issue
     const ErrorReorgTooDeep:u64 = 3;
     const ErrorUTXONotExists:u64 = 4;
+    const ErrorBlockNotFound:u64 = 5;
 
     const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
     /// https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
@@ -95,12 +96,17 @@ module bitcoin_move::bitcoin{
     }
 
     fun process_block_header(btc_block_store: &mut BitcoinBlockStore, block_height: u64, block_hash: address, block_header: Header){
-        //already processed
-        assert!(!table::contains(&btc_block_store.hash_to_height, block_hash), ErrorBlockAlreadyProcessed);
+        // Idempotent: if we already recorded this exact block, just return.
+        if (table::contains(&btc_block_store.hash_to_height, block_hash)) {
+            // already processed same hash; nothing to do
+            return
+        };
 
-        //We have pending block to handle the reorg, this should not happen. 
-        //But if it happens, we need to stop the system and fix the issue
-        assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
+        // Reorg detection: same height but different hash is not allowed here.
+        if (table::contains(&btc_block_store.height_to_hash, block_height)) {
+            // existing hash at this height differs (hash_to_height not containing block_hash)
+            assert!(false, ErrorReorgTooDeep);
+        };
 
         table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
         table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
@@ -258,25 +264,28 @@ module bitcoin_move::bitcoin{
 
 
     /// The sequencer submit a new Bitcoin block to execute
-    /// This function is a system function, is the execute_l1_block entry point
+    /// Header-only import: keep pending_block topology for reorg handling, but skip tx processing.
     fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
-        let btc_block_store_obj = borrow_block_store();
-        let btc_block_store = object::borrow(btc_block_store_obj);
-        assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
         let block = bcs::from_bytes<Block>(block_bytes);
-        let block_header = types::header(&block);
-        let time = types::time(block_header);
-        if(pending_block::add_pending_block(block_height, block_hash, block)){
-            //We do not update the timestamp via bitcoin block header in testnet
-            //Because the testnet block time is not accurate
-            if(!chain_id::is_test()){
-                //We directly update the global time do not wait the pending block to be confirmed
-                //The reorg do not affect the global time
-                let timestamp_seconds = (time as u64);
-                let module_signer = signer::module_signer<BitcoinBlockStore>();
-                timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
-            }
-        };
+        let block_header = *types::header(&block);
+
+        // Keep pending_block topology for reorg detection (no tx bodies stored).
+        let _added = pending_block::add_pending_block_header_only(block_height, block_hash, block_header);
+
+        let btc_block_store_obj = borrow_block_store_mut();
+        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+
+        process_block_header(btc_block_store, block_height, block_hash, block_header);
+
+        // Clean up header-only pending block to avoid leaks.
+        pending_block::remove_pending_block_header_only(block_hash);
+
+        // Update global time
+        if(!chain_id::is_test()){
+            let timestamp_seconds = (types::time(&block_header) as u64);
+            let module_signer = signer::module_signer<BitcoinBlockStore>();
+            timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+        }
     }
 
     /// This is the execute_l1_tx entry point
@@ -413,20 +422,49 @@ module bitcoin_move::bitcoin{
         table::contains(&btc_block_store.txs, tx_hash)
     }
 
+    /// Event emitted when a transaction is verified via Merkle proof
+    struct TxVerifiedEvent has copy, drop {
+        block_hash: address,
+        txid: address,
+    }
+
+    /// Submit a Bitcoin transaction with Merkle proof for verification
+    /// This is a minimal version that only verifies the proof
+    /// Future versions will support UTXO/Inscription creation
+    public entry fun submit_tx_with_proof(
+        block_hash: address,
+        tx_bytes: vector<u8>,
+        proof_bytes: vector<u8>,
+    ) {
+        let tx = bcs::from_bytes<Transaction>(tx_bytes);
+        let proof = bcs::from_bytes<types::MerkleProof>(proof_bytes);
+        
+        // Get block header to retrieve merkle_root
+        let header_opt = get_block(block_hash);
+        assert!(option::is_some(&header_opt), ErrorBlockNotFound);
+        let header = option::destroy_some(header_opt);
+        let merkle_root = types::merkle_root(&header);
+        
+        // Verify Merkle proof
+        assert!(
+            bitcoin_move::merkle_proof::verify_merkle_proof(types::tx_id(&tx), merkle_root, &proof),
+            ErrorBlockProcessError
+        );
+        
+        // Emit verification success event
+        event::emit(TxVerifiedEvent {
+            block_hash,
+            txid: types::tx_id(&tx),
+        });
+    }
+
     #[test_only]
     public fun execute_l1_block_for_test(block_height: u64, block: Block){
         let block_hash = types::header_to_hash(types::header(&block));
         let block_bytes = bcs::to_bytes(&block);
         execute_l1_block(block_height, block_hash, block_bytes);
-        // We directly conform the txs for convenience test
-        let (_, txs) = types::unpack_block(block);
-        let coinbase_tx = vector::remove(&mut txs, 0);
-        vector::for_each(txs, |tx| {
-            let txid = types::tx_id(&tx);
-            execute_l1_tx(block_hash, txid);
-        });
-        //process coinbase tx last
-        execute_l1_tx(block_hash, types::tx_id(&coinbase_tx));
+        // Note: In header-only mode, we no longer process transactions automatically
+        // Transactions can be verified on-demand using submit_tx_with_proof
     }
 
 

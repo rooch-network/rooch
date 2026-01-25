@@ -123,6 +123,33 @@ module bitcoin_move::pending_block{
             handle_reorg(store, block_height);
         };
         let (header, txs) = types::unpack_block(block);
+        add_pending_block_internal(store, block_height, block_hash, header, txs)
+    }
+
+    /// Header-only variant: only tracks header/topology, does not store tx bodies.
+    public(friend) fun add_pending_block_header_only(
+        block_height: u64,
+        block_hash: address,
+        header: Header
+    ): bool{
+        let store = borrow_mut_store();
+        add_pending_block_internal(store, block_height, block_hash, header, vector::empty())
+    }
+
+    fun add_pending_block_internal(
+        store: &mut PendingStore,
+        block_height: u64,
+        block_hash: address,
+        header: Header,
+        txs: vector<Transaction>
+    ): bool{
+        let block_obj_id = pending_block_obj_id(block_hash);
+        if(object::exists_object(block_obj_id)){
+            return false
+        };
+        if(simple_map::contains_key(&store.pending_blocks, &block_height)){
+            handle_reorg(store, block_height);
+        };
         let prev_block_hash = types::prev_blockhash(&header);
         let block_obj = object::new_with_id(block_hash, PendingBlock{
             block_height: block_height,
@@ -149,9 +176,21 @@ module bitcoin_move::pending_block{
 
         simple_map::add(&mut store.pending_blocks, block_height, block_hash);
         //The relayer should ensure the new block is the best block
-        //Maybe we should calculate the difficulty here in the future
         store.best_block = option::some(types::new_block_height_hash(block_height, block_hash));
         true
+    }
+
+    /// Remove a header-only pending block right after processing, avoiding storage leak.
+    public(friend) fun remove_pending_block_header_only(block_hash: address){
+        if (!exists_pending_block(block_hash)) {
+            return
+        };
+        let store = borrow_mut_store();
+        let block_obj = take_pending_block(block_hash);
+        let block_height = object::borrow(&block_obj).block_height;
+        simple_map::remove(&mut store.pending_blocks, &block_height);
+        // tx_ids is empty in header-only path; mark processed to satisfy assertion
+        remove_pending_block(block_obj, true);
     }
 
     fun handle_reorg(store: &mut PendingStore, reorg_block_height: u64){
@@ -319,6 +358,10 @@ module bitcoin_move::pending_block{
         };
 
         let tx_ids: vector<address> = *object::borrow_field(block_obj, TX_IDS_KEY);
+        if (vector::is_empty(&tx_ids)) {
+            // header-only mode: no txs to process
+            return option::none()
+        };
         let unprocessed_tx_ids : vector<address> = vector::filter(tx_ids, |txid| {
             object::contains_field(block_obj, *txid)
         });
