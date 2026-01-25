@@ -1,28 +1,35 @@
-# Repository Guidelines
+# AGENTS.md — Rooch AI working guide
 
-## Project Structure & Module Organization
-- `crates/` holds Rust crates (core runtime, DA, storage, testsuite).
-- `moveos/` contains Move runtime plumbing; `frameworks/` hosts Move packages (`moveos-stdlib`, `rooch-framework`, `bitcoin-move`, `rooch-nursery`).
-- `examples/` offers sample Move packages; `apps/` and `sdk/typescript/` house dashboards and TS SDKs; `docs/`, `scripts/`, `docker/`, `infra/`, and `kube/` support documentation and ops.
+## 1) Quick project context
+- Rooch Network: Bitcoin-focused L2, Move-based “VApp container”. Main workspace under `crates/`, Move runtime in `moveos/`, frameworks in `frameworks/`, TS SDK under `sdk/`, apps under `apps/`.
 
-## Build, Test, and Development Commands
-- `make build` builds Rust (release `optci`) and core Move frameworks; `make quick-check` runs a fast Rust debug build plus `move-framework`.
-- `make test` runs Rust (nextest + integration) and Move suites. Narrow scope with `FILTER=name` (e.g., `make test-integration FILTER=payment_channel` or `make test-move-frameworks FILTER=did`).
-- Rust checks: `cargo fmt -- --check`, `cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings`; `make lint` wraps them.
-- JS/TS uses pnpm only (`npx only-allow pnpm`): `pnpm lint`, `pnpm prettier:check`, `pnpm test-suite`, or package-specific commands with `pnpm --filter ./sdk/typescript/<pkg>`.
-- Build the Rooch CLI for Move workflows with `cargo build --profile debug` (binary at `target/debug/rooch`), then verify via `make verify`.
+## 2) Prereqs & setup
+- Tooling: Rust >= 1.91.1, Node >= 18 with pnpm, optional Docker.
+- Install: `cargo build` (or `make build`), `pnpm install` where needed (use pnpm only).
+- Useful env: `RUST_LOG=debug`, `RUST_BACKTRACE=1`, `ROOCH_BINARY_BUILD_PROFILE=debug|optci`.
 
-## Coding Style & Naming Conventions
-- Rust: rustfmt defaults (4-space indent), deny clippy warnings, `snake_case` files/modules, descriptive crate scopes (`rooch-da`, `rooch-db`, etc.).
-- Move: keep module/package names aligned with framework folders; prefer ASCII identifiers and deterministic ordering in manifests.
-- TypeScript: Prettier + ESLint (`prettier.config.js`); `PascalCase` components, `camelCase` variables; keep imports sorted.
+## 3) Canonical commands
+- Build/test: `make build`, `make quick-check`, `make test`, `make test-rust`, `make test-move-frameworks`, `make test-move-examples`.
+- Lint: `make lint` (wraps `cargo fmt -- --check` + clippy); TS: `pnpm lint`, `pnpm prettier:check`.
+- Move/CLI: `cargo build --profile debug` (CLI at `target/debug/rooch`), `rooch init`, `rooch move build|test`, `rooch server start -n local`.
+- Faster Rust tests: `cargo nextest run --workspace --all-features`.
 
-## Testing Guidelines
-- Rust: unit tests sit next to code; integration lives in `crates/testsuite/`. For fast coverage use `cargo nextest run --workspace --all-features`; for CI parity use `make test-rust`.
-- Move: `make test-move-frameworks` for the core packages; `make test-move-examples` for samples. Add targeted tests with `FILTER=` when isolating failures.
-- TypeScript: run package tests via `pnpm --filter ./sdk/typescript/<pkg> test` and keep fixtures minimal.
+## 4) Style & conventions
+- Rust: rustfmt defaults, deny clippy warnings, `snake_case` modules, descriptive crate names (`rooch-da`, `rooch-db`, …).
++- Move: align module/package names with framework folders; ASCII identifiers; deterministic manifests.
+- TS: Prettier + ESLint; PascalCase components, camelCase vars; sorted imports.
 
-## Commit & Pull Request Guidelines
-- Use `<type>(<scope>): <subject>` (types: feat, fix, refactor, ci, docs, chore, rfc), mirroring history such as `chore(deps): bump inferno...`. Keep subjects in present tense with a concise scope.
-- Open draft PRs early; fill the template with a clear Summary and `Fixes #issue` when relevant. Include repro steps, configs, and screenshots for UI-facing work.
-- Before review, ensure `make lint` plus relevant tests are green; link any blocked items or follow-ups in the PR description.***
+## 5) Testing guidance
+- Rust unit near code; integration in `crates/testsuite/`. Filter with `FILTER=` for make targets.
+- Move: core with `make test-move-frameworks`; examples with `make test-move-examples`.
+- TS: package tests via `pnpm --filter ./sdk/typescript/<pkg> test`; keep fixtures minimal.
+
+## 6) Commits & PRs
+- Message format: `<type>(<scope>): <subject>`; types = feat/fix/refactor/ci/docs/chore/rfc.
+- Open draft PR early; include Summary and `Fixes #issue` if applicable; attach repro steps/screenshots for UI.
+- Before requesting review: `make lint` + relevant tests green; list known gaps/follow-ups.
+
+## 7) Notes for AI agents
+- Respect pnpm-only rule for JS/TS.
+- When pruning/GC/snapshot/replay work, prefer existing commands under `rooch db state-prune ...`.
+- Keep instructions concise; avoid non-ASCII unless already present.
