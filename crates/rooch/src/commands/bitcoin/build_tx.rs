@@ -443,14 +443,13 @@ async fn build_multiple_transactions(
                             )
                         };
 
-                        // Debug print
-                        eprintln!("DEBUG: utxo_count={}, estimated_vsize={}", utxo_count, estimated_vsize);
-
                         let fee_rate_val =
                             fee_rate.unwrap_or_else(|| FeeRate::from_sat_per_vb(10).unwrap());
 
-                        eprintln!("DEBUG: fee_rate_val={:?}, from_sat_per_vb(1)={:?}",
-                                 fee_rate_val, FeeRate::from_sat_per_vb(1));
+                        debug!(
+                            "utxo_count={}, estimated_vsize={}, fee_rate_val={:?}",
+                            utxo_count, estimated_vsize, fee_rate_val
+                        );
 
                         let estimated_fee = fee_rate_val
                             .fee_vb(estimated_vsize as u64)

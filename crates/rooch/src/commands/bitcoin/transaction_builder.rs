@@ -181,11 +181,10 @@ impl<'a> TransactionBuilder<'a> {
             .fee_vb(vsize as u64)
             .ok_or_else(|| anyhow!("Failed to estimate fee: {}", self.fee_rate))?;
 
-        eprintln!(
-            "DEBUG build(): vsize={}, fee_rate={:?}, fee_vb_result={:?}, fee_sat={}",
+        debug!(
+            "TransactionBuilder: vsize={}, fee_rate={:?}, fee={}",
             vsize,
             self.fee_rate,
-            fee,
             fee.to_sat()
         );
         if fee > estimate_fee && total_input < total_output + fee {
