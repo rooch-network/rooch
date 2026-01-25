@@ -5,7 +5,7 @@ use crate::utils::open_rooch_db_readonly;
 use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_config::state_prune::ReplayConfig;
+use rooch_config::state_prune::{HistoryPruneConfig, ReplayConfig};
 use rooch_config::store_config::{DEFAULT_DB_DIR, DEFAULT_DB_STORE_SUBDIR};
 use rooch_pruner::state_prune::IncrementalReplayer;
 use rooch_types::error::RoochResult;
@@ -56,6 +56,30 @@ pub struct ReplayCommand {
     /// Enable verbose logging
     #[clap(long)]
     pub verbose: bool,
+
+    /// Enable history pruning during replay
+    #[clap(long)]
+    pub history_prune: bool,
+
+    /// Keep history from this tx_order (inclusive). Default is snapshot tx_order
+    #[clap(long)]
+    pub history_retain_from: Option<u64>,
+
+    /// Alternative: keep history for last N orders
+    #[clap(long, conflicts_with = "history_retain_from")]
+    pub history_retain_window: Option<u64>,
+
+    /// Comma-separated list of column families to prune.
+    /// Note: `event`/`event_handle`/`transaction_acc_node` pruning is not implemented yet.
+    #[clap(
+        long,
+        default_value = "transaction,transaction_execution_info,state_change_set,tx_sequence_info_mapping,da_block_submit_state"
+    )]
+    pub history_prune_cfs: String,
+
+    /// Dry-run mode: only report would-be deletions without modifying database
+    #[clap(long)]
+    pub history_dry_run: bool,
 }
 
 #[async_trait]
@@ -70,6 +94,35 @@ impl CommandAction<String> for ReplayCommand {
         );
         let rooch_store = rooch_db.rooch_store;
 
+        // Build history pruning config if enabled
+        let history_prune = if self.history_prune {
+            // Determine retain_from based on flags
+            let retain_from = if let Some(window) = self.history_retain_window {
+                // Calculate retain_from based on window
+                self.to_order.saturating_sub(window).saturating_add(1)
+            } else if let Some(from) = self.history_retain_from {
+                from
+            } else {
+                // Default: use snapshot tx_order (will be resolved during replay)
+                0 // Will be resolved from snapshot metadata
+            };
+
+            Some(HistoryPruneConfig {
+                enabled: true,
+                retain_from,
+                retain_window: self.history_retain_window,
+                prune_cfs: self
+                    .history_prune_cfs
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect(),
+                dry_run: self.history_dry_run,
+            })
+        } else {
+            None
+        };
+
         // Create replay configuration
         let replay_config = ReplayConfig {
             default_batch_size: self.batch_size,
@@ -78,6 +131,7 @@ impl CommandAction<String> for ReplayCommand {
             enable_checkpoints: false,   // Simplified for basic implementation
             checkpoint_interval: self.batch_size, // placeholder: every batch_size changesets
             max_retry_attempts: 3,
+            history_prune,
         };
 
         // Create incremental replayer
@@ -119,6 +173,7 @@ impl CommandAction<String> for ReplayCommand {
             "output_store_dir": output_store_dir,
             "batch_size": self.batch_size,
             "verify_root": self.verify_root,
+            "history_prune_enabled": self.history_prune,
             "replay_report": {
                 "changesets_processed": replay_report.changesets_processed,
                 "nodes_updated": replay_report.nodes_updated,
@@ -126,7 +181,8 @@ impl CommandAction<String> for ReplayCommand {
                 "verification_passed": replay_report.verification_passed,
                 "duration_seconds": replay_report.duration_seconds,
                 "errors": replay_report.errors,
-                "is_success": replay_report.is_success()
+                "is_success": replay_report.is_success(),
+                "history_prune": replay_report.history_prune_report
             },
             "status": "completed"
         });
