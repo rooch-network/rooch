@@ -70,6 +70,29 @@ pub struct ReplayConfig {
 
     /// Whether to validate state after each batch
     pub validate_after_batch: bool,
+
+    /// History pruning configuration
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub history_prune: Option<HistoryPruneConfig>,
+}
+
+/// History pruning configuration for replay operations
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoryPruneConfig {
+    /// Enable history pruning during replay
+    pub enabled: bool,
+
+    /// Keep data from this tx_order (inclusive)
+    pub retain_from: u64,
+
+    /// Alternative: retain window size (calculate retain_from as to_order + 1 - window)
+    pub retain_window: Option<u64>,
+
+    /// Comma-separated list of column families to prune
+    pub prune_cfs: Vec<String>,
+
+    /// Dry-run mode: only report would-be deletions without writing
+    pub dry_run: bool,
 }
 
 /// Snapshot metadata structure
@@ -120,6 +143,48 @@ pub struct ReplayReport {
 
     /// Additional statistics
     pub statistics: ReplayStatistics,
+
+    /// History pruning report (if enabled)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub history_prune_report: Option<HistoryPruneReport>,
+}
+
+/// History pruning operation report
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct HistoryPruneReport {
+    /// Whether history pruning was enabled
+    pub enabled: bool,
+
+    /// Retain from tx_order (inclusive)
+    pub retain_from: u64,
+
+    /// Column families that were pruned
+    pub cfs_pruned: Vec<String>,
+
+    /// Total records deleted
+    pub records_deleted: u64,
+
+    /// Estimated bytes freed
+    pub bytes_estimated: u64,
+
+    /// Dry-run mode
+    pub dry_run: bool,
+
+    /// Per-CF statistics
+    pub cf_stats: Vec<HistoryPruneCFStats>,
+}
+
+/// Per-column-family pruning statistics
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoryPruneCFStats {
+    /// Column family name
+    pub cf_name: String,
+
+    /// Number of records deleted
+    pub records_deleted: u64,
+
+    /// Estimated bytes freed
+    pub bytes_estimated: u64,
 }
 
 /// Replay operation statistics
@@ -176,6 +241,7 @@ impl Default for ReplayConfig {
             checkpoint_interval: 10000,
             max_retry_attempts: 3,
             validate_after_batch: true,
+            history_prune: None,
         }
     }
 }
@@ -326,6 +392,7 @@ impl ReplayReport {
             duration_seconds: 0,
             errors: Vec::new(),
             statistics: ReplayStatistics::default(),
+            history_prune_report: None,
         }
     }
 
