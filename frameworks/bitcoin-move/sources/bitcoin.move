@@ -96,12 +96,17 @@ module bitcoin_move::bitcoin{
     }
 
     fun process_block_header(btc_block_store: &mut BitcoinBlockStore, block_height: u64, block_hash: address, block_header: Header){
-        //already processed
-        assert!(!table::contains(&btc_block_store.hash_to_height, block_hash), ErrorBlockAlreadyProcessed);
+        // Idempotent: if we already recorded this exact block, just return.
+        if (table::contains(&btc_block_store.hash_to_height, block_hash)) {
+            // already processed same hash; nothing to do
+            return
+        };
 
-        //We have pending block to handle the reorg, this should not happen. 
-        //But if it happens, we need to stop the system and fix the issue
-        assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
+        // Reorg detection: same height but different hash is not allowed here.
+        if (table::contains(&btc_block_store.height_to_hash, block_height)) {
+            // existing hash at this height differs (hash_to_height not containing block_hash)
+            assert!(false, ErrorReorgTooDeep);
+        };
 
         table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
         table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
@@ -259,20 +264,22 @@ module bitcoin_move::bitcoin{
 
 
     /// The sequencer submit a new Bitcoin block to execute
-    /// This function is a system function, is the execute_l1_block entry point
-    /// Modified to only process block headers, skipping transaction processing
+    /// Header-only import: keep pending_block topology for reorg handling, but skip tx processing.
     fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
-        let btc_block_store_obj = borrow_block_store_mut();
-        let btc_block_store = object::borrow_mut(btc_block_store_obj);
-        
-        assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
-        
         let block = bcs::from_bytes<Block>(block_bytes);
         let block_header = *types::header(&block);
-        
-        // Directly process block header, skip pending_block and transaction processing
+
+        // Keep pending_block topology for reorg detection (no tx bodies stored).
+        let _added = pending_block::add_pending_block_header_only(block_height, block_hash, block_header);
+
+        let btc_block_store_obj = borrow_block_store_mut();
+        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+
         process_block_header(btc_block_store, block_height, block_hash, block_header);
-        
+
+        // Clean up header-only pending block to avoid leaks.
+        pending_block::remove_pending_block_header_only(block_hash);
+
         // Update global time
         if(!chain_id::is_test()){
             let timestamp_seconds = (types::time(&block_header) as u64);
