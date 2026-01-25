@@ -168,10 +168,7 @@ impl PipelineProcessorActor {
     }
 
     // sequence tx and publish tx to DA
-    async fn sequence_and_public_tx(
-        &mut self,
-        mut tx_data: LedgerTxData,
-    ) -> Result<LedgerTransaction> {
+    async fn sequence_and_public_tx(&mut self, tx_data: LedgerTxData) -> Result<LedgerTransaction> {
         // cache tx_hash for dedup handling before moving tx_data
         let mut tx_for_hash = tx_data.clone();
         let tx_hash = tx_for_hash.tx_hash();
