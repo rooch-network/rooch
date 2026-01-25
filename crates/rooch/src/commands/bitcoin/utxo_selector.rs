@@ -12,7 +12,6 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_client::Client;
 use rooch_types::bitcoin::{types::OutPoint, utxo::derive_utxo_id};
-use tokio::time::Duration;
 use tracing::debug;
 
 // Use retry configuration and functions from mod.rs

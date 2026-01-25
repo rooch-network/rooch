@@ -51,6 +51,8 @@ struct PsbtVerificationResult {
     satisfied_inputs: usize,
     input_statuses: Vec<InputVerificationStatus>,
     psbt: Psbt,
+    total_input_sat: u64,
+    total_output_sat: u64,
 }
 
 #[async_trait]
@@ -170,6 +172,27 @@ async fn verify_psbt(psbt: Psbt, client: &Client) -> Result<PsbtVerificationResu
         });
     }
 
+    // Calculate total input and output amounts
+    let mut total_input_sat = 0u64;
+    for (idx, input) in psbt.inputs.iter().enumerate() {
+        if let Some(utxo) = &input.witness_utxo {
+            total_input_sat = total_input_sat.saturating_add(utxo.value.to_sat());
+        } else if let (Some(prev_tx), Some(txin)) = (
+            input.non_witness_utxo.as_ref(),
+            psbt.unsigned_tx.input.get(idx),
+        ) {
+            let vout_index = usize::try_from(txin.previous_output.vout).unwrap_or(usize::MAX);
+            if let Some(prev_tx_out) = prev_tx.output.get(vout_index) {
+                total_input_sat = total_input_sat.saturating_add(prev_tx_out.value.to_sat());
+            }
+        }
+    }
+
+    let mut total_output_sat = 0u64;
+    for tx_out in psbt.unsigned_tx.output.iter() {
+        total_output_sat = total_output_sat.saturating_add(tx_out.value.to_sat());
+    }
+
     Ok(PsbtVerificationResult {
         total_inputs,
         multisig_inputs,
@@ -178,6 +201,8 @@ async fn verify_psbt(psbt: Psbt, client: &Client) -> Result<PsbtVerificationResu
         satisfied_inputs,
         input_statuses,
         psbt,
+        total_input_sat,
+        total_output_sat,
     })
 }
 
@@ -230,6 +255,31 @@ fn format_verification_result(result: &PsbtVerificationResult, verbose: bool) ->
             total_sat,
             total_sat as f64 / 100_000_000.0
         ));
+    }
+
+    // Display fee information
+    debug!(
+        "Fee calculation: total_input_sat={}, total_output_sat={}",
+        result.total_input_sat, result.total_output_sat
+    );
+    if result.total_input_sat > 0 {
+        let fee_sat = result
+            .total_input_sat
+            .saturating_sub(result.total_output_sat);
+        let vsize = result.psbt.unsigned_tx.vsize();
+        let fee_rate = if vsize > 0 {
+            fee_sat as f64 / vsize as f64
+        } else {
+            0.0
+        };
+
+        output.push_str(&format!(
+            "\n  Fee: {} satoshi ({:.8} BTC)\n",
+            fee_sat,
+            fee_sat as f64 / 100_000_000.0
+        ));
+        output.push_str(&format!("  Fee rate: {:.2} sat/vbyte\n", fee_rate));
+        output.push_str(&format!("  Transaction vsize: {} bytes\n", vsize));
     }
 
     output.push_str("\n");

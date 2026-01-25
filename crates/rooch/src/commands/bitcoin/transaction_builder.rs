@@ -15,7 +15,7 @@ use rooch_types::bitcoin::multisign_account::{self, PrecomputedMultisigPsbtData}
 use tracing::debug;
 
 // Use retry configuration and functions from mod.rs
-use super::{is_rate_limit_error, retry_rpc_call, MAX_RETRIES, RETRY_DELAY};
+use super::retry_rpc_call;
 
 #[derive(Debug)]
 pub struct TransactionBuilder<'a> {
@@ -84,7 +84,9 @@ impl<'a> TransactionBuilder<'a> {
         self
     }
 
-    fn estimate_vbytes_with(inputs: usize, outputs: Vec<Address>) -> usize {
+    /// Estimate vsize for a transaction with given inputs and outputs
+    /// This creates a temporary transaction and calculates its vsize
+    pub fn estimate_vbytes_with(inputs: usize, outputs: Vec<Address>) -> usize {
         Transaction {
             version: Version::TWO,
             lock_time: LockTime::ZERO,
@@ -117,23 +119,41 @@ impl<'a> TransactionBuilder<'a> {
             .iter()
             .map(|(address, _)| address.clone())
             .collect::<Vec<_>>();
-        let estimate_inputs = if self.utxo_selector.specific_utxos().is_empty() {
-            1
-        } else {
-            self.utxo_selector.specific_utxos().len()
-        };
+
+        // Select UTXOs first to get accurate input count
+        let mut utxos = self.utxo_selector.select_utxos(total_output).await?;
+
+        // Recalculate estimate_fee with actual input count
+        let actual_input_count = utxos.len();
         let estimate_fee = self
             .fee_rate
             .fee_vb(
-                (Self::estimate_vbytes_with(estimate_inputs, output_address)
+                (Self::estimate_vbytes_with(actual_input_count, output_address)
                     + Self::ADDITIONAL_INPUT_VBYTES
                     + Self::ADDITIONAL_OUTPUT_VBYTES) as u64,
             )
             .ok_or_else(|| anyhow!("Failed to estimate fee: {}", self.fee_rate))?;
-        let mut utxos = self
-            .utxo_selector
-            .select_utxos(total_output + estimate_fee)
-            .await?;
+
+        // If we need more UTXOs to cover the fee, try to select them
+        // But if we've exhausted the UTXOs (return empty), just use what we have
+        if utxos.iter().map(|u| u.amount()).sum::<Amount>() < total_output + estimate_fee {
+            match self
+                .utxo_selector
+                .select_utxos(
+                    total_output + estimate_fee - utxos.iter().map(|u| u.amount()).sum::<Amount>(),
+                )
+                .await
+            {
+                Ok(additional_utxos) if !additional_utxos.is_empty() => {
+                    utxos.extend(additional_utxos);
+                }
+                _ => {
+                    // No more UTXOs available, proceed with what we have
+                    debug!("No more UTXOs available, using current selection");
+                }
+            }
+        }
+
         let mut tx_inputs = vec![];
         let mut total_input = Amount::from_sat(0);
         for utxo in utxos.iter() {
@@ -155,23 +175,44 @@ impl<'a> TransactionBuilder<'a> {
             input: tx_inputs,
             output: tx_outputs,
         };
+        let vsize = tx.vsize();
         let fee = self
             .fee_rate
-            .fee_vb(tx.vsize() as u64)
+            .fee_vb(vsize as u64)
             .ok_or_else(|| anyhow!("Failed to estimate fee: {}", self.fee_rate))?;
+
+        debug!(
+            "TransactionBuilder: vsize={}, fee_rate={:?}, fee={}",
+            vsize,
+            self.fee_rate,
+            fee.to_sat()
+        );
         if fee > estimate_fee && total_input < total_output + fee {
             //we need to add more inputs
-            let additional_utxos = self
+            match self
                 .utxo_selector
                 .select_utxos(total_output + fee - total_input)
-                .await?;
-            tx.input
-                .extend(additional_utxos.iter().map(Self::utxo_to_txin));
-            total_input += additional_utxos
-                .iter()
-                .map(|utxo| utxo.amount())
-                .sum::<Amount>();
-            utxos.extend(additional_utxos);
+                .await
+            {
+                Ok(additional_utxos) if !additional_utxos.is_empty() => {
+                    tx.input
+                        .extend(additional_utxos.iter().map(Self::utxo_to_txin));
+                    total_input += additional_utxos
+                        .iter()
+                        .map(|utxo| utxo.amount())
+                        .sum::<Amount>();
+                    utxos.extend(additional_utxos);
+                }
+                _ => {
+                    // No more UTXOs available, adjust fee to available funds
+                    debug!("No more UTXOs available, fee may be higher than ideal");
+                    // Rebuild transaction with adjusted inputs
+                    tx.input.clear();
+                    for utxo in utxos.iter() {
+                        tx.input.push(Self::utxo_to_txin(utxo));
+                    }
+                }
+            }
         }
 
         let change = total_input - total_output - fee;
