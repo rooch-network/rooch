@@ -70,11 +70,10 @@ pub struct ReplayCommand {
     pub history_retain_window: Option<u64>,
 
     /// Comma-separated list of column families to prune.
-    /// Note: pruning for `event` and `event_handle` is not fully implemented yet;
-    /// including them will currently be a no-op.
+    /// Note: `event`/`event_handle`/`transaction_acc_node` pruning is not implemented yet.
     #[clap(
         long,
-        default_value = "transaction,transaction_execution_info,state_change_set,tx_sequence_info_mapping,transaction_acc_node,da_block_submit_state"
+        default_value = "transaction,transaction_execution_info,state_change_set,tx_sequence_info_mapping,da_block_submit_state"
     )]
     pub history_prune_cfs: String,
 

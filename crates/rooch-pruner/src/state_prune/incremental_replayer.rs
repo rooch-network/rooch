@@ -932,22 +932,13 @@ impl IncrementalReplayer {
         // Execute pruning for each CF in the config
         for cf_name in &config.prune_cfs {
             let (records, bytes) = match cf_name.as_str() {
-                TRANSACTION_COLUMN_FAMILY_NAME => Self::prune_by_tx_order_range(
-                    output_store,
-                    output_rooch_store,
-                    TRANSACTION_COLUMN_FAMILY_NAME,
-                    0,
-                    retain_from,
-                    config.dry_run,
-                )?,
-                TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME => Self::prune_by_tx_order_range(
-                    output_store,
-                    output_rooch_store,
-                    TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
-                    0,
-                    retain_from,
-                    config.dry_run,
-                )?,
+                TRANSACTION_COLUMN_FAMILY_NAME => {
+                    Self::prune_transactions(output_rooch_store, retain_from, config.dry_run)?
+                }
+                TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME => {
+                    // Sequence mapping is removed together with transactions; keep no-op here to avoid double-delete.
+                    (0, 0)
+                }
                 STATE_CHANGE_SET_COLUMN_FAMILY_NAME => {
                     Self::prune_state_change_sets(output_rooch_store, retain_from, config.dry_run)?
                 }
@@ -968,12 +959,8 @@ impl IncrementalReplayer {
                 EVENT_HANDLE_COLUMN_FAMILY_NAME => {
                     Self::prune_event_handles(output_store, retain_from, config.dry_run)?
                 }
-                TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME => Self::prune_accumulator_nodes(
-                    output_store,
-                    output_rooch_store,
-                    retain_from,
-                    config.dry_run,
-                )?,
+                // Accumulator pruning not implemented yet.
+                TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME => (0, 0),
                 DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME => Self::prune_da_block_submit_state(
                     output_rooch_store,
                     retain_from,
@@ -1070,6 +1057,53 @@ impl IncrementalReplayer {
                 for key in delete_keys {
                     if let Err(e) = db.delete_cf(&cf_handle, key) {
                         debug!("Error deleting key from CF {}: {}", cf_name, e);
+                    }
+                }
+            }
+        }
+
+        Ok((records, bytes))
+    }
+
+    /// Prune transactions and sequence mappings for orders < retain_from
+    fn prune_transactions(
+        output_rooch_store: &RoochStore,
+        retain_from: u64,
+        dry_run: bool,
+    ) -> Result<(u64, u64)> {
+        if retain_from == 0 {
+            return Ok((0, 0));
+        }
+
+        let mut records = 0u64;
+        let mut bytes = 0u64;
+        let batch_size = 1000;
+
+        for batch_start in (0..retain_from).step_by(batch_size) {
+            let batch_end = (batch_start + batch_size as u64).min(retain_from);
+            let orders: Vec<u64> = (batch_start..batch_end).collect();
+            let tx_hashes = output_rooch_store.transaction_store.get_tx_hashes(orders)?;
+
+            for (i, tx_hash_opt) in tx_hashes.into_iter().enumerate() {
+                let tx_order = batch_start + i as u64;
+                if let Some(tx_hash) = tx_hash_opt {
+                    if let Ok(Some(tx)) = output_rooch_store
+                        .transaction_store
+                        .get_transaction_by_hash(tx_hash)
+                    {
+                        bytes += bcs::serialized_size(&tx).unwrap_or(0) as u64;
+                    }
+                    records += 1;
+                    if !dry_run {
+                        if let Err(e) = output_rooch_store
+                            .transaction_store
+                            .remove_transaction(tx_hash, tx_order)
+                        {
+                            debug!(
+                                "Error removing transaction/order {} hash {:?}: {}",
+                                tx_order, tx_hash, e
+                            );
+                        }
                     }
                 }
             }
