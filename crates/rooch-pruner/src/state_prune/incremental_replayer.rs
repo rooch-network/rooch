@@ -150,17 +150,17 @@ impl IncrementalReplayer {
         }
 
         metadata.mark_in_progress("Trimming output metadata".to_string(), 92.0);
-        self.trim_output_store(&output_store, to_order, &mut metadata)?;
+        self.trim_output_store(&output_store, output_dir, to_order, &mut metadata)?;
 
         // After trim/refresh, ensure startup_info and sequencer_info are consistent
-        self.verify_startup_sequencer_consistency(&output_store, to_order)?;
+        self.verify_startup_sequencer_consistency(&output_store, output_dir, to_order)?;
 
         // Perform history pruning if enabled
         if self.config.history_prune.is_some()
             && self.config.history_prune.as_ref().unwrap().enabled
         {
             metadata.mark_in_progress("Pruning historical data".to_string(), 93.0);
-            let output_rooch_store = self.load_output_rooch_store(&output_store)?;
+            let output_rooch_store = self.load_output_rooch_store(output_dir)?;
 
             match self.prune_history(
                 &output_store,
@@ -307,16 +307,15 @@ impl IncrementalReplayer {
         Ok(output_store)
     }
 
-    fn load_output_rooch_store(&self, output_store: &MoveOSStore) -> Result<RoochStore> {
-        let store_instance = output_store
-            .get_state_node_store()
-            .get_store()
-            .store()
-            .clone();
-
+    fn load_output_rooch_store(&self, output_dir: &Path) -> Result<RoochStore> {
         let registry = Registry::new();
-        RoochStore::new_with_instance(store_instance, &registry)
-            .map_err(|e| anyhow::anyhow!("Failed to load output RoochStore from output DB: {}", e))
+        RoochStore::new(output_dir, &registry).map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to load output RoochStore from {:?}: {}",
+                output_dir,
+                e
+            )
+        })
     }
 
     /// Clear state nodes in output store before importing snapshot
@@ -474,10 +473,11 @@ impl IncrementalReplayer {
     fn trim_output_store(
         &self,
         output_store: &MoveOSStore,
+        output_dir: &Path,
         to_order: u64,
         metadata: &mut StatePruneMetadata,
     ) -> Result<()> {
-        let output_rooch_store = self.load_output_rooch_store(output_store)?;
+        let output_rooch_store = self.load_output_rooch_store(output_dir)?;
 
         let sequencer_info = output_rooch_store
             .get_meta_store()
@@ -886,9 +886,10 @@ impl IncrementalReplayer {
     fn verify_startup_sequencer_consistency(
         &self,
         output_store: &MoveOSStore,
+        output_dir: &Path,
         expected_order: u64,
     ) -> Result<()> {
-        let output_rooch_store = self.load_output_rooch_store(output_store)?;
+        let output_rooch_store = self.load_output_rooch_store(output_dir)?;
 
         let startup_info = output_store
             .get_config_store()
