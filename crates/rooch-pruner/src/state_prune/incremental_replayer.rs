@@ -152,6 +152,9 @@ impl IncrementalReplayer {
         metadata.mark_in_progress("Trimming output metadata".to_string(), 92.0);
         self.trim_output_store(&output_store, to_order, &mut metadata)?;
 
+        // After trim/refresh, ensure startup_info and sequencer_info are consistent
+        self.verify_startup_sequencer_consistency(&output_store, to_order)?;
+
         // Perform history pruning if enabled
         if self.config.history_prune.is_some()
             && self.config.history_prune.as_ref().unwrap().enabled
@@ -490,19 +493,7 @@ impl IncrementalReplayer {
             ));
         }
 
-        if to_order == last_order {
-            info!(
-                "Output store already at to_order {}, skipping metadata trim",
-                to_order
-            );
-            return Ok(());
-        }
-
-        metadata.mark_in_progress(
-            format!("Trimming output metadata ({} -> {})", last_order, to_order),
-            92.0,
-        );
-
+        // Always ensure sequencer_info is synchronized to to_order, even when no trim is needed
         let target_tx = output_rooch_store
             .transaction_store
             .get_tx_by_order(to_order)?
@@ -517,6 +508,19 @@ impl IncrementalReplayer {
         output_rooch_store
             .get_meta_store()
             .save_sequencer_info_unsafe(new_sequencer_info)?;
+
+        if to_order == last_order {
+            info!(
+                "Output store already at to_order {}, refreshed sequencer info",
+                to_order
+            );
+            return Ok(());
+        }
+
+        metadata.mark_in_progress(
+            format!("Trimming output metadata ({} -> {})", last_order, to_order),
+            92.0,
+        );
 
         let mut removed_transactions = 0u64;
         let mut removed_changesets = 0u64;
@@ -873,6 +877,40 @@ impl IncrementalReplayer {
         info!(
             "Final state root verification passed: {:x}",
             actual_state_root
+        );
+
+        Ok(())
+    }
+
+    /// Ensure startup_info and sequencer_info are consistent after replay/trim
+    fn verify_startup_sequencer_consistency(
+        &self,
+        output_store: &MoveOSStore,
+        expected_order: u64,
+    ) -> Result<()> {
+        let output_rooch_store = self.load_output_rooch_store(output_store)?;
+
+        let startup_info = output_store
+            .get_config_store()
+            .get_startup_info()?
+            .ok_or_else(|| anyhow::anyhow!("No startup info found in output store"))?;
+
+        let sequencer_info = output_rooch_store
+            .get_meta_store()
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow::anyhow!("No sequencer info found in output store"))?;
+
+        if sequencer_info.last_order != expected_order {
+            return Err(anyhow::anyhow!(
+                "Sequencer info inconsistency: expected last_order {}, got {}",
+                expected_order,
+                sequencer_info.last_order
+            ));
+        }
+
+        info!(
+            "Startup/Sequencer consistency verified: order={}, state_root={:x}",
+            sequencer_info.last_order, startup_info.state_root
         );
 
         Ok(())
