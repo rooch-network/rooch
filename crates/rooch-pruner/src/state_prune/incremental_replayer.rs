@@ -4,8 +4,8 @@
 use crate::state_prune::{ProgressTracker, StatePruneMetadata};
 use anyhow::Result;
 use move_core_types::effects::Op;
-use moveos_store::transaction_store::TransactionStore as MoveOSTransactionStore;
 use moveos_config::store_config::RocksdbConfig;
+use moveos_store::transaction_store::TransactionStore as MoveOSTransactionStore;
 use moveos_store::{
     MoveOSStore, EVENT_COLUMN_FAMILY_NAME, EVENT_HANDLE_COLUMN_FAMILY_NAME,
     STATE_NODE_COLUMN_FAMILY_NAME, TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
@@ -16,8 +16,8 @@ use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::StateChangeSetExt;
 use moveos_types::state_resolver::StateResolver;
 use prometheus::Registry;
-use raw_store::SchemaStore;
 use raw_store::metrics::DBMetrics;
+use raw_store::SchemaStore;
 use rocksdb::checkpoint::Checkpoint;
 use rooch_config::state_prune::{
     HistoryPruneCFStats, HistoryPruneConfig, HistoryPruneReport, ReplayConfig, ReplayReport,
