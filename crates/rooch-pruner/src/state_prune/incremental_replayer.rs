@@ -100,7 +100,7 @@ impl IncrementalReplayer {
 
         // Build output DB from live store checkpoint
         self.prepare_output_store(output_dir)?;
-        let output_store = self.load_output_store(output_dir)?;
+        let (output_store, _) = self.load_output_stores(output_dir)?;
 
         metadata.mark_in_progress("Resetting state nodes".to_string(), 10.0);
         self.clear_state_nodes(&output_store)?;
@@ -290,8 +290,8 @@ impl IncrementalReplayer {
         Ok(())
     }
 
-    /// Load output store from output path
-    fn load_output_store(&self, output_dir: &Path) -> Result<MoveOSStore> {
+    /// Load output MoveOSStore and RoochStore using a single RocksDB instance (all CFs)
+    fn load_output_stores(&self, output_dir: &Path) -> Result<(MoveOSStore, RoochStore)> {
         if !output_dir.exists() || !output_dir.is_dir() {
             return Err(anyhow::anyhow!(
                 "Output database not found at {:?}.",
@@ -299,23 +299,27 @@ impl IncrementalReplayer {
             ));
         }
 
-        let registry = Registry::new();
-        let output_store = MoveOSStore::new(output_dir, &registry).map_err(|e| {
-            anyhow::anyhow!("Failed to load output store from {:?}: {}", output_dir, e)
-        })?;
+        // Combine MoveOS + Rooch CFs and ensure uniqueness
+        let mut column_families = moveos_store::StoreMeta::get_column_family_names().to_vec();
+        column_families.extend_from_slice(rooch_store::StoreMeta::get_column_family_names());
+        column_families.sort();
+        column_families.dedup();
 
-        Ok(output_store)
-    }
-
-    fn load_output_rooch_store(&self, output_dir: &Path) -> Result<RoochStore> {
         let registry = Registry::new();
-        RoochStore::new(output_dir, &registry).map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to load output RoochStore from {:?}: {}",
-                output_dir,
-                e
-            )
-        })
+        let db_metrics = moveos_store::metrics::DBMetrics::get_or_init(&registry).clone();
+        let rocksdb = raw_store::rocks::RocksDB::new(
+            output_dir,
+            column_families,
+            raw_store::rocks::RocksdbConfig::default(),
+        )?;
+        let instance = raw_store::StoreInstance::new_db_instance(rocksdb, db_metrics);
+
+        // Share the same instance between MoveOSStore and RoochStore to avoid locks
+        let moveos_store = MoveOSStore::new_with_instance(instance.clone(), &registry)?;
+        let rooch_store = RoochStore::new_with_instance(instance, &registry)
+            .map_err(|e| anyhow::anyhow!("Failed to load output RoochStore: {}", e))?;
+
+        Ok((moveos_store, rooch_store))
     }
 
     /// Clear state nodes in output store before importing snapshot
@@ -477,7 +481,7 @@ impl IncrementalReplayer {
         to_order: u64,
         metadata: &mut StatePruneMetadata,
     ) -> Result<()> {
-        let output_rooch_store = self.load_output_rooch_store(output_dir)?;
+        let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
 
         let sequencer_info = output_rooch_store
             .get_meta_store()
@@ -889,7 +893,7 @@ impl IncrementalReplayer {
         output_dir: &Path,
         expected_order: u64,
     ) -> Result<()> {
-        let output_rooch_store = self.load_output_rooch_store(output_dir)?;
+        let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
 
         let startup_info = output_store
             .get_config_store()
