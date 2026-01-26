@@ -116,7 +116,10 @@ impl CommandAction<String> for SnapshotCommand {
                 latest_tx_order
             );
 
-            match rooch_store.state_store.get_state_change_set(latest_tx_order)? {
+            match rooch_store
+                .state_store
+                .get_state_change_set(latest_tx_order)?
+            {
                 Some(changeset_ext) => {
                     let state_root = changeset_ext.state_change_set.state_root;
                     let global_size = changeset_ext.state_change_set.global_size;
@@ -153,8 +156,17 @@ impl CommandAction<String> for SnapshotCommand {
             memory_pressure_threshold: 0.8,
         };
 
-        // Write operation_meta.json early with resolved tx_order
+        // Ensure output directory exists before saving early metadata
+        std::fs::create_dir_all(&self.output).map_err(|e| {
+            rooch_types::error::RoochError::from(anyhow::anyhow!(
+                "Failed to create output directory: {}",
+                e
+            ))
+        })?;
+
+        // Write operation_meta_initial.json early with resolved tx_order
         // This ensures that even if the operation is interrupted, the intended tx_order is recorded
+        // Use a different filename so it is not overwritten by build_snapshot
         let tx_order_for_meta = tx_order.unwrap_or(0);
         let operation_meta = rooch_pruner::state_prune::StatePruneMetadata::new(
             OperationType::Snapshot {
@@ -171,12 +183,14 @@ impl CommandAction<String> for SnapshotCommand {
         );
 
         // Save early metadata before starting snapshot build
-        operation_meta.save_to_file(self.output.join("operation_meta.json")).map_err(|e| {
-            rooch_types::error::RoochError::from(anyhow::anyhow!(
-                "Failed to save operation metadata: {}",
-                e
-            ))
-        })?;
+        operation_meta
+            .save_to_file(self.output.join("operation_meta_initial.json"))
+            .map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Failed to save operation metadata: {}",
+                    e
+                ))
+            })?;
 
         // Create snapshot builder
         let snapshot_builder = SnapshotBuilder::new(snapshot_config, moveos_store.clone())
