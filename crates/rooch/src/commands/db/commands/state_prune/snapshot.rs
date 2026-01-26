@@ -6,7 +6,8 @@ use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::h256::H256;
-use rooch_pruner::state_prune::{SnapshotBuilder, SnapshotBuilderConfig};
+use rooch_pruner::state_prune::{OperationType, SnapshotBuilder, SnapshotBuilderConfig};
+use rooch_store::meta_store::MetaStore;
 use rooch_types::error::RoochResult;
 use serde_json;
 use std::path::PathBuf;
@@ -22,8 +23,9 @@ pub struct SnapshotCommand {
     #[clap(long, short = 'n')]
     pub chain_id: rooch_types::rooch_network::BuiltinChainID,
 
-    /// Target tx_order to create snapshot from (default: latest)
+    /// Target tx_order to create snapshot from (default: latest from sequencer)
     /// When provided, the snapshot will use the state_root and global_size from this transaction
+    /// If omitted and --state-root is not provided, will use the latest tx_order from the sequencer
     #[clap(long)]
     pub tx_order: Option<u64>,
 
@@ -71,7 +73,7 @@ impl CommandAction<String> for SnapshotCommand {
         let rooch_store = rooch_db.rooch_store;
 
         // Determine tx_order, state_root, and global_size
-        // Priority: --state-root > --tx_order > startup_info
+        // Priority: --state-root > --tx_order > sequencer_info > startup_info
         let (tx_order, state_root, global_size) = if let Some(root_str) = self.state_root {
             // --state-root takes precedence over --tx_order
             let state_root = H256::from_slice(&hex::decode(root_str).map_err(|e| {
@@ -80,6 +82,15 @@ impl CommandAction<String> for SnapshotCommand {
                     e
                 ))
             })?);
+
+            // If --state-root is provided without --tx-order, log a warning about unknown tx_order
+            if self.tx_order.is_none() {
+                tracing::warn!(
+                    "Creating snapshot with explicit --state-root but no --tx-order. tx_order will be unknown (set to 0). \
+                    Replay from this snapshot will require explicit from/to tx_order specification."
+                );
+            }
+
             // When state_root is provided explicitly, we don't have tx_order or global_size
             (None, state_root, None)
         } else if let Some(tx_order) = self.tx_order {
@@ -97,12 +108,38 @@ impl CommandAction<String> for SnapshotCommand {
                     )));
                 }
             }
+        } else if let Some(sequencer_info) = rooch_store.get_sequencer_info()? {
+            // Use latest tx_order from sequencer
+            let latest_tx_order = sequencer_info.last_order;
+            tracing::info!(
+                "No --tx-order or --state-root provided, using latest tx_order from sequencer: {}",
+                latest_tx_order
+            );
+
+            match rooch_store.state_store.get_state_change_set(latest_tx_order)? {
+                Some(changeset_ext) => {
+                    let state_root = changeset_ext.state_change_set.state_root;
+                    let global_size = changeset_ext.state_change_set.global_size;
+                    (Some(latest_tx_order), state_root, Some(global_size))
+                }
+                None => {
+                    return Err(rooch_types::error::RoochError::from(anyhow::anyhow!(
+                        "No state change set found for latest tx_order: {} from sequencer. \
+                        This may indicate database inconsistency.",
+                        latest_tx_order
+                    )));
+                }
+            }
         } else if let Some(startup_info) = moveos_store.get_config_store().get_startup_info()? {
-            // Default to latest (startup_info)
+            // Fallback to startup_info if sequencer_info is not available
+            tracing::warn!(
+                "No sequencer_info available, falling back to startup_info. tx_order will be unknown (set to 0). \
+                Consider using --tx-order or ensure sequencer_info exists."
+            );
             (None, startup_info.state_root, None)
         } else {
             return Err(rooch_types::error::RoochError::from(anyhow::anyhow!(
-                "Unable to determine state_root: provide --tx-order, --state-root, or ensure startup_info exists"
+                "Unable to determine state_root: provide --tx-order, --state-root, or ensure sequencer_info/startup_info exists"
             )));
         };
 
@@ -115,6 +152,31 @@ impl CommandAction<String> for SnapshotCommand {
             enable_adaptive_batching: true,
             memory_pressure_threshold: 0.8,
         };
+
+        // Write operation_meta.json early with resolved tx_order
+        // This ensures that even if the operation is interrupted, the intended tx_order is recorded
+        let tx_order_for_meta = tx_order.unwrap_or(0);
+        let operation_meta = rooch_pruner::state_prune::StatePruneMetadata::new(
+            OperationType::Snapshot {
+                tx_order: tx_order_for_meta,
+                state_root: format!("{:x}", state_root),
+                output_dir: self.output.clone(),
+            },
+            serde_json::json!({
+                "state_root": format!("{:x}", state_root),
+                "tx_order": tx_order_for_meta,
+                "global_size": global_size.unwrap_or(0),
+                "config": snapshot_config
+            }),
+        );
+
+        // Save early metadata before starting snapshot build
+        operation_meta.save_to_file(self.output.join("operation_meta.json")).map_err(|e| {
+            rooch_types::error::RoochError::from(anyhow::anyhow!(
+                "Failed to save operation metadata: {}",
+                e
+            ))
+        })?;
 
         // Create snapshot builder
         let snapshot_builder = SnapshotBuilder::new(snapshot_config, moveos_store.clone())
