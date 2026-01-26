@@ -37,6 +37,7 @@ rooch-types = { workspace = true }
 rooch-db = { workspace = true }
 moveos-common = { workspace = true }
 moveos-store = { workspace = true }
+moveos-config = { workspace = true }
 moveos-types = { workspace = true }
 move-core-types = { workspace = true }
 raw-store = { workspace = true }

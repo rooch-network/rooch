@@ -11123,6 +11123,7 @@ dependencies = [
  "hex",
  "move-core-types",
  "moveos-common",
+ "moveos-config",
  "moveos-store",
  "moveos-types",
  "num_cpus",

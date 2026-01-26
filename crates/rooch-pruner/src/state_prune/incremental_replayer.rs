@@ -5,6 +5,7 @@ use crate::state_prune::{ProgressTracker, StatePruneMetadata};
 use anyhow::Result;
 use move_core_types::effects::Op;
 use moveos_store::transaction_store::TransactionStore as MoveOSTransactionStore;
+use moveos_config::store_config::RocksdbConfig;
 use moveos_store::{
     MoveOSStore, EVENT_COLUMN_FAMILY_NAME, EVENT_HANDLE_COLUMN_FAMILY_NAME,
     STATE_NODE_COLUMN_FAMILY_NAME, TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
@@ -16,6 +17,7 @@ use moveos_types::state::StateChangeSetExt;
 use moveos_types::state_resolver::StateResolver;
 use prometheus::Registry;
 use raw_store::SchemaStore;
+use raw_store::metrics::DBMetrics;
 use rocksdb::checkpoint::Checkpoint;
 use rooch_config::state_prune::{
     HistoryPruneCFStats, HistoryPruneConfig, HistoryPruneReport, ReplayConfig, ReplayReport,
@@ -160,7 +162,7 @@ impl IncrementalReplayer {
             && self.config.history_prune.as_ref().unwrap().enabled
         {
             metadata.mark_in_progress("Pruning historical data".to_string(), 93.0);
-            let output_rooch_store = self.load_output_rooch_store(output_dir)?;
+            let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
 
             match self.prune_history(
                 &output_store,
@@ -306,12 +308,9 @@ impl IncrementalReplayer {
         column_families.dedup();
 
         let registry = Registry::new();
-        let db_metrics = moveos_store::metrics::DBMetrics::get_or_init(&registry).clone();
-        let rocksdb = raw_store::rocks::RocksDB::new(
-            output_dir,
-            column_families,
-            raw_store::rocks::RocksdbConfig::default(),
-        )?;
+        let db_metrics = DBMetrics::get_or_init(&registry).clone();
+        let rocksdb =
+            raw_store::rocks::RocksDB::new(output_dir, column_families, RocksdbConfig::default())?;
         let instance = raw_store::StoreInstance::new_db_instance(rocksdb, db_metrics);
 
         // Share the same instance between MoveOSStore and RoochStore to avoid locks
