@@ -4,6 +4,7 @@
 use crate::state_prune::{ProgressTracker, StatePruneMetadata};
 use anyhow::Result;
 use move_core_types::effects::Op;
+use moveos_config::store_config::RocksdbConfig;
 use moveos_store::transaction_store::TransactionStore as MoveOSTransactionStore;
 use moveos_store::{
     MoveOSStore, EVENT_COLUMN_FAMILY_NAME, EVENT_HANDLE_COLUMN_FAMILY_NAME,
@@ -15,6 +16,7 @@ use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::StateChangeSetExt;
 use moveos_types::state_resolver::StateResolver;
 use prometheus::Registry;
+use raw_store::metrics::DBMetrics;
 use raw_store::SchemaStore;
 use rocksdb::checkpoint::Checkpoint;
 use rooch_config::state_prune::{
@@ -100,7 +102,7 @@ impl IncrementalReplayer {
 
         // Build output DB from live store checkpoint
         self.prepare_output_store(output_dir)?;
-        let output_store = self.load_output_store(output_dir)?;
+        let (output_store, _) = self.load_output_stores(output_dir)?;
 
         metadata.mark_in_progress("Resetting state nodes".to_string(), 10.0);
         self.clear_state_nodes(&output_store)?;
@@ -150,14 +152,17 @@ impl IncrementalReplayer {
         }
 
         metadata.mark_in_progress("Trimming output metadata".to_string(), 92.0);
-        self.trim_output_store(&output_store, to_order, &mut metadata)?;
+        self.trim_output_store(&output_store, output_dir, to_order, &mut metadata)?;
+
+        // After trim/refresh, ensure startup_info and sequencer_info are consistent
+        self.verify_startup_sequencer_consistency(&output_store, output_dir, to_order)?;
 
         // Perform history pruning if enabled
         if self.config.history_prune.is_some()
             && self.config.history_prune.as_ref().unwrap().enabled
         {
             metadata.mark_in_progress("Pruning historical data".to_string(), 93.0);
-            let output_rooch_store = self.load_output_rooch_store(&output_store)?;
+            let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
 
             match self.prune_history(
                 &output_store,
@@ -287,8 +292,8 @@ impl IncrementalReplayer {
         Ok(())
     }
 
-    /// Load output store from output path
-    fn load_output_store(&self, output_dir: &Path) -> Result<MoveOSStore> {
+    /// Load output MoveOSStore and RoochStore using a single RocksDB instance (all CFs)
+    fn load_output_stores(&self, output_dir: &Path) -> Result<(MoveOSStore, RoochStore)> {
         if !output_dir.exists() || !output_dir.is_dir() {
             return Err(anyhow::anyhow!(
                 "Output database not found at {:?}.",
@@ -296,24 +301,24 @@ impl IncrementalReplayer {
             ));
         }
 
-        let registry = Registry::new();
-        let output_store = MoveOSStore::new(output_dir, &registry).map_err(|e| {
-            anyhow::anyhow!("Failed to load output store from {:?}: {}", output_dir, e)
-        })?;
-
-        Ok(output_store)
-    }
-
-    fn load_output_rooch_store(&self, output_store: &MoveOSStore) -> Result<RoochStore> {
-        let store_instance = output_store
-            .get_state_node_store()
-            .get_store()
-            .store()
-            .clone();
+        // Combine MoveOS + Rooch CFs and ensure uniqueness
+        let mut column_families = moveos_store::StoreMeta::get_column_family_names().to_vec();
+        column_families.extend_from_slice(rooch_store::StoreMeta::get_column_family_names());
+        column_families.sort();
+        column_families.dedup();
 
         let registry = Registry::new();
-        RoochStore::new_with_instance(store_instance, &registry)
-            .map_err(|e| anyhow::anyhow!("Failed to load output RoochStore from output DB: {}", e))
+        let db_metrics = DBMetrics::get_or_init(&registry).clone();
+        let rocksdb =
+            raw_store::rocks::RocksDB::new(output_dir, column_families, RocksdbConfig::default())?;
+        let instance = raw_store::StoreInstance::new_db_instance(rocksdb, db_metrics);
+
+        // Share the same instance between MoveOSStore and RoochStore to avoid locks
+        let moveos_store = MoveOSStore::new_with_instance(instance.clone(), &registry)?;
+        let rooch_store = RoochStore::new_with_instance(instance, &registry)
+            .map_err(|e| anyhow::anyhow!("Failed to load output RoochStore: {}", e))?;
+
+        Ok((moveos_store, rooch_store))
     }
 
     /// Clear state nodes in output store before importing snapshot
@@ -471,10 +476,11 @@ impl IncrementalReplayer {
     fn trim_output_store(
         &self,
         output_store: &MoveOSStore,
+        output_dir: &Path,
         to_order: u64,
         metadata: &mut StatePruneMetadata,
     ) -> Result<()> {
-        let output_rooch_store = self.load_output_rooch_store(output_store)?;
+        let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
 
         let sequencer_info = output_rooch_store
             .get_meta_store()
@@ -490,19 +496,7 @@ impl IncrementalReplayer {
             ));
         }
 
-        if to_order == last_order {
-            info!(
-                "Output store already at to_order {}, skipping metadata trim",
-                to_order
-            );
-            return Ok(());
-        }
-
-        metadata.mark_in_progress(
-            format!("Trimming output metadata ({} -> {})", last_order, to_order),
-            92.0,
-        );
-
+        // Always ensure sequencer_info is synchronized to to_order, even when no trim is needed
         let target_tx = output_rooch_store
             .transaction_store
             .get_tx_by_order(to_order)?
@@ -517,6 +511,19 @@ impl IncrementalReplayer {
         output_rooch_store
             .get_meta_store()
             .save_sequencer_info_unsafe(new_sequencer_info)?;
+
+        if to_order == last_order {
+            info!(
+                "Output store already at to_order {}, refreshed sequencer info",
+                to_order
+            );
+            return Ok(());
+        }
+
+        metadata.mark_in_progress(
+            format!("Trimming output metadata ({} -> {})", last_order, to_order),
+            92.0,
+        );
 
         let mut removed_transactions = 0u64;
         let mut removed_changesets = 0u64;
@@ -873,6 +880,41 @@ impl IncrementalReplayer {
         info!(
             "Final state root verification passed: {:x}",
             actual_state_root
+        );
+
+        Ok(())
+    }
+
+    /// Ensure startup_info and sequencer_info are consistent after replay/trim
+    fn verify_startup_sequencer_consistency(
+        &self,
+        output_store: &MoveOSStore,
+        output_dir: &Path,
+        expected_order: u64,
+    ) -> Result<()> {
+        let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
+
+        let startup_info = output_store
+            .get_config_store()
+            .get_startup_info()?
+            .ok_or_else(|| anyhow::anyhow!("No startup info found in output store"))?;
+
+        let sequencer_info = output_rooch_store
+            .get_meta_store()
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow::anyhow!("No sequencer info found in output store"))?;
+
+        if sequencer_info.last_order != expected_order {
+            return Err(anyhow::anyhow!(
+                "Sequencer info inconsistency: expected last_order {}, got {}",
+                expected_order,
+                sequencer_info.last_order
+            ));
+        }
+
+        info!(
+            "Startup/Sequencer consistency verified: order={}, state_root={:x}",
+            sequencer_info.last_order, startup_info.state_root
         );
 
         Ok(())
