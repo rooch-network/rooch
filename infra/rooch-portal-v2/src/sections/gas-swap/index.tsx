@@ -5,7 +5,7 @@ import type { CurveType, PoolVersion, InteractiveMode } from 'src/components/gas
 import { useState } from 'react';
 import { useCurrentWallet, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
 
-import { Stack } from '@mui/material';
+import { Stack, Alert } from '@mui/material';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 import useGasMarketRate from 'src/hooks/gas/use-gas-market-rate';
@@ -64,10 +64,16 @@ export default function GasSwapOverview() {
 
   return (
     <Stack className="w-full justify-center items-center">
-      <Stack className="w-3/4 max-w-[600px]">
+      <Stack className="w-3/4 max-w-[600px]" spacing={2}>
+        <Alert severity="warning" sx={{ borderRadius: '12px' }}>
+          <strong>Feature Under Maintenance</strong>
+          <br />
+          The BTC to RGas purchase feature is temporarily disabled while we upgrade to a new
+          verification system. Please check back later.
+        </Alert>
         <WalletSwitchNetworkModal onChecked={(isValid) => setNetworkValid(isValid)} />
         <Swap
-          isValid={networkValid}
+          isValid={false}
           hiddenValue
           fixedSwap
           loading={isGasMarketRatePending || isBTCBalancePending || isRGasBalancePending}
@@ -88,7 +94,7 @@ export default function GasSwapOverview() {
           priceImpactSeverity="normal"
           proposing={submitting}
           version={version}
-          onSlippageChange={(slippage: number) => {}}
+          onSlippageChange={(slippage: number) => { }}
           onCurveTypeChange={(curveType: CurveType) => setCurve(curveType)}
           onVersionChange={(version: PoolVersion) => setVersion(version)}
           onSwap={async (payload) => {
@@ -100,20 +106,9 @@ export default function GasSwapOverview() {
             setInteractiveMode(interactiveMode);
           }}
           onPreview={async () => {
-            try {
-              setSubmitting(true);
-              const txHash = await wallet.wallet?.sendBtc({
-                toAddress: gasMarketCfg.recipientBTCAddress,
-                satoshis: Number(fromSwapAmount.toString()),
-              });
-              setTxHash(txHash);
-            } catch (error) {
-              toast.error(String(error.message));
-            } finally {
-              setSubmitting(false);
-            }
+            toast.error('This feature is currently under maintenance');
           }}
-          onPropose={async () => {}}
+          onPropose={async () => { }}
         />
       </Stack>
     </Stack>
