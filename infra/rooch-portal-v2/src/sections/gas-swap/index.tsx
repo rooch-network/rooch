@@ -73,7 +73,8 @@ export default function GasSwapOverview() {
         </Alert>
         <WalletSwitchNetworkModal onChecked={(isValid) => setNetworkValid(isValid)} />
         <Swap
-          isValid={false}
+          isValid={networkValid}
+          validationError="Under Maintenance"
           hiddenValue
           fixedSwap
           loading={isGasMarketRatePending || isBTCBalancePending || isRGasBalancePending}
