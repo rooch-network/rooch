@@ -140,7 +140,12 @@ impl StateDBStore {
         self.get_changesets_range_batch_fallback(from_order, to_order, limit)
     }
 
-    /// Fallback implementation for non-RocksDB stores using batch queries
+    /// Numeric-order range loader using batched multi_get.
+    ///
+    /// We rely on this path for all backends (including RocksDB) because the
+    /// stored keys are little-endian `u64` BCS bytes and RocksDB's lexicographic
+    /// iteration order does not match numeric order. Batched lookups avoid that
+    /// ordering hazard while keeping the range complete.
     fn get_changesets_range_batch_fallback(
         &self,
         from_order: u64,
