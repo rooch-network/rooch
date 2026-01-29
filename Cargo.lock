@@ -11310,6 +11310,7 @@ dependencies = [
  "prometheus",
  "raw-store",
  "rooch-types",
+ "tempfile",
  "tokio",
  "tracing",
 ]
