@@ -28,3 +28,6 @@ moveos-types = { workspace = true }
 moveos-common = { workspace = true }
 
 rooch-types = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

@@ -5,7 +5,7 @@ use crate::STATE_CHANGE_SET_COLUMN_FAMILY_NAME;
 use anyhow::Result;
 use moveos_types::state::StateChangeSetExt;
 use raw_store::CodecKVStore;
-use raw_store::{derive_store, SchemaStore, StoreInstance};
+use raw_store::{derive_store, StoreInstance};
 
 derive_store!(
     StateChangeSetStore,
@@ -54,6 +54,21 @@ impl StateDBStore {
     pub fn new(instance: StoreInstance) -> Self {
         StateDBStore {
             state_change_set_store: StateChangeSetStore::new(instance.clone()),
+        }
+    }
+
+    #[cfg(test)]
+    fn insert_dummy_changesets(&self, start: u64, count: u64) {
+        for i in 0..count {
+            let order = start + i;
+            let dummy = StateChangeSetExt {
+                state_change_set: moveos_types::state::StateChangeSet::new(
+                    moveos_types::h256::H256::from_low_u64_be(order),
+                    order,
+                ),
+                sequence_number: order,
+            };
+            self.save_state_change_set(order, dummy).unwrap();
         }
     }
 
@@ -114,46 +129,23 @@ impl StateDBStore {
             return Ok(Vec::new());
         }
 
-        let mut results = Vec::new();
-
-        // Try to get an iterator from the underlying RocksDB store
-        if let Some(rocks_store) = self.state_change_set_store.get_store().store().db() {
-            let cf_name = STATE_CHANGE_SET_COLUMN_FAMILY_NAME;
-
-            // Create iterator and seek to the start key
-            let mut iter = rocks_store.iter::<u64, StateChangeSetExt>(cf_name)?;
-
-            // Seek to the start order
-            iter.seek(from_order.to_le_bytes().to_vec())?;
-
-            // Iterate until we reach the end order or limit
-            for item_result in iter {
-                let (tx_order, changeset) = item_result?;
-
-                // Stop if we've reached or passed the to_order
-                if tx_order >= to_order {
-                    break;
-                }
-
-                // Only include items that are >= from_order (in case seek landed on a smaller key)
-                if tx_order >= from_order {
-                    results.push((tx_order, changeset));
-
-                    // Stop if we've reached the limit
-                    if results.len() >= limit {
-                        break;
-                    }
-                }
-            }
-
-            Ok(results)
-        } else {
-            // Fallback to batch queries for non-RocksDB stores (e.g., in-memory tests)
-            self.get_changesets_range_batch_fallback(from_order, to_order, limit)
-        }
+        // NOTE: State change set keys are BCS-encoded u64 (little-endian). RocksDB's
+        // default lexicographic iterator order does not align with numeric order for
+        // little-endian encoded integers. Using a forward iterator with range break
+        // logic therefore skips most entries in a numeric span (observed: only
+        // 18/4554 changesets loaded in production).
+        // To guarantee correctness across existing databases, fall back to explicit
+        // multi_get over the requested numeric range. Although slightly slower, the
+        // range sizes we replay (thousands) are acceptable and correctness is critical.
+        self.get_changesets_range_batch_fallback(from_order, to_order, limit)
     }
 
-    /// Fallback implementation for non-RocksDB stores using batch queries
+    /// Numeric-order range loader using batched multi_get.
+    ///
+    /// We rely on this path for all backends (including RocksDB) because the
+    /// stored keys are little-endian `u64` BCS bytes and RocksDB's lexicographic
+    /// iteration order does not match numeric order. Batched lookups avoid that
+    /// ordering hazard while keeping the range complete.
     fn get_changesets_range_batch_fallback(
         &self,
         from_order: u64,
@@ -233,5 +225,48 @@ impl StateStore for StateDBStore {
         limit: usize,
     ) -> Result<Vec<(u64, StateChangeSetExt)>> {
         self.get_changesets_range_with_limit(from_order, to_order, limit)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use moveos_config::store_config::RocksdbConfig;
+    use prometheus::Registry;
+    use raw_store::metrics::DBMetrics;
+    use raw_store::rocks::RocksDB;
+    use raw_store::StoreInstance;
+    use std::sync::Arc;
+    use tempfile::TempDir;
+
+    fn temp_state_store() -> StateDBStore {
+        let dir = TempDir::new().expect("create tempdir");
+        let registry = Registry::new();
+        let db = RocksDB::new(
+            dir.path(),
+            crate::StoreMeta::get_column_family_names().to_vec(),
+            RocksdbConfig::default(),
+        )
+        .expect("create rocksdb");
+        let db_metrics = DBMetrics::new(&registry);
+        let instance = StoreInstance::new_db_instance(db, Arc::new(db_metrics));
+        StateDBStore::new(instance)
+    }
+
+    #[test]
+    fn get_changesets_range_returns_full_span() {
+        let store = temp_state_store();
+
+        // Insert contiguous changesets keyed by numeric order
+        store.insert_dummy_changesets(110, 30);
+
+        // Fetch the span and ensure none are skipped
+        let got = store
+            .get_changesets_range_with_limit(110, 140, usize::MAX)
+            .expect("load range");
+
+        assert_eq!(got.len(), 30, "should load all changesets in range");
+        assert_eq!(got.first().unwrap().0, 110);
+        assert_eq!(got.last().unwrap().0, 139);
     }
 }
