@@ -30,6 +30,9 @@ async fn e2e_snapshot_node_count_populated() {
         enable_adaptive_batching: false,
         memory_pressure_threshold: 0.8,
         enable_resume: false,
+        skip_dedup: false,
+        skip_final_compact: false,
+        disable_auto_compactions: true,
     };
 
     let snapshot_builder = SnapshotBuilder::new(snapshot_config, store).unwrap();
