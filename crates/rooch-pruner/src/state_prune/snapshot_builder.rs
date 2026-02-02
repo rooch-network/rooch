@@ -6,7 +6,7 @@ use crate::state_prune::{
 };
 use crate::util::extract_child_nodes_strict;
 use anyhow::Result;
-use moveos_store::{MoveOSStore, STATE_NODE_COLUMN_FAMILY_NAME, StoreMeta};
+use moveos_store::{MoveOSStore, StoreMeta, STATE_NODE_COLUMN_FAMILY_NAME};
 use moveos_types::h256::H256;
 use moveos_types::startup_info::StartupInfo;
 use prometheus::Registry;
