@@ -57,6 +57,18 @@ pub struct SnapshotCommand {
     /// Disable resume functionality
     #[clap(long)]
     pub no_resume: bool,
+
+    /// Skip deduplication checks when writing snapshot nodes (faster, more writes)
+    #[clap(long)]
+    pub skip_dedup: bool,
+
+    /// Skip final compaction of the snapshot RocksDB (faster finish, larger on-disk)
+    #[clap(long)]
+    pub skip_final_compact: bool,
+
+    /// Keep auto-compactions enabled on snapshot RocksDB (default is disabled during build)
+    #[clap(long)]
+    pub enable_auto_compactions: bool,
 }
 
 #[async_trait]
@@ -150,6 +162,9 @@ impl CommandAction<String> for SnapshotCommand {
         let snapshot_config = SnapshotBuilderConfig {
             batch_size: self.batch_size,
             memory_limit: 16 * 1024 * 1024 * 1024, // 16GB
+            skip_dedup: self.skip_dedup,
+            skip_final_compact: self.skip_final_compact,
+            disable_auto_compactions: !self.enable_auto_compactions,
             progress_interval_seconds: 30,
             enable_resume: !self.no_resume, // Respect CLI flag
             enable_adaptive_batching: true,

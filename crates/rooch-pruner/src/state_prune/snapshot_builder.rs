@@ -6,8 +6,7 @@ use crate::state_prune::{
 };
 use crate::util::extract_child_nodes_strict;
 use anyhow::Result;
-use moveos_store::MoveOSStore;
-use moveos_store::STATE_NODE_COLUMN_FAMILY_NAME;
+use moveos_store::{MoveOSStore, STATE_NODE_COLUMN_FAMILY_NAME, StoreMeta};
 use moveos_types::h256::H256;
 use moveos_types::startup_info::StartupInfo;
 use prometheus::Registry;
@@ -245,7 +244,8 @@ impl SnapshotBuilder {
         snapshot_writer.save_startup_info(state_root, global_size)?;
 
         // Flush and close snapshot writer to get final statistics
-        let active_nodes_count = snapshot_writer.finalize(&mut metadata)?;
+        let active_nodes_count =
+            snapshot_writer.finalize(&mut metadata, self.config.skip_final_compact)?;
 
         metadata.mark_in_progress("Verifying snapshot integrity".to_string(), 97.0);
         self.verify_snapshot_integrity(&output_dir, state_root)?;
@@ -434,9 +434,11 @@ impl SnapshotBuilder {
             // Check if node is already written to avoid duplication
             // The RocksDB-based deduplication handles this efficiently with O(1) space complexity
             // This also serves as cycle detection since nodes already processed won't be revisited
-            if snapshot_writer.contains_node(&current_hash)? {
-                debug!("Skipping duplicate node: {}", current_hash);
-                continue;
+            if !self.config.skip_dedup {
+                if snapshot_writer.contains_node(&current_hash)? {
+                    debug!("Skipping duplicate node: {}", current_hash);
+                    continue;
+                }
             }
 
             // Increment nodes_visited counter only when we actually process the node
@@ -714,20 +716,21 @@ impl SnapshotBuilder {
 /// RocksDB-backed snapshot node writer with batched writes and deduplication
 pub struct SnapshotNodeWriter {
     moveos_store: MoveOSStore,
+    skip_dedup: bool,
     pub nodes_written: u64,
 }
 
 impl SnapshotNodeWriter {
     /// Create new snapshot node writer with RocksDB backend
-    pub fn new(output_dir: &Path, _config: &SnapshotBuilderConfig) -> Result<Self> {
-        Self::new_with_count(output_dir, _config, 0)
+    pub fn new(output_dir: &Path, config: &SnapshotBuilderConfig) -> Result<Self> {
+        Self::new_with_count(output_dir, config, 0)
     }
 
     /// Create new snapshot node writer with RocksDB backend, starting from existing count
     /// Used when resuming a snapshot operation to preserve previously written node count
     pub fn new_with_count(
         output_dir: &Path,
-        _config: &SnapshotBuilderConfig,
+        config: &SnapshotBuilderConfig,
         initial_count: u64,
     ) -> Result<Self> {
         let snapshot_db_path = output_dir.join("snapshot.db");
@@ -755,6 +758,25 @@ impl SnapshotNodeWriter {
             )
         })?;
 
+        // Optionally disable auto compactions on the snapshot DB to avoid background I/O during build
+        if config.disable_auto_compactions {
+            if let Some(wrapper) = moveos_store.get_state_node_store().get_store().store().db() {
+                let raw_db = wrapper.inner();
+                for cf_name in StoreMeta::get_column_family_names() {
+                    if let Some(cf) = raw_db.cf_handle(cf_name) {
+                        if let Err(e) =
+                            raw_db.set_options_cf(&cf, &[("disable_auto_compactions", "true")])
+                        {
+                            warn!(
+                                "Failed to disable auto compactions for cf {} in snapshot db: {}",
+                                cf_name, e
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         info!(
             "Successfully opened snapshot database at: {:?}",
             snapshot_db_path
@@ -762,12 +784,16 @@ impl SnapshotNodeWriter {
 
         Ok(Self {
             moveos_store,
+            skip_dedup: config.skip_dedup,
             nodes_written: initial_count,
         })
     }
 
     /// Check if node already exists in snapshot (for deduplication)
     pub fn contains_node(&self, hash: &H256) -> Result<bool> {
+        if self.skip_dedup {
+            return Ok(false);
+        }
         Ok(self
             .moveos_store
             .get_state_node_store()
@@ -778,6 +804,9 @@ impl SnapshotNodeWriter {
     /// Batch check if nodes already exist in snapshot (for efficient deduplication)
     /// Returns a vector of booleans indicating whether each node exists
     pub fn contains_nodes_batch(&self, hashes: &[H256]) -> Result<Vec<bool>> {
+        if self.skip_dedup {
+            return Ok(vec![false; hashes.len()]);
+        }
         if hashes.is_empty() {
             return Ok(Vec::new());
         }
@@ -789,6 +818,11 @@ impl SnapshotNodeWriter {
     /// Filter out already existing nodes from a batch, returning only new nodes
     /// Takes ownership of the input batch to avoid cloning data
     pub fn filter_new_nodes(&self, nodes: Vec<(H256, Vec<u8>)>) -> Result<Vec<(H256, Vec<u8>)>> {
+        if self.skip_dedup {
+            // No deduplication requested; return as-is
+            return Ok(nodes);
+        }
+
         if nodes.is_empty() {
             return Ok(Vec::new());
         }
@@ -881,7 +915,11 @@ impl SnapshotNodeWriter {
     }
 
     /// Finalize the snapshot writer and return the final count
-    pub fn finalize(mut self, metadata: &mut StatePruneMetadata) -> Result<u64> {
+    pub fn finalize(
+        mut self,
+        metadata: &mut StatePruneMetadata,
+        skip_compact: bool,
+    ) -> Result<u64> {
         info!(
             "Finalizing snapshot with {} nodes written",
             self.nodes_written
@@ -909,17 +947,26 @@ impl SnapshotNodeWriter {
             }
         };
 
-        // Flush and compact to ensure all data is written and optimized
+        // Flush (and optionally compact) to ensure all data is written
         let start = Instant::now();
-        self.moveos_store
-            .get_state_node_store()
-            .flush_and_compact()?;
-        let compact_duration = start.elapsed();
+        if skip_compact {
+            self.moveos_store.get_state_node_store().flush_only()?;
+            info!(
+                "Skipped final compaction (flush only) in {:?}, final node count: {}",
+                start.elapsed(),
+                final_count
+            );
+        } else {
+            self.moveos_store
+                .get_state_node_store()
+                .flush_and_compact()?;
+            let compact_duration = start.elapsed();
 
-        info!(
-            "Snapshot compaction completed in {:?}, final node count: {}",
-            compact_duration, final_count
-        );
+            info!(
+                "Snapshot compaction completed in {:?}, final node count: {}",
+                compact_duration, final_count
+            );
+        }
 
         // Update metadata with final progress
         metadata.update_statistics(|stats| {
