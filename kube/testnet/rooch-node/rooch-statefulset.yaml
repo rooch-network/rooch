@@ -38,7 +38,7 @@ spec:
           mountPath: /root
       containers:
       - name: rooch
-        image: ghcr.io/rooch-network/rooch:v0.11.0
+        image: ghcr.io/rooch-network/rooch:v0.13.1
         imagePullPolicy: IfNotPresent
         env:
         - name: RUST_BACKTRACE
@@ -96,12 +96,12 @@ spec:
         - --rocksdb-block-cache-size
         - "2147483648"
         # temp disable bitcoin testnet sync
-        # - --btc-rpc-url
-        # - http://bitcoin-testnet4-rpc.testnet.svc.cluster.local:48332
-        # - --btc-rpc-username
-        # - $(BTC_RPC_USERNAME)
-        # - --btc-rpc-password
-        # - $(BTC_RPC_PASSWORD)
+        - --btc-rpc-url
+        - http://bitcoin-testnet4-rpc.testnet.svc.cluster.local:48332
+        - --btc-rpc-username
+        - $(BTC_RPC_USERNAME)
+        - --btc-rpc-password
+        - $(BTC_RPC_PASSWORD)
         ports:
         - name: rpc
           containerPort: 6767
