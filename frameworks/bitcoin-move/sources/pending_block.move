@@ -366,9 +366,15 @@ module bitcoin_move::pending_block{
             block_obj = prev_block_obj;
         };
 
-        let ready_block = object::borrow(block_obj);
-        let ready_hash = ready_block.block_hash;
-        let ready_height = ready_block.block_height;
+        let ready_hash = object::borrow(block_obj).block_hash;
+        let ready_height = object::borrow(block_obj).block_height;
+        // Friend callers may use this API beyond header-only flow. Guard explicitly:
+        // header-only (no tx_ids) or fully processed tx-carrying block.
+        let tx_ids: vector<address> = *object::borrow_field(block_obj, TX_IDS_KEY);
+        if (!vector::is_empty(&tx_ids)) {
+            let processed_tx = object::borrow(block_obj).processed_tx;
+            assert!(processed_tx == vector::length(&tx_ids), ErrorPendingBlockNotFinished);
+        };
         let ready_obj = take_pending_block(ready_hash);
         simple_map::remove(&mut store.pending_blocks, &ready_height);
         let header = remove_pending_block(ready_obj, true);
