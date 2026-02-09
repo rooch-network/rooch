@@ -103,6 +103,7 @@ module bitcoin_move::bitcoin{
         };
 
         // Reorg detection: same height but different hash is not allowed here.
+        // Canonical reorg handling should already happen in pending_block::add_pending_block*.
         if (table::contains(&btc_block_store.height_to_hash, block_height)) {
             // existing hash at this height differs (hash_to_height not containing block_hash)
             assert!(false, ErrorReorgTooDeep);
@@ -263,29 +264,32 @@ module bitcoin_move::bitcoin{
     }
 
 
-    /// The sequencer submit a new Bitcoin block to execute
-    /// Header-only import: keep pending_block topology for reorg handling, but skip tx processing.
+    /// The sequencer submit a new Bitcoin block.
+    /// Header-only import keeps headers in pending storage and finalizes only after confirmations.
     fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
         let block = bcs::from_bytes<Block>(block_bytes);
         let block_header = *types::header(&block);
 
-        // Keep pending_block topology for reorg detection (no tx bodies stored).
+        // Keep pending topology for reorg handling and confirmation-window finalize.
         let _added = pending_block::add_pending_block_header_only(block_height, block_hash, block_header);
 
-        let btc_block_store_obj = borrow_block_store_mut();
-        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+        let ready_pending_block_opt = pending_block::pop_ready_pending_block_header();
+        if (option::is_some(&ready_pending_block_opt)) {
+            let ready_pending_block = option::destroy_some(ready_pending_block_opt);
+            let (ready_height, ready_hash, ready_header) =
+                pending_block::unpack_ready_pending_block_header(ready_pending_block);
 
-        process_block_header(btc_block_store, block_height, block_hash, block_header);
+            let btc_block_store_obj = borrow_block_store_mut();
+            let btc_block_store = object::borrow_mut(btc_block_store_obj);
+            process_block_header(btc_block_store, ready_height, ready_hash, ready_header);
 
-        // Clean up header-only pending block to avoid leaks.
-        pending_block::remove_pending_block_header_only(block_hash);
-
-        // Update global time
-        if(!chain_id::is_test()){
-            let timestamp_seconds = (types::time(&block_header) as u64);
-            let module_signer = signer::module_signer<BitcoinBlockStore>();
-            timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
-        }
+            // Update global time with finalized block time.
+            if(!chain_id::is_test()){
+                let timestamp_seconds = (types::time(&ready_header) as u64);
+                let module_signer = signer::module_signer<BitcoinBlockStore>();
+                timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+            }
+        };
     }
 
     /// This is the execute_l1_tx entry point
