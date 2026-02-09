@@ -10,6 +10,7 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Resource `PendingStore`](#0x4_pending_block_PendingStore)
 -  [Struct `InprocessBlock`](#0x4_pending_block_InprocessBlock)
 -  [Struct `ReorgEvent`](#0x4_pending_block_ReorgEvent)
+-  [Struct `ReadyPendingBlockHeader`](#0x4_pending_block_ReadyPendingBlockHeader)
 -  [Struct `PendingTxs`](#0x4_pending_block_PendingTxs)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_pending_block_genesis_init)
@@ -27,6 +28,8 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 -  [Function `inprocess_block_tx`](#0x4_pending_block_inprocess_block_tx)
 -  [Function `inprocess_block_header`](#0x4_pending_block_inprocess_block_header)
 -  [Function `inprocess_block_height`](#0x4_pending_block_inprocess_block_height)
+-  [Function `pop_ready_pending_block_header`](#0x4_pending_block_pop_ready_pending_block_header)
+-  [Function `unpack_ready_pending_block_header`](#0x4_pending_block_unpack_ready_pending_block_header)
 -  [Function `get_ready_pending_txs`](#0x4_pending_block_get_ready_pending_txs)
 -  [Function `get_best_block`](#0x4_pending_block_get_best_block)
 -  [Function `get_reorg_block_count`](#0x4_pending_block_get_reorg_block_count)
@@ -91,6 +94,17 @@ This is a hot potato struct, can not be store and drop
 
 
 <pre><code><b>struct</b> <a href="pending_block.md#0x4_pending_block_ReorgEvent">ReorgEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<a name="0x4_pending_block_ReadyPendingBlockHeader"></a>
+
+## Struct `ReadyPendingBlockHeader`
+
+
+
+<pre><code><b>struct</b> <a href="pending_block.md#0x4_pending_block_ReadyPendingBlockHeader">ReadyPendingBlockHeader</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -347,6 +361,28 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_inprocess_block_height">inprocess_block_height</a>(inprocess_block: &<a href="pending_block.md#0x4_pending_block_InprocessBlock">pending_block::InprocessBlock</a>): u64
+</code></pre>
+
+
+
+<a name="0x4_pending_block_pop_ready_pending_block_header"></a>
+
+## Function `pop_ready_pending_block_header`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_pop_ready_pending_block_header">pop_ready_pending_block_header</a>(): <a href="_Option">option::Option</a>&lt;<a href="pending_block.md#0x4_pending_block_ReadyPendingBlockHeader">pending_block::ReadyPendingBlockHeader</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_pending_block_unpack_ready_pending_block_header"></a>
+
+## Function `unpack_ready_pending_block_header`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_unpack_ready_pending_block_header">unpack_ready_pending_block_header</a>(ready_block: <a href="pending_block.md#0x4_pending_block_ReadyPendingBlockHeader">pending_block::ReadyPendingBlockHeader</a>): (u64, <b>address</b>, <a href="types.md#0x4_types_Header">types::Header</a>)
 </code></pre>
 
 

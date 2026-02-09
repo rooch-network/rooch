@@ -95,6 +95,46 @@ module bitcoin_move::bitcoin{
         object::borrow_mut_object_shared(object_id)
     }
 
+    /// Roll back header mappings from `from_height` to current tip.
+    /// This is used to handle short reorgs in header-only mode.
+    fun rollback_headers_for_reorg(btc_block_store: &mut BitcoinBlockStore, from_height: u64) {
+        if (option::is_none(&btc_block_store.latest_block)) {
+            return
+        };
+        let latest_block = *option::borrow(&btc_block_store.latest_block);
+        let (latest_height, _latest_hash) = types::unpack_block_height_hash(latest_block);
+        if (from_height > latest_height) {
+            return
+        };
+
+        let reorg_depth = latest_height - from_height + 1;
+        let reorg_block_count = pending_block::get_reorg_block_count();
+        assert!(reorg_depth <= reorg_block_count, ErrorReorgTooDeep);
+
+        let height = from_height;
+        while (height <= latest_height) {
+            if (table::contains(&btc_block_store.height_to_hash, height)) {
+                let stale_hash = table::remove(&mut btc_block_store.height_to_hash, height);
+                if (table::contains(&btc_block_store.hash_to_height, stale_hash)) {
+                    let _old_height = table::remove(&mut btc_block_store.hash_to_height, stale_hash);
+                };
+                if (table::contains(&btc_block_store.blocks, stale_hash)) {
+                    let _old_header = table::remove(&mut btc_block_store.blocks, stale_hash);
+                };
+            };
+            height = height + 1;
+        };
+
+        if (from_height > 0 && table::contains(&btc_block_store.height_to_hash, from_height - 1)) {
+            let prev_hash = *table::borrow(&btc_block_store.height_to_hash, from_height - 1);
+            btc_block_store.latest_block = option::some(
+                types::new_block_height_hash(from_height - 1, prev_hash)
+            );
+        } else {
+            btc_block_store.latest_block = option::none();
+        };
+    }
+
     fun process_block_header(btc_block_store: &mut BitcoinBlockStore, block_height: u64, block_hash: address, block_header: Header){
         // Idempotent: if we already recorded this exact block, just return.
         if (table::contains(&btc_block_store.hash_to_height, block_hash)) {
@@ -102,10 +142,14 @@ module bitcoin_move::bitcoin{
             return
         };
 
-        // Reorg detection: same height but different hash is not allowed here.
+        // Reorg detection: same height but different hash means canonical branch changed.
+        // We allow bounded rollback within `reorg_block_count`.
         if (table::contains(&btc_block_store.height_to_hash, block_height)) {
-            // existing hash at this height differs (hash_to_height not containing block_hash)
-            assert!(false, ErrorReorgTooDeep);
+            let existing_hash = *table::borrow(&btc_block_store.height_to_hash, block_height);
+            if (existing_hash == block_hash) {
+                return
+            };
+            rollback_headers_for_reorg(btc_block_store, block_height);
         };
 
         table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
@@ -263,29 +307,32 @@ module bitcoin_move::bitcoin{
     }
 
 
-    /// The sequencer submit a new Bitcoin block to execute
-    /// Header-only import: keep pending_block topology for reorg handling, but skip tx processing.
+    /// The sequencer submit a new Bitcoin block.
+    /// Header-only import keeps headers in pending storage and finalizes only after confirmations.
     fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
         let block = bcs::from_bytes<Block>(block_bytes);
         let block_header = *types::header(&block);
 
-        // Keep pending_block topology for reorg detection (no tx bodies stored).
+        // Keep pending topology for reorg handling and confirmation-window finalize.
         let _added = pending_block::add_pending_block_header_only(block_height, block_hash, block_header);
 
-        let btc_block_store_obj = borrow_block_store_mut();
-        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+        let ready_pending_block_opt = pending_block::pop_ready_pending_block_header();
+        if (option::is_some(&ready_pending_block_opt)) {
+            let ready_pending_block = option::destroy_some(ready_pending_block_opt);
+            let (ready_height, ready_hash, ready_header) =
+                pending_block::unpack_ready_pending_block_header(ready_pending_block);
 
-        process_block_header(btc_block_store, block_height, block_hash, block_header);
+            let btc_block_store_obj = borrow_block_store_mut();
+            let btc_block_store = object::borrow_mut(btc_block_store_obj);
+            process_block_header(btc_block_store, ready_height, ready_hash, ready_header);
 
-        // Clean up header-only pending block to avoid leaks.
-        pending_block::remove_pending_block_header_only(block_hash);
-
-        // Update global time
-        if(!chain_id::is_test()){
-            let timestamp_seconds = (types::time(&block_header) as u64);
-            let module_signer = signer::module_signer<BitcoinBlockStore>();
-            timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
-        }
+            // Update global time with finalized block time.
+            if(!chain_id::is_test()){
+                let timestamp_seconds = (types::time(&ready_header) as u64);
+                let module_signer = signer::module_signer<BitcoinBlockStore>();
+                timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+            }
+        };
     }
 
     /// This is the execute_l1_tx entry point
