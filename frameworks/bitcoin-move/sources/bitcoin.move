@@ -95,46 +95,6 @@ module bitcoin_move::bitcoin{
         object::borrow_mut_object_shared(object_id)
     }
 
-    /// Roll back header mappings from `from_height` to current tip.
-    /// This is used to handle short reorgs in header-only mode.
-    fun rollback_headers_for_reorg(btc_block_store: &mut BitcoinBlockStore, from_height: u64) {
-        if (option::is_none(&btc_block_store.latest_block)) {
-            return
-        };
-        let latest_block = *option::borrow(&btc_block_store.latest_block);
-        let (latest_height, _latest_hash) = types::unpack_block_height_hash(latest_block);
-        if (from_height > latest_height) {
-            return
-        };
-
-        let reorg_depth = latest_height - from_height + 1;
-        let reorg_block_count = pending_block::get_reorg_block_count();
-        assert!(reorg_depth <= reorg_block_count, ErrorReorgTooDeep);
-
-        let height = from_height;
-        while (height <= latest_height) {
-            if (table::contains(&btc_block_store.height_to_hash, height)) {
-                let stale_hash = table::remove(&mut btc_block_store.height_to_hash, height);
-                if (table::contains(&btc_block_store.hash_to_height, stale_hash)) {
-                    let _old_height = table::remove(&mut btc_block_store.hash_to_height, stale_hash);
-                };
-                if (table::contains(&btc_block_store.blocks, stale_hash)) {
-                    let _old_header = table::remove(&mut btc_block_store.blocks, stale_hash);
-                };
-            };
-            height = height + 1;
-        };
-
-        if (from_height > 0 && table::contains(&btc_block_store.height_to_hash, from_height - 1)) {
-            let prev_hash = *table::borrow(&btc_block_store.height_to_hash, from_height - 1);
-            btc_block_store.latest_block = option::some(
-                types::new_block_height_hash(from_height - 1, prev_hash)
-            );
-        } else {
-            btc_block_store.latest_block = option::none();
-        };
-    }
-
     fun process_block_header(btc_block_store: &mut BitcoinBlockStore, block_height: u64, block_hash: address, block_header: Header){
         // Idempotent: if we already recorded this exact block, just return.
         if (table::contains(&btc_block_store.hash_to_height, block_hash)) {
@@ -142,14 +102,11 @@ module bitcoin_move::bitcoin{
             return
         };
 
-        // Reorg detection: same height but different hash means canonical branch changed.
-        // We allow bounded rollback within `reorg_block_count`.
+        // Reorg detection: same height but different hash is not allowed here.
+        // Canonical reorg handling should already happen in pending_block::add_pending_block*.
         if (table::contains(&btc_block_store.height_to_hash, block_height)) {
-            let existing_hash = *table::borrow(&btc_block_store.height_to_hash, block_height);
-            if (existing_hash == block_hash) {
-                return
-            };
-            rollback_headers_for_reorg(btc_block_store, block_height);
+            // existing hash at this height differs (hash_to_height not containing block_hash)
+            assert!(false, ErrorReorgTooDeep);
         };
 
         table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
