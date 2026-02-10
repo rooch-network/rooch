@@ -22,7 +22,7 @@ struct SamplingRunReport {
     run: u32,
     seed: u64,
     estimate_nodes: u64,
-    sampled_unique_nodes: u64,
+    sampled_nodes: u64,
     queue_max: usize,
     elapsed_ms: u128,
     truncated: bool,
@@ -48,12 +48,13 @@ struct SamplingConfig {
     mid_prob: f64,
     deep_prob: f64,
     max_sampled_nodes: usize,
+    skip_dedup: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
 struct SamplingState {
     estimate: f64,
-    sampled_unique_nodes: u64,
+    sampled_nodes: u64,
     queue_max: usize,
     truncated: bool,
 }
@@ -111,6 +112,10 @@ pub struct EstimateStateNodesCommand {
     #[clap(long, default_value_t = 2_000_000)]
     pub max_sampled_nodes: usize,
 
+    /// Simulate `state-prune snapshot --skip-dedup` and count node visits (not unique hashes)
+    #[clap(long)]
+    pub skip_dedup: bool,
+
     /// Base RNG seed (deterministic). If omitted, uses system randomness.
     #[clap(long)]
     pub seed: Option<u64>,
@@ -149,6 +154,7 @@ impl CommandAction<String> for EstimateStateNodesCommand {
                     mid_prob: self.mid_prob,
                     deep_prob: self.deep_prob,
                     max_sampled_nodes: self.max_sampled_nodes,
+                    skip_dedup: self.skip_dedup,
                 },
                 run_seed,
             )?;
@@ -156,7 +162,7 @@ impl CommandAction<String> for EstimateStateNodesCommand {
                 run: run + 1,
                 seed: run_seed,
                 estimate_nodes: run_state.estimate.round() as u64,
-                sampled_unique_nodes: run_state.sampled_unique_nodes,
+                sampled_nodes: run_state.sampled_nodes,
                 queue_max: run_state.queue_max,
                 elapsed_ms: started.elapsed().as_millis(),
                 truncated: run_state.truncated,
@@ -189,6 +195,7 @@ impl CommandAction<String> for EstimateStateNodesCommand {
                 mid_prob: self.mid_prob,
                 deep_prob: self.deep_prob,
                 max_sampled_nodes: self.max_sampled_nodes,
+                skip_dedup: self.skip_dedup,
             },
             reports,
         };
@@ -246,21 +253,21 @@ fn sample_once<NR: NodeReader>(
     }];
     let mut estimate = 0f64;
     let mut queue_max = 1usize;
-    let mut sampled_unique_nodes = 0u64;
+    let mut sampled_nodes = 0u64;
     let mut truncated = false;
 
     while let Some(task) = stack.pop() {
         if task.hash == *SPARSE_MERKLE_PLACEHOLDER_HASH {
             continue;
         }
-        if !seen.insert(task.hash) {
+        if !config.skip_dedup && !seen.insert(task.hash) {
             continue;
         }
 
-        sampled_unique_nodes += 1;
+        sampled_nodes += 1;
         estimate += task.weight;
 
-        if sampled_unique_nodes as usize >= config.max_sampled_nodes {
+        if sampled_nodes as usize >= config.max_sampled_nodes {
             truncated = true;
             break;
         }
@@ -301,7 +308,7 @@ fn sample_once<NR: NodeReader>(
 
     Ok(SamplingState {
         estimate,
-        sampled_unique_nodes,
+        sampled_nodes,
         queue_max,
         truncated,
     })
@@ -352,6 +359,7 @@ fn format_summary(summary: &SamplingSummary) -> String {
     writeln!(out, "  mid_depth_span: {}", summary.config.mid_depth_span).ok();
     writeln!(out, "  mid_prob: {:.4}", summary.config.mid_prob).ok();
     writeln!(out, "  deep_prob: {:.4}", summary.config.deep_prob).ok();
+    writeln!(out, "  skip_dedup: {}", summary.config.skip_dedup).ok();
     writeln!(
         out,
         "  max_sampled_nodes: {}",
@@ -367,7 +375,7 @@ fn format_summary(summary: &SamplingSummary) -> String {
             report.run,
             report.seed,
             report.estimate_nodes,
-            report.sampled_unique_nodes,
+            report.sampled_nodes,
             report.queue_max,
             report.elapsed_ms,
             report.truncated
