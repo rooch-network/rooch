@@ -8,6 +8,7 @@ use crate::commands::db::commands::cp_cf::CpCfCommand;
 use crate::commands::db::commands::delete_benchmark::DeleteBenchmarkCommand;
 use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::dump_state::DumpStateCommand;
+use crate::commands::db::commands::estimate_state_nodes::EstimateStateNodesCommand;
 use crate::commands::db::commands::gc::GCCommand;
 use crate::commands::db::commands::generate_db_checkpoint::GenerateDBCheckPointCommand;
 use crate::commands::db::commands::get_accumulator_leaf_by_index::GetAccumulatorLeafByIndexCommand;
@@ -102,6 +103,9 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
+            DBCommand::EstimateStateNodes(estimate_state_nodes) => {
+                estimate_state_nodes.execute().await
+            }
             DBCommand::ImportToStateDB(import_state) => import_state.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
@@ -139,6 +143,7 @@ pub enum DBCommand {
     GetSequencerInfo(GetSequencerInfoCommand),
     GetAccumulatorLeafByIndex(GetAccumulatorLeafByIndexCommand),
     DumpFromStateDB(DumpStateCommand),
+    EstimateStateNodes(EstimateStateNodesCommand),
     ImportToStateDB(ImportStateCommand),
     RocksdbStats(RocksDBStatsCommand),
     RocksdbGc(RocksDBGcCommand),
