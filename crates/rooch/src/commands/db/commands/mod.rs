@@ -17,6 +17,7 @@ pub mod cp_cf;
 pub mod delete_benchmark;
 pub mod drop;
 pub mod dump_state;
+pub mod estimate_state_nodes;
 pub mod gc;
 pub mod generate_db_checkpoint;
 pub mod get_accumulator_leaf_by_index;
