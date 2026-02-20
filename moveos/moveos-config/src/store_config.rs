@@ -75,6 +75,12 @@ pub struct RocksdbConfig {
         help = "call advise random on open for rocksdb files"
     )]
     pub advise_random_on_open: bool,
+    #[clap(
+        name = "rocksdb-disable-auto-compactions",
+        long,
+        help = "disable RocksDB auto compactions for all column families"
+    )]
+    pub disable_auto_compactions: bool,
 }
 
 impl RocksdbConfig {
@@ -105,6 +111,7 @@ impl Default for RocksdbConfig {
             compaction_readahead_size: 2 * 1024 * 1024,
             allow_mmap_reads: false,
             advise_random_on_open: true,
+            disable_auto_compactions: false,
         }
     }
 }
