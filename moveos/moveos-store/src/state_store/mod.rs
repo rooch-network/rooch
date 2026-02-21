@@ -167,17 +167,34 @@ impl NodeDBStore {
             struct AutoCompactionGuard<'a> {
                 db: &'a rocksdb::DB,
                 cf: &'a rocksdb::ColumnFamily,
+                restore_disable_auto_compactions: bool,
             }
             impl<'a> Drop for AutoCompactionGuard<'a> {
                 fn drop(&mut self) {
+                    let restore_value = if self.restore_disable_auto_compactions {
+                        "true"
+                    } else {
+                        "false"
+                    };
                     if let Err(e) = self
                         .db
-                        .set_options_cf(self.cf, &[("disable_auto_compactions", "false")])
+                        .set_options_cf(self.cf, &[("disable_auto_compactions", restore_value)])
                     {
-                        tracing::warn!("Failed to re-enable auto compactions: {:?}", e);
+                        tracing::warn!(
+                            "Failed to restore auto compactions setting (disable_auto_compactions={}): {:?}",
+                            self.restore_disable_auto_compactions,
+                            e
+                        );
                     }
                 }
             }
+
+            let restore_disable_auto_compactions = raw_db
+                .property_value_cf(&cf, "rocksdb.is-auto-compactions-enabled")
+                .ok()
+                .flatten()
+                .map(|v| !matches!(v.trim(), "1" | "true" | "TRUE" | "True"))
+                .unwrap_or(false);
 
             // Record size before
             let before_size = raw_db
@@ -188,7 +205,11 @@ impl NodeDBStore {
 
             // Disable auto compactions during the manual compaction window
             raw_db.set_options_cf(&cf, &[("disable_auto_compactions", "true")])?;
-            let _guard = AutoCompactionGuard { db: raw_db, cf };
+            let _guard = AutoCompactionGuard {
+                db: raw_db,
+                cf,
+                restore_disable_auto_compactions,
+            };
 
             // Flush BEFORE compaction so tombstones are included in SSTs
             raw_db.flush_wal(true)?;
