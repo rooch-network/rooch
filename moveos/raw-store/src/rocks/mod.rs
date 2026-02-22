@@ -193,6 +193,7 @@ impl RocksDB {
         // Enable BlobDB garbage collection to reclaim space of obsolete blob records
         cf_opts.set_enable_blob_gc(true);
         cf_opts.set_blob_compression_type(DBCompressionType::Lz4);
+        cf_opts.set_disable_auto_compactions(rocksdb_config.disable_auto_compactions);
 
         if cf_name == "state_node" {
             cf_opts.set_write_buffer_size(512 * 1024 * 1024);

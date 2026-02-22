@@ -92,6 +92,13 @@ pub struct StoreConfig {
     )]
     pub enable_statistics: bool,
 
+    #[clap(
+        name = "rocksdb-disable-auto-compactions",
+        long,
+        help = "disable RocksDB auto compactions for all column families"
+    )]
+    pub disable_auto_compactions: bool,
+
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -158,6 +165,7 @@ impl StoreConfig {
             compaction_readahead_size: default.compaction_readahead_size,
             allow_mmap_reads: default.allow_mmap_reads,
             advise_random_on_open: default.advise_random_on_open,
+            disable_auto_compactions: self.disable_auto_compactions,
         }
     }
 
