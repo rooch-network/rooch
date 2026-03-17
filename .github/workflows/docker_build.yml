@@ -16,16 +16,23 @@ permissions:
 
 jobs:
   check-docker-label:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       has-label: ${{ steps.check.outputs.has-label }}
     steps:
       - name: Check for docker-build label
         id: check
+        shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             LABELS='${{ toJSON(github.event.pull_request.labels) }}'
-            if echo "$LABELS" | jq -e '.[] | select(.name == "docker-build")' > /dev/null 2>&1; then
+            if python3 - <<'PY'
+import json
+import os
+labels = json.loads(os.environ["LABELS"])
+raise SystemExit(0 if any(label.get("name") == "docker-build" for label in labels) else 1)
+PY
+            then
               echo "has-label=true" >> $GITHUB_OUTPUT
             else
               echo "has-label=false" >> $GITHUB_OUTPUT
@@ -33,12 +40,14 @@ jobs:
           else
             echo "has-label=false" >> $GITHUB_OUTPUT
           fi
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels) }}
 
   build-docker:
     if: ${{ github.event_name != 'pull_request' || needs.check-docker-label.outputs.has-label == 'true' }}
     needs: [check-docker-label]
     name: Build Docker Images
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -102,7 +111,7 @@ jobs:
   comment-pr-images:
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && needs.check-docker-label.outputs.has-label == 'true' }}
     name: Comment PR with image tags
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs:
       - check-docker-label
       - build-docker
