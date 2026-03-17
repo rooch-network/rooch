@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
   - name: rooch-data-toolbox
-    image: ghcr.io/rooch-network/rooch:v0.10.0
+    image: ghcr.io/rooch-network/rooch:v0.13.1
     imagePullPolicy: IfNotPresent
     command: ["/bin/sh", "-c"]
     args:
