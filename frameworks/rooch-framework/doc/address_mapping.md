@@ -16,14 +16,17 @@
 -  [Function `bind_bitcoin_address_internal`](#0x3_address_mapping_bind_bitcoin_address_internal)
 -  [Function `bind_bitcoin_address_by_system`](#0x3_address_mapping_bind_bitcoin_address_by_system)
 -  [Function `bind_bitcoin_address`](#0x3_address_mapping_bind_bitcoin_address)
+-  [Function `reset_rooch_to_bitcoin_mapping`](#0x3_address_mapping_reset_rooch_to_bitcoin_mapping)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
+<b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 </code></pre>
 
 
@@ -187,4 +190,15 @@ So we call this function for record rooch address to bitcoin address mapping
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address">bind_bitcoin_address</a>(btc_address: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_reset_rooch_to_bitcoin_mapping"></a>
+
+## Function `reset_rooch_to_bitcoin_mapping`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_reset_rooch_to_bitcoin_mapping">reset_rooch_to_bitcoin_mapping</a>(<a href="">account</a>: &<a href="">signer</a>)
 </code></pre>

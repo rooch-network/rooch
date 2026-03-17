@@ -21,6 +21,7 @@
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `borrow_mut_inscription_store`](#0x4_ord_borrow_mut_inscription_store)
 -  [Function `borrow_inscription_store`](#0x4_ord_borrow_inscription_store)
+-  [Function `reset_inscription_store`](#0x4_ord_reset_inscription_store)
 -  [Function `blessed_inscription_count`](#0x4_ord_blessed_inscription_count)
 -  [Function `cursed_inscription_count`](#0x4_ord_cursed_inscription_count)
 -  [Function `unbound_inscription_count`](#0x4_ord_unbound_inscription_count)
@@ -138,9 +139,11 @@
 <b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
+<b>use</b> <a href="">0x3::onchain_config</a>;
 <b>use</b> <a href="bitcoin_hash.md#0x4_bitcoin_hash">0x4::bitcoin_hash</a>;
 <b>use</b> <a href="temp_state.md#0x4_temp_state">0x4::temp_state</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
@@ -519,6 +522,17 @@ A struct to represent the Inscription Charm
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription_store">borrow_inscription_store</a>(): &<a href="ord.md#0x4_ord_InscriptionStore">ord::InscriptionStore</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_reset_inscription_store"></a>
+
+## Function `reset_inscription_store`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="ord.md#0x4_ord_reset_inscription_store">reset_inscription_store</a>(<a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 

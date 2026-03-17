@@ -393,6 +393,15 @@ Insufficient balance in the payment hub.
 
 
 
+<a name="0x3_payment_channel_ErrorNotAdmin"></a>
+
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorNotAdmin">ErrorNotAdmin</a>: u64 = 26;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ErrorInsufficientPermission"></a>
 
 The Verification Method used does not have 'authentication' permission.
@@ -419,15 +428,6 @@ The specified Verification Method was not found in the sender's DID.
 
 
 <pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorVerificationMethodNotFound">ErrorVerificationMethodNotFound</a>: u64 = 4;
-</code></pre>
-
-
-
-<a name="0x3_payment_channel_ErrorNotAdmin"></a>
-
-
-
-<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorNotAdmin">ErrorNotAdmin</a>: u64 = 26;
 </code></pre>
 
 

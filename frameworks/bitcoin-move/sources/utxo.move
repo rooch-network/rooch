@@ -12,6 +12,7 @@ module bitcoin_move::utxo{
     use moveos_std::address::to_string;
     use bitcoin_move::types::{Self, OutPoint};
     use bitcoin_move::temp_state;
+    use rooch_framework::onchain_config;
     #[test_only]
     use std::option::none;
 
@@ -106,6 +107,20 @@ module bitcoin_move::utxo{
         let id = object::named_object_id<BitcoinUTXOStore>();
         let obj = object::borrow_mut_object_shared(id);
         obj
+    }
+
+    public entry fun reset_utxo_store(account: &signer) {
+        onchain_config::ensure_admin(account);
+        reset_utxo_store_internal();
+    }
+
+    fun reset_utxo_store_internal() {
+        let utxo_store_id = object::named_object_id<BitcoinUTXOStore>();
+        if (object::exists_object_with_type<BitcoinUTXOStore>(utxo_store_id)) {
+            let system = moveos_std::signer::module_signer<BitcoinUTXOStore>();
+            let utxo_store_obj = borrow_mut_utxo_store();
+            object::clear_fields_by_system(&system, utxo_store_obj);
+        }
     }
 
     // ======= UTXO =========
@@ -445,4 +460,5 @@ module bitcoin_move::utxo{
         drop(utxo);
         event_queue::unsubscribe(subscriber);
     }
+
 }

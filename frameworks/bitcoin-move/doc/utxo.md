@@ -16,6 +16,7 @@
 -  [Function `genesis_init`](#0x4_utxo_genesis_init)
 -  [Function `borrow_utxo_store`](#0x4_utxo_borrow_utxo_store)
 -  [Function `borrow_mut_utxo_store`](#0x4_utxo_borrow_mut_utxo_store)
+-  [Function `reset_utxo_store`](#0x4_utxo_reset_utxo_store)
 -  [Function `new`](#0x4_utxo_new)
 -  [Function `mock_utxo`](#0x4_utxo_mock_utxo)
 -  [Function `derive_utxo_id`](#0x4_utxo_derive_utxo_id)
@@ -54,9 +55,11 @@
 <b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::chain_id</a>;
+<b>use</b> <a href="">0x3::onchain_config</a>;
 <b>use</b> <a href="temp_state.md#0x4_temp_state">0x4::temp_state</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 </code></pre>
@@ -206,6 +209,17 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_mut_utxo_store">borrow_mut_utxo_store</a>(): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_BitcoinUTXOStore">utxo::BitcoinUTXOStore</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_utxo_reset_utxo_store"></a>
+
+## Function `reset_utxo_store`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="utxo.md#0x4_utxo_reset_utxo_store">reset_utxo_store</a>(<a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
