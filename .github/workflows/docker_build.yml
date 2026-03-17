@@ -25,13 +25,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            LABELS='${{ toJSON(github.event.pull_request.labels) }}'
-            if python3 - <<'PY'
-import json
-import os
-labels = json.loads(os.environ["LABELS"])
-raise SystemExit(0 if any(label.get("name") == "docker-build" for label in labels) else 1)
-PY
+            if python3 -c 'import json, os, sys; labels = json.loads(os.environ["LABELS"]); sys.exit(0 if any(label.get("name") == "docker-build" for label in labels) else 1)'
             then
               echo "has-label=true" >> $GITHUB_OUTPUT
             else
