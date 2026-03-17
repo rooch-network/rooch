@@ -37,6 +37,7 @@ pub mod genesis_ord;
 pub mod genesis_utxo;
 pub mod genesis_verify;
 pub mod re_genesis;
+pub mod rebase;
 
 mod inscription;
 mod utxo;
