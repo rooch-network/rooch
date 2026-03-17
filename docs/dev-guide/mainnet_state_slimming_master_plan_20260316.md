@@ -298,8 +298,8 @@ Phase 1 implementation note:
 2. execute mainnet state reset in a controlled window
 3. export recursive active state from the reset canonical state
 4. build fresh slim DB
-4. boot slim read node
-5. validate account / asset / module / object reads
+5. boot slim read node
+6. validate account / asset / module / object reads
 
 ### Phase C: Move public service
 

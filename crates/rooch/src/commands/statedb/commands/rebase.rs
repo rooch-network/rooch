@@ -142,6 +142,13 @@ impl RebaseExportCommand {
     }
 
     fn execute_impl(self) -> Result<RebaseExportSummary> {
+        if self.input_store_dir.is_some() {
+            ensure!(
+                self.chain_id.is_some(),
+                "--chain-id is required when --input-store-dir is specified"
+            );
+        }
+
         let (root, moveos_store, rooch_store, source_chain_id) = open_input_source(
             self.input_store_dir.clone(),
             self.base_data_dir.clone(),
@@ -235,6 +242,13 @@ impl RebaseBuildCommand {
             "unsupported artifact version: {}",
             manifest.artifact_version
         );
+        let artifact_chain_id = RoochChainID::from_str(&manifest.source_chain_id)?;
+        ensure!(
+            artifact_chain_id == self.chain_id,
+            "artifact chain id {} does not match build target chain id {}",
+            artifact_chain_id,
+            self.chain_id
+        );
 
         let (output_store_dir, output_indexer_dir) =
             derive_output_paths(&self.output_data_dir, &self.chain_id);
@@ -275,6 +289,8 @@ impl RebaseBuildCommand {
         let mut rebuilt_objects = 0u64;
         let mut rebuilt_root = None;
         let mut rebuilt_global_size = None;
+        let mut current_object_id: Option<ObjectID> = None;
+        let mut current_fields = Vec::new();
 
         for line in reader.lines() {
             let line = line?;
@@ -283,35 +299,42 @@ impl RebaseBuildCommand {
             }
             let record: RebaseObjectRecord = serde_json::from_str(&line)?;
             let object_id = ObjectID::from_str(&record.object_id)?;
-            let mut update_set = UpdateSet::new();
-            let field_count = record.fields.len() as u64;
+            if current_object_id
+                .as_ref()
+                .is_some_and(|current| current != &object_id)
+            {
+                let current_id = current_object_id
+                    .take()
+                    .ok_or_else(|| anyhow!("missing current object while rebuilding"))?;
+                let field_count = current_fields.len() as u64;
+                let new_state_root = rebuild_object_fields(
+                    &rooch_db.moveos_store,
+                    &mut rebuilt_roots,
+                    &current_id,
+                    std::mem::take(&mut current_fields),
+                )?;
+                rebuilt_roots.insert(current_id.clone(), new_state_root);
+                rebuilt_objects += 1;
 
-            for field in record.fields {
-                let field_key = FieldKey::from_str(&field.field_key)?;
-                let mut object_state = ObjectState::from_str(&field.object_state)?;
-                if object_state.metadata.has_fields() {
-                    let child_id = object_state.metadata.id.clone();
-                    let rebuilt_child_root = rebuilt_roots.remove(&child_id).ok_or_else(|| {
-                        anyhow!(
-                            "missing rebuilt child root for {} while building {}",
-                            child_id,
-                            object_id
-                        )
-                    })?;
-                    object_state.update_state_root(rebuilt_child_root);
+                if current_id.is_root() {
+                    rebuilt_root = Some(new_state_root);
+                    rebuilt_global_size = Some(field_count);
                 }
-                update_set.put(field_key, object_state);
             }
 
-            let mut tree_change_set = apply_fields(
+            if current_object_id.is_none() {
+                current_object_id = Some(object_id);
+            }
+            current_fields.extend(record.fields);
+        }
+
+        if let Some(object_id) = current_object_id.take() {
+            let field_count = current_fields.len() as u64;
+            let new_state_root = rebuild_object_fields(
                 &rooch_db.moveos_store,
-                *SPARSE_MERKLE_PLACEHOLDER_HASH,
-                update_set,
-            )?;
-            let new_state_root = tree_change_set.state_root;
-            apply_nodes(
-                &rooch_db.moveos_store,
-                std::mem::take(&mut tree_change_set.nodes),
+                &mut rebuilt_roots,
+                &object_id,
+                std::mem::take(&mut current_fields),
             )?;
             rebuilt_roots.insert(object_id.clone(), new_state_root);
             rebuilt_objects += 1;
@@ -332,12 +355,11 @@ impl RebaseBuildCommand {
             .config_store
             .save_startup_info(StartupInfo::new(rebuilt_root, rebuilt_global_size))?;
 
-        let rebuilt_indexer_tx_order = std::cmp::max(1, manifest.cutover_tx_order);
         let rebuilt_indexer_objects = rebuild_indexer_from_state(
             &rooch_db.moveos_store,
             &rooch_db.indexer_store,
             ObjectMeta::root_metadata(rebuilt_root, rebuilt_global_size),
-            rebuilt_indexer_tx_order,
+            manifest.cutover_tx_order,
             self.indexer_batch_size,
         )?;
 
@@ -361,11 +383,13 @@ fn open_input_source(
     readonly: bool,
 ) -> Result<(ObjectMeta, MoveOSStore, RoochStore, RoochChainID)> {
     match (input_store_dir, base_data_dir, chain_id) {
-        (Some(store_dir), None, chain_id) => {
+        (Some(store_dir), None, Some(chain_id)) => {
             let (root, moveos_store, rooch_store) =
                 open_stores_from_store_dir(&store_dir, readonly)?;
-            let chain_id = chain_id.unwrap_or_else(|| BuiltinChainID::Local.into());
             Ok((root, moveos_store, rooch_store, chain_id))
+        }
+        (Some(_), None, None) => {
+            bail!("--chain-id is required when --input-store-dir is specified")
         }
         (None, None, _) => bail!("Either --input-store-dir or --data-dir must be specified"),
         (None, base_data_dir, chain_id) => {
@@ -440,7 +464,8 @@ fn export_object_record_recursive<R: StateResolver>(
 
     let object_id = object_state.metadata.id.clone();
     let mut cursor = None;
-    let mut fields = Vec::new();
+    let mut object_field_entries = 0u64;
+    let mut wrote_record = false;
 
     loop {
         let page = resolver.list_fields(&object_id, cursor, page_size)?;
@@ -448,6 +473,7 @@ fn export_object_record_recursive<R: StateResolver>(
             break;
         }
 
+        let mut fields = Vec::with_capacity(page.len());
         for (field_key, mut child_state) in page.iter().cloned() {
             if child_state.metadata.has_fields() {
                 let child_has_fields = export_object_record_recursive(
@@ -469,25 +495,30 @@ fn export_object_record_recursive<R: StateResolver>(
             });
         }
 
+        if !fields.is_empty() {
+            let field_count = fields.len() as u64;
+            let record = RebaseObjectRecord {
+                object_id: object_id.to_string(),
+                fields,
+            };
+            serde_json::to_writer(&mut *writer, &record)?;
+            writer.write_all(b"\n")?;
+            object_field_entries += field_count;
+            wrote_record = true;
+        }
+
         cursor = page.last().map(|(field_key, _)| *field_key);
         if page.len() < page_size {
             break;
         }
     }
 
-    if fields.is_empty() {
+    if !wrote_record {
         return Ok(false);
     }
 
-    let record = RebaseObjectRecord {
-        object_id: object_id.to_string(),
-        fields,
-    };
-    serde_json::to_writer(&mut *writer, &record)?;
-    writer.write_all(b"\n")?;
-
     stats.object_records += 1;
-    stats.field_entries += record.fields.len() as u64;
+    stats.field_entries += object_field_entries;
     Ok(true)
 }
 
@@ -520,7 +551,40 @@ fn clear_state_nodes(output_store: &MoveOSStore) -> Result<()> {
 
     node_store.delete_range_nodes(start, end, true)?;
     node_store.delete_nodes_with_flush(vec![end], true)?;
+    node_store.flush_and_compact()?;
     Ok(())
+}
+
+fn rebuild_object_fields(
+    moveos_store: &MoveOSStore,
+    rebuilt_roots: &mut BTreeMap<ObjectID, H256>,
+    object_id: &ObjectID,
+    fields: Vec<RebaseFieldRecord>,
+) -> Result<H256> {
+    let mut update_set = UpdateSet::new();
+
+    for field in fields {
+        let field_key = FieldKey::from_str(&field.field_key)?;
+        let mut object_state = ObjectState::from_str(&field.object_state)?;
+        if object_state.metadata.has_fields() {
+            let child_id = object_state.metadata.id.clone();
+            let rebuilt_child_root = rebuilt_roots.remove(&child_id).ok_or_else(|| {
+                anyhow!(
+                    "missing rebuilt child root for {} while building {}",
+                    child_id,
+                    object_id
+                )
+            })?;
+            object_state.update_state_root(rebuilt_child_root);
+        }
+        update_set.put(field_key, object_state);
+    }
+
+    let mut tree_change_set =
+        apply_fields(moveos_store, *SPARSE_MERKLE_PLACEHOLDER_HASH, update_set)?;
+    let new_state_root = tree_change_set.state_root;
+    apply_nodes(moveos_store, std::mem::take(&mut tree_change_set.nodes))?;
+    Ok(new_state_root)
 }
 
 fn rebuild_indexer_from_state(
