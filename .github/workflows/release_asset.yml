@@ -22,6 +22,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.91.1
       - name: Install LLVM and Clang (self-hosted Ubuntu)
         if: matrix.runner == 'self-hosted'
         shell: bash
