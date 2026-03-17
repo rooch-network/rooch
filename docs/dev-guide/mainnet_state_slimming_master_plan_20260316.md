@@ -127,6 +127,16 @@ Use this document for:
 - immediate stop-the-bleed actions,
 - why archive/public role split is mandatory for the target budget.
 
+### 4.5 Merge and rollout sequence
+
+- `docs/dev-guide/mainnet_state_reset_rollout_plan_20260317.md`
+
+Use this document for:
+
+- merge order across `feat/system-state-reset` and `feat/statedb-rebase-phase1`,
+- framework upgrade and mainnet reset ordering,
+- cutover validation and rollback posture.
+
 ## 5. What Active-State Rebase Must Actually Deliver
 
 The replacement pipeline should produce a new database with these properties:
@@ -268,7 +278,11 @@ This keeps the first deliverable aligned with the actual budget problem.
 - old state-node history
 - archive/proof-oriented data not required by the new role
 
-This list should be implemented as an explicit filter set, not as an operator convention.
+Phase 1 implementation note:
+
+- these domains should be cleared on-chain first via system-maintenance entry functions,
+- the rebase pipeline should then preserve the reset empty shells from canonical chain state,
+- exporter-side object dropping is not the preferred Phase 1 behavior.
 
 ## 9. Recommended Execution Order
 
@@ -280,9 +294,10 @@ This list should be implemented as an explicit filter set, not as an operator co
 
 ### Phase B: Produce and validate slim artifact
 
-1. export recursive active state
-2. apply slim filters
-3. build fresh slim DB
+1. upgrade framework with reset hooks
+2. execute mainnet state reset in a controlled window
+3. export recursive active state from the reset canonical state
+4. build fresh slim DB
 4. boot slim read node
 5. validate account / asset / module / object reads
 
