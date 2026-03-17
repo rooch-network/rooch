@@ -1,7 +1,5 @@
 # Mainnet Active-State Rebase Redesign
 
-> Consolidated execution context: see `docs/dev-guide/mainnet_state_slimming_master_plan_20260316.md`.
-
 ## 1. Goal
 
 Design a practical `active-state rebase` path for Rooch that:
