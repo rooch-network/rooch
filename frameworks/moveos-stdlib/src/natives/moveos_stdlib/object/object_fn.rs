@@ -239,13 +239,13 @@ pub(crate) fn native_to_frozen_object(
 
 #[derive(Debug, Clone)]
 pub struct ClearFieldsGasParameters {
-    pub base: InternalGas,
+    pub base: Option<InternalGas>,
 }
 
 impl ClearFieldsGasParameters {
     pub fn zeros() -> Self {
         Self {
-            base: InternalGas::zero(),
+            base: Some(InternalGas::zero()),
         }
     }
 }
@@ -266,7 +266,9 @@ pub(crate) fn native_clear_fields(
     let obj_id = pop_object_id(&mut args)?;
     object_fn_dispatch(
         &common_gas_parameter,
-        clear_fields_gas_parameter.base,
+        clear_fields_gas_parameter
+            .base
+            .unwrap_or_else(InternalGas::zero),
         context,
         obj_id,
         &ty_args[0],
