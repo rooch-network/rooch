@@ -7,6 +7,7 @@ module rooch_framework::address_mapping{
     use std::vector;
     use moveos_std::core_addresses;
     use moveos_std::object::{Self, Object};
+    use rooch_framework::onchain_config;
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
 
@@ -156,6 +157,20 @@ module rooch_framework::address_mapping{
         Self::bind_bitcoin_address_internal(rooch_addr, btc_address);
     }
 
+    public entry fun reset_rooch_to_bitcoin_mapping(account: &signer) {
+        onchain_config::ensure_admin(account);
+        reset_rooch_to_bitcoin_mapping_internal();
+    }
+
+    fun reset_rooch_to_bitcoin_mapping_internal() {
+        let object_id = object::named_object_id<RoochToBitcoinAddressMapping>();
+        if (object::exists_object_with_type<RoochToBitcoinAddressMapping>(object_id)) {
+            let system = moveos_std::signer::module_signer<RoochToBitcoinAddressMapping>();
+            let obj = borrow_rooch_to_bitcoin_mut();
+            object::clear_fields_by_system(&system, obj);
+        }
+    }
+
     #[test_only]
     use std::string;
 
@@ -184,5 +199,9 @@ module rooch_framework::address_mapping{
         assert!(bitcoin_address::is_empty(vector::borrow(&resolved_addrs, 1)), 1);
     }
 
+    #[test_only]
+    public fun rooch_to_bitcoin_field_size_for_test(): u64 {
+        object::field_size(borrow_rooch_to_bitcoin())
+    }
 
 }

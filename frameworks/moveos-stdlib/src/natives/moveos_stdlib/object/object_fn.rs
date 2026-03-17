@@ -233,6 +233,47 @@ pub(crate) fn native_to_frozen_object(
     )
 }
 
+/***************************************************************************************************
+ * native fun native_clear_fields<T: key>(object_id: ObjectID);
+ **************************************************************************************************/
+
+#[derive(Debug, Clone)]
+pub struct ClearFieldsGasParameters {
+    pub base: InternalGas,
+}
+
+impl ClearFieldsGasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            base: InternalGas::zero(),
+        }
+    }
+}
+
+#[inline]
+pub(crate) fn native_clear_fields(
+    gas_parameters: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.len() == 1);
+    debug_assert!(args.len() == 1);
+
+    let common_gas_parameter = gas_parameters.common.clone();
+    let clear_fields_gas_parameter = gas_parameters.native_clear_fields.clone();
+
+    let obj_id = pop_object_id(&mut args)?;
+    object_fn_dispatch(
+        &common_gas_parameter,
+        clear_fields_gas_parameter.base,
+        context,
+        obj_id,
+        &ty_args[0],
+        |rt_obj, _ty| rt_obj.clear_fields().map(|_| None),
+    )
+}
+
 #[inline]
 fn object_fn_dispatch(
     common_gas_params: &CommonGasParameters,

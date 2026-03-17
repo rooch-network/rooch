@@ -9,6 +9,7 @@ module moveos_std::object {
     use std::string;
     use std::string::String;
     use std::vector;
+    use moveos_std::core_addresses;
     use moveos_std::hex;
     use moveos_std::signer;
     use moveos_std::tx_context;
@@ -373,6 +374,13 @@ module moveos_std::object {
         value
     }
 
+    /// Clear all direct dynamic fields of the object and reset its field tree to the empty root.
+    /// The object value, id, owner, and flags are preserved.
+    public fun clear_fields_by_system<T: key>(system: &signer, obj: &mut Object<T>) {
+        core_addresses::assert_system_reserved(system);
+        native_clear_fields<T>(id(obj));
+    }
+
     /// Make the Object shared, Any one can get the &mut Object<T> from shared object
     /// The module of `T` can call `take_object_extend` to take out the shared object, then remove the shared object.
     public fun to_shared<T: key>(self: Object<T>) {
@@ -637,6 +645,8 @@ module moveos_std::object {
     native fun native_to_shared_object<T: key>(obj: Object<T>);
 
     native fun native_to_frozen_object<T: key>(obj: Object<T>);
+
+    native fun native_clear_fields<T: key>(object_id: ObjectID);
 
     native fun native_borrow_object<T: key>(object_id: ObjectID): &Object<T>;
 

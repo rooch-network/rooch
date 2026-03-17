@@ -43,6 +43,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `borrow_mut_object_shared`](#0x2_object_borrow_mut_object_shared)
 -  [Function `remove`](#0x2_object_remove)
 -  [Function `remove_unchecked`](#0x2_object_remove_unchecked)
+-  [Function `clear_fields_by_system`](#0x2_object_clear_fields_by_system)
 -  [Function `to_shared`](#0x2_object_to_shared)
 -  [Function `is_shared`](#0x2_object_is_shared)
 -  [Function `to_frozen`](#0x2_object_to_frozen)
@@ -81,6 +82,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="address.md#0x2_address">0x2::address</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="hex.md#0x2_hex">0x2::hex</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
@@ -712,6 +714,19 @@ Do not check if the dynamic fields are empty
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_remove_unchecked">remove_unchecked</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): T
+</code></pre>
+
+
+
+<a name="0x2_object_clear_fields_by_system"></a>
+
+## Function `clear_fields_by_system`
+
+Clear all direct dynamic fields of the object and reset its field tree to the empty root.
+The object value, id, owner, and flags are preserved.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_clear_fields_by_system">clear_fields_by_system</a>&lt;T: key&gt;(system: &<a href="">signer</a>, obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 

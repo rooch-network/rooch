@@ -106,6 +106,7 @@ pub struct GasParameters {
     pub native_transfer_object: TransferObjectGasParameters,
     pub native_to_shared_object: ToSharedObjectGasParameters,
     pub native_to_frozen_object: ToFrozenObjectGasParameters,
+    pub native_clear_fields: ClearFieldsGasParameters,
     // Object field functions
     pub native_add_field: AddFieldGasParameters,
     pub native_borrow_field: BorrowFieldGasParameters,
@@ -129,6 +130,7 @@ impl GasParameters {
             native_transfer_object: TransferObjectGasParameters::zeros(),
             native_to_shared_object: ToSharedObjectGasParameters::zeros(),
             native_to_frozen_object: ToFrozenObjectGasParameters::zeros(),
+            native_clear_fields: ClearFieldsGasParameters::zeros(),
             native_add_field: AddFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
@@ -199,6 +201,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "native_to_frozen_object",
             helpers::make_native(gas_params.clone(), native_to_frozen_object),
+        ),
+        (
+            "native_clear_fields",
+            helpers::make_native(gas_params.clone(), native_clear_fields),
         ),
         (
             "native_add_field",

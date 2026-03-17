@@ -16,6 +16,7 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.native_transfer_object.base, "native_transfer_object.base", 500 * MUL],
     [.native_to_shared_object.base, "native_to_shared_object.base", 500 * MUL],
     [.native_to_frozen_object.base, "native_to_frozen_object.base", 500 * MUL],
+    [.native_clear_fields.base, "native_clear_fields.base", 500 * MUL],
 
     [.native_add_field.base, "native_add_field.base", 500 * MUL],
     [.native_add_field.per_byte_serialized, "native_add_field.per_byte_serialized", 10 * MUL],

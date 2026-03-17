@@ -8,7 +8,7 @@ use move_core_types::{
 };
 use moveos_types::{
     h256::H256,
-    moveos_std::object::{ObjectID, ObjectMeta, SYSTEM_OWNER_ADDRESS},
+    moveos_std::object::{ObjectID, ObjectMeta, GENESIS_STATE_ROOT, SYSTEM_OWNER_ADDRESS},
 };
 
 #[derive(Debug, Clone)]
@@ -248,6 +248,13 @@ impl RuntimeObjectMeta {
             meta.created_at = timestamp;
         }
         meta.updated_at = timestamp;
+        Ok(())
+    }
+
+    pub fn clear_fields(&mut self) -> PartialVMResult<()> {
+        let meta = self.metadata_mut()?;
+        meta.size = 0;
+        meta.update_state_root(*GENESIS_STATE_ROOT);
         Ok(())
     }
 

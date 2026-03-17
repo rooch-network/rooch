@@ -463,6 +463,12 @@ impl RuntimeObject {
             Ok(Some(field.value))
         }
     }
+
+    pub fn clear_fields(&mut self) -> PartialVMResult<()> {
+        self.rt_meta.clear_fields()?;
+        self.fields.clear();
+        Ok(())
+    }
 }
 
 /// ObjectPointer functions

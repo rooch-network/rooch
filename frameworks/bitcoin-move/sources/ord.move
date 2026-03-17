@@ -18,6 +18,7 @@ module bitcoin_move::ord {
     use bitcoin_move::bitcoin_hash;
     use bitcoin_move::types::{Self, Transaction, Witness, OutPoint};
     use bitcoin_move::temp_state;
+    use rooch_framework::onchain_config;
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
@@ -170,6 +171,26 @@ module bitcoin_move::ord {
         let inscription_store_object_id = object::named_object_id<InscriptionStore>();
         let inscription_store_obj = object::borrow_object<InscriptionStore>(inscription_store_object_id);
         object::borrow(inscription_store_obj)
+    }
+
+    public entry fun reset_inscription_store(account: &signer) {
+        onchain_config::ensure_admin(account);
+        reset_inscription_store_internal();
+    }
+
+    fun reset_inscription_store_internal() {
+        let store_id = object::named_object_id<InscriptionStore>();
+        if (object::exists_object_with_type<InscriptionStore>(store_id)) {
+            let system = moveos_std::signer::module_signer<InscriptionStore>();
+            let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_id);
+            object::clear_fields_by_system(&system, store_obj);
+            let store = object::borrow_mut(store_obj);
+            store.cursed_inscription_count = 0;
+            store.blessed_inscription_count = 0;
+            store.unbound_inscription_count = 0;
+            store.lost_sats = 0;
+            store.next_sequence_number = 0;
+        }
     }
 
     public(friend) fun blessed_inscription_count(inscription_store: &InscriptionStore): u32 {
@@ -1227,6 +1248,11 @@ module bitcoin_move::ord {
         object::transfer_extend(inscription_obj, to);
     }
 
+    #[test_only]
+    public fun transfer_inscription_for_test(inscription_obj: Object<Inscription>, to: address) {
+        object::transfer_extend(inscription_obj, to);
+    }
+
     // If the inscription is transferred, the permanent area will be kept and the temporary area will be dropped.
     #[test]
     fun test_transfer() {
@@ -1270,9 +1296,14 @@ module bitcoin_move::ord {
         event_queue::unsubscribe(subscriber);
     }
 
-
     #[test_only]
     struct TestProtocol has key {}
+
+    #[test_only]
+    public fun inscription_store_field_size_for_test(): u64 {
+        let store_obj = object::borrow_object<InscriptionStore>(object::named_object_id<InscriptionStore>());
+        object::field_size(store_obj)
+    }
 
     #[test(genesis_account= @0x4)]
     fun test_metaprotocol_validity(genesis_account: &signer): InscriptionID {
