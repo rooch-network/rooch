@@ -28,10 +28,7 @@ use rooch_db::RoochDB;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::IndexerStore;
 use rooch_store::{RoochStore, StoreMeta as RoochStoreMeta};
-use rooch_types::bitcoin::ord::InscriptionStore;
-use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStatesIndexGenerator};
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
 use serde::{Deserialize, Serialize};
@@ -188,7 +185,7 @@ impl RebaseExportCommand {
             cutover_state_root: format!("{:#x}", root.state_root()),
             cutover_tx_order: sequencer_info.last_order,
             filter_profile: SLIM_PROFILE_NAME.to_string(),
-            dropped_domains: dropped_domain_names(),
+            dropped_domains: Vec::new(),
             object_records: stats.object_records,
             field_entries: stats.field_entries,
         };
@@ -430,26 +427,6 @@ fn all_column_families() -> Vec<&'static str> {
         .collect()
 }
 
-fn dropped_domain_ids() -> [ObjectID; 3] {
-    [
-        BitcoinUTXOStore::object_id(),
-        InscriptionStore::object_id(),
-        RoochToBitcoinAddressMapping::object_id(),
-    ]
-}
-
-fn dropped_domain_names() -> Vec<String> {
-    vec![
-        "BitcoinUTXOStore".to_string(),
-        "InscriptionStore".to_string(),
-        "RoochToBitcoinAddressMapping".to_string(),
-    ]
-}
-
-fn should_drop_object(object_id: &ObjectID) -> bool {
-    dropped_domain_ids().iter().any(|id| id == object_id)
-}
-
 fn export_object_record_recursive<R: StateResolver>(
     resolver: &R,
     object_state: &ObjectState,
@@ -472,10 +449,6 @@ fn export_object_record_recursive<R: StateResolver>(
         }
 
         for (field_key, mut child_state) in page.iter().cloned() {
-            if should_drop_object(&child_state.metadata.id) {
-                continue;
-            }
-
             if child_state.metadata.has_fields() {
                 let child_has_fields = export_object_record_recursive(
                     resolver,
@@ -636,7 +609,6 @@ mod tests {
     use moveos_types::moveos_std::object;
     use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
     use moveos_types::state::{MoveState, MoveStructState, MoveStructType, MoveType};
-    use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
     use rooch_types::sequencer::SequencerInfo;
     use tokio::runtime::Runtime;
 
@@ -674,6 +646,11 @@ mod tests {
         metadata.state_root = Some(state_root);
         metadata.size = size;
         ObjectState::new_with_struct(metadata, TestContainer { value: size }).unwrap()
+    }
+
+    fn test_utxo_store_id() -> Result<ObjectID> {
+        ObjectID::from_str("0xf74d177bfec2d8de0c4893f6502d3e5b55f12f75e158d53b035dcbe33782ef16")
+            .map_err(Into::into)
     }
 
     fn prepare_source_db(base_data_dir: &Path) -> Result<PathBuf> {
@@ -725,7 +702,8 @@ mod tests {
         parent.update_state_root(parent_tree.state_root);
         parent.metadata.size = 2;
 
-        let mut utxo_store = BitcoinUTXOStore::genesis_object();
+        let utxo_store_id = test_utxo_store_id()?;
+        let mut utxo_store = test_shared_container_with_root(utxo_store_id, *GENESIS_STATE_ROOT, 0);
         let dropped_leaf_id = utxo_store
             .metadata
             .id
@@ -814,12 +792,10 @@ mod tests {
             &rebuilt_db.moveos_store,
         );
 
-        assert!(
-            resolver
-                .get_object(&BitcoinUTXOStore::object_id())?
-                .is_none(),
-            "BitcoinUTXOStore should be dropped"
-        );
+        let rebuilt_utxo = resolver
+            .get_object(&test_utxo_store_id()?)?
+            .ok_or_else(|| anyhow!("utxo object missing"))?;
+        assert_eq!(rebuilt_utxo.metadata.size, 1);
 
         let retained_parent_id = object::named_object_id(&TestContainer::struct_tag());
         let rebuilt_parent = resolver
