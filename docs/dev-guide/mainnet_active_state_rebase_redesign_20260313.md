@@ -215,6 +215,21 @@ This product should not be bundled into the MVP.
 
 ## 6. New Artifact Design
 
+### 6.0 Current implementation status
+
+The first refactor slice now exists in-tree:
+
+- `rebase-export` writes typed BCS chunks instead of JSONL string records
+- `rebase-build` creates a fresh output DB from the artifact instead of checkpoint-forking the full input store
+- artifact metadata now carries `genesis_info` and `sequencer_info`
+
+This materially reduces artifact size and removes the biggest mainnet blocker around cloning a huge RocksDB first.
+
+What it does **not** solve yet:
+
+- live continuation still has open questions around non-state CFs such as tx accumulator / DA metadata
+- the current in-tree builder should still be treated as an active-state rebuild tool first, not a guaranteed full-service continuation path
+
 The current flat CSV should not be stretched to fit recursive global state.
 Use an object-scoped artifact.
 
