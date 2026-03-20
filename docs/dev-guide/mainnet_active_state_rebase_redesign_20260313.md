@@ -233,61 +233,64 @@ What it does **not** solve yet:
 The current flat CSV should not be stretched to fit recursive global state.
 Use an object-scoped artifact.
 
-### 6.1 Proposed bundle layout
+### 6.1 Current bundle layout
 
 ```text
 rebase_bundle/
   manifest.json
-  objects.ndjson.zst
-  metadata/
-    genesis_info.json
-    startup_info.json
-    source_sequencer_info.json
+  objects/
+    chunk-000000.bcs
+    chunk-000001.bcs
+    ...
+  meta/
+    genesis.bcs
+    sequencer.bcs
 ```
 
 ### 6.2 `manifest.json`
 
-Suggested contents:
+Current contents:
 
 - source chain id / network
 - source root state root
-- source startup size
-- source tx order if known
-- export timestamp
-- selected role:
-  - `full_active_state`
-  - `header_only_slim`
-- applied filters
+- source tx order at artifact cutover
+- artifact format / version
+- selected filter profile
+- applied dropped domains
 - object count
 - field count
-- section count
-- export version
+- chunk record limit
+- chunk file list
+- artifact byte size
+- meta file locations
 
-### 6.3 `objects.ndjson.zst`
+### 6.3 `objects/chunk-*.bcs`
 
-Use a sectioned stream, not a flat CSV.
+Use a typed BCS chunk stream, not a flat CSV or NDJSON blob.
 
 Suggested record types:
 
-- `begin_object`
-- `field`
+- `object`
 - `end_object`
 
-Example:
+Current record model:
 
-```json
-{"type":"begin_object","object_id":"0x0","depth":0}
-{"type":"field","parent_object_id":"0x0","field_key":"...","object_state":"..."}
-{"type":"field","parent_object_id":"0x0","field_key":"...","object_state":"..."}
-{"type":"end_object","object_id":"0x0"}
+```text
+chunk {
+  records: [
+    Object { object_id, fields[...] },
+    Object { object_id, fields[...] },
+    EndOfObject { object_id },
+  ]
+}
 ```
 
-The exporter should emit objects in post-order:
+The exporter must still emit objects in post-order:
 
 - child objects first
-- parent object section last
+- parent object records followed by an explicit `EndOfObject`
 
-This makes streaming bottom-up import much simpler.
+The explicit end marker is required because one large object may span multiple pages/chunks.
 
 ### 6.4 Why this format
 

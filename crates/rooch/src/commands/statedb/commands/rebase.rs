@@ -3,6 +3,7 @@
 
 use std::collections::{BTreeMap, HashSet};
 use std::fs::{self, File};
+use std::path::Component;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -335,10 +336,20 @@ impl RebaseBuildCommand {
             output_opt.store_config(),
             &registry_service.default_registry(),
         )?;
+        let genesis_path = resolve_artifact_relative_path(
+            &self.artifact_dir,
+            &manifest.genesis_file,
+            REBASE_META_DIR,
+        )?;
+        let sequencer_path = resolve_artifact_relative_path(
+            &self.artifact_dir,
+            &manifest.sequencer_file,
+            REBASE_META_DIR,
+        )?;
         let genesis_info: moveos_types::genesis_info::GenesisInfo =
-            bcs::from_bytes(&fs::read(self.artifact_dir.join(&manifest.genesis_file))?)?;
+            bcs::from_bytes(&fs::read(genesis_path)?)?;
         let sequencer_info: rooch_types::sequencer::SequencerInfo =
-            bcs::from_bytes(&fs::read(self.artifact_dir.join(&manifest.sequencer_file))?)?;
+            bcs::from_bytes(&fs::read(sequencer_path)?)?;
 
         let mut rebuilt_roots: BTreeMap<ObjectID, H256> = BTreeMap::new();
         let mut pending_fields: BTreeMap<ObjectID, Vec<RebaseFieldRecord>> = BTreeMap::new();
@@ -347,8 +358,9 @@ impl RebaseBuildCommand {
         let mut rebuilt_global_size = None;
 
         for chunk_file in &manifest.chunk_files {
-            let chunk: RebaseObjectChunk =
-                bcs::from_bytes(&fs::read(self.artifact_dir.join(chunk_file))?)?;
+            let chunk_path =
+                resolve_artifact_relative_path(&self.artifact_dir, chunk_file, REBASE_OBJECTS_DIR)?;
+            let chunk: RebaseObjectChunk = bcs::from_bytes(&fs::read(chunk_path)?)?;
             for record in chunk.records {
                 match record {
                     RebaseArtifactRecord::Object(record) => {
@@ -620,6 +632,40 @@ fn derive_output_paths(base_data_dir: &Path, chain_id: &RoochChainID) -> (PathBu
         rooch_db_dir.join(DEFAULT_DB_STORE_SUBDIR),
         rooch_db_dir.join(DEFAULT_DB_INDEXER_SUBDIR),
     )
+}
+
+fn resolve_artifact_relative_path(
+    artifact_dir: &Path,
+    relative: &str,
+    expected_top_level: &str,
+) -> Result<PathBuf> {
+    let relative_path = Path::new(relative);
+    ensure!(
+        !relative_path.is_absolute(),
+        "artifact path must be relative: {}",
+        relative
+    );
+
+    let mut components = relative_path.components();
+    let first = components
+        .next()
+        .ok_or_else(|| anyhow!("artifact path is empty"))?;
+    ensure!(
+        first == Component::Normal(expected_top_level.as_ref()),
+        "artifact path must stay under {}/: {}",
+        expected_top_level,
+        relative
+    );
+
+    for component in components {
+        ensure!(
+            matches!(component, Component::Normal(_)),
+            "artifact path contains invalid component: {}",
+            relative
+        );
+    }
+
+    Ok(artifact_dir.join(relative_path))
 }
 
 fn rebuild_object_fields(
