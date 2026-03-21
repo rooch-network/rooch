@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeMap, HashSet};
 use std::fs::{self, File};
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::path::Component;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -19,7 +19,6 @@ use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
 use raw_store::metrics::DBMetrics;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
-use rocksdb::checkpoint::Checkpoint;
 use rooch_config::store_config::{
     DEFAULT_DB_DIR, DEFAULT_DB_INDEXER_SUBDIR, DEFAULT_DB_STORE_SUBDIR,
 };
@@ -37,35 +36,57 @@ use smt::{UpdateSet, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::commands::statedb::commands::{apply_fields, apply_nodes};
 use crate::utils::open_rooch_db_readonly;
 
-const REBASE_ARTIFACT_VERSION: u64 = 1;
-const REBASE_OBJECTS_FILE: &str = "objects.jsonl";
+const REBASE_ARTIFACT_VERSION: u64 = 2;
 const REBASE_MANIFEST_FILE: &str = "manifest.json";
+const REBASE_OBJECTS_DIR: &str = "objects";
+const REBASE_META_DIR: &str = "meta";
+const REBASE_GENESIS_FILE: &str = "genesis.bcs";
+const REBASE_SEQUENCER_FILE: &str = "sequencer.bcs";
+const REBASE_ARTIFACT_FORMAT: &str = "bcs-chunks";
 const DEFAULT_EXPORT_PAGE_SIZE: usize = 1024;
+const DEFAULT_EXPORT_CHUNK_RECORDS: usize = 256;
 const DEFAULT_INDEXER_BATCH_SIZE: usize = 4096;
 const SLIM_PROFILE_NAME: &str = "slim-public-mainnet-v1";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct RebaseManifest {
     artifact_version: u64,
+    artifact_format: String,
     source_chain_id: String,
     cutover_state_root: String,
     cutover_tx_order: u64,
     filter_profile: String,
     dropped_domains: Vec<String>,
+    chunk_record_limit: usize,
     object_records: u64,
     field_entries: u64,
+    artifact_bytes: u64,
+    chunk_files: Vec<String>,
+    genesis_file: String,
+    sequencer_file: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct RebaseObjectRecord {
-    object_id: String,
+    object_id: ObjectID,
     fields: Vec<RebaseFieldRecord>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct RebaseFieldRecord {
-    field_key: String,
-    object_state: String,
+    field_key: FieldKey,
+    object_state: ObjectState,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RebaseObjectChunk {
+    records: Vec<RebaseArtifactRecord>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+enum RebaseArtifactRecord {
+    Object(RebaseObjectRecord),
+    EndOfObject { object_id: ObjectID },
 }
 
 #[derive(Debug, Serialize)]
@@ -94,6 +115,15 @@ struct ExportStats {
     field_entries: u64,
 }
 
+struct RebaseArtifactWriter {
+    objects_dir: PathBuf,
+    chunk_record_limit: usize,
+    next_chunk_index: u64,
+    pending_records: Vec<RebaseArtifactRecord>,
+    chunk_files: Vec<String>,
+    artifact_bytes: u64,
+}
+
 #[derive(Debug, Clone, Parser)]
 pub struct RebaseExportCommand {
     #[clap(
@@ -113,15 +143,18 @@ pub struct RebaseExportCommand {
 
     #[clap(long, default_value_t = DEFAULT_EXPORT_PAGE_SIZE)]
     pub page_size: usize,
+
+    #[clap(long, default_value_t = DEFAULT_EXPORT_CHUNK_RECORDS)]
+    pub chunk_records: usize,
 }
 
 #[derive(Debug, Clone, Parser)]
 pub struct RebaseBuildCommand {
     #[clap(
         long,
-        help = "Input RocksDB store dir (ideally a checkpoint store dir)"
+        help = "Deprecated: ignored. Rebase build now creates a fresh output DB from artifact only."
     )]
-    pub input_store_dir: PathBuf,
+    pub input_store_dir: Option<PathBuf>,
 
     #[clap(long, short = 'i')]
     pub artifact_dir: PathBuf,
@@ -157,44 +190,64 @@ impl RebaseExportCommand {
         )?;
 
         ensure!(self.page_size > 0, "page_size must be greater than zero");
+        ensure!(
+            self.chunk_records > 0,
+            "chunk_records must be greater than zero"
+        );
 
         if self.output_dir.exists() {
             bail!("output dir already exists: {:?}", self.output_dir);
         }
         fs::create_dir_all(&self.output_dir)?;
+        let objects_dir = self.output_dir.join(REBASE_OBJECTS_DIR);
+        let meta_dir = self.output_dir.join(REBASE_META_DIR);
+        fs::create_dir_all(&objects_dir)?;
+        fs::create_dir_all(&meta_dir)?;
 
-        let objects_path = self.output_dir.join(REBASE_OBJECTS_FILE);
-        let objects_file = File::create(&objects_path)?;
-        let mut writer = BufWriter::new(objects_file);
-
-        let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
-        let root_state = ObjectState::new_root(root.clone());
-        let mut stats = ExportStats::default();
-
-        let retained = export_object_record_recursive(
-            &resolver,
-            &root_state,
-            self.page_size,
-            &mut writer,
-            &mut stats,
-        )?;
-        ensure!(retained, "root object produced no retained fields");
-        writer.flush()?;
-
+        let genesis_info = moveos_store
+            .config_store
+            .get_genesis()?
+            .ok_or_else(|| anyhow!("genesis info not found in input source"))?;
         let sequencer_info = rooch_store
             .get_meta_store()
             .get_sequencer_info()?
             .ok_or_else(|| anyhow!("sequencer info not found in input source"))?;
 
+        let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
+        let root_state = ObjectState::new_root(root.clone());
+        let mut stats = ExportStats::default();
+        let mut artifact_writer = RebaseArtifactWriter::new(objects_dir, self.chunk_records);
+
+        let retained = export_object_record_recursive(
+            &resolver,
+            &root_state,
+            self.page_size,
+            &mut artifact_writer,
+            &mut stats,
+        )?;
+        ensure!(retained, "root object produced no retained fields");
+        artifact_writer.flush()?;
+
+        let genesis_file = meta_dir.join(REBASE_GENESIS_FILE);
+        fs::write(&genesis_file, bcs::to_bytes(&genesis_info)?)?;
+        let sequencer_file = meta_dir.join(REBASE_SEQUENCER_FILE);
+        fs::write(&sequencer_file, bcs::to_bytes(&sequencer_info)?)?;
+
         let manifest = RebaseManifest {
             artifact_version: REBASE_ARTIFACT_VERSION,
+            artifact_format: REBASE_ARTIFACT_FORMAT.to_string(),
             source_chain_id: source_chain_id.to_string(),
             cutover_state_root: format!("{:#x}", root.state_root()),
             cutover_tx_order: sequencer_info.last_order,
             filter_profile: SLIM_PROFILE_NAME.to_string(),
             dropped_domains: Vec::new(),
+            chunk_record_limit: self.chunk_records,
             object_records: stats.object_records,
             field_entries: stats.field_entries,
+            artifact_bytes: artifact_writer.artifact_bytes,
+            chunk_files: artifact_writer.chunk_files,
+            genesis_file: format!("{}/{}", REBASE_META_DIR, REBASE_GENESIS_FILE),
+            sequencer_file: format!("{}/{}", REBASE_META_DIR, REBASE_SEQUENCER_FILE),
         };
         serde_json::to_writer_pretty(
             File::create(self.output_dir.join(REBASE_MANIFEST_FILE))?,
@@ -224,16 +277,10 @@ impl RebaseBuildCommand {
         );
 
         let manifest_path = self.artifact_dir.join(REBASE_MANIFEST_FILE);
-        let objects_path = self.artifact_dir.join(REBASE_OBJECTS_FILE);
         ensure!(
             manifest_path.is_file(),
             "missing manifest: {:?}",
             manifest_path
-        );
-        ensure!(
-            objects_path.is_file(),
-            "missing object records: {:?}",
-            objects_path
         );
 
         let manifest: RebaseManifest = serde_json::from_reader(File::open(&manifest_path)?)?;
@@ -242,6 +289,11 @@ impl RebaseBuildCommand {
             "unsupported artifact version: {}",
             manifest.artifact_version
         );
+        ensure!(
+            manifest.artifact_format == REBASE_ARTIFACT_FORMAT,
+            "unsupported artifact format: {}",
+            manifest.artifact_format
+        );
         let artifact_chain_id = RoochChainID::from_str(&manifest.source_chain_id)?;
         ensure!(
             artifact_chain_id == self.chain_id,
@@ -249,6 +301,11 @@ impl RebaseBuildCommand {
             artifact_chain_id,
             self.chain_id
         );
+        if self.input_store_dir.is_some() {
+            eprintln!(
+                "warning: --input-store-dir is ignored; rebase build now creates a fresh output DB from artifact"
+            );
+        }
 
         let (output_store_dir, output_indexer_dir) =
             derive_output_paths(&self.output_data_dir, &self.chain_id);
@@ -268,8 +325,6 @@ impl RebaseBuildCommand {
                 .ok_or_else(|| anyhow!("invalid output store dir"))?,
         )?;
 
-        create_store_checkpoint(&self.input_store_dir, &output_store_dir)?;
-
         let registry_service = RegistryService::default();
         let output_opt = rooch_config::RoochOpt::new_with_default(
             Some(self.output_data_dir.clone()),
@@ -281,75 +336,80 @@ impl RebaseBuildCommand {
             output_opt.store_config(),
             &registry_service.default_registry(),
         )?;
+        let genesis_path = resolve_artifact_relative_path(
+            &self.artifact_dir,
+            &manifest.genesis_file,
+            REBASE_META_DIR,
+        )?;
+        let sequencer_path = resolve_artifact_relative_path(
+            &self.artifact_dir,
+            &manifest.sequencer_file,
+            REBASE_META_DIR,
+        )?;
+        let genesis_info: moveos_types::genesis_info::GenesisInfo =
+            bcs::from_bytes(&fs::read(genesis_path)?)?;
+        let sequencer_info: rooch_types::sequencer::SequencerInfo =
+            bcs::from_bytes(&fs::read(sequencer_path)?)?;
 
-        clear_state_nodes(&rooch_db.moveos_store)?;
-
-        let reader = BufReader::new(File::open(&objects_path)?);
         let mut rebuilt_roots: BTreeMap<ObjectID, H256> = BTreeMap::new();
+        let mut pending_fields: BTreeMap<ObjectID, Vec<RebaseFieldRecord>> = BTreeMap::new();
         let mut rebuilt_objects = 0u64;
         let mut rebuilt_root = None;
         let mut rebuilt_global_size = None;
-        let mut current_object_id: Option<ObjectID> = None;
-        let mut current_fields = Vec::new();
 
-        for line in reader.lines() {
-            let line = line?;
-            if line.trim().is_empty() {
-                continue;
-            }
-            let record: RebaseObjectRecord = serde_json::from_str(&line)?;
-            let object_id = ObjectID::from_str(&record.object_id)?;
-            if current_object_id
-                .as_ref()
-                .is_some_and(|current| current != &object_id)
-            {
-                let current_id = current_object_id
-                    .take()
-                    .ok_or_else(|| anyhow!("missing current object while rebuilding"))?;
-                let field_count = current_fields.len() as u64;
-                let new_state_root = rebuild_object_fields(
-                    &rooch_db.moveos_store,
-                    &mut rebuilt_roots,
-                    &current_id,
-                    std::mem::take(&mut current_fields),
-                )?;
-                rebuilt_roots.insert(current_id.clone(), new_state_root);
-                rebuilt_objects += 1;
+        for chunk_file in &manifest.chunk_files {
+            let chunk_path =
+                resolve_artifact_relative_path(&self.artifact_dir, chunk_file, REBASE_OBJECTS_DIR)?;
+            let chunk: RebaseObjectChunk = bcs::from_bytes(&fs::read(chunk_path)?)?;
+            for record in chunk.records {
+                match record {
+                    RebaseArtifactRecord::Object(record) => {
+                        pending_fields
+                            .entry(record.object_id)
+                            .or_default()
+                            .extend(record.fields);
+                    }
+                    RebaseArtifactRecord::EndOfObject { object_id } => {
+                        let fields = pending_fields.remove(&object_id).ok_or_else(|| {
+                            anyhow!("missing pending fields for object {}", object_id)
+                        })?;
+                        let field_count = fields.len() as u64;
+                        let new_state_root = rebuild_object_fields(
+                            &rooch_db.moveos_store,
+                            &mut rebuilt_roots,
+                            &object_id,
+                            fields,
+                        )?;
+                        rebuilt_roots.insert(object_id.clone(), new_state_root);
+                        rebuilt_objects += 1;
 
-                if current_id.is_root() {
-                    rebuilt_root = Some(new_state_root);
-                    rebuilt_global_size = Some(field_count);
+                        if object_id.is_root() {
+                            rebuilt_root = Some(new_state_root);
+                            rebuilt_global_size = Some(field_count);
+                        }
+                    }
                 }
             }
-
-            if current_object_id.is_none() {
-                current_object_id = Some(object_id);
-            }
-            current_fields.extend(record.fields);
         }
-
-        if let Some(object_id) = current_object_id.take() {
-            let field_count = current_fields.len() as u64;
-            let new_state_root = rebuild_object_fields(
-                &rooch_db.moveos_store,
-                &mut rebuilt_roots,
-                &object_id,
-                std::mem::take(&mut current_fields),
-            )?;
-            rebuilt_roots.insert(object_id.clone(), new_state_root);
-            rebuilt_objects += 1;
-
-            if object_id.is_root() {
-                rebuilt_root = Some(new_state_root);
-                rebuilt_global_size = Some(field_count);
-            }
-        }
+        ensure!(
+            pending_fields.is_empty(),
+            "artifact ended with {} unterminated object records",
+            pending_fields.len()
+        );
 
         let rebuilt_root =
             rebuilt_root.ok_or_else(|| anyhow!("root object record not found in artifact"))?;
         let rebuilt_global_size =
             rebuilt_global_size.ok_or_else(|| anyhow!("root object size not found in artifact"))?;
 
+        rooch_db
+            .moveos_store
+            .config_store
+            .save_genesis(genesis_info)?;
+        rooch_db
+            .rooch_store
+            .get_meta_store()
+            .save_sequencer_info(sequencer_info)?;
         rooch_db
             .moveos_store
             .config_store
@@ -451,11 +511,51 @@ fn all_column_families() -> Vec<&'static str> {
         .collect()
 }
 
+impl RebaseArtifactWriter {
+    fn new(objects_dir: PathBuf, chunk_record_limit: usize) -> Self {
+        Self {
+            objects_dir,
+            chunk_record_limit,
+            next_chunk_index: 0,
+            pending_records: Vec::with_capacity(chunk_record_limit),
+            chunk_files: Vec::new(),
+            artifact_bytes: 0,
+        }
+    }
+
+    fn push_record(&mut self, record: RebaseArtifactRecord) -> Result<()> {
+        self.pending_records.push(record);
+        if self.pending_records.len() >= self.chunk_record_limit {
+            self.flush()?;
+        }
+        Ok(())
+    }
+
+    fn flush(&mut self) -> Result<()> {
+        if self.pending_records.is_empty() {
+            return Ok(());
+        }
+
+        let chunk = RebaseObjectChunk {
+            records: std::mem::take(&mut self.pending_records),
+        };
+        let bytes = bcs::to_bytes(&chunk)?;
+        let file_name = format!("chunk-{:06}.bcs", self.next_chunk_index);
+        let file_path = self.objects_dir.join(&file_name);
+        fs::write(&file_path, &bytes)?;
+        self.chunk_files
+            .push(format!("{}/{}", REBASE_OBJECTS_DIR, file_name));
+        self.artifact_bytes += bytes.len() as u64;
+        self.next_chunk_index += 1;
+        Ok(())
+    }
+}
+
 fn export_object_record_recursive<R: StateResolver>(
     resolver: &R,
     object_state: &ObjectState,
     page_size: usize,
-    writer: &mut BufWriter<File>,
+    artifact_writer: &mut RebaseArtifactWriter,
     stats: &mut ExportStats,
 ) -> Result<bool> {
     if !object_state.metadata.has_fields() {
@@ -480,7 +580,7 @@ fn export_object_record_recursive<R: StateResolver>(
                     resolver,
                     &child_state,
                     page_size,
-                    writer,
+                    artifact_writer,
                     stats,
                 )?;
                 if !child_has_fields {
@@ -490,19 +590,18 @@ fn export_object_record_recursive<R: StateResolver>(
             }
 
             fields.push(RebaseFieldRecord {
-                field_key: field_key.to_string(),
-                object_state: child_state.to_string(),
+                field_key,
+                object_state: child_state,
             });
         }
 
         if !fields.is_empty() {
             let field_count = fields.len() as u64;
             let record = RebaseObjectRecord {
-                object_id: object_id.to_string(),
+                object_id: object_id.clone(),
                 fields,
             };
-            serde_json::to_writer(&mut *writer, &record)?;
-            writer.write_all(b"\n")?;
+            artifact_writer.push_record(RebaseArtifactRecord::Object(record))?;
             object_field_entries += field_count;
             wrote_record = true;
         }
@@ -516,6 +615,10 @@ fn export_object_record_recursive<R: StateResolver>(
     if !wrote_record {
         return Ok(false);
     }
+
+    artifact_writer.push_record(RebaseArtifactRecord::EndOfObject {
+        object_id: object_id.clone(),
+    })?;
 
     stats.object_records += 1;
     stats.field_entries += object_field_entries;
@@ -531,28 +634,38 @@ fn derive_output_paths(base_data_dir: &Path, chain_id: &RoochChainID) -> (PathBu
     )
 }
 
-fn create_store_checkpoint(input_store_dir: &Path, output_store_dir: &Path) -> Result<()> {
-    let rocksdb = RocksDB::new(
-        input_store_dir,
-        all_column_families(),
-        moveos_config::store_config::RocksdbConfig::default(),
-    )?;
-    rocksdb.flush_all()?;
-    rocksdb.flush_wal(true)?;
-    let checkpoint = Checkpoint::new(rocksdb.inner())?;
-    checkpoint.create_checkpoint(output_store_dir)?;
-    Ok(())
-}
+fn resolve_artifact_relative_path(
+    artifact_dir: &Path,
+    relative: &str,
+    expected_top_level: &str,
+) -> Result<PathBuf> {
+    let relative_path = Path::new(relative);
+    ensure!(
+        !relative_path.is_absolute(),
+        "artifact path must be relative: {}",
+        relative
+    );
 
-fn clear_state_nodes(output_store: &MoveOSStore) -> Result<()> {
-    let node_store = output_store.get_state_node_store();
-    let start = H256::zero();
-    let end = H256::from_slice(&[0xFFu8; 32]);
+    let mut components = relative_path.components();
+    let first = components
+        .next()
+        .ok_or_else(|| anyhow!("artifact path is empty"))?;
+    ensure!(
+        first == Component::Normal(expected_top_level.as_ref()),
+        "artifact path must stay under {}/: {}",
+        expected_top_level,
+        relative
+    );
 
-    node_store.delete_range_nodes(start, end, true)?;
-    node_store.delete_nodes_with_flush(vec![end], true)?;
-    node_store.flush_and_compact()?;
-    Ok(())
+    for component in components {
+        ensure!(
+            matches!(component, Component::Normal(_)),
+            "artifact path contains invalid component: {}",
+            relative
+        );
+    }
+
+    Ok(artifact_dir.join(relative_path))
 }
 
 fn rebuild_object_fields(
@@ -564,8 +677,8 @@ fn rebuild_object_fields(
     let mut update_set = UpdateSet::new();
 
     for field in fields {
-        let field_key = FieldKey::from_str(&field.field_key)?;
-        let mut object_state = ObjectState::from_str(&field.object_state)?;
+        let field_key = field.field_key;
+        let mut object_state = field.object_state;
         if object_state.metadata.has_fields() {
             let child_id = object_state.metadata.id.clone();
             let rebuilt_child_root = rebuilt_roots.remove(&child_id).ok_or_else(|| {
@@ -730,8 +843,14 @@ mod tests {
             .metadata
             .id
             .child_id(FieldKey::derive_from_string("child"));
+        let child_two_id = parent
+            .metadata
+            .id
+            .child_id(FieldKey::derive_from_string("z-child-two"));
         let child_leaf_id = child_id.child_id(FieldKey::derive_from_string("leaf"));
+        let child_two_leaf_id = child_two_id.child_id(FieldKey::derive_from_string("leaf"));
         let child_leaf = test_object_state(child_leaf_id.clone(), 99);
+        let child_two_leaf = test_object_state(child_two_leaf_id.clone(), 199);
         let mut child_updates = UpdateSet::new();
         child_updates.put(child_leaf_id.field_key(), child_leaf.clone());
         let mut child_tree = apply_fields(
@@ -745,6 +864,19 @@ mod tests {
         )?;
         let child_state =
             test_shared_container_with_root(child_id.clone(), child_tree.state_root, 1);
+        let mut child_two_updates = UpdateSet::new();
+        child_two_updates.put(child_two_leaf_id.field_key(), child_two_leaf.clone());
+        let mut child_two_tree = apply_fields(
+            &rooch_db.moveos_store,
+            *SPARSE_MERKLE_PLACEHOLDER_HASH,
+            child_two_updates,
+        )?;
+        apply_nodes(
+            &rooch_db.moveos_store,
+            std::mem::take(&mut child_two_tree.nodes),
+        )?;
+        let child_two_state =
+            test_shared_container_with_root(child_two_id.clone(), child_two_tree.state_root, 1);
 
         let kept_leaf_id = parent
             .metadata
@@ -754,6 +886,7 @@ mod tests {
         let mut parent_updates = UpdateSet::new();
         parent_updates.put(child_id.field_key(), child_state.clone());
         parent_updates.put(kept_leaf_id.field_key(), kept_leaf.clone());
+        parent_updates.put(child_two_id.field_key(), child_two_state.clone());
         let mut parent_tree = apply_fields(
             &rooch_db.moveos_store,
             *SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -764,7 +897,7 @@ mod tests {
             std::mem::take(&mut parent_tree.nodes),
         )?;
         parent.update_state_root(parent_tree.state_root);
-        parent.metadata.size = 2;
+        parent.metadata.size = 3;
 
         let utxo_store_id = test_utxo_store_id()?;
         let mut utxo_store = test_shared_container_with_root(utxo_store_id, *GENESIS_STATE_ROOT, 0);
@@ -819,26 +952,34 @@ mod tests {
     #[test]
     fn test_rebase_export_and_build_roundtrip() -> Result<()> {
         let source_dir = tempfile::tempdir()?;
-        let checkpoint_dir = prepare_source_db(source_dir.path())?;
+        let input_store_dir = prepare_source_db(source_dir.path())?;
 
         let artifact_dir = source_dir.path().join("artifact");
         let runtime = Runtime::new()?;
         let export_summary = runtime.block_on(
             RebaseExportCommand {
-                input_store_dir: Some(checkpoint_dir.clone()),
+                input_store_dir: Some(input_store_dir.clone()),
                 base_data_dir: None,
                 chain_id: Some(BuiltinChainID::Local.into()),
                 output_dir: artifact_dir.clone(),
-                page_size: 16,
+                page_size: 1,
+                chunk_records: 1,
             }
             .execute(),
         )?;
         assert!(export_summary.object_records >= 2);
+        let manifest: RebaseManifest =
+            serde_json::from_reader(File::open(artifact_dir.join(REBASE_MANIFEST_FILE))?)?;
+        assert_eq!(manifest.artifact_version, REBASE_ARTIFACT_VERSION);
+        assert_eq!(manifest.artifact_format, REBASE_ARTIFACT_FORMAT);
+        assert!(!manifest.chunk_files.is_empty());
+        assert!(artifact_dir.join(&manifest.genesis_file).is_file());
+        assert!(artifact_dir.join(&manifest.sequencer_file).is_file());
 
         let output_data_dir = source_dir.path().join("output");
         let build_summary = runtime.block_on(
             RebaseBuildCommand {
-                input_store_dir: checkpoint_dir,
+                input_store_dir: None,
                 artifact_dir,
                 output_data_dir: output_data_dir.clone(),
                 chain_id: BuiltinChainID::Local.into(),
@@ -865,11 +1006,22 @@ mod tests {
         let rebuilt_parent = resolver
             .get_object(&retained_parent_id)?
             .ok_or_else(|| anyhow!("retained parent object missing"))?;
-        assert_eq!(rebuilt_parent.metadata.size, 2);
+        assert_eq!(rebuilt_parent.metadata.size, 3);
         assert_ne!(
             build_summary.rebuilt_state_root,
             format!("{:#x}", *SPARSE_MERKLE_PLACEHOLDER_HASH)
         );
+        assert!(rebuilt_db
+            .moveos_store
+            .config_store
+            .get_genesis()?
+            .is_some());
+        let rebuilt_sequencer = rebuilt_db
+            .rooch_store
+            .get_meta_store()
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow!("missing rebuilt sequencer info"))?;
+        assert_eq!(rebuilt_sequencer.last_order, 0);
 
         Ok(())
     }

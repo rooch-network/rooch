@@ -215,64 +215,82 @@ This product should not be bundled into the MVP.
 
 ## 6. New Artifact Design
 
+### 6.0 Current implementation status
+
+The first refactor slice now exists in-tree:
+
+- `rebase-export` writes typed BCS chunks instead of JSONL string records
+- `rebase-build` creates a fresh output DB from the artifact instead of checkpoint-forking the full input store
+- artifact metadata now carries `genesis_info` and `sequencer_info`
+
+This materially reduces artifact size and removes the biggest mainnet blocker around cloning a huge RocksDB first.
+
+What it does **not** solve yet:
+
+- live continuation still has open questions around non-state CFs such as tx accumulator / DA metadata
+- the current in-tree builder should still be treated as an active-state rebuild tool first, not a guaranteed full-service continuation path
+
 The current flat CSV should not be stretched to fit recursive global state.
 Use an object-scoped artifact.
 
-### 6.1 Proposed bundle layout
+### 6.1 Current bundle layout
 
 ```text
 rebase_bundle/
   manifest.json
-  objects.ndjson.zst
-  metadata/
-    genesis_info.json
-    startup_info.json
-    source_sequencer_info.json
+  objects/
+    chunk-000000.bcs
+    chunk-000001.bcs
+    ...
+  meta/
+    genesis.bcs
+    sequencer.bcs
 ```
 
 ### 6.2 `manifest.json`
 
-Suggested contents:
+Current contents:
 
 - source chain id / network
 - source root state root
-- source startup size
-- source tx order if known
-- export timestamp
-- selected role:
-  - `full_active_state`
-  - `header_only_slim`
-- applied filters
+- source tx order at artifact cutover
+- artifact format / version
+- selected filter profile
+- applied dropped domains
 - object count
 - field count
-- section count
-- export version
+- chunk record limit
+- chunk file list
+- artifact byte size
+- meta file locations
 
-### 6.3 `objects.ndjson.zst`
+### 6.3 `objects/chunk-*.bcs`
 
-Use a sectioned stream, not a flat CSV.
+Use a typed BCS chunk stream, not a flat CSV or NDJSON blob.
 
 Suggested record types:
 
-- `begin_object`
-- `field`
+- `object`
 - `end_object`
 
-Example:
+Current record model:
 
-```json
-{"type":"begin_object","object_id":"0x0","depth":0}
-{"type":"field","parent_object_id":"0x0","field_key":"...","object_state":"..."}
-{"type":"field","parent_object_id":"0x0","field_key":"...","object_state":"..."}
-{"type":"end_object","object_id":"0x0"}
+```text
+chunk {
+  records: [
+    Object { object_id, fields[...] },
+    Object { object_id, fields[...] },
+    EndOfObject { object_id },
+  ]
+}
 ```
 
-The exporter should emit objects in post-order:
+The exporter must still emit objects in post-order:
 
 - child objects first
-- parent object section last
+- parent object records followed by an explicit `EndOfObject`
 
-This makes streaming bottom-up import much simpler.
+The explicit end marker is required because one large object may span multiple pages/chunks.
 
 ### 6.4 Why this format
 
