@@ -28,7 +28,7 @@ jobs:
   # Phase 1: Check changes
   check_changes:
     name: Check Changes
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       core: ${{ steps.changes.outputs.core }}
       sdk_web: ${{ steps.changes.outputs.sdk_web }}
@@ -64,10 +64,10 @@ jobs:
               - 'pnpm-workspace.yaml'
               - 'prettier.config.js'
 
-  # Phase 2: Build and verify (larger-runner)
+  # Phase 2: Build and verify on the self-hosted Linux runner
   build_and_verify:
     name: Build and Verify
-    runs-on: larger-runner
+    runs-on: self-hosted
     needs: check_changes
     if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
     timeout-minutes: 75
@@ -121,11 +121,11 @@ jobs:
             target/optci/framework-release
           retention-days: 1
 
-  # Phase 3: Rust tests (compile and run on ubuntu-latest with cache)
+  # Phase 3: Rust tests (compile and run on the self-hosted Linux runner with cache)
   test_rust_unit:
     name: Rust Unit Tests
-    runs-on: ubuntu-latest
-    needs: build_and_verify
+    runs-on: self-hosted
+    needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
     steps:
@@ -161,8 +161,8 @@ jobs:
 
   test_rust_framework:
     name: Rust Framework Tests
-    runs-on: ubuntu-latest
-    needs: build_and_verify
+    runs-on: self-hosted
+    needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 45
     steps:
@@ -198,8 +198,8 @@ jobs:
 
   test_rust_bitcoin:
     name: Rust Bitcoin Tests
-    runs-on: ubuntu-latest
-    needs: build_and_verify
+    runs-on: self-hosted
+    needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 30
     steps:
@@ -235,8 +235,8 @@ jobs:
 
   test_rust_integration_suite:
     name: Rust Integration Suite Tests
-    runs-on: ubuntu-latest
-    needs: build_and_verify
+    runs-on: self-hosted
+    needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
     steps:
@@ -272,8 +272,8 @@ jobs:
 
   lint:
     name: Rust Lint
-    runs-on: larger-runner
-    needs: build_and_verify
+    runs-on: self-hosted
+    needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 45
     steps:
@@ -296,14 +296,14 @@ jobs:
 
       - name: Run Rust Lint
         run: |
-          echo "Running lint on larger-runner (compiles workspace for analysis)..."
+          echo "Running lint on the self-hosted runner (compiles workspace for analysis)..."
           make lint
         env:
           ROOCH_BINARY_BUILD_PROFILE: optci
 
   test_move_frameworks:
     name: Move Framework Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
@@ -339,7 +339,7 @@ jobs:
 
   test_move_examples:
     name: Move Examples Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
@@ -371,7 +371,7 @@ jobs:
 
   test_sdk_web:
     name: SDK and Web Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
     timeout-minutes: 60
@@ -392,7 +392,7 @@ jobs:
           chmod +x target/optci/framework-release
 
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: '20.3.1'
 

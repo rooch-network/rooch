@@ -24,7 +24,7 @@ env:
 jobs:
   quick_checks:
     name: Quick Checks
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 10
     
     steps:
@@ -72,4 +72,3 @@ jobs:
         run: |
           chmod +x scripts/check_move_constant_errors.sh
           ./scripts/check_move_constant_errors.sh
-
