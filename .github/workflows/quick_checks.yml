@@ -24,7 +24,7 @@ env:
 jobs:
   quick_checks:
     name: Quick Checks
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     timeout-minutes: 10
     
     steps:

@@ -203,6 +203,7 @@ jobs:
       - name: Upload build failure logs
         if: failure()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: build-failure-${{ matrix.os }}-${{ matrix.target }}
           path: |

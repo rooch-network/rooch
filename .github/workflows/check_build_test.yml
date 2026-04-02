@@ -25,10 +25,11 @@ env:
   CARGO_INCREMENTAL: 0
 
 jobs:
+  # Route all Linux self-hosted jobs to the ephemeral VM runner.
   # Phase 1: Check changes
   check_changes:
     name: Check Changes
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     outputs:
       core: ${{ steps.changes.outputs.core }}
       sdk_web: ${{ steps.changes.outputs.sdk_web }}
@@ -67,7 +68,7 @@ jobs:
   # Phase 2: Build and verify on the self-hosted Linux runner
   build_and_verify:
     name: Build and Verify
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: check_changes
     if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
     timeout-minutes: 75
@@ -113,6 +114,7 @@ jobs:
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: rooch-binaries
           path: |
@@ -124,7 +126,7 @@ jobs:
   # Phase 3: Rust tests (compile and run on the self-hosted Linux runner with cache)
   test_rust_unit:
     name: Rust Unit Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
@@ -161,7 +163,7 @@ jobs:
 
   test_rust_framework:
     name: Rust Framework Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 45
@@ -198,7 +200,7 @@ jobs:
 
   test_rust_bitcoin:
     name: Rust Bitcoin Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 30
@@ -235,7 +237,7 @@ jobs:
 
   test_rust_integration_suite:
     name: Rust Integration Suite Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
@@ -272,7 +274,7 @@ jobs:
 
   lint:
     name: Rust Lint
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 45
@@ -303,7 +305,7 @@ jobs:
 
   test_move_frameworks:
     name: Move Framework Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
@@ -312,10 +314,38 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download build artifacts
+        id: download_binaries
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: rooch-binaries
           path: target/optci
+
+      - name: Check build artifact availability
+        id: binaries
+        shell: bash
+        run: |
+          if [[ -x target/optci/rooch && -x target/optci/rooch-genesis && -x target/optci/framework-release ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Build artifacts unavailable, will rebuild locally."
+          fi
+
+      - name: Setup Rust for local binary rebuild fallback
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies for local binary rebuild fallback
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci'
+          cache-on-failure: true
+
+      - name: Rebuild binaries locally when artifact download is unavailable
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        run: cargo build --profile optci --workspace --bins -j 16
 
       - name: Make binaries executable
         run: |
@@ -339,7 +369,7 @@ jobs:
 
   test_move_examples:
     name: Move Examples Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' }}
     timeout-minutes: 60
@@ -348,10 +378,38 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download build artifacts
+        id: download_binaries
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: rooch-binaries
           path: target/optci
+
+      - name: Check build artifact availability
+        id: binaries
+        shell: bash
+        run: |
+          if [[ -x target/optci/rooch && -x target/optci/rooch-genesis && -x target/optci/framework-release ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Build artifacts unavailable, will rebuild locally."
+          fi
+
+      - name: Setup Rust for local binary rebuild fallback
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies for local binary rebuild fallback
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci'
+          cache-on-failure: true
+
+      - name: Rebuild binaries locally when artifact download is unavailable
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        run: cargo build --profile optci --workspace --bins -j 16
 
       - name: Make binaries executable
         run: |
@@ -371,7 +429,7 @@ jobs:
 
   test_sdk_web:
     name: SDK and Web Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
     if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
     timeout-minutes: 60
@@ -380,10 +438,38 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download build artifacts
+        id: download_binaries
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: rooch-binaries
           path: target/optci
+
+      - name: Check build artifact availability
+        id: binaries
+        shell: bash
+        run: |
+          if [[ -x target/optci/rooch && -x target/optci/rooch-genesis && -x target/optci/framework-release ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Build artifacts unavailable, will rebuild locally."
+          fi
+
+      - name: Setup Rust for local binary rebuild fallback
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        uses: ./.github/actions/rust-setup
+
+      - name: Cache Rust dependencies for local binary rebuild fallback
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: 'ci'
+          cache-on-failure: true
+
+      - name: Rebuild binaries locally when artifact download is unavailable
+        if: ${{ steps.binaries.outputs.available != 'true' }}
+        run: cargo build --profile optci --workspace --bins -j 16
 
       - name: Make binaries executable
         run: |

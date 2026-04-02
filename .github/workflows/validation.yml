@@ -9,7 +9,7 @@ on:
 jobs:
   check_validation_changes:
     name: Check Validation Changes
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     outputs:
       dockerfile_debug: ${{ steps.changes.outputs.dockerfile_debug }}
       dockerfile: ${{ steps.changes.outputs.dockerfile }}
@@ -36,7 +36,7 @@ jobs:
 
   validate_dockerfile_debug:
     name: Validate Debug Dockerfile
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: check_validation_changes
     if: ${{ needs.check_validation_changes.outputs.dockerfile_debug == 'true' }}
     timeout-minutes: 30
@@ -49,7 +49,7 @@ jobs:
 
   validate_dockerfile:
     name: Validate Dockerfile
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: check_validation_changes
     if: ${{ needs.check_validation_changes.outputs.dockerfile == 'true' }}
     timeout-minutes: 30
@@ -62,7 +62,7 @@ jobs:
 
   validate_homebrew:
     name: Validate Homebrew Formula
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: check_validation_changes
     if: ${{ needs.check_validation_changes.outputs.homebrew == 'true' }}
     timeout-minutes: 15
@@ -76,7 +76,7 @@ jobs:
 
   shellcheck:
     name: ShellCheck
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: check_validation_changes
     if: ${{ needs.check_validation_changes.outputs.shell_scripts == 'true' }}
     timeout-minutes: 15
