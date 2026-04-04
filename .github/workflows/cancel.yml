@@ -6,7 +6,7 @@ on:
 jobs:
   cancel:
     name: 'Cancel Previous Runs'
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
+    runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - name: Skip legacy cancel workflow
