@@ -29,7 +29,7 @@ env:
 jobs:
   quick_checks:
     name: Quick Checks
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     timeout-minutes: 10
     
     steps:
