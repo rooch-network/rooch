@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   dependency-review:
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
+    runs-on: ubuntu-latest
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4

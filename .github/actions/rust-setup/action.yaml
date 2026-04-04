@@ -1,7 +1,46 @@
 runs:
   using: composite
   steps:
-    - run: sudo apt-get update && sudo apt-get install ca-certificates gcc libc6-dev build-essential libsqlite3-dev libprotobuf-dev protobuf-compiler wget cmake make clang g++ libsnappy-dev llvm libclang-dev curl git libpq-dev libssl-dev pkg-config lsof lld --no-install-recommends --assume-yes
+    - run: |
+        set -euo pipefail
+        packages=(
+          ca-certificates
+          gcc
+          libc6-dev
+          build-essential
+          libsqlite3-dev
+          libprotobuf-dev
+          protobuf-compiler
+          wget
+          cmake
+          make
+          clang
+          g++
+          libsnappy-dev
+          llvm
+          libclang-dev
+          curl
+          git
+          libpq-dev
+          libssl-dev
+          pkg-config
+          lsof
+          lld
+        )
+
+        missing=()
+        for pkg in "${packages[@]}"; do
+          if ! dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
+            missing+=("$pkg")
+          fi
+        done
+
+        if [ "${#missing[@]}" -gt 0 ]; then
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes "${missing[@]}"
+        else
+          echo "All required apt packages already installed"
+        fi
       shell: bash
 
     - uses: dtolnay/rust-toolchain@1.91.1
