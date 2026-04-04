@@ -155,8 +155,12 @@ jobs:
 
       - name: Install cargo-nextest
         run: |
-          echo "Installing cargo-nextest from GitHub releases..."
-          curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          if cargo nextest --version >/dev/null 2>&1; then
+            echo "Using preinstalled cargo-nextest"
+          else
+            echo "Installing cargo-nextest from GitHub releases..."
+            curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          fi
           cargo nextest --version
 
       - name: Run Rust unit tests
@@ -192,8 +196,12 @@ jobs:
 
       - name: Install cargo-nextest
         run: |
-          echo "Installing cargo-nextest from GitHub releases..."
-          curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          if cargo nextest --version >/dev/null 2>&1; then
+            echo "Using preinstalled cargo-nextest"
+          else
+            echo "Installing cargo-nextest from GitHub releases..."
+            curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          fi
           cargo nextest --version
 
       - name: Run Rust framework tests
@@ -229,8 +237,12 @@ jobs:
 
       - name: Install cargo-nextest
         run: |
-          echo "Installing cargo-nextest from GitHub releases..."
-          curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          if cargo nextest --version >/dev/null 2>&1; then
+            echo "Using preinstalled cargo-nextest"
+          else
+            echo "Installing cargo-nextest from GitHub releases..."
+            curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          fi
           cargo nextest --version
 
       - name: Run Rust Bitcoin tests
@@ -266,8 +278,12 @@ jobs:
 
       - name: Install cargo-nextest
         run: |
-          echo "Installing cargo-nextest from GitHub releases..."
-          curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          if cargo nextest --version >/dev/null 2>&1; then
+            echo "Using preinstalled cargo-nextest"
+          else
+            echo "Installing cargo-nextest from GitHub releases..."
+            curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
+          fi
           cargo nextest --version
 
       - name: Run Rust integration suite tests
