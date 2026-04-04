@@ -27,6 +27,7 @@ env:
   RUST_BACKTRACE: 1
   ENV_TEST_ON_CI: 1
   CARGO_INCREMENTAL: 0
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
 
 jobs:
   # Route all Linux self-hosted jobs to the ephemeral VM runner.

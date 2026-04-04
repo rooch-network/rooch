@@ -33,6 +33,7 @@ env:
   # Optimize for disk space and stability
   CARGO_BUILD_JOBS: 2
   CARGO_NET_RETRY: 10
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
 
 jobs:
   cross_platform_build:
