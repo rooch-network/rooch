@@ -10,6 +10,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: true
 
+env:
+  GIT_CONFIG_COUNT: 2
+  GIT_CONFIG_KEY_0: http.version
+  GIT_CONFIG_VALUE_0: HTTP/1.1
+  GIT_CONFIG_KEY_1: http.maxRequests
+  GIT_CONFIG_VALUE_1: "2"
+
 jobs:
   check_validation_changes:
     name: Check Validation Changes

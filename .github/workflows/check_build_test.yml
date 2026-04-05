@@ -28,6 +28,11 @@ env:
   ENV_TEST_ON_CI: 1
   CARGO_INCREMENTAL: 0
   CARGO_NET_GIT_FETCH_WITH_CLI: true
+  GIT_CONFIG_COUNT: 2
+  GIT_CONFIG_KEY_0: http.version
+  GIT_CONFIG_VALUE_0: HTTP/1.1
+  GIT_CONFIG_KEY_1: http.maxRequests
+  GIT_CONFIG_VALUE_1: "2"
 
 jobs:
   # Route all Linux self-hosted jobs to the ephemeral VM runner.
