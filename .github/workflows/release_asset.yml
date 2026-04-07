@@ -13,12 +13,12 @@ jobs:
       matrix:
         include:
           - platform: ubuntu-latest
-            runner: self-hosted
+            runner_json: '["self-hosted","larger-runner","ephemeral-vm"]'
           - platform: ubuntu-22.04
-            runner: self-hosted
+            runner_json: '["self-hosted","larger-runner","ephemeral-vm"]'
           - platform: macos-latest
-            runner: macos-latest
-    runs-on: ${{ matrix.runner }}
+            runner_json: '"macos-latest"'
+    runs-on: ${{ fromJSON(matrix.runner_json) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -27,7 +27,7 @@ jobs:
         with:
           toolchain: 1.91.1
       - name: Install LLVM and Clang (self-hosted Ubuntu)
-        if: matrix.runner == 'self-hosted'
+        if: contains(matrix.runner_json, 'self-hosted')
         shell: bash
         run: |
           sudo apt-get update
@@ -54,6 +54,7 @@ jobs:
       - name: upload artifact asset
         uses: actions/upload-artifact@v4
         if: ${{ github.event_name != 'release'}}
+        continue-on-error: true
         with:
           name: rooch-${{ matrix.platform }}.zip
           path: ./rooch-${{ matrix.platform }}.zip

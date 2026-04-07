@@ -9,6 +9,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   packages: write
@@ -16,7 +20,7 @@ permissions:
 
 jobs:
   check-docker-label:
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     outputs:
       has-label: ${{ steps.check.outputs.has-label }}
     steps:
@@ -41,7 +45,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || needs.check-docker-label.outputs.has-label == 'true' }}
     needs: [check-docker-label]
     name: Build Docker Images
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -98,6 +102,7 @@ jobs:
       - name: Upload Docker tag artifact
         if: ${{ github.event_name != 'pull_request' }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: docker_tag
           path: docker_tag.txt
@@ -105,7 +110,7 @@ jobs:
   comment-pr-images:
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && needs.check-docker-label.outputs.has-label == 'true' }}
     name: Comment PR with image tags
-    runs-on: self-hosted
+    runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs:
       - check-docker-label
       - build-docker

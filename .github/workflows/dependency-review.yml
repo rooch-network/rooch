@@ -12,6 +12,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+
 # If using a dependency submission action in this workflow this permission will need to be set to:
 #
 # permissions:
