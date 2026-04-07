@@ -13,7 +13,7 @@ use rooch_types::rooch_network::RoochChainID;
 use serde_json;
 use std::path::PathBuf;
 
-/// Replay incremental changesets onto a snapshot
+/// Replay incremental changesets onto a snapshot using a fresh output DB
 #[derive(Debug, Parser)]
 pub struct ReplayCommand {
     /// Base data directory for the blockchain data
@@ -37,7 +37,7 @@ pub struct ReplayCommand {
     pub to_order: u64,
 
     /// Output data directory (base dir). Store will be created at
-    /// <output>/<chain>/roochdb/store as a RocksDB checkpoint.
+    /// <output>/<chain>/roochdb/store as a fresh RocksDB database.
     #[clap(long, short = 'o', required = true)]
     pub output: PathBuf,
 
@@ -57,29 +57,13 @@ pub struct ReplayCommand {
     #[clap(long)]
     pub verbose: bool,
 
-    /// Enable history pruning during replay
-    #[clap(long)]
-    pub history_prune: bool,
-
-    /// Keep history from this tx_order (inclusive). Default is snapshot tx_order
+    /// Keep history from this tx_order (inclusive). Default is from_order
     #[clap(long)]
     pub history_retain_from: Option<u64>,
 
     /// Alternative: keep history for last N orders
     #[clap(long, conflicts_with = "history_retain_from")]
     pub history_retain_window: Option<u64>,
-
-    /// Comma-separated list of column families to prune.
-    /// Note: `event`/`event_handle`/`transaction_acc_node` pruning is not implemented yet.
-    #[clap(
-        long,
-        default_value = "transaction,transaction_execution_info,state_change_set,tx_sequence_info_mapping,da_block_submit_state"
-    )]
-    pub history_prune_cfs: String,
-
-    /// Dry-run mode: only report would-be deletions without modifying database
-    #[clap(long)]
-    pub history_dry_run: bool,
 }
 
 #[async_trait]
@@ -94,34 +78,26 @@ impl CommandAction<String> for ReplayCommand {
         );
         let rooch_store = rooch_db.rooch_store;
 
-        // Build history pruning config if enabled
-        let history_prune = if self.history_prune {
-            // Determine retain_from based on flags
-            let retain_from = if let Some(window) = self.history_retain_window {
-                // Calculate retain_from based on window
-                self.to_order.saturating_sub(window).saturating_add(1)
-            } else if let Some(from) = self.history_retain_from {
-                from
-            } else {
-                // Default: use snapshot tx_order (will be resolved during replay)
-                0 // Will be resolved from snapshot metadata
-            };
-
-            Some(HistoryPruneConfig {
-                enabled: true,
-                retain_from,
-                retain_window: self.history_retain_window,
-                prune_cfs: self
-                    .history_prune_cfs
-                    .split(',')
-                    .map(|s| s.trim().to_string())
-                    .filter(|s| !s.is_empty())
-                    .collect(),
-                dry_run: self.history_dry_run,
-            })
+        let retain_from = if let Some(window) = self.history_retain_window {
+            self.to_order.saturating_sub(window).saturating_add(1)
+        } else if let Some(from) = self.history_retain_from {
+            from
         } else {
-            None
+            self.from_order
         };
+
+        let history_prune = Some(HistoryPruneConfig {
+            enabled: true,
+            retain_from,
+            retain_window: self.history_retain_window,
+            prune_cfs: vec![
+                "transaction".to_string(),
+                "transaction_execution_info".to_string(),
+                "state_change_set".to_string(),
+                "tx_sequence_info_mapping".to_string(),
+            ],
+            dry_run: false,
+        });
 
         // Create replay configuration
         let replay_config = ReplayConfig {
@@ -173,7 +149,8 @@ impl CommandAction<String> for ReplayCommand {
             "output_store_dir": output_store_dir,
             "batch_size": self.batch_size,
             "verify_root": self.verify_root,
-            "history_prune_enabled": self.history_prune,
+            "history_prune_enabled": true,
+            "history_retain_from": retain_from,
             "replay_report": {
                 "changesets_processed": replay_report.changesets_processed,
                 "nodes_updated": replay_report.nodes_updated,
