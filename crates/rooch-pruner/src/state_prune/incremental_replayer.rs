@@ -7,8 +7,9 @@ use move_core_types::effects::Op;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_store::transaction_store::TransactionStore as MoveOSTransactionStore;
 use moveos_store::{
-    MoveOSStore, EVENT_COLUMN_FAMILY_NAME, EVENT_HANDLE_COLUMN_FAMILY_NAME,
-    STATE_NODE_COLUMN_FAMILY_NAME, TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
+    MoveOSStore, CONFIG_GENESIS_COLUMN_FAMILY_NAME, EVENT_COLUMN_FAMILY_NAME,
+    EVENT_HANDLE_COLUMN_FAMILY_NAME, STATE_NODE_COLUMN_FAMILY_NAME,
+    TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
 };
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
@@ -18,7 +19,6 @@ use moveos_types::state_resolver::StateResolver;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
 use raw_store::SchemaStore;
-use rocksdb::checkpoint::Checkpoint;
 use rooch_config::state_prune::{
     HistoryPruneCFStats, HistoryPruneConfig, HistoryPruneReport, ReplayConfig, ReplayReport,
 };
@@ -27,9 +27,9 @@ use rooch_store::proposer_store::ProposerStore;
 use rooch_store::state_store::StateStore;
 use rooch_store::{
     RoochStore, DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME, DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME,
-    META_SEQUENCER_INFO_COLUMN_FAMILY_NAME, PROPOSER_LAST_BLOCK_COLUMN_FAMILY_NAME,
-    STATE_CHANGE_SET_COLUMN_FAMILY_NAME, TRANSACTION_COLUMN_FAMILY_NAME,
-    TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME, TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+    PROPOSER_LAST_BLOCK_COLUMN_FAMILY_NAME, STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
+    TRANSACTION_COLUMN_FAMILY_NAME, TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME,
+    TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
 };
 use rooch_types::sequencer::SequencerInfo;
 use serde_json;
@@ -41,6 +41,17 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info, warn};
+
+const REQUIRED_REPLAY_COLUMN_FAMILIES: &[&str] = &[
+    TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME,
+    TRANSACTION_COLUMN_FAMILY_NAME,
+    TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
+    TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+    CONFIG_GENESIS_COLUMN_FAMILY_NAME,
+    DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME,
+    DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME,
+    PROPOSER_LAST_BLOCK_COLUMN_FAMILY_NAME,
+];
 
 /// Incremental replayer for applying changesets to a snapshot
 pub struct IncrementalReplayer {
@@ -99,13 +110,13 @@ impl IncrementalReplayer {
         // Load snapshot metadata and state store
         let snapshot_meta = self.load_snapshot_metadata(input_snapshot_path)?;
         let snapshot_store = self.load_snapshot_store(input_snapshot_path)?;
+        let source_last_order = self.load_source_last_order()?;
 
-        // Build output DB from live store checkpoint
-        self.prepare_output_store(output_dir)?;
+        // Build output DB from a fresh store and copy only required column families.
+        self.prepare_fresh_output_store(output_dir)?;
+        metadata.mark_in_progress("Copying required column families".to_string(), 10.0);
+        self.copy_required_cfs(output_dir)?;
         let (output_store, _) = self.load_output_stores(output_dir)?;
-
-        metadata.mark_in_progress("Resetting state nodes".to_string(), 10.0);
-        self.clear_state_nodes(&output_store)?;
 
         metadata.mark_in_progress("Importing snapshot nodes".to_string(), 20.0);
         self.import_snapshot_nodes(&snapshot_store, &output_store, &mut report, &mut metadata)?;
@@ -152,7 +163,13 @@ impl IncrementalReplayer {
         }
 
         metadata.mark_in_progress("Trimming output metadata".to_string(), 92.0);
-        self.trim_output_store(&output_store, output_dir, to_order, &mut metadata)?;
+        self.trim_output_store(
+            &output_store,
+            output_dir,
+            source_last_order,
+            to_order,
+            &mut metadata,
+        )?;
 
         // After trim/refresh, ensure startup_info and sequencer_info are consistent
         self.verify_startup_sequencer_consistency(&output_store, output_dir, to_order)?;
@@ -262,8 +279,24 @@ impl IncrementalReplayer {
         Ok(snapshot_store)
     }
 
-    /// Create output database by checkpointing the live store
-    fn prepare_output_store(&self, output_dir: &Path) -> Result<()> {
+    fn all_column_families() -> Vec<&'static str> {
+        let mut column_families = moveos_store::StoreMeta::get_column_family_names().to_vec();
+        column_families.extend_from_slice(rooch_store::StoreMeta::get_column_family_names());
+        column_families.sort();
+        column_families.dedup();
+        column_families
+    }
+
+    fn load_source_last_order(&self) -> Result<u64> {
+        self.rooch_store
+            .get_meta_store()
+            .get_sequencer_info()?
+            .map(|info| info.last_order)
+            .ok_or_else(|| anyhow::anyhow!("Sequencer info not found in live store"))
+    }
+
+    /// Create an empty output database with the full set of column families.
+    fn prepare_fresh_output_store(&self, output_dir: &Path) -> Result<()> {
         if output_dir.exists() {
             return Err(anyhow::anyhow!(
                 "Output directory already exists: {:?}. Please provide an empty path.",
@@ -275,20 +308,62 @@ impl IncrementalReplayer {
             fs::create_dir_all(parent)?;
         }
 
-        let rocks_db = self
+        raw_store::rocks::RocksDB::new(
+            output_dir,
+            Self::all_column_families(),
+            RocksdbConfig::default(),
+        )?;
+
+        info!("Created fresh output database at {:?}", output_dir);
+        Ok(())
+    }
+
+    fn copy_required_cfs(&self, output_dir: &Path) -> Result<()> {
+        let source_db = self
             .rooch_store
             .store_instance
             .db()
-            .ok_or_else(|| anyhow::anyhow!("Failed to access RocksDB instance"))?
+            .ok_or_else(|| anyhow::anyhow!("Failed to access source RocksDB instance"))?
+            .inner();
+        let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
+
+        let target_db = output_rooch_store
+            .store_instance
+            .db()
+            .ok_or_else(|| anyhow::anyhow!("Failed to access output RocksDB instance"))?
             .inner();
 
-        let checkpoint = Checkpoint::new(rocks_db)
-            .map_err(|e| anyhow::anyhow!("Checkpoint init failed: {}", e))?;
-        checkpoint
-            .create_checkpoint(output_dir)
-            .map_err(|e| anyhow::anyhow!("Failed to create output checkpoint: {}", e))?;
+        for cf_name in REQUIRED_REPLAY_COLUMN_FAMILIES {
+            let source_cf = source_db
+                .cf_handle(cf_name)
+                .ok_or_else(|| anyhow::anyhow!("Source CF not found: {}", cf_name))?;
+            let target_cf = target_db
+                .cf_handle(cf_name)
+                .ok_or_else(|| anyhow::anyhow!("Target CF not found: {}", cf_name))?;
 
-        info!("Created output database checkpoint at {:?}", output_dir);
+            let mut batch = rocksdb::WriteBatch::default();
+            let mut count = 0usize;
+            let iter = source_db.iterator_cf(source_cf, rocksdb::IteratorMode::Start);
+
+            for item in iter {
+                let (key, value) = item?;
+                batch.put_cf(&target_cf, key, value);
+                count += 1;
+
+                if count % self.config.default_batch_size.max(1) == 0 {
+                    target_db.write(batch)?;
+                    batch = rocksdb::WriteBatch::default();
+                }
+            }
+
+            if !batch.is_empty() {
+                target_db.write(batch)?;
+            }
+
+            target_db.flush_cf(&target_cf)?;
+            info!("Copied CF {} with {} entries", cf_name, count);
+        }
+
         Ok(())
     }
 
@@ -301,16 +376,13 @@ impl IncrementalReplayer {
             ));
         }
 
-        // Combine MoveOS + Rooch CFs and ensure uniqueness
-        let mut column_families = moveos_store::StoreMeta::get_column_family_names().to_vec();
-        column_families.extend_from_slice(rooch_store::StoreMeta::get_column_family_names());
-        column_families.sort();
-        column_families.dedup();
-
         let registry = Registry::new();
         let db_metrics = DBMetrics::get_or_init(&registry).clone();
-        let rocksdb =
-            raw_store::rocks::RocksDB::new(output_dir, column_families, RocksdbConfig::default())?;
+        let rocksdb = raw_store::rocks::RocksDB::new(
+            output_dir,
+            Self::all_column_families(),
+            RocksdbConfig::default(),
+        )?;
         let instance = raw_store::StoreInstance::new_db_instance(rocksdb, db_metrics);
 
         // Share the same instance between MoveOSStore and RoochStore to avoid locks
@@ -319,18 +391,6 @@ impl IncrementalReplayer {
             .map_err(|e| anyhow::anyhow!("Failed to load output RoochStore: {}", e))?;
 
         Ok((moveos_store, rooch_store))
-    }
-
-    /// Clear state nodes in output store before importing snapshot
-    fn clear_state_nodes(&self, output_store: &MoveOSStore) -> Result<()> {
-        let node_store = output_store.get_state_node_store();
-        let start = H256::zero();
-        let end = H256::from_slice(&[0xFFu8; 32]);
-
-        node_store.delete_range_nodes(start, end, true)?;
-        node_store.delete_nodes_with_flush(vec![end], true)?;
-
-        Ok(())
     }
 
     /// Import snapshot nodes into output store
@@ -477,22 +537,17 @@ impl IncrementalReplayer {
         &self,
         output_store: &MoveOSStore,
         output_dir: &Path,
+        source_last_order: u64,
         to_order: u64,
         metadata: &mut StatePruneMetadata,
     ) -> Result<()> {
         let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
 
-        let sequencer_info = output_rooch_store
-            .get_meta_store()
-            .get_sequencer_info()?
-            .ok_or_else(|| anyhow::anyhow!("Sequencer info not found in output store"))?;
-        let last_order = sequencer_info.last_order;
-
-        if to_order > last_order {
+        if to_order > source_last_order {
             return Err(anyhow::anyhow!(
-                "to_order {} exceeds output store last_order {}",
+                "to_order {} exceeds source last_order {}",
                 to_order,
-                last_order
+                source_last_order
             ));
         }
 
@@ -512,7 +567,7 @@ impl IncrementalReplayer {
             .get_meta_store()
             .save_sequencer_info_unsafe(new_sequencer_info)?;
 
-        if to_order == last_order {
+        if to_order == source_last_order {
             info!(
                 "Output store already at to_order {}, refreshed sequencer info",
                 to_order
@@ -521,7 +576,10 @@ impl IncrementalReplayer {
         }
 
         metadata.mark_in_progress(
-            format!("Trimming output metadata ({} -> {})", last_order, to_order),
+            format!(
+                "Trimming output metadata ({} -> {})",
+                source_last_order, to_order
+            ),
             92.0,
         );
 
@@ -532,8 +590,8 @@ impl IncrementalReplayer {
             .ok_or_else(|| anyhow::anyhow!("to_order overflow"))?;
         let batch_size = self.config.default_batch_size.max(1) as u64;
 
-        while start <= last_order {
-            let end = min(last_order, start.saturating_add(batch_size - 1));
+        while start <= source_last_order {
+            let end = min(source_last_order, start.saturating_add(batch_size - 1));
             let orders: Vec<u64> = (start..=end).collect();
             let tx_hashes = output_rooch_store.transaction_store.get_tx_hashes(orders)?;
 
@@ -1439,10 +1497,43 @@ impl IncrementalReplayer {
 mod tests {
     use super::*;
     use crate::state_prune::metadata::OperationStatus;
+    use accumulator::accumulator_info::AccumulatorInfo;
+    use moveos_common::utils::to_bytes;
+    use moveos_config::store_config::RocksdbConfig;
+    use moveos_store::{MoveOSStore, CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME};
+    use prometheus::Registry;
+    use raw_store::metrics::DBMetrics;
+    use raw_store::rocks::RocksDB;
+    use raw_store::StoreInstance;
     use rooch_config::state_prune::SnapshotMeta;
     use rooch_store::RoochStore;
+    use rooch_types::transaction::{LedgerTransaction, RoochTransaction, TransactionSequenceInfo};
+    use std::collections::HashSet;
     use std::fs;
+    use std::sync::Arc;
     use tempfile::TempDir;
+
+    fn put_raw_cf(store: &RoochStore, cf_name: &str, key: Vec<u8>, value: Vec<u8>) {
+        let db = store.store_instance.db().unwrap().inner();
+        let cf = db.cf_handle(cf_name).unwrap();
+        db.put_cf(&cf, key, value).unwrap();
+    }
+
+    fn create_combined_test_stores() -> (MoveOSStore, RoochStore, TempDir) {
+        let temp_dir = TempDir::new().unwrap();
+        let registry = Registry::new();
+        let db = RocksDB::new(
+            temp_dir.path(),
+            IncrementalReplayer::all_column_families(),
+            RocksdbConfig::default(),
+        )
+        .unwrap();
+        let db_metrics = DBMetrics::new(&registry);
+        let instance = StoreInstance::new_db_instance(db, Arc::new(db_metrics));
+        let moveos_store = MoveOSStore::new_with_instance(instance.clone(), &registry).unwrap();
+        let rooch_store = RoochStore::new_with_instance(instance, &registry).unwrap();
+        (moveos_store, rooch_store, temp_dir)
+    }
 
     #[test]
     fn test_incremental_replayer_creation() {
@@ -1462,6 +1553,151 @@ mod tests {
         let (rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
         let replayer = IncrementalReplayer::new(config, rooch_store);
         assert!(replayer.is_err());
+    }
+
+    #[test]
+    fn test_prepare_fresh_output_store_creates_all_column_families() {
+        let config = ReplayConfig::default();
+        let (rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
+        let replayer = IncrementalReplayer::new(config, rooch_store).unwrap();
+        let output_dir = TempDir::new().unwrap();
+        let output_store = output_dir.path().join("store");
+
+        replayer.prepare_fresh_output_store(&output_store).unwrap();
+
+        let actual: HashSet<_> = raw_store::rocks::RocksDB::list_cf(&output_store)
+            .unwrap()
+            .into_iter()
+            .collect();
+
+        for cf in IncrementalReplayer::all_column_families() {
+            assert!(actual.contains(cf), "missing column family {}", cf);
+        }
+    }
+
+    #[test]
+    fn test_copy_required_cfs_skips_runtime_rebuilt_column_families() {
+        let config = ReplayConfig::default();
+        let (_moveos_store, rooch_store, _tmpdir) = create_combined_test_stores();
+        let replayer = IncrementalReplayer::new(config, rooch_store.clone()).unwrap();
+
+        put_raw_cf(
+            &rooch_store,
+            TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME,
+            vec![1, 2, 3],
+            vec![4, 5, 6],
+        );
+        put_raw_cf(
+            &rooch_store,
+            CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME,
+            b"startup_info".to_vec(),
+            vec![7, 8, 9],
+        );
+
+        let output_dir = TempDir::new().unwrap();
+        let output_store = output_dir.path().join("store");
+        replayer.prepare_fresh_output_store(&output_store).unwrap();
+        replayer.copy_required_cfs(&output_store).unwrap();
+
+        let (moveos_store, output_rooch_store) =
+            replayer.load_output_stores(&output_store).unwrap();
+        let output_db = output_rooch_store.store_instance.db().unwrap().inner();
+
+        let copied_cf = output_db
+            .cf_handle(TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME)
+            .unwrap();
+        assert_eq!(
+            output_db
+                .get_pinned_cf(&copied_cf, vec![1, 2, 3])
+                .unwrap()
+                .unwrap()
+                .to_vec(),
+            vec![4, 5, 6]
+        );
+
+        assert!(
+            moveos_store
+                .get_config_store()
+                .get_startup_info()
+                .unwrap()
+                .is_none(),
+            "startup_info should be rebuilt instead of copied"
+        );
+    }
+
+    #[test]
+    fn test_trim_output_store_rewrites_sequencer_without_copied_meta() {
+        let config = ReplayConfig::default();
+        let (rooch_store, _rooch_tmpdir) = RoochStore::mock_rooch_store().unwrap();
+        let replayer = IncrementalReplayer::new(config, rooch_store).unwrap();
+
+        let output_dir = TempDir::new().unwrap();
+        let output_store_path = output_dir.path().join("store");
+        replayer
+            .prepare_fresh_output_store(&output_store_path)
+            .unwrap();
+        let (moveos_store, output_rooch_store) =
+            replayer.load_output_stores(&output_store_path).unwrap();
+
+        let tx = LedgerTransaction::new_l2_tx(
+            RoochTransaction::mock(),
+            TransactionSequenceInfo::new(0, vec![], AccumulatorInfo::default(), 0),
+        );
+        let tx_hash = {
+            let mut tx_clone = tx.clone();
+            tx_clone.tx_hash()
+        };
+
+        put_raw_cf(
+            &output_rooch_store,
+            TRANSACTION_COLUMN_FAMILY_NAME,
+            to_bytes(&tx_hash).unwrap(),
+            bcs::to_bytes(&tx).unwrap(),
+        );
+        put_raw_cf(
+            &output_rooch_store,
+            TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+            to_bytes(&0u64).unwrap(),
+            to_bytes(&tx_hash).unwrap(),
+        );
+
+        moveos_store
+            .get_config_store()
+            .save_startup_info(StartupInfo::new(H256::random(), 1))
+            .unwrap();
+
+        replayer
+            .trim_output_store(
+                &moveos_store,
+                &output_store_path,
+                0,
+                0,
+                &mut StatePruneMetadata::new(
+                    crate::state_prune::OperationType::Replay {
+                        snapshot_path: PathBuf::from("/tmp/snapshot"),
+                        from_order: 0,
+                        to_order: 0,
+                        output_dir: output_store_path.clone(),
+                    },
+                    serde_json::json!({}),
+                ),
+            )
+            .unwrap();
+
+        let (_moveos_store, output_rooch_store) =
+            replayer.load_output_stores(&output_store_path).unwrap();
+        let sequencer_info = output_rooch_store
+            .get_meta_store()
+            .get_sequencer_info()
+            .unwrap()
+            .unwrap();
+        assert_eq!(sequencer_info.last_order, 0);
+
+        assert!(output_rooch_store
+            .get_meta_store()
+            .get_sequencer_info()
+            .unwrap()
+            .is_some());
     }
 
     #[test]

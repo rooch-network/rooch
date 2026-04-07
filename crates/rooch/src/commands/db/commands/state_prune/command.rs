@@ -19,7 +19,7 @@ pub struct StatePruneCommand {
 pub enum StatePruneAction {
     /// Create a snapshot of active state nodes
     Snapshot(SnapshotCommand),
-    /// Replay incremental changesets onto a snapshot
+    /// Replay incremental changesets onto a snapshot using a fresh output DB
     Replay(ReplayCommand),
 }
 

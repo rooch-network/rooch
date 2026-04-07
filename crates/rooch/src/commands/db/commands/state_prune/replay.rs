@@ -13,7 +13,7 @@ use rooch_types::rooch_network::RoochChainID;
 use serde_json;
 use std::path::PathBuf;
 
-/// Replay incremental changesets onto a snapshot
+/// Replay incremental changesets onto a snapshot using a fresh output DB
 #[derive(Debug, Parser)]
 pub struct ReplayCommand {
     /// Base data directory for the blockchain data
@@ -37,7 +37,7 @@ pub struct ReplayCommand {
     pub to_order: u64,
 
     /// Output data directory (base dir). Store will be created at
-    /// <output>/<chain>/roochdb/store as a RocksDB checkpoint.
+    /// <output>/<chain>/roochdb/store as a fresh RocksDB database.
     #[clap(long, short = 'o', required = true)]
     pub output: PathBuf,
 
