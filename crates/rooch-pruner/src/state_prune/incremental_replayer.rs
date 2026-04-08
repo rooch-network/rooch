@@ -117,7 +117,7 @@ impl IncrementalReplayer {
         self.prepare_fresh_output_store(output_dir)?;
         metadata.mark_in_progress("Copying required column families".to_string(), 10.0);
         self.copy_required_cfs(output_dir, retain_from, to_order)?;
-        let (output_store, _) = self.load_output_stores(output_dir)?;
+        let (output_store, output_rooch_store) = self.load_output_stores(output_dir)?;
 
         metadata.mark_in_progress("Importing snapshot nodes".to_string(), 20.0);
         self.import_snapshot_nodes(&snapshot_store, &output_store, &mut report, &mut metadata)?;
@@ -164,10 +164,10 @@ impl IncrementalReplayer {
         }
 
         metadata.mark_in_progress("Refreshing output metadata".to_string(), 92.0);
-        self.refresh_output_metadata(output_dir, to_order, &mut metadata)?;
+        self.refresh_output_metadata(&output_rooch_store, to_order, &mut metadata)?;
 
         // After metadata refresh, ensure startup_info and sequencer_info are consistent.
-        self.verify_startup_sequencer_consistency(&output_store, output_dir, to_order)?;
+        self.verify_startup_sequencer_consistency(&output_store, &output_rooch_store, to_order)?;
         report.history_prune_report = Some(self.build_windowed_history_report(retain_from));
 
         // Create checkpoints if enabled
@@ -191,6 +191,53 @@ impl IncrementalReplayer {
         }
 
         // Save report
+        let report_path = output_dir.join("replay_report.json");
+        report.save_to_file(&report_path)?;
+        metadata.save_to_file(output_dir.join("operation_meta.json"))?;
+
+        Ok(report)
+    }
+
+    /// Finalize an existing replay output after the heavy replay phases have already succeeded.
+    pub fn finalize_existing_output(
+        &self,
+        output_dir: &Path,
+        to_order: u64,
+        expected_state_root: Option<H256>,
+    ) -> Result<ReplayReport> {
+        let start_time = Instant::now();
+        let mut report = ReplayReport::new();
+        let mut metadata = StatePruneMetadata::new(
+            crate::state_prune::OperationType::Replay {
+                snapshot_path: PathBuf::new(),
+                from_order: 0,
+                to_order,
+                output_dir: output_dir.to_path_buf(),
+            },
+            serde_json::json!({
+                "mode": "finalize_existing_output",
+                "to_order": to_order,
+                "output_dir": output_dir,
+                "expected_state_root": expected_state_root.map(|root| format!("{:x}", root)),
+            }),
+        );
+        let (output_store, output_rooch_store) = self.load_output_stores(output_dir)?;
+
+        if let Some(expected_state_root) = expected_state_root {
+            metadata.mark_in_progress("Verifying final state root".to_string(), 90.0);
+            self.verify_final_state_root(&output_store, expected_state_root, &mut report)?;
+        } else if let Some(startup_info) = output_store.get_config_store().get_startup_info()? {
+            report.final_state_root = startup_info.state_root;
+        }
+
+        metadata.mark_in_progress("Refreshing output metadata".to_string(), 92.0);
+        self.refresh_output_metadata(&output_rooch_store, to_order, &mut metadata)?;
+        self.verify_startup_sequencer_consistency(&output_store, &output_rooch_store, to_order)?;
+
+        report.duration_seconds = start_time.elapsed().as_secs();
+        metadata.mark_completed();
+        report.verification_passed = expected_state_root.is_some();
+
         let report_path = output_dir.join("replay_report.json");
         report.save_to_file(&report_path)?;
         metadata.save_to_file(output_dir.join("operation_meta.json"))?;
@@ -664,12 +711,10 @@ impl IncrementalReplayer {
 
     fn refresh_output_metadata(
         &self,
-        output_dir: &Path,
+        output_rooch_store: &RoochStore,
         to_order: u64,
         metadata: &mut StatePruneMetadata,
     ) -> Result<()> {
-        let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
-
         metadata.mark_in_progress(
             format!("Refreshing runtime metadata at order {}", to_order),
             92.0,
@@ -1031,11 +1076,9 @@ impl IncrementalReplayer {
     fn verify_startup_sequencer_consistency(
         &self,
         output_store: &MoveOSStore,
-        output_dir: &Path,
+        output_rooch_store: &RoochStore,
         expected_order: u64,
     ) -> Result<()> {
-        let (_moveos_store, output_rooch_store) = self.load_output_stores(output_dir)?;
-
         let startup_info = output_store
             .get_config_store()
             .get_startup_info()?
@@ -1367,12 +1410,10 @@ mod tests {
             .get_config_store()
             .save_startup_info(StartupInfo::new(H256::random(), 1))
             .unwrap();
-        drop(moveos_store);
-        drop(output_rooch_store);
 
         replayer
             .refresh_output_metadata(
-                &output_store_path,
+                &output_rooch_store,
                 0,
                 &mut StatePruneMetadata::new(
                     crate::state_prune::OperationType::Replay {
@@ -1385,6 +1426,9 @@ mod tests {
                 ),
             )
             .unwrap();
+
+        drop(moveos_store);
+        drop(output_rooch_store);
 
         let (_moveos_store, output_rooch_store) =
             replayer.load_output_stores(&output_store_path).unwrap();
