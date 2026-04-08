@@ -170,6 +170,109 @@ impl CommandAction<String> for ReplayCommand {
     }
 }
 
+/// Replay only the delta range onto an existing replay output directory.
+#[derive(Debug, Parser)]
+pub struct TailReplayCommand {
+    /// Base data directory for the blockchain data
+    #[clap(long = "data-dir", short = 'd')]
+    pub base_data_dir: Option<PathBuf>,
+
+    /// Chain ID to specify which blockchain network
+    #[clap(long, short = 'n')]
+    pub chain_id: rooch_types::rooch_network::BuiltinChainID,
+
+    /// Existing replay output data directory (base dir). Store is expected at
+    /// <output>/<chain>/roochdb/store.
+    #[clap(long, short = 'o', required = true)]
+    pub output: PathBuf,
+
+    /// Starting tx_order for tail replay (inclusive). Defaults to existing output last_order + 1.
+    #[clap(long)]
+    pub from_order: Option<u64>,
+
+    /// Ending tx_order for tail replay (inclusive)
+    #[clap(long, required = true)]
+    pub to_order: u64,
+
+    /// Batch size for processing changesets
+    #[clap(long, default_value = "1000")]
+    pub batch_size: usize,
+
+    /// Verify final state root consistency
+    #[clap(long, default_value = "true")]
+    pub verify_root: bool,
+}
+
+#[async_trait]
+impl CommandAction<String> for TailReplayCommand {
+    async fn execute(self) -> RoochResult<String> {
+        let (_root, rooch_db, _start_time) = open_rooch_db_readonly(
+            self.base_data_dir,
+            Some(rooch_types::rooch_network::RoochChainID::Builtin(
+                self.chain_id,
+            )),
+        );
+        let rooch_store = rooch_db.rooch_store;
+
+        let replay_config = ReplayConfig {
+            default_batch_size: self.batch_size,
+            verify_final_state_root: self.verify_root,
+            validate_after_batch: false,
+            enable_checkpoints: false,
+            checkpoint_interval: self.batch_size,
+            max_retry_attempts: 3,
+            history_prune: None,
+        };
+
+        let replayer = IncrementalReplayer::new(replay_config, rooch_store).map_err(|e| {
+            rooch_types::error::RoochError::from(anyhow::anyhow!(
+                "Failed to create replayer: {}",
+                e
+            ))
+        })?;
+
+        let output_store_dir = self
+            .output
+            .join(RoochChainID::Builtin(self.chain_id).dir_name())
+            .join(DEFAULT_DB_DIR)
+            .join(DEFAULT_DB_STORE_SUBDIR);
+
+        let replay_report = replayer
+            .tail_replay_existing_output(&output_store_dir, self.from_order, self.to_order)
+            .await
+            .map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Failed to execute tail replay: {}",
+                    e
+                ))
+            })?;
+
+        let result = serde_json::json!({
+            "command": "tail-replay",
+            "output": self.output,
+            "output_store_dir": output_store_dir,
+            "from_order": self.from_order,
+            "to_order": self.to_order,
+            "batch_size": self.batch_size,
+            "verify_root": self.verify_root,
+            "replay_report": {
+                "changesets_processed": replay_report.changesets_processed,
+                "nodes_updated": replay_report.nodes_updated,
+                "final_state_root": format!("{:x}", replay_report.final_state_root),
+                "verification_passed": replay_report.verification_passed,
+                "duration_seconds": replay_report.duration_seconds,
+                "errors": replay_report.errors,
+                "is_success": replay_report.is_success(),
+                "history_prune": replay_report.history_prune_report,
+                "statistics": replay_report.statistics
+            },
+            "status": "completed"
+        });
+
+        Ok(serde_json::to_string_pretty(&result)?)
+    }
+}
+
 /// Finalize an existing replay output directory without re-running replay.
 #[derive(Debug, Parser)]
 pub struct FinalizeReplayOutputCommand {
