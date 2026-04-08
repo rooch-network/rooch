@@ -5,6 +5,7 @@ use crate::utils::open_rooch_db_readonly;
 use crate::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
+use moveos_types::h256::H256;
 use rooch_config::state_prune::{HistoryPruneConfig, ReplayConfig};
 use rooch_config::store_config::{DEFAULT_DB_DIR, DEFAULT_DB_STORE_SUBDIR};
 use rooch_pruner::state_prune::IncrementalReplayer;
@@ -12,6 +13,7 @@ use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use serde_json;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 /// Replay incremental changesets onto a snapshot using a fresh output DB
 #[derive(Debug, Parser)]
@@ -154,6 +156,97 @@ impl CommandAction<String> for ReplayCommand {
             "replay_report": {
                 "changesets_processed": replay_report.changesets_processed,
                 "nodes_updated": replay_report.nodes_updated,
+                "final_state_root": format!("{:x}", replay_report.final_state_root),
+                "verification_passed": replay_report.verification_passed,
+                "duration_seconds": replay_report.duration_seconds,
+                "errors": replay_report.errors,
+                "is_success": replay_report.is_success(),
+                "history_prune": replay_report.history_prune_report
+            },
+            "status": "completed"
+        });
+
+        Ok(serde_json::to_string_pretty(&result)?)
+    }
+}
+
+/// Finalize an existing replay output directory without re-running replay.
+#[derive(Debug, Parser)]
+pub struct FinalizeReplayOutputCommand {
+    /// Base data directory for the blockchain data
+    #[clap(long = "data-dir", short = 'd')]
+    pub base_data_dir: Option<PathBuf>,
+
+    /// Chain ID to specify which blockchain network
+    #[clap(long, short = 'n')]
+    pub chain_id: rooch_types::rooch_network::BuiltinChainID,
+
+    /// Output data directory (base dir). Store is expected at
+    /// <output>/<chain>/roochdb/store.
+    #[clap(long, short = 'o', required = true)]
+    pub output: PathBuf,
+
+    /// Ending tx_order for replay (inclusive)
+    #[clap(long, required = true)]
+    pub to_order: u64,
+
+    /// Optional expected final state root to verify before finalizing.
+    #[clap(long)]
+    pub expected_state_root: Option<String>,
+}
+
+#[async_trait]
+impl CommandAction<String> for FinalizeReplayOutputCommand {
+    async fn execute(self) -> RoochResult<String> {
+        let (_root, rooch_db, _start_time) = open_rooch_db_readonly(
+            self.base_data_dir,
+            Some(rooch_types::rooch_network::RoochChainID::Builtin(
+                self.chain_id,
+            )),
+        );
+        let rooch_store = rooch_db.rooch_store;
+        let replay_config = ReplayConfig::default();
+        let replayer = IncrementalReplayer::new(replay_config, rooch_store).map_err(|e| {
+            rooch_types::error::RoochError::from(anyhow::anyhow!(
+                "Failed to create replayer: {}",
+                e
+            ))
+        })?;
+
+        let output_store_dir = self
+            .output
+            .join(RoochChainID::Builtin(self.chain_id).dir_name())
+            .join(DEFAULT_DB_DIR)
+            .join(DEFAULT_DB_STORE_SUBDIR);
+
+        let expected_state_root = self
+            .expected_state_root
+            .as_deref()
+            .map(H256::from_str)
+            .transpose()
+            .map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Invalid expected_state_root: {}",
+                    e
+                ))
+            })?;
+
+        let replay_report = replayer
+            .finalize_existing_output(&output_store_dir, self.to_order, expected_state_root)
+            .map_err(|e| {
+                rooch_types::error::RoochError::from(anyhow::anyhow!(
+                    "Failed to finalize replay output: {}",
+                    e
+                ))
+            })?;
+
+        let result = serde_json::json!({
+            "command": "finalize-replay-output",
+            "output": self.output,
+            "output_store_dir": output_store_dir,
+            "to_order": self.to_order,
+            "expected_state_root": self.expected_state_root,
+            "replay_report": {
                 "final_state_root": format!("{:x}", replay_report.final_state_root),
                 "verification_passed": replay_report.verification_passed,
                 "duration_seconds": replay_report.duration_seconds,
