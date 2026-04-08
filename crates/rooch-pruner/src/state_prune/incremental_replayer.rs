@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::state_prune::{ProgressTracker, StatePruneMetadata};
+use accumulator::node::AccumulatorNode;
+use accumulator::{Accumulator, MerkleAccumulator};
 use anyhow::Result;
 use move_core_types::effects::Op;
 use moveos_common::utils::to_bytes;
@@ -16,8 +18,11 @@ use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::StateChangeSetExt;
 use moveos_types::state_resolver::StateResolver;
+use moveos_types::transaction::TransactionExecutionInfo;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
+use raw_store::rocks::batch::WriteBatch;
+use raw_store::traits::DBStore;
 use raw_store::SchemaStore;
 use rooch_config::state_prune::{HistoryPruneReport, ReplayConfig, ReplayReport};
 use rooch_store::da_store::DAMetaStore;
@@ -29,6 +34,7 @@ use rooch_store::{
     TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
 };
 use rooch_types::sequencer::SequencerInfo;
+use rooch_types::transaction::LedgerTransaction;
 use serde_json;
 use smt::NodeReader;
 use std::cmp::min;
@@ -53,6 +59,15 @@ const WINDOWED_HISTORY_COLUMN_FAMILIES: &[&str] = &[
     TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
     STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
 ];
+
+#[derive(Clone)]
+struct TailReplayEntry {
+    tx_order: u64,
+    tx_hash: H256,
+    ledger_tx: LedgerTransaction,
+    execution_info: TransactionExecutionInfo,
+    changeset_ext: StateChangeSetExt,
+}
 
 /// Incremental replayer for applying changesets to a snapshot
 pub struct IncrementalReplayer {
@@ -245,6 +260,121 @@ impl IncrementalReplayer {
         Ok(report)
     }
 
+    /// Replay only the canonical delta range onto an existing replay output.
+    pub async fn tail_replay_existing_output(
+        &self,
+        output_dir: &Path,
+        from_order: Option<u64>,
+        to_order: u64,
+    ) -> Result<ReplayReport> {
+        let start_time = Instant::now();
+        let mut report = ReplayReport::new();
+        let mut metadata = StatePruneMetadata::new(
+            crate::state_prune::OperationType::Replay {
+                snapshot_path: PathBuf::new(),
+                from_order: from_order.unwrap_or(0),
+                to_order,
+                output_dir: output_dir.to_path_buf(),
+            },
+            serde_json::json!({
+                "mode": "tail_replay_existing_output",
+                "from_order": from_order,
+                "to_order": to_order,
+                "output_dir": output_dir,
+                "config": self.config
+            }),
+        );
+
+        let source_moveos_store = self.source_moveos_store()?;
+        let (output_store, output_rooch_store) = self.load_output_stores(output_dir)?;
+        let output_startup_info = output_store
+            .get_config_store()
+            .get_startup_info()?
+            .ok_or_else(|| anyhow::anyhow!("No startup info found in existing replay output"))?;
+        let output_sequencer_info = output_rooch_store
+            .get_meta_store()
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow::anyhow!("No sequencer info found in existing replay output"))?;
+
+        let resolved_from_order = from_order.unwrap_or(output_sequencer_info.last_order + 1);
+        if resolved_from_order != output_sequencer_info.last_order + 1 {
+            return Err(anyhow::anyhow!(
+                "Tail replay must start from existing last_order + 1 (expected {}, got {})",
+                output_sequencer_info.last_order + 1,
+                resolved_from_order
+            ));
+        }
+
+        if resolved_from_order > to_order {
+            report.final_state_root = output_startup_info.state_root;
+            report.verification_passed = true;
+            report.duration_seconds = start_time.elapsed().as_secs();
+            metadata.mark_completed();
+            report.save_to_file(&output_dir.join("tail_replay_report.json"))?;
+            metadata.save_to_file(output_dir.join("operation_meta.json"))?;
+            return Ok(report);
+        }
+
+        metadata.mark_in_progress(
+            format!(
+                "Loading canonical tail entries [{}..={}]",
+                resolved_from_order, to_order
+            ),
+            20.0,
+        );
+        let tail_entries = self.load_tail_entries(
+            &source_moveos_store,
+            resolved_from_order,
+            to_order,
+            &mut report,
+        )?;
+        self.progress_tracker.set_total(tail_entries.len() as u64);
+
+        metadata.mark_in_progress("Applying tail changesets".to_string(), 40.0);
+        let (actual_state_root, expected_state_root, expected_global_size) = self
+            .tail_replay_entries_batched(
+                tail_entries,
+                &output_store,
+                &output_rooch_store,
+                output_startup_info.state_root,
+                output_startup_info.size,
+                output_sequencer_info.last_accumulator_info.clone(),
+                &mut report,
+                &mut metadata,
+            )
+            .await?;
+
+        metadata.mark_in_progress("Updating startup info".to_string(), 85.0);
+        self.update_startup_info(&output_store, actual_state_root, expected_global_size)?;
+        report.final_state_root = actual_state_root;
+
+        metadata.mark_in_progress("Compacting state nodes".to_string(), 88.0);
+        output_store.get_state_node_store().flush_and_compact()?;
+
+        if self.config.verify_final_state_root {
+            metadata.mark_in_progress("Verifying final state root".to_string(), 90.0);
+            self.verify_final_state_root(&output_store, expected_state_root, &mut report)?;
+        }
+
+        metadata.mark_in_progress("Refreshing output metadata".to_string(), 92.0);
+        self.refresh_output_metadata(&output_rooch_store, to_order, &mut metadata)?;
+        self.verify_startup_sequencer_consistency(&output_store, &output_rooch_store, to_order)?;
+
+        report.duration_seconds = start_time.elapsed().as_secs();
+        if report.errors.is_empty() {
+            metadata.mark_completed();
+        } else {
+            metadata.mark_failed(format!(
+                "Tail replay failed with {} errors",
+                report.errors.len()
+            ));
+        }
+
+        report.save_to_file(&output_dir.join("tail_replay_report.json"))?;
+        metadata.save_to_file(output_dir.join("operation_meta.json"))?;
+        Ok(report)
+    }
+
     /// Load snapshot metadata
     fn load_snapshot_metadata(
         &self,
@@ -349,6 +479,63 @@ impl IncrementalReplayer {
 
         info!("Created fresh output database at {:?}", output_dir);
         Ok(())
+    }
+
+    fn load_tail_entries(
+        &self,
+        source_moveos_store: &MoveOSStore,
+        from_order: u64,
+        to_order: u64,
+        report: &mut ReplayReport,
+    ) -> Result<Vec<TailReplayEntry>> {
+        let changesets = self.load_changesets_range(from_order, to_order, report)?;
+        let mut entries = Vec::with_capacity(changesets.len());
+
+        for (tx_order, changeset_ext) in changesets {
+            let tx_hash = self
+                .rooch_store
+                .transaction_store
+                .get_tx_hashes(vec![tx_order])?
+                .pop()
+                .flatten()
+                .ok_or_else(|| anyhow::anyhow!("Missing tx hash for order {}", tx_order))?;
+            let ledger_tx = self
+                .rooch_store
+                .transaction_store
+                .get_transaction_by_hash(tx_hash)?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Missing ledger transaction for order {} and hash {:x}",
+                        tx_order,
+                        tx_hash
+                    )
+                })?;
+            let execution_info = source_moveos_store
+                .get_tx_execution_info(tx_hash)?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Missing execution info for order {} and hash {:x}",
+                        tx_order,
+                        tx_hash
+                    )
+                })?;
+
+            entries.push(TailReplayEntry {
+                tx_order,
+                tx_hash,
+                ledger_tx,
+                execution_info,
+                changeset_ext,
+            });
+        }
+
+        info!(
+            "Loaded {} canonical tail entries in range {}..={}",
+            entries.len(),
+            from_order,
+            to_order
+        );
+        Ok(entries)
     }
 
     fn source_moveos_store(&self) -> Result<MoveOSStore> {
@@ -925,6 +1112,87 @@ impl IncrementalReplayer {
         ))
     }
 
+    async fn tail_replay_entries_batched(
+        &self,
+        entries: Vec<TailReplayEntry>,
+        output_store: &MoveOSStore,
+        output_rooch_store: &RoochStore,
+        base_state_root: H256,
+        base_global_size: u64,
+        base_accumulator_info: accumulator::accumulator_info::AccumulatorInfo,
+        report: &mut ReplayReport,
+        metadata: &mut StatePruneMetadata,
+    ) -> Result<(H256, H256, u64)> {
+        let total_entries = entries.len();
+        let mut processed = 0usize;
+        let mut current_state_root = base_state_root;
+        let mut current_global_size = base_global_size;
+        let tx_accumulator = MerkleAccumulator::new_with_info(
+            base_accumulator_info,
+            output_rooch_store.get_transaction_accumulator_store(),
+        );
+
+        for batch in entries.chunks(self.config.default_batch_size) {
+            let batch_start = processed;
+            let batch_end = processed + batch.len();
+            info!(
+                "Processing tail replay batch {}..{} ({} entries)",
+                batch_start,
+                batch_end,
+                batch.len()
+            );
+
+            self.apply_tail_entry_batch(
+                batch,
+                output_store,
+                output_rooch_store,
+                &tx_accumulator,
+                &mut current_state_root,
+                &mut current_global_size,
+                report,
+            )?;
+
+            processed += batch.len();
+            self.progress_tracker
+                .increment_processed(batch.len() as u64);
+
+            if self.progress_tracker.should_report() {
+                let progress = self.progress_tracker.get_progress_report();
+                let overall_progress = 40.0 + (progress.progress_percentage * 0.45);
+                metadata.mark_in_progress(
+                    format!(
+                        "Tail replaying changesets ({}/{})",
+                        processed, total_entries
+                    ),
+                    overall_progress,
+                );
+                info!("Tail replay progress: {}", progress.format());
+                self.progress_tracker.mark_reported();
+            }
+        }
+
+        report.changesets_processed = processed as u64;
+        let expected_state_root = entries
+            .last()
+            .map(|entry| entry.execution_info.state_root)
+            .unwrap_or(base_state_root);
+        let expected_global_size = entries
+            .last()
+            .map(|entry| entry.execution_info.size)
+            .unwrap_or(base_global_size);
+
+        info!(
+            "Tail replayed {} entries, expected final state root: {:x}",
+            processed, expected_state_root
+        );
+
+        Ok((
+            current_state_root,
+            expected_state_root,
+            expected_global_size,
+        ))
+    }
+
     /// Apply a batch of changesets
     fn apply_changeset_batch(
         &self,
@@ -1015,6 +1283,119 @@ impl IncrementalReplayer {
             total_objects_updated
         );
 
+        Ok(())
+    }
+
+    fn apply_tail_entry_batch(
+        &self,
+        batch: &[TailReplayEntry],
+        output_store: &MoveOSStore,
+        output_rooch_store: &RoochStore,
+        tx_accumulator: &MerkleAccumulator,
+        current_state_root: &mut H256,
+        current_global_size: &mut u64,
+        report: &mut ReplayReport,
+    ) -> Result<()> {
+        let mut batch_nodes_updated = 0u64;
+
+        for entry in batch {
+            let mut changeset = entry.changeset_ext.state_change_set.clone();
+            let expected_root = changeset.state_root;
+            let expected_accumulator_info = entry.ledger_tx.sequence_info.tx_accumulator_info();
+
+            changeset.state_root = *current_state_root;
+            self.normalize_changeset_pre_state_roots(
+                output_store,
+                *current_state_root,
+                &mut changeset,
+            )?;
+
+            let (nodes, _stale_indices) = output_store
+                .get_state_store()
+                .change_set_to_nodes(&mut changeset)
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "Failed to convert tail changeset {} to nodes: {}",
+                        entry.tx_order,
+                        e
+                    )
+                })?;
+
+            let nodes_count = nodes.len() as u64;
+            if !nodes.is_empty() {
+                output_store.get_state_node_store().write_nodes(nodes)?;
+                report.nodes_updated += nodes_count;
+                batch_nodes_updated += nodes_count;
+            }
+
+            *current_state_root = changeset.state_root;
+            *current_global_size = changeset.global_size;
+
+            if *current_state_root != expected_root {
+                let warn_msg = format!(
+                    "Tail replay state root mismatch at tx_order {}: expected {:x}, got {:x}",
+                    entry.tx_order, expected_root, *current_state_root
+                );
+                warn!("{}", warn_msg);
+                report.add_error(warn_msg);
+            }
+
+            tx_accumulator.append(&[entry.tx_hash])?;
+            let actual_accumulator_info = tx_accumulator.get_info();
+            if actual_accumulator_info != expected_accumulator_info {
+                return Err(anyhow::anyhow!(
+                    "Accumulator mismatch at tx_order {}: expected {:?}, got {:?}",
+                    entry.tx_order,
+                    expected_accumulator_info,
+                    actual_accumulator_info
+                ));
+            }
+            let unsaved_nodes = tx_accumulator.pop_unsaved_nodes();
+
+            self.save_tail_replayed_entry(output_rooch_store, entry, unsaved_nodes)?;
+            tx_accumulator.clear_after_save();
+        }
+
+        info!(
+            "Applied tail replay batch: {} entries, {} state nodes",
+            batch.len(),
+            batch_nodes_updated
+        );
+        Ok(())
+    }
+
+    fn save_tail_replayed_entry(
+        &self,
+        output_rooch_store: &RoochStore,
+        entry: &TailReplayEntry,
+        accumulator_nodes: Option<Vec<AccumulatorNode>>,
+    ) -> Result<()> {
+        let inner_store = &output_rooch_store.store_instance;
+        let tx_order = entry.tx_order;
+        let mut write_batch = WriteBatch::new();
+        let mut cf_names = vec![
+            TRANSACTION_COLUMN_FAMILY_NAME,
+            TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+            TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
+            STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
+        ];
+
+        write_batch.put(to_bytes(&entry.tx_hash)?, bcs::to_bytes(&entry.ledger_tx)?)?;
+        write_batch.put(to_bytes(&tx_order)?, to_bytes(&entry.tx_hash)?)?;
+        write_batch.put(
+            to_bytes(&entry.tx_hash)?,
+            bcs::to_bytes(&entry.execution_info)?,
+        )?;
+        write_batch.put(to_bytes(&tx_order)?, bcs::to_bytes(&entry.changeset_ext)?)?;
+
+        if let Some(accumulator_nodes) = accumulator_nodes {
+            for node in accumulator_nodes {
+                write_batch.put(to_bytes(&node.hash())?, to_bytes(&node)?)?;
+                cf_names.push(TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME);
+            }
+        }
+
+        inner_store.write_batch_across_cfs(cf_names, write_batch, true)?;
         Ok(())
     }
 
@@ -1184,9 +1565,15 @@ impl IncrementalReplayer {
 mod tests {
     use super::*;
     use crate::state_prune::metadata::OperationStatus;
+    use accumulator::{Accumulator, MerkleAccumulator};
+    use move_core_types::account_address::AccountAddress;
+    use move_core_types::language_storage::TypeTag;
+    use move_core_types::vm_status::KeptVMStatus;
     use moveos_common::utils::to_bytes;
     use moveos_config::store_config::RocksdbConfig;
     use moveos_store::{MoveOSStore, CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME};
+    use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
+    use moveos_types::state::{ObjectChange, StateChangeSet};
     use moveos_types::transaction::TransactionExecutionInfo;
     use prometheus::Registry;
     use raw_store::metrics::DBMetrics;
@@ -1263,6 +1650,57 @@ mod tests {
         let moveos_store = MoveOSStore::new_with_instance(instance.clone(), &registry).unwrap();
         let rooch_store = RoochStore::new_with_instance(instance, &registry).unwrap();
         (moveos_store, rooch_store, temp_dir)
+    }
+
+    fn make_meta(id: ObjectID, state_root: Option<H256>) -> ObjectMeta {
+        ObjectMeta::new(
+            id,
+            AccountAddress::ZERO,
+            0,
+            state_root,
+            0,
+            0,
+            0,
+            TypeTag::Bool,
+        )
+    }
+
+    fn build_state_change_set(
+        moveos_store: &MoveOSStore,
+        pre_state_root: H256,
+        global_size: u64,
+        object_id: ObjectID,
+        op: Op<Vec<u8>>,
+    ) -> StateChangeSet {
+        let mut changeset = StateChangeSet::new(pre_state_root, global_size);
+        let mut object_change = ObjectChange::new(make_meta(object_id, None), op);
+        object_change.update_state_root(*GENESIS_STATE_ROOT);
+        changeset
+            .changes
+            .insert(object_change.metadata.id.field_key(), object_change);
+        let (nodes, _stale) = moveos_store
+            .get_state_store()
+            .change_set_to_nodes(&mut changeset)
+            .unwrap();
+        moveos_store
+            .get_state_node_store()
+            .write_nodes(nodes)
+            .unwrap();
+        changeset
+    }
+
+    fn build_execution_info(
+        tx_hash: H256,
+        changeset_ext: &StateChangeSetExt,
+    ) -> TransactionExecutionInfo {
+        TransactionExecutionInfo::new(
+            tx_hash,
+            changeset_ext.state_change_set.state_root,
+            changeset_ext.state_change_set.global_size,
+            H256::random(),
+            0,
+            KeptVMStatus::Executed,
+        )
     }
 
     #[test]
@@ -1444,6 +1882,195 @@ mod tests {
             .get_sequencer_info()
             .unwrap()
             .is_some());
+    }
+
+    #[tokio::test]
+    async fn test_tail_replay_existing_output_applies_delta_changeset_and_accumulator() {
+        let config = ReplayConfig::default();
+        let (source_moveos_store, source_rooch_store, _source_tmpdir) =
+            create_combined_test_stores();
+        let (output_moveos_store, output_rooch_store, output_tmpdir) =
+            create_combined_test_stores();
+        let replayer = IncrementalReplayer::new(config, source_rooch_store.clone()).unwrap();
+
+        let object_id = ObjectID::random();
+
+        let tx0_changeset = build_state_change_set(
+            &source_moveos_store,
+            *GENESIS_STATE_ROOT,
+            1,
+            object_id.clone(),
+            Op::New(vec![1u8; 4]),
+        );
+        let tx1_changeset = build_state_change_set(
+            &source_moveos_store,
+            tx0_changeset.state_root,
+            1,
+            object_id.clone(),
+            Op::Modify(vec![2u8; 4]),
+        );
+
+        // Mirror tx0 state into output so it starts one order behind source.
+        let mirrored_tx0 = build_state_change_set(
+            &output_moveos_store,
+            *GENESIS_STATE_ROOT,
+            1,
+            object_id.clone(),
+            Op::New(vec![1u8; 4]),
+        );
+        assert_eq!(mirrored_tx0.state_root, tx0_changeset.state_root);
+
+        let source_acc =
+            MerkleAccumulator::new_empty(source_rooch_store.get_transaction_accumulator_store());
+        let output_acc =
+            MerkleAccumulator::new_empty(output_rooch_store.get_transaction_accumulator_store());
+
+        let tx0_rooch_tx = RoochTransaction::mock();
+        let tx1_rooch_tx = RoochTransaction::mock();
+
+        let mut provisional_tx0 =
+            LedgerTransaction::new_l2_tx(tx0_rooch_tx.clone(), TransactionSequenceInfo::random());
+        let tx0_hash = provisional_tx0.tx_hash();
+        source_acc.append(&[tx0_hash]).unwrap();
+        let source_tx0_nodes = source_acc.pop_unsaved_nodes();
+        let source_tx0_acc = source_acc.get_info();
+        let tx0 = LedgerTransaction::new_l2_tx(
+            tx0_rooch_tx,
+            TransactionSequenceInfo::new(0, vec![0u8], source_tx0_acc.clone(), 0),
+        );
+        let tx0_exec =
+            build_execution_info(tx0_hash, &StateChangeSetExt::new(tx0_changeset.clone(), 0));
+
+        output_acc.append(&[tx0_hash]).unwrap();
+        let output_tx0_nodes = output_acc.pop_unsaved_nodes();
+        let output_tx0_acc = output_acc.get_info();
+        assert_eq!(output_tx0_acc, source_tx0_acc);
+
+        let tx0_entry = TailReplayEntry {
+            tx_order: 0,
+            tx_hash: tx0_hash,
+            ledger_tx: tx0.clone(),
+            execution_info: tx0_exec.clone(),
+            changeset_ext: StateChangeSetExt::new(tx0_changeset.clone(), 0),
+        };
+        replayer
+            .save_tail_replayed_entry(&source_rooch_store, &tx0_entry, source_tx0_nodes)
+            .unwrap();
+        source_rooch_store
+            .get_meta_store()
+            .save_sequencer_info_unsafe(SequencerInfo::new(0, source_tx0_acc.clone()))
+            .unwrap();
+        source_moveos_store
+            .get_config_store()
+            .save_startup_info(StartupInfo::new(tx0_exec.state_root, tx0_exec.size))
+            .unwrap();
+
+        replayer
+            .save_tail_replayed_entry(&output_rooch_store, &tx0_entry, output_tx0_nodes)
+            .unwrap();
+        output_rooch_store
+            .get_meta_store()
+            .save_sequencer_info_unsafe(SequencerInfo::new(0, output_tx0_acc.clone()))
+            .unwrap();
+        output_moveos_store
+            .get_config_store()
+            .save_startup_info(StartupInfo::new(tx0_exec.state_root, tx0_exec.size))
+            .unwrap();
+
+        let mut provisional_tx1 =
+            LedgerTransaction::new_l2_tx(tx1_rooch_tx.clone(), TransactionSequenceInfo::random());
+        let tx1_hash = provisional_tx1.tx_hash();
+        source_acc.append(&[tx1_hash]).unwrap();
+        let source_tx1_nodes = source_acc.pop_unsaved_nodes();
+        let source_tx1_acc = source_acc.get_info();
+        let tx1 = LedgerTransaction::new_l2_tx(
+            tx1_rooch_tx,
+            TransactionSequenceInfo::new(1, vec![1u8], source_tx1_acc.clone(), 1),
+        );
+        let tx1_entry = TailReplayEntry {
+            tx_order: 1,
+            tx_hash: tx1_hash,
+            ledger_tx: tx1.clone(),
+            execution_info: build_execution_info(
+                tx1_hash,
+                &StateChangeSetExt::new(tx1_changeset.clone(), 1),
+            ),
+            changeset_ext: StateChangeSetExt::new(tx1_changeset.clone(), 1),
+        };
+        replayer
+            .save_tail_replayed_entry(&source_rooch_store, &tx1_entry, source_tx1_nodes)
+            .unwrap();
+        source_rooch_store
+            .get_meta_store()
+            .save_sequencer_info_unsafe(SequencerInfo::new(1, source_tx1_acc.clone()))
+            .unwrap();
+        source_moveos_store
+            .get_config_store()
+            .save_startup_info(StartupInfo::new(
+                tx1_entry.execution_info.state_root,
+                tx1_entry.execution_info.size,
+            ))
+            .unwrap();
+
+        drop(output_acc);
+        drop(output_moveos_store);
+        drop(output_rooch_store);
+
+        let report = replayer
+            .tail_replay_existing_output(output_tmpdir.path(), None, 1)
+            .await
+            .unwrap();
+
+        assert!(report.is_success());
+        assert_eq!(report.changesets_processed, 1);
+        assert_eq!(report.final_state_root, tx1_entry.execution_info.state_root);
+
+        let (output_moveos_store, output_rooch_store) =
+            replayer.load_output_stores(output_tmpdir.path()).unwrap();
+
+        let output_startup = output_moveos_store
+            .get_config_store()
+            .get_startup_info()
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            output_startup.state_root,
+            tx1_entry.execution_info.state_root
+        );
+        assert_eq!(output_startup.size, tx1_entry.execution_info.size);
+
+        let output_sequencer = output_rooch_store
+            .get_meta_store()
+            .get_sequencer_info()
+            .unwrap()
+            .unwrap();
+        assert_eq!(output_sequencer.last_order, 1);
+        assert_eq!(
+            output_sequencer.last_accumulator_info,
+            tx1.sequence_info.tx_accumulator_info()
+        );
+
+        assert!(output_rooch_store
+            .transaction_store
+            .get_transaction_by_hash(tx1_hash)
+            .unwrap()
+            .is_some());
+        assert!(output_moveos_store
+            .get_tx_execution_info(tx1_hash)
+            .unwrap()
+            .is_some());
+        assert!(output_rooch_store
+            .get_state_store()
+            .get_state_change_set(1)
+            .unwrap()
+            .is_some());
+
+        let output_accumulator = MerkleAccumulator::new_with_info(
+            output_sequencer.last_accumulator_info.clone(),
+            output_rooch_store.get_transaction_accumulator_store(),
+        );
+        assert_eq!(output_accumulator.get_leaf(0).unwrap().unwrap(), tx0_hash);
+        assert_eq!(output_accumulator.get_leaf(1).unwrap().unwrap(), tx1_hash);
     }
 
     #[test]

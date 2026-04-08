@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::commands::db::commands::state_prune::replay::{
-    FinalizeReplayOutputCommand, ReplayCommand,
+    FinalizeReplayOutputCommand, ReplayCommand, TailReplayCommand,
 };
 use crate::commands::db::commands::state_prune::snapshot::SnapshotCommand;
 use crate::CommandAction;
@@ -23,6 +23,8 @@ pub enum StatePruneAction {
     Snapshot(SnapshotCommand),
     /// Replay incremental changesets onto a snapshot using a fresh output DB
     Replay(ReplayCommand),
+    /// Replay only the delta order range onto an existing replay output DB
+    TailReplay(TailReplayCommand),
     /// Finalize an existing replay output directory after replay body has completed
     FinalizeReplayOutput(FinalizeReplayOutputCommand),
 }
@@ -33,6 +35,7 @@ impl CommandAction<String> for StatePruneCommand {
         match self.action {
             StatePruneAction::Snapshot(cmd) => cmd.execute().await,
             StatePruneAction::Replay(cmd) => cmd.execute().await,
+            StatePruneAction::TailReplay(cmd) => cmd.execute().await,
             StatePruneAction::FinalizeReplayOutput(cmd) => cmd.execute().await,
         }
     }

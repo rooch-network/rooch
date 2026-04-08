@@ -11115,6 +11115,7 @@ dependencies = [
 name = "rooch-pruner"
 version = "0.13.0"
 dependencies = [
+ "accumulator",
  "anyhow 1.0.95",
  "bcs",
  "bcs-ext",
