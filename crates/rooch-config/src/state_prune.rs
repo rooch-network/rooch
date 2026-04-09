@@ -59,6 +59,10 @@ pub struct ReplayConfig {
     /// Enable verification of final state root
     pub verify_final_state_root: bool,
 
+    /// Skip final compact/cleanup for the output DB (faster cutover, larger on-disk)
+    #[serde(default)]
+    pub skip_final_compact: bool,
+
     /// Enable intermediate checkpoints during replay
     pub enable_checkpoints: bool,
 
@@ -237,6 +241,7 @@ impl Default for ReplayConfig {
         Self {
             default_batch_size: 1000,
             verify_final_state_root: true,
+            skip_final_compact: false,
             enable_checkpoints: true,
             checkpoint_interval: 10000,
             max_retry_attempts: 3,

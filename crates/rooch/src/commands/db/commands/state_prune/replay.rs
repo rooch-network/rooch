@@ -51,6 +51,10 @@ pub struct ReplayCommand {
     #[clap(long, default_value = "true")]
     pub verify_root: bool,
 
+    /// Skip final state-node compact/cleanup for the output DB
+    #[clap(long)]
+    pub skip_final_compact: bool,
+
     /// Skip confirmation prompts
     #[clap(long)]
     pub skip_confirm: bool,
@@ -105,6 +109,7 @@ impl CommandAction<String> for ReplayCommand {
         let replay_config = ReplayConfig {
             default_batch_size: self.batch_size,
             verify_final_state_root: self.verify_root,
+            skip_final_compact: self.skip_final_compact,
             validate_after_batch: false, // Simplified for basic implementation
             enable_checkpoints: false,   // Simplified for basic implementation
             checkpoint_interval: self.batch_size, // placeholder: every batch_size changesets
@@ -151,6 +156,7 @@ impl CommandAction<String> for ReplayCommand {
             "output_store_dir": output_store_dir,
             "batch_size": self.batch_size,
             "verify_root": self.verify_root,
+            "skip_final_compact": self.skip_final_compact,
             "history_prune_enabled": true,
             "history_retain_from": retain_from,
             "replay_report": {
@@ -201,6 +207,10 @@ pub struct TailReplayCommand {
     /// Verify final state root consistency
     #[clap(long, default_value = "true")]
     pub verify_root: bool,
+
+    /// Skip final state-node compact/cleanup for the output DB
+    #[clap(long)]
+    pub skip_final_compact: bool,
 }
 
 #[async_trait]
@@ -217,6 +227,7 @@ impl CommandAction<String> for TailReplayCommand {
         let replay_config = ReplayConfig {
             default_batch_size: self.batch_size,
             verify_final_state_root: self.verify_root,
+            skip_final_compact: self.skip_final_compact,
             validate_after_batch: false,
             enable_checkpoints: false,
             checkpoint_interval: self.batch_size,
@@ -255,6 +266,7 @@ impl CommandAction<String> for TailReplayCommand {
             "to_order": self.to_order,
             "batch_size": self.batch_size,
             "verify_root": self.verify_root,
+            "skip_final_compact": self.skip_final_compact,
             "replay_report": {
                 "changesets_processed": replay_report.changesets_processed,
                 "nodes_updated": replay_report.nodes_updated,
