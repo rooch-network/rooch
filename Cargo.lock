@@ -10465,6 +10465,7 @@ dependencies = [
  "coerce",
  "csv",
  "datatest-stable 0.1.1",
+ "diesel",
  "fastcrypto",
  "framework-builder",
  "framework-release",
