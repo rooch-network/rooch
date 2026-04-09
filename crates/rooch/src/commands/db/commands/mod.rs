@@ -26,6 +26,7 @@ pub mod get_execution_info_by_hash;
 pub mod get_sequencer_info;
 pub mod get_tx_by_order;
 pub mod import_state;
+pub mod import_indexed_transactions;
 pub mod list_anomaly;
 pub mod recycle;
 pub mod recycle_bin;
