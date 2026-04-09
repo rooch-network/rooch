@@ -163,8 +163,12 @@ impl IncrementalReplayer {
         self.update_startup_info(&output_store, actual_state_root, expected_global_size)?;
         report.final_state_root = actual_state_root;
 
-        metadata.mark_in_progress("Compacting state nodes".to_string(), 88.0);
-        output_store.get_state_node_store().flush_and_compact()?;
+        if self.config.skip_final_compact {
+            metadata.mark_in_progress("Skipping final state-node compact".to_string(), 88.0);
+        } else {
+            metadata.mark_in_progress("Compacting state nodes".to_string(), 88.0);
+            output_store.get_state_node_store().flush_and_compact()?;
+        }
 
         // Verify final state root if enabled
         if self.config.verify_final_state_root {
@@ -348,8 +352,12 @@ impl IncrementalReplayer {
         self.update_startup_info(&output_store, actual_state_root, expected_global_size)?;
         report.final_state_root = actual_state_root;
 
-        metadata.mark_in_progress("Compacting state nodes".to_string(), 88.0);
-        output_store.get_state_node_store().flush_and_compact()?;
+        if self.config.skip_final_compact {
+            metadata.mark_in_progress("Skipping final state-node compact".to_string(), 88.0);
+        } else {
+            metadata.mark_in_progress("Compacting state nodes".to_string(), 88.0);
+            output_store.get_state_node_store().flush_and_compact()?;
+        }
 
         if self.config.verify_final_state_root {
             metadata.mark_in_progress("Verifying final state root".to_string(), 90.0);
