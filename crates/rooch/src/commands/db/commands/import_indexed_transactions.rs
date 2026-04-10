@@ -1,18 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::utils::{open_rooch_db, open_rooch_db_readonly};
+use crate::utils::open_rooch_db_readonly;
 use anyhow::{Context, Result};
 use clap::Parser;
 use diesel::{Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection};
+use metrics::RegistryService;
 use moveos_common::utils::to_bytes;
 use moveos_store::transaction_store::TransactionStore as TxExecutionInfoStore;
+use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
 use rooch_indexer::models::transactions::StoredTransaction;
 use rooch_indexer::schema::transactions::dsl as tx_dsl;
+use rooch_store::RoochStore;
 use rooch_store::TRANSACTION_COLUMN_FAMILY_NAME;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
@@ -62,14 +65,15 @@ impl ImportIndexedTransactionsCommand {
 
         let (_source_root, source_db, _source_opened_at) =
             open_rooch_db_readonly(Some(source_dir), chain_id.clone());
-        let (_target_root, target_db, _target_opened_at) =
-            open_rooch_db(target_dir.clone(), chain_id.clone());
+        let (target_moveos_store, target_rooch_store) =
+            open_target_stores(target_dir.clone(), chain_id.clone())?;
 
         let target_indexer_dir = derive_indexer_dir(target_dir, chain_id)?;
 
         Ok(run_import_indexed_transactions(
             &source_db,
-            &target_db,
+            &target_moveos_store,
+            &target_rooch_store,
             &target_indexer_dir,
             batch_size,
         )?)
@@ -82,6 +86,18 @@ fn derive_indexer_dir(
 ) -> Result<PathBuf> {
     let opt = RoochOpt::new_with_default(base_data_dir, chain_id, None)?;
     Ok(opt.store_config().get_indexer_dir())
+}
+
+fn open_target_stores(
+    base_data_dir: Option<PathBuf>,
+    chain_id: Option<RoochChainID>,
+) -> Result<(MoveOSStore, RoochStore)> {
+    let opt = RoochOpt::new_with_default(base_data_dir, chain_id, None)?;
+    let registry = RegistryService::default().default_registry();
+    let instance = RoochDB::generate_store_instance(opt.store_config(), &registry, false)?;
+    let moveos_store = MoveOSStore::new_with_instance(instance.clone(), &registry)?;
+    let rooch_store = RoochStore::new_with_instance(instance, &registry)?;
+    Ok((moveos_store, rooch_store))
 }
 
 fn load_indexed_transaction_batch(
@@ -117,12 +133,12 @@ fn load_indexed_transaction_batch(
 
 fn run_import_indexed_transactions(
     source_db: &RoochDB,
-    target_db: &RoochDB,
+    target_moveos_store: &MoveOSStore,
+    target_rooch_store: &RoochStore,
     target_indexer_dir: &Path,
     batch_size: usize,
 ) -> Result<ImportIndexedTransactionsReport> {
-    let target_inner = target_db
-        .rooch_store
+    let target_inner = target_rooch_store
         .store_instance
         .db()
         .ok_or_else(|| anyhow::anyhow!("failed to access target RocksDB instance"))?
@@ -130,7 +146,9 @@ fn run_import_indexed_transactions(
 
     let tx_cf = target_inner
         .cf_handle(TRANSACTION_COLUMN_FAMILY_NAME)
-        .ok_or_else(|| anyhow::anyhow!("Target CF not found: {}", TRANSACTION_COLUMN_FAMILY_NAME))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!("Target CF not found: {}", TRANSACTION_COLUMN_FAMILY_NAME)
+        })?;
     let exec_cf = target_inner
         .cf_handle(moveos_store::TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME)
         .ok_or_else(|| {
@@ -144,7 +162,8 @@ fn run_import_indexed_transactions(
     let mut last_seen_order = -1_i64;
 
     loop {
-        let batch = load_indexed_transaction_batch(target_indexer_dir, last_seen_order, batch_size)?;
+        let batch =
+            load_indexed_transaction_batch(target_indexer_dir, last_seen_order, batch_size)?;
         if batch.is_empty() {
             break;
         }
@@ -161,13 +180,11 @@ fn run_import_indexed_transactions(
             .collect::<Result<Vec<_>, _>>()
             .context("decode target indexer tx hashes")?;
 
-        let target_txs = target_db
-            .rooch_store
+        let target_txs = target_rooch_store
             .transaction_store
             .get_transactions(tx_hashes.clone())
             .context("load target transactions by hash")?;
-        let target_exec_infos = target_db
-            .moveos_store
+        let target_exec_infos = target_moveos_store
             .get_transaction_store()
             .multi_get_tx_execution_infos(tx_hashes.clone())
             .context("load target execution infos by hash")?;
@@ -309,19 +326,18 @@ mod tests {
         ledger_tx: &LedgerTransaction,
         execution_info: &TransactionExecutionInfo,
     ) {
-        let db = source_db
-            .rooch_store
-            .store_instance
-            .db()
-            .unwrap()
-            .inner();
+        let db = source_db.rooch_store.store_instance.db().unwrap().inner();
         let tx_cf = db.cf_handle(TRANSACTION_COLUMN_FAMILY_NAME).unwrap();
         let exec_cf = db
             .cf_handle(moveos_store::TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME)
             .unwrap();
         let tx_hash = execution_info.tx_hash;
         let mut batch = rocksdb::WriteBatch::default();
-        batch.put_cf(&tx_cf, to_bytes(&tx_hash).unwrap(), bcs::to_bytes(ledger_tx).unwrap());
+        batch.put_cf(
+            &tx_cf,
+            to_bytes(&tx_hash).unwrap(),
+            bcs::to_bytes(ledger_tx).unwrap(),
+        );
         batch.put_cf(
             &exec_cf,
             to_bytes(&tx_hash).unwrap(),
@@ -381,26 +397,30 @@ mod tests {
             .execute(&mut conn)
             .unwrap();
 
-        assert!(
-            target_db
-                .rooch_store
-                .transaction_store
-                .get_transaction_by_hash(tx_hash)
-                .unwrap()
-                .is_none()
-        );
-        assert!(
-            target_db
-                .moveos_store
-                .get_transaction_store()
-                .get_tx_execution_info(tx_hash)
-                .unwrap()
-                .is_none()
-        );
+        let loaded_batch = load_indexed_transaction_batch(&target_indexer_dir, -1, 32).unwrap();
+        assert_eq!(loaded_batch.len(), 1);
 
-        let report =
-            run_import_indexed_transactions(&source_db, &target_db, &target_indexer_dir, 32)
-                .unwrap();
+        assert!(target_db
+            .rooch_store
+            .transaction_store
+            .get_transaction_by_hash(tx_hash)
+            .unwrap()
+            .is_none());
+        assert!(target_db
+            .moveos_store
+            .get_transaction_store()
+            .get_tx_execution_info(tx_hash)
+            .unwrap()
+            .is_none());
+
+        let report = run_import_indexed_transactions(
+            &source_db,
+            &target_db.moveos_store,
+            &target_db.rooch_store,
+            &target_indexer_dir,
+            32,
+        )
+        .unwrap();
 
         assert_eq!(report.indexed_rows_scanned, 1);
         assert_eq!(report.imported_transactions, 1);
