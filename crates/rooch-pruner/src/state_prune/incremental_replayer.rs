@@ -273,22 +273,6 @@ impl IncrementalReplayer {
     ) -> Result<ReplayReport> {
         let start_time = Instant::now();
         let mut report = ReplayReport::new();
-        let mut metadata = StatePruneMetadata::new(
-            crate::state_prune::OperationType::Replay {
-                snapshot_path: PathBuf::new(),
-                from_order: from_order.unwrap_or(0),
-                to_order,
-                output_dir: output_dir.to_path_buf(),
-            },
-            serde_json::json!({
-                "mode": "tail_replay_existing_output",
-                "from_order": from_order,
-                "to_order": to_order,
-                "output_dir": output_dir,
-                "config": self.config
-            }),
-        );
-
         let source_moveos_store = self.source_moveos_store()?;
         let (output_store, output_rooch_store) = self.load_output_stores(output_dir)?;
         let output_startup_info = output_store
@@ -301,6 +285,22 @@ impl IncrementalReplayer {
             .ok_or_else(|| anyhow::anyhow!("No sequencer info found in existing replay output"))?;
 
         let resolved_from_order = from_order.unwrap_or(output_sequencer_info.last_order + 1);
+        let mut metadata = StatePruneMetadata::new(
+            crate::state_prune::OperationType::Replay {
+                snapshot_path: PathBuf::new(),
+                from_order: resolved_from_order,
+                to_order,
+                output_dir: output_dir.to_path_buf(),
+            },
+            serde_json::json!({
+                "mode": "tail_replay_existing_output",
+                "from_order": from_order,
+                "resolved_from_order": resolved_from_order,
+                "to_order": to_order,
+                "output_dir": output_dir,
+                "config": self.config
+            }),
+        );
         if resolved_from_order != output_sequencer_info.last_order + 1 {
             return Err(anyhow::anyhow!(
                 "Tail replay must start from existing last_order + 1 (expected {}, got {})",
