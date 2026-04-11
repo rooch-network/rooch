@@ -16,8 +16,8 @@ use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCo
 use crate::commands::db::commands::get_execution_info_by_hash::GetExecutionInfoByHashCommand;
 use crate::commands::db::commands::get_sequencer_info::GetSequencerInfoCommand;
 use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
-use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::import_indexed_transactions::ImportIndexedTransactionsCommand;
+use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
 use crate::commands::db::commands::recycle::RecycleCommand;
 use crate::commands::db::commands::repair::RepairCommand;

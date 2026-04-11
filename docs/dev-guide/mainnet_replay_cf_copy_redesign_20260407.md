@@ -24,8 +24,8 @@
 
 当前实现见：
 
-- [replay.rs](/Users/jolestar/opensource/src/github.com/rooch-network/rooch/crates/rooch/src/commands/db/commands/state_prune/replay.rs)
-- [incremental_replayer.rs](/Users/jolestar/opensource/src/github.com/rooch-network/rooch/crates/rooch-pruner/src/state_prune/incremental_replayer.rs)
+- [replay.rs](../../crates/rooch/src/commands/db/commands/state_prune/replay.rs)
+- [incremental_replayer.rs](../../crates/rooch-pruner/src/state_prune/incremental_replayer.rs)
 
 关键路径：
 
@@ -36,7 +36,7 @@
 
 其中最重的是：
 
-- [incremental_replayer.rs](/Users/jolestar/opensource/src/github.com/rooch-network/rooch/crates/rooch-pruner/src/state_prune/incremental_replayer.rs#L265)
+- [incremental_replayer.rs](../../crates/rooch-pruner/src/state_prune/incremental_replayer.rs)
 
 ```rust
 let checkpoint = Checkpoint::new(rocks_db)?;
@@ -101,7 +101,7 @@ checkpoint.create_checkpoint(output_dir)?;
 
 当前仓库已有整 CF 复制工具：
 
-- [cp_cf.rs](/Users/jolestar/opensource/src/github.com/rooch-network/rooch/crates/rooch/src/commands/db/commands/cp_cf.rs)
+- [cp_cf.rs](../../crates/rooch/src/commands/db/commands/cp_cf.rs)
 
 新 replay 不需要整库 checkpoint，但可以复用“按 CF 迭代复制”的思路。
 
