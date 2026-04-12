@@ -20,7 +20,7 @@ env:
 jobs:
   check_validation_changes:
     name: Check Validation Changes
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
+    runs-on: ubuntu-latest
     outputs:
       dockerfile_debug: ${{ steps.changes.outputs.dockerfile_debug }}
       dockerfile: ${{ steps.changes.outputs.dockerfile }}

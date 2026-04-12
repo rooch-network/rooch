@@ -6,13 +6,13 @@ runs:
         set -euo pipefail
         if command -v rustc >/dev/null 2>&1 \
           && command -v cargo >/dev/null 2>&1 \
-          && command -v rustfmt >/dev/null 2>&1 \
-          && command -v clippy-driver >/dev/null 2>&1; then
+          && cargo fmt --version >/dev/null 2>&1 \
+          && cargo clippy --version >/dev/null 2>&1; then
           echo "available=true" >> "$GITHUB_OUTPUT"
           rustc --version
           cargo --version
-          rustfmt --version
-          clippy-driver --version
+          cargo fmt --version
+          cargo clippy --version
         else
           echo "available=false" >> "$GITHUB_OUTPUT"
         fi
