@@ -351,7 +351,7 @@ jobs:
         id: binaries
         shell: bash
         run: |
-          if [[ -x target/optci/rooch && -x target/optci/rooch-genesis && -x target/optci/framework-release ]]; then
+          if [[ -f target/optci/rooch && -f target/optci/rooch-genesis && -f target/optci/framework-release ]]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
@@ -415,7 +415,7 @@ jobs:
         id: binaries
         shell: bash
         run: |
-          if [[ -x target/optci/rooch && -x target/optci/rooch-genesis && -x target/optci/framework-release ]]; then
+          if [[ -f target/optci/rooch && -f target/optci/rooch-genesis && -f target/optci/framework-release ]]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
@@ -475,7 +475,7 @@ jobs:
         id: binaries
         shell: bash
         run: |
-          if [[ -x target/optci/rooch && -x target/optci/rooch-genesis && -x target/optci/framework-release ]]; then
+          if [[ -f target/optci/rooch && -f target/optci/rooch-genesis && -f target/optci/framework-release ]]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"

@@ -1,6 +1,23 @@
 runs:
   using: composite
   steps:
+    - id: preinstalled
+      run: |
+        set -euo pipefail
+        if command -v rustc >/dev/null 2>&1 \
+          && command -v cargo >/dev/null 2>&1 \
+          && command -v rustfmt >/dev/null 2>&1 \
+          && command -v clippy-driver >/dev/null 2>&1; then
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          rustc --version
+          cargo --version
+          rustfmt --version
+          clippy-driver --version
+        else
+          echo "available=false" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash
+
     - run: |
         set -euo pipefail
         packages=(
@@ -44,5 +61,6 @@ runs:
       shell: bash
 
     - uses: dtolnay/rust-toolchain@1.91.1
+      if: ${{ steps.preinstalled.outputs.available != 'true' }}
       with:
         components: rustfmt, clippy
