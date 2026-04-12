@@ -74,7 +74,12 @@ jobs:
           Write-Host "=== Disk Space Before Build ==="
           Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
 
+      - name: Setup Rust (self-hosted Linux)
+        if: matrix.os == 'self-hosted'
+        uses: ./.github/actions/rust-setup
+
       - name: Install Rust toolchain
+        if: matrix.os == 'windows-latest'
         uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.target }}
