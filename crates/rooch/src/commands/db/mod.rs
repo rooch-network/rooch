@@ -16,6 +16,7 @@ use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCo
 use crate::commands::db::commands::get_execution_info_by_hash::GetExecutionInfoByHashCommand;
 use crate::commands::db::commands::get_sequencer_info::GetSequencerInfoCommand;
 use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
+use crate::commands::db::commands::import_indexed_transactions::ImportIndexedTransactionsCommand;
 use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
 use crate::commands::db::commands::recycle::RecycleCommand;
@@ -109,6 +110,11 @@ impl CommandAction<String> for DB {
             DBCommand::ImportToStateDB(import_state) => import_state.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            DBCommand::ImportIndexedTransactions(import_indexed_transactions) => {
+                import_indexed_transactions.execute().await.map(|resp| {
+                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                })
+            }
             DBCommand::RocksdbStats(stats) => stats.execute().await,
             DBCommand::RocksdbGc(gc) => gc.execute().await,
             DBCommand::DeleteBenchmark(bench) => bench.execute().await,
@@ -145,6 +151,7 @@ pub enum DBCommand {
     DumpFromStateDB(DumpStateCommand),
     EstimateStateNodes(EstimateStateNodesCommand),
     ImportToStateDB(ImportStateCommand),
+    ImportIndexedTransactions(ImportIndexedTransactionsCommand),
     RocksdbStats(RocksDBStatsCommand),
     RocksdbGc(RocksDBGcCommand),
     DeleteBenchmark(DeleteBenchmarkCommand),

@@ -10465,6 +10465,7 @@ dependencies = [
  "coerce",
  "csv",
  "datatest-stable 0.1.1",
+ "diesel",
  "fastcrypto",
  "framework-builder",
  "framework-release",
@@ -11115,6 +11116,7 @@ dependencies = [
 name = "rooch-pruner"
 version = "0.13.0"
 dependencies = [
+ "accumulator",
  "anyhow 1.0.95",
  "bcs",
  "bcs-ext",

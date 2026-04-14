@@ -34,6 +34,9 @@ env:
   CARGO_BUILD_JOBS: 2
   CARGO_NET_RETRY: 10
   CARGO_NET_GIT_FETCH_WITH_CLI: true
+  HTTP_PROXY: http://192.168.1.89:7890
+  HTTPS_PROXY: http://192.168.1.89:7890
+  NO_PROXY: localhost,127.0.0.1,192.168.0.0/16,172.16.0.0/16,192.168.250.0/24
   GIT_CONFIG_COUNT: 2
   GIT_CONFIG_KEY_0: http.version
   GIT_CONFIG_VALUE_0: HTTP/1.1
@@ -74,18 +77,15 @@ jobs:
           Write-Host "=== Disk Space Before Build ==="
           Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{Name='Used(GB)';Expression={[math]::Round($_.Used/1GB,2)}}, @{Name='Free(GB)';Expression={[math]::Round($_.Free/1GB,2)}}
 
+      - name: Setup Rust (self-hosted Linux)
+        if: matrix.os == 'self-hosted'
+        uses: ./.github/actions/rust-setup
+
       - name: Install Rust toolchain
+        if: matrix.os == 'windows-latest'
         uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.target }}
-
-      - name: Cache Rust dependencies (Optimized)
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: cross-platform-${{ matrix.target }}
-          cache-on-failure: true
-          cache-targets: true
-          cache-all-crates: true
 
       - name: Install Linux dependencies
         if: matrix.os == 'self-hosted'
