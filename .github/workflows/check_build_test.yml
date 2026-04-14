@@ -28,6 +28,9 @@ env:
   ENV_TEST_ON_CI: 1
   CARGO_INCREMENTAL: 0
   CARGO_NET_GIT_FETCH_WITH_CLI: true
+  HTTP_PROXY: http://192.168.1.89:7890
+  HTTPS_PROXY: http://192.168.1.89:7890
+  NO_PROXY: localhost,127.0.0.1,192.168.0.0/16,172.16.0.0/16,192.168.250.0/24
   GIT_CONFIG_COUNT: 2
   GIT_CONFIG_KEY_0: http.version
   GIT_CONFIG_VALUE_0: HTTP/1.1
@@ -89,12 +92,6 @@ jobs:
       - name: Setup Rust
         uses: ./.github/actions/rust-setup
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
-
       - name: Install cargo tools
         run: |
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
@@ -147,12 +144,6 @@ jobs:
       - name: Setup Rust
         uses: ./.github/actions/rust-setup
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
-
       - name: Install cargo tools
         run: |
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
@@ -187,12 +178,6 @@ jobs:
 
       - name: Setup Rust
         uses: ./.github/actions/rust-setup
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
 
       - name: Install cargo tools
         run: |
@@ -229,12 +214,6 @@ jobs:
       - name: Setup Rust
         uses: ./.github/actions/rust-setup
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
-
       - name: Install cargo tools
         run: |
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
@@ -270,12 +249,6 @@ jobs:
       - name: Setup Rust
         uses: ./.github/actions/rust-setup
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
-
       - name: Install cargo tools
         run: |
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
@@ -310,12 +283,6 @@ jobs:
 
       - name: Setup Rust
         uses: ./.github/actions/rust-setup
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
 
       - name: Install cargo tools
         run: |
@@ -361,13 +328,6 @@ jobs:
       - name: Setup Rust for local binary rebuild fallback
         if: ${{ steps.binaries.outputs.available != 'true' }}
         uses: ./.github/actions/rust-setup
-
-      - name: Cache Rust dependencies for local binary rebuild fallback
-        if: ${{ steps.binaries.outputs.available != 'true' }}
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
 
       - name: Rebuild binaries locally when artifact download is unavailable
         if: ${{ steps.binaries.outputs.available != 'true' }}
@@ -426,13 +386,6 @@ jobs:
         if: ${{ steps.binaries.outputs.available != 'true' }}
         uses: ./.github/actions/rust-setup
 
-      - name: Cache Rust dependencies for local binary rebuild fallback
-        if: ${{ steps.binaries.outputs.available != 'true' }}
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
-
       - name: Rebuild binaries locally when artifact download is unavailable
         if: ${{ steps.binaries.outputs.available != 'true' }}
         run: cargo build --profile optci --workspace --bins -j 16
@@ -485,13 +438,6 @@ jobs:
       - name: Setup Rust for local binary rebuild fallback
         if: ${{ steps.binaries.outputs.available != 'true' }}
         uses: ./.github/actions/rust-setup
-
-      - name: Cache Rust dependencies for local binary rebuild fallback
-        if: ${{ steps.binaries.outputs.available != 'true' }}
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: 'ci'
-          cache-on-failure: true
 
       - name: Rebuild binaries locally when artifact download is unavailable
         if: ${{ steps.binaries.outputs.available != 'true' }}
