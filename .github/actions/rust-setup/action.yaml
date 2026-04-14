@@ -62,5 +62,9 @@ runs:
 
     - uses: dtolnay/rust-toolchain@1.91.1
       if: ${{ steps.preinstalled.outputs.available != 'true' }}
+      env:
+        HTTP_PROXY: ${{ runner.environment == 'self-hosted' && 'http://192.168.1.89:7890' || '' }}
+        HTTPS_PROXY: ${{ runner.environment == 'self-hosted' && 'http://192.168.1.89:7890' || '' }}
+        NO_PROXY: ${{ runner.environment == 'self-hosted' && 'localhost,127.0.0.1,192.168.0.0/16,172.16.0.0/16,192.168.250.0/24' || '' }}
       with:
         components: rustfmt, clippy
