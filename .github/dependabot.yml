@@ -43,3 +43,10 @@ updates:
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
+
+  # Disable npm_and_yarn dependabot updates (managed manually)
+  - package-ecosystem: "npm_and_yarn"
+    directory: "/"
+    schedule:
+      interval: "disabled"
+    rebase-strategy: "disabled"
