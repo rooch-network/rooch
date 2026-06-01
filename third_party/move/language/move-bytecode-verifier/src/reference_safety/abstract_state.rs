@@ -417,9 +417,10 @@ impl AbstractState {
         mut_: bool,
         local: LocalIndex,
     ) -> PartialVMResult<AbstractValue> {
-        // nothing to check in case borrow is mutable since the frame cannot have an full borrow/
-        // epsilon outgoing edge
         if !mut_ && self.is_local_mutably_borrowed(local) {
+            return Err(self.error(StatusCode::BORROWLOC_EXISTS_BORROW_ERROR, offset));
+        }
+        if mut_ && self.has_full_borrows(self.frame_root()) {
             return Err(self.error(StatusCode::BORROWLOC_EXISTS_BORROW_ERROR, offset));
         }
 
@@ -741,5 +742,46 @@ impl AbstractDomain for AbstractState {
             *self = joined;
             Ok(JoinResult::Changed)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mut_borrow_loc_rejects_existing_full_frame_borrow() {
+        const BORROWED_LOCALS: usize = 11;
+        const REF_LOCAL: usize = BORROWED_LOCALS;
+        const NUM_LOCALS: usize = BORROWED_LOCALS + 1;
+
+        let state_with_local_borrow = |local: LocalIndex| {
+            let mut borrow_graph = BorrowGraph::new();
+            borrow_graph.new_ref(RefID::new(REF_LOCAL), true);
+            borrow_graph.new_ref(RefID::new(NUM_LOCALS), true);
+
+            let mut state = AbstractState {
+                current_function: None,
+                locals: vec![AbstractValue::NonReference; NUM_LOCALS],
+                borrow_graph,
+                next_id: NUM_LOCALS + 1,
+            };
+            state.locals[REF_LOCAL] = AbstractValue::Reference(RefID::new(REF_LOCAL));
+            state.add_local_borrow(local, RefID::new(REF_LOCAL));
+            assert!(state.is_canonical());
+            state
+        };
+
+        let mut joined = state_with_local_borrow(0);
+        for local in 1..BORROWED_LOCALS {
+            joined = joined.join_(&state_with_local_borrow(local as LocalIndex));
+        }
+
+        assert!(joined.has_full_borrows(joined.frame_root()));
+        let err = joined.borrow_loc(0, true, 0).unwrap_err();
+        assert_eq!(
+            err.major_status(),
+            StatusCode::BORROWLOC_EXISTS_BORROW_ERROR
+        );
     }
 }
