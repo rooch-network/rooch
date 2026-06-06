@@ -28,9 +28,6 @@ env:
   ENV_TEST_ON_CI: 1
   CARGO_INCREMENTAL: 0
   CARGO_NET_GIT_FETCH_WITH_CLI: true
-  HTTP_PROXY: http://192.168.1.89:7890
-  HTTPS_PROXY: http://192.168.1.89:7890
-  NO_PROXY: localhost,127.0.0.1,192.168.0.0/16,172.16.0.0/16,192.168.250.0/24
   GIT_CONFIG_COUNT: 2
   GIT_CONFIG_KEY_0: http.version
   GIT_CONFIG_VALUE_0: HTTP/1.1
@@ -84,7 +81,7 @@ jobs:
     runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: check_changes
     if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
-    timeout-minutes: 75
+    timeout-minutes: 240
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -119,6 +116,23 @@ jobs:
           push-if-not-clean: false
           targets: '.'
 
+      - name: Run Rust lint and tests
+        run: |
+          make lint
+          make test-rust-unit
+          make test-rust-framework
+          make test-rust-bitcoin
+          make test-rust-integration-suite
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
+
+      - name: Run Move tests
+        run: |
+          make test-move
+          make test-move-examples
+        env:
+          ROOCH_BINARY_BUILD_PROFILE: optci
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         continue-on-error: true
@@ -130,287 +144,13 @@ jobs:
             target/optci/framework-release
           retention-days: 1
 
-  # Phase 3: Rust tests (compile and run on the self-hosted Linux runner with cache)
-  test_rust_unit:
-    name: Rust Unit Tests
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
-    needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' }}
-    timeout-minutes: 60
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: ./.github/actions/rust-setup
-
-      - name: Install cargo tools
-        run: |
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          make install-tools
-
-      - name: Install cargo-nextest
-        run: |
-          if cargo nextest --version >/dev/null 2>&1; then
-            echo "Using preinstalled cargo-nextest"
-          else
-            echo "Installing cargo-nextest from GitHub releases..."
-            curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
-          fi
-          cargo nextest --version
-
-      - name: Run Rust unit tests
-        run: |
-          echo "Running unit tests (will compile with cache)..."
-          make test-rust-unit
-        env:
-          ROOCH_BINARY_BUILD_PROFILE: optci
-
-  test_rust_framework:
-    name: Rust Framework Tests
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
-    needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' }}
-    timeout-minutes: 45
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: ./.github/actions/rust-setup
-
-      - name: Install cargo tools
-        run: |
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          make install-tools
-
-      - name: Install cargo-nextest
-        run: |
-          if cargo nextest --version >/dev/null 2>&1; then
-            echo "Using preinstalled cargo-nextest"
-          else
-            echo "Installing cargo-nextest from GitHub releases..."
-            curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
-          fi
-          cargo nextest --version
-
-      - name: Run Rust framework tests
-        run: |
-          echo "Running framework tests (will compile with cache)..."
-          make test-rust-framework
-        env:
-          ROOCH_BINARY_BUILD_PROFILE: optci
-
-  test_rust_bitcoin:
-    name: Rust Bitcoin Tests
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
-    needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' }}
-    timeout-minutes: 30
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: ./.github/actions/rust-setup
-
-      - name: Install cargo tools
-        run: |
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          make install-tools
-
-      - name: Install cargo-nextest
-        run: |
-          if cargo nextest --version >/dev/null 2>&1; then
-            echo "Using preinstalled cargo-nextest"
-          else
-            echo "Installing cargo-nextest from GitHub releases..."
-            curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
-          fi
-          cargo nextest --version
-
-      - name: Run Rust Bitcoin tests
-        run: |
-          echo "Running Bitcoin tests (will compile with cache)..."
-          make test-rust-bitcoin
-        env:
-          ROOCH_BINARY_BUILD_PROFILE: optci
-
-  test_rust_integration_suite:
-    name: Rust Integration Suite Tests
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
-    needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' }}
-    timeout-minutes: 60
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: ./.github/actions/rust-setup
-
-      - name: Install cargo tools
-        run: |
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          make install-tools
-
-      - name: Install cargo-nextest
-        run: |
-          if cargo nextest --version >/dev/null 2>&1; then
-            echo "Using preinstalled cargo-nextest"
-          else
-            echo "Installing cargo-nextest from GitHub releases..."
-            curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/.cargo/bin
-          fi
-          cargo nextest --version
-
-      - name: Run Rust integration suite tests
-        run: |
-          echo "Running integration suite tests (will compile with cache)..."
-          make test-rust-integration-suite
-        env:
-          ROOCH_BINARY_BUILD_PROFILE: optci
-
-  lint:
-    name: Rust Lint
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
-    needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' }}
-    timeout-minutes: 45
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: ./.github/actions/rust-setup
-
-      - name: Install cargo tools
-        run: |
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          make install-tools
-
-      - name: Run Rust Lint
-        run: |
-          echo "Running lint on the self-hosted runner (compiles workspace for analysis)..."
-          make lint
-        env:
-          ROOCH_BINARY_BUILD_PROFILE: optci
-
-  test_move_frameworks:
-    name: Move Framework Tests
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
-    needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' }}
-    timeout-minutes: 60
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        id: download_binaries
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: rooch-binaries
-          path: target/optci
-
-      - name: Check build artifact availability
-        id: binaries
-        shell: bash
-        run: |
-          if [[ -f target/optci/rooch && -f target/optci/rooch-genesis && -f target/optci/framework-release ]]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "Build artifacts unavailable, will rebuild locally."
-          fi
-
-      - name: Setup Rust for local binary rebuild fallback
-        if: ${{ steps.binaries.outputs.available != 'true' }}
-        uses: ./.github/actions/rust-setup
-
-      - name: Rebuild binaries locally when artifact download is unavailable
-        if: ${{ steps.binaries.outputs.available != 'true' }}
-        run: cargo build --profile optci --workspace --bins -j 16
-
-      - name: Make binaries executable
-        run: |
-          chmod +x target/optci/rooch
-          chmod +x target/optci/rooch-genesis
-          chmod +x target/optci/framework-release
-
-      - name: Rooch init
-        run: |
-          ./target/optci/framework-release
-          ./target/optci/rooch init --skip-password
-
-      - name: Run Move tests
-        run: |
-          echo "ROOCH_BINARY_BUILD_PROFILE is set to: $ROOCH_BINARY_BUILD_PROFILE"
-          echo "Expected rooch binary at: target/$ROOCH_BINARY_BUILD_PROFILE/rooch"
-          ls -la target/$ROOCH_BINARY_BUILD_PROFILE/rooch || echo "Binary not found!"
-          make test-move
-        env:
-          ROOCH_BINARY_BUILD_PROFILE: optci
-
-  test_move_examples:
-    name: Move Examples Tests
-    runs-on: [self-hosted, larger-runner, ephemeral-vm]
-    needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' }}
-    timeout-minutes: 60
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        id: download_binaries
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: rooch-binaries
-          path: target/optci
-
-      - name: Check build artifact availability
-        id: binaries
-        shell: bash
-        run: |
-          if [[ -f target/optci/rooch && -f target/optci/rooch-genesis && -f target/optci/framework-release ]]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "Build artifacts unavailable, will rebuild locally."
-          fi
-
-      - name: Setup Rust for local binary rebuild fallback
-        if: ${{ steps.binaries.outputs.available != 'true' }}
-        uses: ./.github/actions/rust-setup
-
-      - name: Rebuild binaries locally when artifact download is unavailable
-        if: ${{ steps.binaries.outputs.available != 'true' }}
-        run: cargo build --profile optci --workspace --bins -j 16
-
-      - name: Make binaries executable
-        run: |
-          chmod +x target/optci/rooch
-          chmod +x target/optci/rooch-genesis
-          chmod +x target/optci/framework-release
-
-      - name: Rooch init
-        run: |
-          ./target/optci/framework-release
-          ./target/optci/rooch init --skip-password
-
-      - name: Run Move examples tests
-        run: make test-move-examples
-        env:
-          ROOCH_BINARY_BUILD_PROFILE: optci
+  # Phase 3: SDK/web checks stay separate and only run for SDK/web changes.
 
   test_sdk_web:
     name: SDK and Web Tests
     runs-on: [self-hosted, larger-runner, ephemeral-vm]
     needs: [check_changes, build_and_verify]
-    if: ${{ needs.check_changes.outputs.core == 'true' || needs.check_changes.outputs.sdk_web == 'true' }}
+    if: ${{ needs.check_changes.outputs.sdk_web == 'true' }}
     timeout-minutes: 60
     steps:
       - name: Checkout code

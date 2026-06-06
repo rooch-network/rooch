@@ -305,12 +305,12 @@ install-tools:
 		echo "Using preinstalled cargo-machete"; \
 	else \
 		echo "Installing cargo-machete from GitHub releases..."; \
-		curl -LsSf https://github.com/bnjbvr/cargo-machete/releases/download/v0.7.0/cargo-machete-v0.7.0-x86_64-unknown-linux-musl.tar.gz | tar xz -C "$(HOME)/.cargo/bin"; \
+		curl --fail --location --show-error --silent --retry 5 --retry-delay 5 --retry-connrefused https://github.com/bnjbvr/cargo-machete/releases/download/v0.7.0/cargo-machete-v0.7.0-x86_64-unknown-linux-musl.tar.gz | tar xz -C "$(HOME)/.cargo/bin"; \
 	fi
 	@if cargo nextest --version >/dev/null 2>&1; then \
 		echo "Using preinstalled cargo-nextest"; \
 	else \
 		echo "Installing cargo-nextest from GitHub releases..."; \
-		curl -LsSf https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C "$(HOME)/.cargo/bin"; \
+		curl --fail --location --show-error --silent --retry 5 --retry-delay 5 --retry-connrefused https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.97/cargo-nextest-0.9.97-x86_64-unknown-linux-gnu.tar.gz | tar xz -C "$(HOME)/.cargo/bin"; \
 	fi
 	@echo "✅ All required cargo tools are installed"
