@@ -43,7 +43,7 @@ env:
 jobs:
   cross_platform_build:
     name: Cross-Platform Build Check
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' || github.event_name == 'push') }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
     strategy:
       fail-fast: false
       matrix:
