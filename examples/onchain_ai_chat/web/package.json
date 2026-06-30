@@ -27,7 +27,7 @@
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.5.1",
     "react-markdown": "^9.0.3",
-    "react-router-dom": "^6.30.3",
+    "react-router-dom": "^7.18.1",
     "react-syntax-highlighter": "^15.6.1",
     "remark-gfm": "^4.0.0"
   },
@@ -38,16 +38,16 @@
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "@vitejs/plugin-react-swc": "^3.3.2",
+    "@vitejs/plugin-react": "^6.0.3",
+    "@vitejs/plugin-react-swc": "^4.3.1",
     "autoprefixer": "^10.4.17",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "postcss": "^8.4.33",
+    "postcss": "^8.5.16",
     "prettier": "^3.0.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.6.2",
-    "vite": "^5.4.21"
+    "vite": "^8.1.0"
   }
 }
