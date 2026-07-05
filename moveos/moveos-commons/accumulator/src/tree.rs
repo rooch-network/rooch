@@ -180,10 +180,12 @@ impl AccumulatorTree {
                 node.clone()
             })
             .collect();
-        //aggregator all nodes
-        not_frozen_nodes.extend_from_slice(&to_freeze);
-        self.update_temp_nodes(not_frozen_nodes.clone());
+        // Only frozen nodes are durable. Non-frozen nodes can be reconstructed from
+        // frozen subtree roots and placeholders, so keep them in the index cache for
+        // this process but do not add them to the pending storage updates.
+        self.update_temp_nodes(to_freeze.clone());
         // update to cache
+        not_frozen_nodes.extend_from_slice(&to_freeze);
         self.update_cache(not_frozen_nodes);
         // update self properties
         self.root_hash = hash;
@@ -320,13 +322,24 @@ impl AccumulatorTree {
         if let Some(node_hash) = self.get_node_index(index_key) {
             return Ok(node_hash);
         }
+        if index.is_placeholder(self.rightmost_leaf_index()) {
+            return Ok(*ACCUMULATOR_PLACEHOLDER_HASH);
+        }
+        if let Some(node_hash) = self.compute_frontier_hash(index) {
+            return Ok(node_hash);
+        }
         // find parent hash,then get node by parent hash
         let root_index = NodeIndex::root_from_leaf_count(self.num_leaves);
         let level = root_index.level() + 1;
         let mut parent_hash = None;
         for _i in 0..level {
             index_key = temp_index.parent();
-            if let Some(internal_parent_hash) = self.get_node_index(index_key) {
+            if let Some(internal_parent_hash) = self
+                .index_frozen_subtrees
+                .get(&index_key)
+                .copied()
+                .or_else(|| self.get_node_index(index_key))
+            {
                 parent_hash = Some(internal_parent_hash);
                 break;
             }
@@ -380,6 +393,26 @@ impl AccumulatorTree {
             }
         }
         bail!("node hash not found:{:?}", index)
+    }
+
+    fn compute_frontier_hash(&self, index: NodeIndex) -> Option<H256> {
+        if let Some(node_hash) = self.index_frozen_subtrees.get(&index) {
+            return Some(*node_hash);
+        }
+        if index.is_placeholder(self.rightmost_leaf_index()) {
+            return Some(*ACCUMULATOR_PLACEHOLDER_HASH);
+        }
+        if index.is_leaf() {
+            return None;
+        }
+
+        let left = self.compute_frontier_hash(index.left_child())?;
+        let right = self.compute_frontier_hash(index.right_child())?;
+        if left == *ACCUMULATOR_PLACEHOLDER_HASH && right == *ACCUMULATOR_PLACEHOLDER_HASH {
+            Some(*ACCUMULATOR_PLACEHOLDER_HASH)
+        } else {
+            Some(AccumulatorNode::new_internal(index, left, right).hash())
+        }
     }
 
     fn save_node_indexes(&mut self, nodes: Vec<AccumulatorNode>) {
