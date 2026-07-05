@@ -283,6 +283,20 @@ fn test_multiple_tree() {
 }
 
 #[test]
+fn test_reopen_non_power_of_two_accumulator_without_non_frozen_nodes() {
+    let leaves = create_leaves(750..755);
+    let mock_store = Arc::new(MockAccumulatorStore::new());
+    let accumulator = MerkleAccumulator::new_empty(mock_store.clone());
+    let root_hash = accumulator.append(&leaves).unwrap();
+    accumulator.flush().unwrap();
+
+    let accumulator_info = accumulator.get_info();
+    let reopened = MerkleAccumulator::new_with_info(accumulator_info, mock_store);
+    assert_eq!(reopened.root_hash(), root_hash);
+    proof_verify(&reopened, root_hash, &leaves, 0);
+}
+
+#[test]
 fn test_update_left_leaf() {
     // construct a accumulator
     let leaves = create_leaves(800..820);

@@ -26,6 +26,7 @@ use crate::commands::db::commands::rocksdb_gc::RocksDBGcCommand;
 use crate::commands::db::commands::rocksdb_stats::RocksDBStatsCommand;
 use crate::commands::db::commands::stat_changeset::StatChangesetCommand;
 use crate::commands::db::commands::state_prune::StatePruneCommand;
+use crate::commands::db::commands::tx_accumulator_compact::TxAccumulatorCompactCommand;
 use crate::commands::db::commands::verify_order::VerifyOrderCommand;
 use async_trait::async_trait;
 use clap::Parser;
@@ -126,6 +127,9 @@ impl CommandAction<String> for DB {
             DBCommand::GC(gc) => gc.execute().await,
             DBCommand::Recycle(recycle) => recycle.execute().await,
             DBCommand::StatePrune(state_prune) => state_prune.execute().await,
+            DBCommand::TxAccumulatorCompact(tx_accumulator_compact) => {
+                tx_accumulator_compact.execute().await
+            }
         }
     }
 }
@@ -159,4 +163,5 @@ pub enum DBCommand {
     GC(GCCommand),
     Recycle(RecycleCommand),
     StatePrune(StatePruneCommand),
+    TxAccumulatorCompact(TxAccumulatorCompactCommand),
 }
