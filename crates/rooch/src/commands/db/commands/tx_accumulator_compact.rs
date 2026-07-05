@@ -5,7 +5,7 @@ use crate::cli_types::CommandAction;
 use crate::commands::db::commands::{load_accumulator, open_rocks};
 use crate::utils::open_rooch_db;
 use accumulator::node_index::{FrozenSubTreeIterator, NodeIndex};
-use accumulator::{Accumulator, AccumulatorNode, AccumulatorTreeStore};
+use accumulator::{Accumulator, AccumulatorNode, AccumulatorTreeStore as _};
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use clap::Parser;
@@ -32,7 +32,8 @@ pub struct TxAccumulatorCompactCommand {
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 
-    /// First leaf index to replay.
+    /// First leaf index to include in deletion candidate collection.
+    /// Earlier leaves are still replayed to rebuild frozen roots.
     #[clap(long, default_value_t = 0)]
     pub start_index: u64,
 
@@ -315,8 +316,8 @@ mod tests {
         assert_eq!(hashes.len(), 10);
     }
 
-    #[tokio::test]
-    async fn test_flush_candidates_deletes_only_existing_nodes() {
+    #[test]
+    fn test_flush_candidates_deletes_only_existing_nodes() {
         let (rooch_store, _tmpdir) = RoochStore::mock_rooch_store().unwrap();
         let accumulator =
             MerkleAccumulator::new_empty(rooch_store.get_transaction_accumulator_store());
