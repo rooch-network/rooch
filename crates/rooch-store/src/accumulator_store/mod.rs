@@ -33,6 +33,31 @@ impl AccumulatorStore<TransactionAccumulatorStore> {
             store: TransactionAccumulatorStore::new(instance),
         }
     }
+
+    pub fn iter_leaves(&self, max_leaf_count: u64) -> Result<Vec<(u64, H256)>> {
+        let mut iter = self.store.iter()?;
+        iter.seek_to_first();
+
+        let mut leaves = Vec::new();
+        for item in iter {
+            let (_hash, node) = item?;
+            match node {
+                AccumulatorNode::Empty => {}
+                AccumulatorNode::Internal(_) => {}
+                AccumulatorNode::Leaf(leaf) => {
+                    let index = leaf
+                        .index()
+                        .to_leaf_index()
+                        .ok_or_else(|| anyhow::anyhow!("accumulator leaf has non-leaf index"))?;
+                    if index < max_leaf_count {
+                        leaves.push((index, leaf.value()));
+                    }
+                }
+            }
+        }
+        leaves.sort_unstable_by_key(|(index, _)| *index);
+        Ok(leaves)
+    }
 }
 
 impl<S> AccumulatorTreeStore for AccumulatorStore<S>

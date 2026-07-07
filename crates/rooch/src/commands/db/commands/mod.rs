@@ -3,8 +3,10 @@
 
 use accumulator::MerkleAccumulator;
 use anyhow::{Context, Result};
+use metrics::RegistryService;
 use raw_store::rocks::RocksDB;
 use rooch_config::RoochOpt;
+use rooch_db::RoochDB;
 use rooch_store::RoochStore;
 use rooch_types::rooch_network::RoochChainID;
 use std::collections::HashSet;
@@ -60,6 +62,15 @@ fn open_rocks(
     }
 
     RocksDB::new(store_dir, column_families, store_config.rocksdb_config())
+}
+
+fn open_rooch_db_without_latest_root(
+    base_data_dir: Option<PathBuf>,
+    chain_id: Option<RoochChainID>,
+) -> anyhow::Result<RoochDB> {
+    let opt = RoochOpt::new_with_default(base_data_dir, chain_id, None)?;
+    let registry_service = RegistryService::default();
+    RoochDB::init(opt.store_config(), &registry_service.default_registry())
 }
 
 fn load_accumulator(rooch_store: RoochStore) -> anyhow::Result<(MerkleAccumulator, u64)> {
