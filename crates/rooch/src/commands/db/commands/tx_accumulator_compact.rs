@@ -12,7 +12,6 @@ use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::h256::{ACCUMULATOR_PLACEHOLDER_HASH, H256};
 use rooch_config::R_OPT_NET_HELP;
-use rooch_store::transaction_store::TransactionStore;
 use rooch_store::{RoochStore, TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME};
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
@@ -64,7 +63,7 @@ pub struct TxAccumulatorCompactCommand {
     #[clap(long)]
     pub force_compaction: bool,
 
-    /// Read leaves with random get_leaf lookups instead of tx_order -> tx_hash mappings.
+    /// Read leaves with random get_leaf lookups instead of streaming accumulator subtrees.
     #[clap(long)]
     pub no_scan_leaves: bool,
 }
@@ -137,18 +136,12 @@ impl TxAccumulatorCompactCommand {
                 )?;
             }
         } else {
-            let mut next_leaf_index = 0;
-            while next_leaf_index < end_index {
-                let batch_end = end_index.min(next_leaf_index + self.batch_size as u64);
-                let tx_orders = (next_leaf_index..batch_end).collect::<Vec<_>>();
-                let leaves = rooch_store.get_tx_hashes(tx_orders)?;
-                for (leaf_index, leaf) in (next_leaf_index..batch_end).zip(leaves) {
-                    let leaf = leaf.ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "transaction hash for accumulator leaf {} not found",
-                            leaf_index
-                        )
-                    })?;
+            stream_accumulator_leaves(
+                &rooch_store,
+                tx_accumulator.get_frozen_subtree_roots(),
+                leaf_count,
+                end_index,
+                |leaf_index, leaf| {
                     replay_leaf(
                         &mut replayer,
                         &rooch_store,
@@ -161,10 +154,9 @@ impl TxAccumulatorCompactCommand {
                         self.check_existing,
                         self.progress_interval,
                         &mut out,
-                    )?;
-                }
-                next_leaf_index = batch_end;
-            }
+                    )
+                },
+            )?;
         }
         ensure!(
             replayer.num_leaves == end_index,
@@ -213,6 +205,93 @@ impl TxAccumulatorCompactCommand {
         }
         writeln!(out, "elapsed: {:?}", started_at.elapsed())?;
         Ok(out)
+    }
+}
+
+fn stream_accumulator_leaves(
+    rooch_store: &RoochStore,
+    frozen_subtree_roots: Vec<H256>,
+    leaf_count: u64,
+    end_index: u64,
+    mut append: impl FnMut(u64, H256) -> Result<()>,
+) -> Result<()> {
+    let frozen_subtree_indexes = FrozenSubTreeIterator::new(leaf_count).collect::<Vec<_>>();
+    ensure!(
+        frozen_subtree_indexes.len() == frozen_subtree_roots.len(),
+        "frozen subtree root count mismatch: indexes {}, roots {}",
+        frozen_subtree_indexes.len(),
+        frozen_subtree_roots.len()
+    );
+
+    for (index, hash) in frozen_subtree_indexes
+        .into_iter()
+        .zip(frozen_subtree_roots.into_iter())
+    {
+        stream_accumulator_subtree(rooch_store, index, hash, end_index, &mut append)?;
+    }
+
+    Ok(())
+}
+
+fn stream_accumulator_subtree(
+    rooch_store: &RoochStore,
+    index: NodeIndex,
+    hash: H256,
+    end_index: u64,
+    append: &mut impl FnMut(u64, H256) -> Result<()>,
+) -> Result<()> {
+    let leftmost_leaf = index
+        .left_most_child()
+        .to_leaf_index()
+        .ok_or_else(|| anyhow::anyhow!("accumulator subtree has non-leaf left boundary"))?;
+    if leftmost_leaf >= end_index {
+        return Ok(());
+    }
+
+    if index.is_leaf() {
+        append(leftmost_leaf, hash)?;
+        return Ok(());
+    }
+
+    let node = rooch_store
+        .transaction_accumulator_store
+        .get_node(hash)?
+        .ok_or_else(|| anyhow::anyhow!("accumulator subtree root {:?} not found", index))?;
+    match node {
+        AccumulatorNode::Internal(internal) => {
+            ensure!(
+                internal.index() == index,
+                "accumulator node index mismatch: expected {:?}, got {:?}",
+                index,
+                internal.index()
+            );
+            stream_accumulator_subtree(
+                rooch_store,
+                index.left_child(),
+                internal.left(),
+                end_index,
+                append,
+            )?;
+            stream_accumulator_subtree(
+                rooch_store,
+                index.right_child(),
+                internal.right(),
+                end_index,
+                append,
+            )
+        }
+        AccumulatorNode::Leaf(leaf) => {
+            ensure!(
+                leaf.index() == index,
+                "accumulator leaf index mismatch: expected {:?}, got {:?}",
+                index,
+                leaf.index()
+            );
+            append(leftmost_leaf, leaf.value())
+        }
+        AccumulatorNode::Empty => {
+            anyhow::bail!("unexpected empty accumulator node at {:?}", index)
+        }
     }
 }
 
@@ -572,5 +651,40 @@ mod tests {
         assert!(scanned
             .iter()
             .all(|(index, _)| *index < leaves.len() as u64));
+    }
+
+    #[test]
+    fn test_stream_accumulator_leaves_returns_ordered_prefix() {
+        let (rooch_store, _tmpdir) = RoochStore::mock_rooch_store().unwrap();
+        let accumulator =
+            MerkleAccumulator::new_empty(rooch_store.get_transaction_accumulator_store());
+        let leaves = (0..9).map(|_| H256::random()).collect::<Vec<_>>();
+        for leaf in &leaves {
+            accumulator.append(&[*leaf]).unwrap();
+            accumulator.flush().unwrap();
+        }
+
+        let mut streamed = Vec::new();
+        stream_accumulator_leaves(
+            &rooch_store,
+            accumulator.get_frozen_subtree_roots(),
+            leaves.len() as u64,
+            7,
+            |leaf_index, leaf| {
+                streamed.push((leaf_index, leaf));
+                Ok(())
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            streamed,
+            leaves
+                .iter()
+                .take(7)
+                .enumerate()
+                .map(|(index, leaf)| (index as u64, *leaf))
+                .collect::<Vec<_>>()
+        );
     }
 }
