@@ -5,7 +5,8 @@ use super::messages::{GetReadyL1BlockMessage, GetReadyL1TxsMessage, SyncTick};
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use ethers::prelude::*;
+use ethers::types::{BlockId, BlockNumber, H256};
+use ethers_providers::{Http, Middleware, Provider};
 use rooch_config::EthereumRelayerConfig;
 use rooch_types::{
     framework::ethereum::BlockHeader,

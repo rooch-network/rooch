@@ -17,6 +17,7 @@ async-trait = { workspace = true }
 chrono = { workspace = true }
 coerce = { workspace = true }
 ethers = { workspace = true }
+ethers-providers = { workspace = true }
 tracing = { workspace = true }
 bitcoin = { workspace = true }
 bitcoincore-rpc = { workspace = true }
