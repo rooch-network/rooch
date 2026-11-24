@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::binding_test;
-use ethers::prelude::*;
+use ethers::types::Block;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
